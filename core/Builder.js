@@ -22,7 +22,7 @@ class Builder extends Syntax{
                 if( isNeedBuild(module) ){
                     const stack = compilation.getStackByModule(module);
                     const file = this.getOutputAbsolutePath(module);
-                    this.emitFile( file, '<?php\r\n'+this.make(stack) );
+                    this.emitFile( file, this.make(stack) );
                 }
             }
         };

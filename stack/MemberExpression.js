@@ -18,7 +18,7 @@ class MemberExpression extends Syntax{
             this.addDepend( this.stack.getModuleById("Reflect") );
             return `${this.checkRefsName("Reflect")}::get(${module.id},${object},${property})`;
          }
-         return `${object}${sep}${property}`;
+         return `${object}[${this.make(this.stack.property)}]`;
       }
 
       if( description && description.isType && description.isAnyType ){
@@ -31,8 +31,13 @@ class MemberExpression extends Syntax{
          return `${object}${sep}get${name}()`;
       }
 
+      if( description && description.isMethodSetterDefinition ){
+         const name = this.firstToUpper(property);
+         return `${object}${sep}set${name}`;
+      }
+
       if( this.compiler.callUtils("isClassType", description) ){
-         return module.getReferenceNameByModule( description );
+         return this.getReferenceNameByModule( description );
       }
 
       return `${object}${sep}${property}`;

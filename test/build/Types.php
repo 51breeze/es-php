@@ -1,4 +1,3 @@
-<?php
 class Types {
 	public const ADDRESS = 0;
 	public const NAME = 1;

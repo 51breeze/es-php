@@ -11,7 +11,7 @@ class InterfaceDeclaration extends Syntax{
         }
         const items = [];
         items.push( modifier );
-        items.push( this.make(item) );
+        items.push( this.semicolon(this.make(item)) );
         return items.join(" ");
     }
 
@@ -42,12 +42,15 @@ class InterfaceDeclaration extends Syntax{
         this.createDependencies(module,refs);
 
         const body = [];
+        if( module.namespace.identifier){
+            push(body, `namespace ${module.namespace.getChain().join("\\\\")};\r\n` );
+        }
         push(body, 'interface');
         push(body, module.id );
         push(body,  inherit ? `extends ${this.getReferenceNameByModule(inherit)}` : null);
         push(body,  imps.length > 0 ? `implements ${imps.map(impModule=>this.getReferenceNameByModule(impModule)).join(",")}` : null);
-        const parts = refs.concat(body.join(" "),'{',content.join("\r\n"),'}');
-        return parts.join("\r\n");
+        const parts = refs.concat(body.join(" ")+'{',content.join("\r\n"),'}');
+        return '<?php\r\n'+ parts.join("\r\n");
     }
 }
 

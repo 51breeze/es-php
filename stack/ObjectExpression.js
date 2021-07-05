@@ -14,11 +14,11 @@ class ObjectExpression extends Syntax{
 
         if( this.stack.hasChildComputed  ){
             const refs = '$'+this.generatorVarName(this.stack,"_c");
-            properties = properties.slice(0);
-            properties.unshift(`${refs}=new \\ArrayObject([], \\ArrayObject::STD_PROP_LIST | \\ArrayObject::ARRAY_AS_PROPS)`);
-            properties.push(`${refs}`);
-            indent = indent+("\t".repeat(level));
-            return `(${properties.join(`,\r\n${indent}`)})`;
+            this.insertExpression(this.stack,[
+                this.semicolon(`${refs}=new \\ArrayObject([], \\ArrayObject::STD_PROP_LIST | \\ArrayObject::ARRAY_AS_PROPS)`),
+                properties.map( item=>this.semicolon(item) ).join("\r\n")
+            ].join("\r\n"));
+            return refs;
         }else{
             return `new \\ArrayObject([${properties.join(",")}], \\ArrayObject::STD_PROP_LIST | \\ArrayObject::ARRAY_AS_PROPS)`;
         }

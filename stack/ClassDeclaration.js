@@ -60,28 +60,31 @@ class ClassDeclaration extends Syntax{
         emitter( methods, content, true);
         emitter( members, content, false);
 
-        const callSuper = inherit ? `parent::__construct();` : '';
-        const defaultConstructor=[`public function __construct(){`];
-        if( callSuper ){
-            defaultConstructor.push( this.semicolon( callSuper) );
+        const defaultConstructor=[];
+        if( inherit ){
+            defaultConstructor.push(`public function __construct(){`);
+            defaultConstructor.push( this.semicolon(`parent::__construct()`) );
+            defaultConstructor.push('}');
         }
-        defaultConstructor.push('}');
         const construct = module.methodConstructor ? this.emitStack(module.methodConstructor,false) : `${defaultConstructor.join("\r\n")}`;
         this.createDependencies(module,refs);
 
         const body = [];
+        if( module.namespace.identifier){
+            push(body, `namespace ${module.namespace.getChain().join("\\\\")};` );
+        }
         push(body, staticName);
         push(body, abstract);
         push(body, 'class');
         push(body, module.id );
         push(body,  inherit ? `extends ${this.getReferenceNameByModule(inherit)}` : null);
         push(body,  imps.length > 0 ? `implements ${imps.map(impModule=>this.getReferenceNameByModule(impModule)).join(",")}` : null);
-        const parts = refs.concat(body.join(" "),'{',construct,content,'}');
+        const parts = refs.concat(body.join(" ")+'{', '\t'+[construct].concat(content).join("\r\n").replace(/\r\n/g,'\r\n\t'),'}');
         const external = this.buildExternal();
         if( external ){
             parts.push( external );
         }
-        return parts.join("\r\n");
+        return '<?php\r\n'+parts.join("\r\n");
     }
 }
 

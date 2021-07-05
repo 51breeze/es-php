@@ -1,25 +1,59 @@
 const Syntax = require("../core/Syntax");
 class CallExpression extends Syntax{
 
-    replace(args){
+    intercept(args){
         if( this.stack.callee.isMemberExpression ){
-            if( this.stack.callee.object.isLiteral && this.stack.callee.object.node.regex){
-                const callName = this.stack.callee.property.value();
-                let pattern;
-                switch( callName ){
-                    case "test" : 
-                        pattern = this.make(this.stack.callee.object);
-                        return `!!preg_match('${pattern}',${args[0]})`;
-                    case "exec" :
-                        pattern = this.make(this.stack.callee.object);
-                        const global  = /\/\g/.test(pattern);
-                        const refs = '$'+this.generatorVarName(this.stack.callee, "matches");
-                        if( global ){
-                            return `(preg_match_all('${pattern}',${args[0]},${refs}), ${refs})`;
-                        }
-                        return `(preg_match('${pattern}',${args[0]},${refs}), ${refs})`;
-                }
+            const desc = this.stack.callee.object.description();
+            const callName = this.stack.callee.property.value();
+            const type = desc.type();
+            let typeName = type.toString();
+            switch( true ){
+                case type.isTupleType :
+                case type.isLiteralArrayType :
+                    typeName =  'array';
+                break;
             }
+
+            switch( typeName ){
+                case "string" :
+                    return null;
+                case "array"  :
+                    let target = this.make(this.stack.callee.object);
+                    if( this.stack.callee.object.isArrayExpression ){
+                        const refs = '$'+this.generatorVarName(this.stack, '_array');
+                        this.insertExpression(this.stack, this.semicolon(`${refs} = ${target}`));
+                        target = refs;
+                    }
+                    switch( callName ){
+                        case "push" :
+                            return `array_push(${[target].concat(args).join(",")})`;
+                        case "unshift" :
+                            return `array_unshift(${[target].concat(args).join(",")})`;
+                        case "pop" :
+                            return `array_pop(${target})`;
+                        case "shift" :
+                            return `array_shift(${target})`;
+                        case "slice" :
+                            return `array_slice(${[target].concat(args).join(",")})`;
+                        case "splice" :
+                            return `array_splice(${[target].concat(args).join(",")})`;
+                        case "filter" :
+                            return `array_filter(${target},function($value,$key)use(&${target}){$thisArg = ${args[1] || null};$callback = ${args[0]}; $callback = $thisArg ? System::bind($callback,$thisArg) : $callback;return is_callback($callback) ? $callback($value,$key,${target}) : false;},ARRAY_FILTER_USE_BOTH)`;
+                        case "indexOf" :
+                            const refs = this.generatorVarName(this.stack,"_i");
+                            return `((${refs} = array_search(${args[0]},${target})) === false ? -1 : ${refs})`;
+                        case "includes" :
+                            return `array_search(${args[0]},${target}) !== false`;
+                        case "length" :
+                            return `count(${target})`;
+                        case "concat" :
+                            return `array_values(${[target].concat(args).map( item=>`(array)${item}`).join(' + ')})`;
+                        case "entries" :
+                            return `array_values(${[target]})`;
+                    }
+                    break;
+            }
+            
         }
         return null;
     }
@@ -30,7 +64,7 @@ class CallExpression extends Syntax{
         if( this.compiler.callUtils("isTypeModule", desc) ){
             this.addDepend( desc );
         }
-        const result = this.replace(args);
+        const result = this.intercept(args);
         if( result ){
             return result;
         }

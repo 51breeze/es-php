@@ -1,12 +1,11 @@
 const Syntax = require("../core/Syntax");
 class BreakStatement extends Syntax{
     emitter(){
-        const stack = this.stack.getParentStack(stack=>!!stack.isFunctionExpression);
-        const label = this.stack.label ? this.stack.label.value() : '';
-        if( stack.hasAwait ){
-            return this.semicolon(`return [3, ${(this.createDataByStack(stack).awaitCount)+1}]`);
+        if( this.stack.label ){
+            const label = this.stack.label.value();
+            return this.semicolon(`goto ${label}`);
         }
-        return this.semicolon(label ? `break ${label}` : `break`);
+        return this.semicolon(`break`);
     }
 }
 module.exports = BreakStatement;

@@ -30,16 +30,16 @@ class ArrayPattern extends Syntax {
                 const value = init.attribute( index );
                 if( value ){
                    const right = this.computeValue( this.make(value), value.isLiteral ? null : defaultValue );
-                   return `${name}=${right}`;
+                   return `\$${name}=${right}`;
                 }else if(defaultValue){
-                   return `${name}=${defaultValue}`;
+                   return `\$${name}=${defaultValue}`;
                 }else {
                     return name;
                 }
             }else{
                 const obj = init.isIdentifier ? initValue : this.getSpreadRefName(init, ()=>initValue);
                 const right = this.computeValue( `${obj}[${index}]`, defaultValue )
-                return `${name}=${right}`;
+                return `\$${name}=${right}`;
             }
         });
         return elements;

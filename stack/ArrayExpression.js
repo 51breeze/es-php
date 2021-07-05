@@ -8,9 +8,9 @@ class ArrayExpression extends Syntax{
     makeSpreadArray(elements){
         const first = elements.shift();
         if( elements.length>0){
-            return `${first}.concat(${elements.join(",")})`;
+            return `array_merge(${first},${elements.join(",")})`;
         }
-        return `[].concat(${first})`;
+        return `array_merge([],${first})`;
     }
 
     emitter(){ 

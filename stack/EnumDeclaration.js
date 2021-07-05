@@ -18,7 +18,12 @@ class EnumDeclaration extends Syntax{
         properties.push(`default: return null;`);
         content.push(`\tstatic public function getName($value){\r\n\t\tswitch($value){\r\n\t\t\t${properties.join("\r\n\t\t\t")}\r\n\t\t}\r\n\t}`)
         this.createDependencies(module,refs);
-        const body = ['class', module.id];
+        const body = [];
+        if( module.namespace.identifier){
+            body.push(body, `namespace ${module.namespace.getChain().join("\\\\")};` );
+        }
+        body.push( 'class' );
+        body.push( module.id);
         if( inherit ){
             body.push( `extends ${this.getReferenceNameByModule(inherit)}`);
         }
@@ -35,11 +40,10 @@ class EnumDeclaration extends Syntax{
         const properties = this.stack.properties.map( item=>{
             const key = item.value();
             const value = this.make(item.init);
-            return `${name}[${name}->${key}=${value}]='${key}'`;
+            return this.semicolon(`${name}[${name}->${key}=${value}]='${key}'`);
         });
-        properties.unshift(`${name}=new \\ArrayObject([], \\ArrayObject::STD_PROP_LIST | \\ArrayObject::ARRAY_AS_PROPS)`);
-        properties.push(name);
-        return this.semicolon(`${name} = (${properties.join(",")})`);
+        properties.unshift( this.semicolon(`${name}=new \\ArrayObject([], \\ArrayObject::STD_PROP_LIST | \\ArrayObject::ARRAY_AS_PROPS)`) );
+        return properties.join("\r\n");
     }
 }
 

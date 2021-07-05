@@ -17,17 +17,17 @@ class RestElement extends Syntax{
            this.addDepend( this.stack.getModuleById("System") );
            const obj = target.isIdentifier ? this.make(target) : this.make(this.getSpreadRefName(target, ()=>target) );
            if( properties.length > 0 ){
-                return `${name}=System.toArray(${obj},["${properties.join('","')}"])`;
+                return `\$${name}=System.toArray(${obj},["${properties.join('","')}"])`;
            }else{
-                return `${name}=System.toArray(${obj})`;
+                return `\$${name}=System.toArray(${obj})`;
            }
         }else if( this.stack.parentStack.isArrayPattern ){
             const index = this.stack.parentStack.elements.indexOf( this.stack );
             const target = this.stack.parentStack.parentStack.init;
             const obj = this.make(this.getSpreadRefName(target, ()=>target) );
-            return `${name}=array_slice(${obj},${index})`;
+            return `\$${name}=array_slice(${obj},${index})`;
         }
-        return name;
+        return `...\$${name}`;
     }
 }
 

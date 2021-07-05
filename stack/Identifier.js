@@ -2,7 +2,7 @@ const Syntax = require("../core/Syntax");
 class Identifier extends Syntax{
      emitter(){
           let desc = this.stack.description();
-          if( desc.isProperty && desc.parentStack.isObjectPattern ){
+          if( desc && desc.isProperty && desc.parentStack.isObjectPattern ){
                this.addVariableRefs( desc );
                return `\$${this.stack.value()}`;
           }

@@ -80,7 +80,7 @@ class Syntax extends events.EventEmitter {
             }
             type = this.compiler.callUtils("getOriginType", type);
             if( this.isDependModule( type ) ){
-                return type.toString();
+                return type.id;
             }
         }
         return null;
@@ -158,6 +158,11 @@ class Syntax extends events.EventEmitter {
         const refName =  this.generatorVarName(target,name);
         block.dispatcher("insert",this.semicolon(`\$${refName} = ${callback()}`));
         return dataset[key] = refName;
+    }
+
+    insertExpression(target, expression){
+        const block = target.getParentStack( stack=>!!stack.isBlockStatement );
+        block.dispatcher("insert",expression);
     }
 
     getOutputAbsolutePath(module){
@@ -265,34 +270,13 @@ class Syntax extends events.EventEmitter {
     getIndent(num=null){
         let level = num === null ? this.scope.level : num;
         if( num === null ){
-            const asyncIndent = this.scope.asyncParentScopeOf ? 4 : 0;
-            const pScope = this.scope.asyncParentScopeOf ? this.scope.getScopeByType("function") : null;
-            if( pScope && this.scope.asyncParentScopeOf && pScope.hasChildAwait ){
-                const asc = this.scope.asyncParentScopeOf;
-                const stack = this.getBlockStatement();
-                level =  this.scope.parent && this.stack.isFunctionExpression ? this.scope.parent.level : asc.level+asyncIndent;
-                if( stack ){
-                    if(stack.isFunctionExpression && stack.scope !== asc ){
-                        const diff = this.scope.level - stack.scope.parent.level;
-                        level = asc.level+asyncIndent+diff;
-                    }else{
-                        let ps = this.scope;
-                        while( ps && ps.parent && !(ps.parent === asc || ps === asc || ps.hasChildAwait) ){
-                            ps = ps.parent;
-                        }
-                        let diff = this.scope.level - ps.level;
-                        level = asc.level+asyncIndent+diff;
-                    }
-                }
-                
-            }else{
-                if( this.scope.parent && this.stack.isFunctionExpression ) {
-                    level = this.scope.parent.level;
-                }else if( !this.stack.isBreakStatement && this.inCaseStatement() ){
-                    level+=1;
-                }
-                level+=asyncIndent;
+            const asyncIndent =  0;
+            if( this.scope.parent && this.stack.isFunctionExpression ) {
+                level = this.scope.parent.level;
+            }else if( !this.stack.isBreakStatement && this.inCaseStatement() ){
+                level+=1;
             }
+            level+=asyncIndent;
         }
         level = this.getLevel(level);
         return level > 0 ? "\t".repeat( level ) : '';

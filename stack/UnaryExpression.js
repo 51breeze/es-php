@@ -6,7 +6,8 @@ class UnaryExpression extends Syntax {
        const prefix   = this.stack.node.prefix;
        if( prefix ){
          if( operator==="typeof"){
-            return `${operator} ${argument}`;
+            this.addDepend( this.stack.getModuleById("System") );
+            return `System::typeof(${argument})`;
          }
          return `${operator}${argument}`;
        }
