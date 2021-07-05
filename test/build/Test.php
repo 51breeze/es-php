@@ -60,7 +60,8 @@ public function start(){
 		expect(Test::getClass()->person)->toBe(Person);
 	});
 	it('\'new (Test.getClass().person)(\'\')\' should is true',function(){
-		$o = new (Test::getClass()->person)('name');
+		$_refClass = Test::getClass()->person;
+		$o = new $_refClass('name');
 		expect($o instanceof Person)->toBeTrue();
 	});
 	it('\'this.bbss="666666"\' should is \'666666\' ',function(){
@@ -99,8 +100,8 @@ public function start(){
 		$once->obds;
 	});
 	it('/d+/.test( "123" ) should is true ',function(){
-		expect(/\d+/->test("123"))->toBe(true);
-		expect(/^\d+/->test(" 123"))->toBe(false);
+		expect(!!preg_match('/\d+/',"123"))->toBe(true);
+		expect(!!preg_match('/^\d+/'," 123"))->toBe(false);
 	});
 	it("test rest params",function(){
 		$res = $this->restFun(1,"s","test");

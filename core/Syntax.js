@@ -150,13 +150,13 @@ class Syntax extends events.EventEmitter {
     }
 
     generatorRefName(target, name, key, callback){
-        const dataset = this.createDataByStack(stack);
+        const dataset = this.createDataByStack(target);
         if( dataset.hasOwnProperty(key) ){
             return dataset[key];
         }
         const block = target.getParentStack( stack=>!!stack.isBlockStatement );
         const refName =  this.generatorVarName(target,name);
-        block.dispatcher("insert",this.semicolon(`var ${refName} = ${callback()}`));
+        block.dispatcher("insert",this.semicolon(`\$${refName} = ${callback()}`));
         return dataset[key] = refName;
     }
 

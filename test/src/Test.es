@@ -170,6 +170,7 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
         it(`/\d+/.test( "123" ) should is true `, ()=>{
             expect( /\d+/.test( "123" ) ).toBe( true );
             expect( /^\d+/.test( " 123" ) ).toBe( false );
+            expect( /^\d+/.exec( "123" ) ).toBe( false );
         });
 
         it("test rest params",()=>{
