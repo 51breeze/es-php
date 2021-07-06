@@ -7,6 +7,13 @@ class NewExpression extends Syntax{
             this.addDepend( desc );
         }
         let refs = callee;
+        if( desc === this.stack.getModuleById("Array") ){
+            const args=this.stack.arguments.map( item=> this.make(item) ).join(",");
+            if( this.stack.arguments.length >0  ){
+                return `new ArrayObject([${args}])`;
+            }
+            return `new ArrayObject()`;
+        }
         if( this.stack.callee.isParenthesizedExpression ){
             refs = '$'+this.generatorRefName(this.stack.callee, "_refClass", "new", ()=>{
                 return callee;

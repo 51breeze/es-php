@@ -1,15 +1,48 @@
 const Syntax = require("../core/Syntax");
 class MemberExpression extends Syntax{
+
+   intercept(desc, object, property){
+          const type = desc.type();
+          let name = type.toString();
+          switch( true ){
+              case type.isTupleType :
+              case type.isLiteralArrayType :
+                  name =  'array';
+               case type.isInstanceofType :
+                  name = type.inherit.id;
+              break;
+          }
+          switch( name.toLowerCase() ){
+              case "string" :
+                  return null;
+              case "array"  :
+                  return this.array_method(object, property);
+          }
+   }
+
+   array_method(object,property){
+      switch( property ){
+         case "length" :
+            return `count(${object})`;
+      }
+   }
+
    emitter(){
       const module = this.module;
+      const objDescription = this.stack.object.description();
       const property = this.stack.property.isIdentifier && !this.stack.computed ? this.stack.property.value() : this.make(this.stack.property);
       const object = this.make(this.stack.object);
+      const result = this.intercept(objDescription,object,property);
+      if( result ){
+          return result;
+      }
       const description = this.stack.description();
       let sep =  this.stack.object.isSuperExpression ? "::" : "->";
       if( description && description.isModule && this.compiler.callUtils("isTypeModule",description) ){
          this.addDepend( description );
-      }else if( this.compiler.callUtils("isTypeModule",this.stack.object.description()) ){
-         this.addDepend( this.stack.object.description() );
+         return this.getReferenceNameByModule( description );
+      }else if( this.compiler.callUtils("isTypeModule",objDescription.type()) ){
+         this.addDepend( objDescription.type() );
          sep = "::";
       }
 
@@ -41,11 +74,7 @@ class MemberExpression extends Syntax{
          const name = this.firstToUpper(property);
          return `${object}${sep}set${name}`;
       }
-
-      if( this.compiler.callUtils("isClassType", description) ){
-         return this.getReferenceNameByModule( description );
-      }
-
+      
       return `${object}${sep}${property}`;
    }
 }

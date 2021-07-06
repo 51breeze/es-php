@@ -576,6 +576,9 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
                return true;
         }, this), "============" );
 
+        var bds = new Array();
+        bds.length
+
         return dd;
     }
 

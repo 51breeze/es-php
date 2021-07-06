@@ -407,7 +407,7 @@ class Test extends Person{
 		$dd = [];
 		$bb = (object)['global'=>1,'private'=>1];
 		array_push($dd,1);
-		$console->log(array_filter($dd,function($value,$key)use(&$dd){
+		Console::log(array_filter($dd,function($value,$key)use(&$dd){
 			$thisArg = $this;
 			$callback = function($value,$key,$array){
 				return true;
@@ -415,6 +415,8 @@ class Test extends Person{
 			$callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
 			return is_callback($callback) ? $callback($value,$key,$dd) : false;
 		},ARRAY_FILTER_USE_BOTH),"============");
+		$bds = new ArrayObject();
+		count($bds);
 		return $dd;
 	}
 }
