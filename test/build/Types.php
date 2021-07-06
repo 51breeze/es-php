@@ -1,4 +1,5 @@
-class Types {
+<?php
+class Types{
 	public const ADDRESS = 0;
 	public const NAME = 1;
 	static public function getName($value){

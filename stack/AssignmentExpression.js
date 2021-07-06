@@ -10,7 +10,7 @@ class AssignmentExpression extends Syntax{
                    const property = this.make(this.stack.left.property);
                    const reflect = this.checkRefsName("Reflect");
                    this.addDepend( this.stack.getModuleById("Reflect") );
-                   return `${reflect}.set(${this.module.id},${left},${property},${right})`;
+                   return `${reflect}::set(${this.module.id},${left},${property},${right})`;
                 }
             }
         }

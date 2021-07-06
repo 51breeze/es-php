@@ -17,19 +17,21 @@ class EnumDeclaration extends Syntax{
         emitter( module.methods, content );
         properties.push(`default: return null;`);
         content.push(`\tstatic public function getName($value){\r\n\t\tswitch($value){\r\n\t\t\t${properties.join("\r\n\t\t\t")}\r\n\t\t}\r\n\t}`)
-        this.createDependencies(module,refs);
-        const body = [];
+        
         if( module.namespace.identifier){
-            body.push(body, `namespace ${module.namespace.getChain().join("\\\\")};` );
+            refs.push(`namespace ${module.namespace.getChain().join("\\\\")};` );
         }
+        
+        this.createDependencies(module,refs);
+
+        const body = [];
         body.push( 'class' );
         body.push( module.id);
         if( inherit ){
             body.push( `extends ${this.getReferenceNameByModule(inherit)}`);
         }
-        body.push("{");
-        const parts = refs.concat(body.join(" "), content.join("\r\n") ,"}");
-        return parts.join("\r\n");
+        const parts = refs.concat(body.join(" ")+'{', content.join("\r\n") ,"}");
+        return '<?php\r\n'+ parts.join("\r\n");
     }
 
     emitter(){

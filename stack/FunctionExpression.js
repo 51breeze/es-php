@@ -33,7 +33,7 @@ class FunctionExpression extends Syntax{
                     key = this.stack.parentStack.isMethodGetterDefinition ? 'get'+this.firstToUpper( key ) : 'set'+this.firstToUpper( key );
                 }
                 if( this.module.isInterface ){
-                    return `function ${key}(${params.join(",")})${typeName};`;
+                    return `function ${key}(${params.join(",")})${typeName}`;
                 }
                 return `function ${key}(${params.join(",")})${typeName}{\r\n${content.join("\r\n")}\r\n${endIndent}}`;
             }else if( this.stack.isFunctionDeclaration ){

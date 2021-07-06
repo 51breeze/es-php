@@ -15,16 +15,16 @@ class ObjectExpression extends Syntax{
         if( this.stack.hasChildComputed  ){
             const refs = '$'+this.generatorVarName(this.stack,"_c");
             this.insertExpression(this.stack,[
-                this.semicolon(`${refs}=new \\ArrayObject([], \\ArrayObject::STD_PROP_LIST | \\ArrayObject::ARRAY_AS_PROPS)`),
+                this.semicolon(`${refs}=(object)[]`),
                 properties.map( item=>this.semicolon(item) ).join("\r\n")
             ].join("\r\n"));
             return refs;
         }else{
-            return `new \\ArrayObject([${properties.join(",")}], \\ArrayObject::STD_PROP_LIST | \\ArrayObject::ARRAY_AS_PROPS)`;
+            return `(object)[${properties.join(",")}]`;
         }
     }
     objectMerge(props){
-        return `new \\ArrayObject( array_merge(${props.join(",")}), \\ArrayObject::STD_PROP_LIST | \\ArrayObject::ARRAY_AS_PROPS)`;
+        return `(object)array_merge(${props.join(",")})`;
     }
     emitter(){
         let properties = this.stack.properties.slice(0);

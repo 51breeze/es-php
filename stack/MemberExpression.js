@@ -2,7 +2,7 @@ const Syntax = require("../core/Syntax");
 class MemberExpression extends Syntax{
    emitter(){
       const module = this.module;
-      const property = this.stack.property.isIdentifier ? this.stack.property.value() : this.make(this.stack.property);
+      const property = this.stack.property.isIdentifier && !this.stack.computed ? this.stack.property.value() : this.make(this.stack.property);
       const object = this.make(this.stack.object);
       const description = this.stack.description();
       let sep =  this.stack.object.isSuperExpression ? "::" : "->";
@@ -18,7 +18,13 @@ class MemberExpression extends Syntax{
             this.addDepend( this.stack.getModuleById("Reflect") );
             return `${this.checkRefsName("Reflect")}::get(${module.id},${object},${property})`;
          }
-         return `${object}[${this.make(this.stack.property)}]`;
+         if(this.getTypeName( this.stack.object.type() ) ==="array" ){
+            return `${object}[${property}]`;
+         }
+         if( this.stack.property.isLiteral ){
+            return `${object}${sep}{${property}}`;
+         }
+         return `${object}${sep}${property}`;
       }
 
       if( description && description.isType && description.isAnyType ){

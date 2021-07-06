@@ -18,7 +18,7 @@ class Person implements \com\TestInterface{
 		$str = ["a","1"];
 		$b = ["",["1",1]];
 		$cc = [1];
-		$x = [1,1,'2222',new \ArrayObject([], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS)];
+		$x = [1,1,'2222',(object)[]];
 		array_push($b,'1');
 		array_push($b,['1',1]);
 		$c = -1968;

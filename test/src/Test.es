@@ -572,9 +572,9 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
         const dd:int[] = [];
         const bb = {global:1,private:1};
         dd.push( 1 );
-        dd.filter((value,key,array)=>{
+        console.log( dd.filter((value,key,array)=>{
                return true;
-        }, this);
+        }, this), "============" );
 
         return dd;
     }

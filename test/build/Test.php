@@ -7,13 +7,13 @@ use \Types;
 use \System;
 class Test extends Person{
 	public function __construct(string $name,$age){
-		parent($name);
+		parent::__construct($name);
 		parent::setType('1');
 		$this->getTarget();
 	}
 	static public function getClass(){
 		$a = Test;
-		$buname = new \ArrayObject(['a'=>1], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+		$buname = (object)['a'=>1];
 		$buname->test=$a;
 		$buname->person=Person;
 		$test=$buname->test;
@@ -22,7 +22,7 @@ class Test extends Person{
 	}
 	static public function getClassObject(){
 		$a = Test;
-		$b = new \ArrayObject(['test'=>$a], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+		$b = (object)['test'=>$a];
 		$b->person=Person;
 		return $b->test;
 	}
@@ -85,7 +85,7 @@ class Test extends Person{
 			$bsp = function(){
 				return $this;
 			};
-			$obj = new \ArrayObject([], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+			$obj = (object)[];
 			$bsp=function($flag)use(&$obj){
 				if($flag){
 					return $obj;
@@ -95,10 +95,10 @@ class Test extends Person{
 			};
 			$obds = 1;
 			$three = $bsp(false);
-			$once = new \ArrayObject(['two'=>new \ArrayObject(['three'=>$three,'four'=>$bsp], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS)], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+			$once = (object)['two'=>(object)['three'=>$three,'four'=>$bsp]];
 			expect($once->two->three)->toBe($this);
 			expect($once->two->four(true))->toBe($obj);
-			$once[$obds];
+			$once->$obds;
 		});
 		it('/d+/.test( "123" ) should is true ',function(){
 			expect((new RegExp('\d+'))->test("123"))->toBe(true);
@@ -123,26 +123,26 @@ class Test extends Person{
 		it('for( var name in this) should is this or object ',function(){
 			$labels = ["name","data","target","addressName","iuuu"];
 			foreach($this as $key=>$_item){
-				expect($key)->toBe($labels[((_i = array_search($key,$labels)) === false ? -1 : _i)]);
-				expect(Reflect::get(Test,$this,key))->toBe(Reflect::get(Test,$this,key));
+				expect($key)->toBe($labels->(($_index = array_search($key,$labels)) === false ? -1 : $_index));
+				expect(Reflect::get(Test,$this,$key))->toBe(Reflect::get(Test,$this,$key));
 			}
 		});
 	}
 	private function testComputeProperty(){
 		$bname = "123";
-		$_c1=new \ArrayObject([], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+		$_c1=(object)[];
 		$_c1->$bname=3;
-		$_c=new \ArrayObject([], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+		$_c=(object)[];
 		$_c->$bname=1;
 		$_c->sssss=2;
 		$_c->uuu=$_c1;
 		$o = $_c;
-		it('compute property should is true ',function()use(&$o, &$bname){
-			expect($o[$bname])->toBe(1);
-			expect($o->uuu[$bname])->toBe(3);
-			expect($o->uuu["123"])->toBe(3);
-			Reflect.set(Test,$o["uuu"],$bname,true);
-			expect(Reflect::get(Test,$o["uuu"],bname))->toBe(true);
+		it('compute property should is true ',function()use(&$bname, &$o){
+			expect($o->$bname)->toBe(1);
+			expect($o->uuu->$bname)->toBe(3);
+			expect($o->uuu->{"123"})->toBe(3);
+			Reflect::set(Test,$o->{"uuu"},$bname,true);
+			expect(Reflect::get(Test,$o->{"uuu"},$bname))->toBe(true);
 		});
 	}
 	private function testLabel(){
@@ -183,21 +183,21 @@ class Test extends Person{
 		it('impls iterator should is [0,1,2,3,4]',function()use(&$array){
 			expect(5)->toBe($array->length);
 			for($i = 0;$i < 5;$i++){
-				expect($i)->toBe($array[$i]);
+				expect($i)->toBe($array->$i);
 			}
 		});
 	}
 	private function testGenerics(){
 		$ddee = $this->map();
 		$dd = $ddee;
-		$ccc = $ddee->name(new \ArrayObject(['name'=>1,'age'=>1], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS),"123");
-		$cccww = $dd->name(new \ArrayObject(['name'=>1,'age'=>30], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS),666);
+		$ccc = $ddee->name((object)['name'=>1,'age'=>1],"123");
+		$cccww = $dd->name((object)['name'=>1,'age'=>30],666);
 		$types = '333';
-		$_c2=new \ArrayObject([], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+		$_c2=(object)[];
 		$_c2->name=123;
 		$_c2->$types=1;
 		$bds = $_c2;
-		Reflect.set(Test,$bds,$types,99);
+		Reflect::set(Test,$bds,$types,99);
 		it('Generics should is true',function()use(&$ccc, &$cccww){
 			expect(System::typeof($this->avg("test")))->toBe('string');
 			expect($ccc->name->toFixed(2))->toBe("1.00");
@@ -226,7 +226,7 @@ class Test extends Person{
 	}
 	private function getTestObject(bool $flag){
 		$factor = function(){
-			$o = new \ArrayObject([], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+			$o = (object)[];
 			$o->test=new Test('name',1);
 			$o->name="test";
 			return $o->test;
@@ -242,7 +242,7 @@ class Test extends Person{
 			$res = $this->loadRemoteData(1);
 			$res->then(function($data)use(&$done){
 				expect(Reflect::get(Test,$data,0))->toEqual(['one',1]);
-				expect(Reflect::get(Test,$data,1))->toEqual(new \ArrayObject(['bss'=>['two',2],'cc'=>['three',3]], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS));
+				expect(Reflect::get(Test,$data,1))->toEqual((object)['bss'=>['two',2],'cc'=>['three',3]]);
 				expect(Reflect::get(Test,$data,2))->toEqual(['three',3]);
 				$done();
 			});
@@ -275,7 +275,7 @@ class Test extends Person{
 		Reflect::get(Test,$this->getJson(),"name");
 	}
 	public function getJson(){
-		return new \ArrayObject(['name'=>123], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+		return (object)['name'=>123];
 	}
 	public function testTuple(){
 		$data = $this->method("end",9);
@@ -287,9 +287,9 @@ class Test extends Person{
 	private $currentIndex = 0;
 	public function next(){
 		if(!($this->currentIndex < $this->len)){
-			return new \ArrayObject(['value'=>null,'done'=>true], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+			return (object)['value'=>null,'done'=>true];
 		}
-		$d = new \ArrayObject(['value'=>$this->currentIndex++,'done'=>false], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+		$d = (object)['value'=>$this->currentIndex++,'done'=>false];
 		return $d;
 	}
 	public function restFun(...$types){
@@ -298,7 +298,7 @@ class Test extends Person{
 	public function tetObject(){
 		$t = new Test('1',1);
 		$b = $t;
-		$ii = new \ArrayObject(['bb'=>$b], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+		$ii = (object)['bb'=>$b];
 		return $ii->bb;
 	}
 	public function getIuuu(){
@@ -338,7 +338,7 @@ class Test extends Person{
 	public function loadRemoteData($type){
 		if($type === 1){
 			$a = $this->fetchApi("one",1,800);
-			$bs = new \ArrayObject(['bss'=>$this->fetchApi("two",2,500)], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+			$bs = (object)['bss'=>$this->fetchApi("two",2,500)];
 			$c = $this->fetchApi("three",3,900);
 			$bs->cc=$c;
 			return [$a,$bs,$c];
@@ -397,19 +397,24 @@ class Test extends Person{
 		return $yy;
 	}
 	public function map(){
-		$ddss = new \ArrayObject(['name'=>function($c,$b){
+		$ddss = (object)['name'=>function($c,$b){
 			$id = $b;
 			return $c;
-		}], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+		}];
 		return $ddss;
 	}
 	private function address(){
 		$dd = [];
-		$bb = new \ArrayObject(['global'=>1,'private'=>1], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+		$bb = (object)['global'=>1,'private'=>1];
 		array_push($dd,1);
-		array_filter($dd,function($value,$key)use(&$dd){$thisArg = $this;$callback = function($value,$key,$array){
-			return true;
-		}; $callback = $thisArg ? System::bind($callback,$thisArg) : $callback;return is_callback($callback) ? $callback($value,$key,$dd) : false;},ARRAY_FILTER_USE_BOTH);
+		$console->log(array_filter($dd,function($value,$key)use(&$dd){
+			$thisArg = $this;
+			$callback = function($value,$key,$array){
+				return true;
+			};
+			$callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
+			return is_callback($callback) ? $callback($value,$key,$dd) : false;
+		},ARRAY_FILTER_USE_BOTH),"============");
 		return $dd;
 	}
 }

@@ -12,7 +12,7 @@ class InterfaceDeclaration extends Syntax{
         const items = [];
         items.push( modifier );
         items.push( this.semicolon(this.make(item)) );
-        return items.join(" ");
+        return '\t'+items.join(" ");
     }
 
     emitter(){
@@ -39,12 +39,14 @@ class InterfaceDeclaration extends Syntax{
         const inherit = this.getInherit(module);
         
         emitter( members, content, false);
+
+        if( module.namespace.identifier){
+            push(refs, `namespace ${module.namespace.getChain().join("\\\\")};` );
+        }
+
         this.createDependencies(module,refs);
 
         const body = [];
-        if( module.namespace.identifier){
-            push(body, `namespace ${module.namespace.getChain().join("\\\\")};\r\n` );
-        }
         push(body, 'interface');
         push(body, module.id );
         push(body,  inherit ? `extends ${this.getReferenceNameByModule(inherit)}` : null);
