@@ -1,8 +1,20 @@
 const Syntax = require("../core/Syntax");
 class CallExpression extends Syntax{
 
-    array_method(args, property){
+    array_method(args, property, isStatic){
         let target = this.make(this.stack.callee.object);
+        if( isStatic ){
+            switch( property ){
+                case "isArray" :
+                    return `is_array(${args.join(",")})`;
+                case "from" :
+                    return `array_slice(${args.join(",")},0)`;
+                case "of" :
+                    return `es_array_new(${args.join(",")})`;
+            }
+            return null;
+        }
+
         if( this.stack.callee.object.isArrayExpression ){
             const refs = '$'+this.generatorVarName(this.stack, '_array');
             this.insertExpression(this.stack, this.semicolon(`${refs} = ${target}`));
@@ -21,33 +33,70 @@ class CallExpression extends Syntax{
                 return `array_slice(${[target].concat(args).join(",")})`;
             case "splice" :
                 return `array_splice(${[target].concat(args).join(",")})`;
+            case "map" :
+                return `es_array_map(${[target].concat(args).join(",")})`;
+            case "find" :
+                return `es_array_find(${[target].concat(args).join(",")})`;
+            case "findIndex" :
+                return `es_array_find_index(${[target].concat(args).join(",")})`;
             case "filter" :
-                const body = [];
-                this.addDepend( this.stack.getModuleById("System") );
-                body.push( this.semicolon(`\t$thisArg = ${args[1] || null}`) );
-                body.push( this.semicolon(`\t$callback = ${args[0].replace(/\r\n/g,'\r\n\t')}`) );
-                body.push( this.semicolon(`\t$callback = $thisArg ? System::bind($callback,$thisArg) : $callback`) );
-                body.push( this.semicolon(`\treturn is_callback($callback) ? $callback($value,$key,${target}) : false`) );
-                const useVar = [target];
-                if( args[1] && !this.stack.arguments[1].isThisExpression ){
-                    useVar.push( args[1] );
-                }
-                return `array_filter(${target},function($value,$key)use(&${useVar.join(",&")}){\r\n${body.join("\r\n")}\r\n${this.getIndent()}},ARRAY_FILTER_USE_BOTH)`;
+                return `es_array_filter(${[target].concat(args).join(",")})`;
             case "indexOf" :
-                const refs = '$'+this.generatorVarName(this.stack,"_index");
-                return `((${refs} = array_search(${args[0]},${target})) === false ? -1 : ${refs})`;
+                return `es_array_search_index(${[target].concat(args).join(",")})`;
             case "includes" :
                 return `array_search(${args[0]},${target}) !== false`;
             case "length" :
                 return `count(${target})`;
             case "concat" :
-                return `array_values(${[target].concat(args).map( item=>`(array)${item}`).join(' + ')})`;
+                return `es_array_concat(${[target].concat(args).join(',')})`;
             case "entries" :
                 return `array_values(${[target]})`;
+            case "every" :
+                return `es_array_every(${[target].concat(args).join(",")})`;
+            case "some" :
+                return `es_array_some(${[target].concat(args).join(",")})`;
+            case "fill" :
+                return `es_array_fill(${[target].concat(args).join(",")})`;
+            case "values" :
+                return `array_values(${target})`;
+            case "forEach" :
+                return `es_array_foreach(${[target].concat(args).join(",")})`;
+            case "flat" :
+                return `es_array_flat(${[target].concat(args).join(",")})`;
+            case "flatMap" :
+                return `es_array_flat_map(${[target].concat(args).join(",")})`;
+            case "reduce" :
+                return `es_array_reduce(${[target].concat(args).join(",")})`;
+            case "reduceRight" :
+                return `es_array_reduce_right(${[target].concat(args).join(",")})`;
+            case "join" :
+                return `implode(${args[0]}, ${target})`;
+            case "sort" :
+                return `es_array_sort(${[target].concat(args).join(",")})`;
+            case "keys" :
+                return `array_keys(${target})`;
+            case "reverse" :
+                return `array_reverse(${target})`;
+            case "lastIndexOf" :
+                return `es_array_search_last_index(${target})`;
+            case "toLocaleString" :
+            case "toString" :
+                return `var_export(${target},true)`;
+            case "copyWithin" :
+                return `es_array_copy_within(${[target].concat(args).join(",")})`;
+        }
+    }
+
+    console_method(args, property){
+        let target = this.make(this.stack.callee.object);
+        switch( property ){
+            case "log" :
+                return `${target}::log(${args.join(",")})`;
         }
     }
 
     intercept(args){
+        var result = null;
         if( this.stack.callee.isMemberExpression ){
             const desc = this.stack.callee.object.description();
             const property = this.stack.callee.property.value();
@@ -59,14 +108,24 @@ class CallExpression extends Syntax{
                     name =  'array';
                 break;
             }
-            switch( name ){
-                case "string" :
-                    return null;
-                case "array"  :
-                    return this.array_method(args,property);
+            name = name.toLowerCase();
+            const interceptor = this[`${name}_method`];
+            result = interceptor ? interceptor.call(this, args,property, this.compiler.callUtils("isTypeModule",desc) ) : null;
+            if( result ){
+                switch( name ){
+                    case "string" :
+                        this.addDepend( this.stack.getModuleById("String") );
+                        break;
+                    case "array"  :
+                        this.addDepend( this.stack.getModuleById("Array") );
+                        break;
+                    case "console"  :
+                        this.addDepend( this.stack.getModuleById("Console") );
+                        break;
+                }
             }
         }
-        return null;
+        return result;
     }
 
     emitter(){

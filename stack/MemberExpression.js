@@ -1,25 +1,6 @@
 const Syntax = require("../core/Syntax");
 class MemberExpression extends Syntax{
 
-   intercept(desc, object, property){
-          const type = desc.type();
-          let name = type.toString();
-          switch( true ){
-              case type.isTupleType :
-              case type.isLiteralArrayType :
-                  name =  'array';
-               case type.isInstanceofType :
-                  name = type.inherit.id;
-              break;
-          }
-          switch( name.toLowerCase() ){
-              case "string" :
-                  return null;
-              case "array"  :
-                  return this.array_method(object, property);
-          }
-   }
-
    array_method(object,property){
       switch( property ){
          case "length" :
@@ -27,12 +8,30 @@ class MemberExpression extends Syntax{
       }
    }
 
+   intercept(desc, object, property){
+      const type = desc.type();
+      let name = type.toString();
+      switch( true ){
+          case type.isTupleType :
+          case type.isLiteralArrayType :
+              name =  'array';
+           case type.isInstanceofType :
+              name = type.inherit.id;
+          break;
+      }
+      switch( name.toLowerCase() ){
+          case "string" :
+              return null;
+          case "array"  :
+              return this.array_method(object, property);
+      }
+   }
+
    emitter(){
       const module = this.module;
-      const objDescription = this.stack.object.description();
       const property = this.stack.property.isIdentifier && !this.stack.computed ? this.stack.property.value() : this.make(this.stack.property);
       const object = this.make(this.stack.object);
-      const result = this.intercept(objDescription,object,property);
+      const result = this.intercept(this.stack.object.description(),object,property);
       if( result ){
           return result;
       }
@@ -41,8 +40,8 @@ class MemberExpression extends Syntax{
       if( description && description.isModule && this.compiler.callUtils("isTypeModule",description) ){
          this.addDepend( description );
          return this.getReferenceNameByModule( description );
-      }else if( this.compiler.callUtils("isTypeModule",objDescription.type()) ){
-         this.addDepend( objDescription.type() );
+      }else if( this.compiler.callUtils("isTypeModule",this.stack.object.description()) ){
+         this.addDepend( this.stack.object.description() );
          sep = "::";
       }
 

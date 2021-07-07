@@ -2,6 +2,7 @@
 use \Person;
 use \com\TestInterface;
 use \RegExp;
+use \es\core\Array;
 use \Reflect;
 use \Types;
 use \System;
@@ -123,7 +124,7 @@ class Test extends Person{
 		it('for( var name in this) should is this or object ',function(){
 			$labels = ["name","data","target","addressName","iuuu"];
 			foreach($this as $key=>$_item){
-				expect($key)->toBe($labels->(($_index = array_search($key,$labels)) === false ? -1 : $_index));
+				expect($key)->toBe($labels->es_array_search_index($labels,$key));
 				expect(Reflect::get(Test,$this,$key))->toBe(Reflect::get(Test,$this,$key));
 			}
 		});
@@ -216,7 +217,7 @@ class Test extends Person{
 		$bsddd = $obj->getNamess(1);
 		$sss = $obj->getClassTestGenerics(1,1);
 	}
-	private function getClassTestGenerics($name,$age){
+	private function getClassTestGenerics($name,$age):Array{
 		$a = [$age,$name];
 		return $a;
 	}
@@ -292,7 +293,7 @@ class Test extends Person{
 		$d = (object)['value'=>$this->currentIndex++,'done'=>false];
 		return $d;
 	}
-	public function restFun(...$types){
+	public function restFun(...$types):Array{
 		return $types;
 	}
 	public function tetObject(){
@@ -403,19 +404,14 @@ class Test extends Person{
 		}];
 		return $ddss;
 	}
-	private function address(){
+	private function address():Array{
 		$dd = [];
 		$bb = (object)['global'=>1,'private'=>1];
 		array_push($dd,1);
-		Console::log(array_filter($dd,function($value,$key)use(&$dd){
-			$thisArg = $this;
-			$callback = function($value,$key,$array){
-				return true;
-			};
-			$callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
-			return is_callback($callback) ? $callback($value,$key,$dd) : false;
-		},ARRAY_FILTER_USE_BOTH),"============");
-		$bds = new ArrayObject();
+		Console::log(es_array_filter($dd,function($value,$key,$array){
+			return true;
+		},$this),"============");
+		$bds = es_array_new($bb->global);
 		count($bds);
 		return $dd;
 	}

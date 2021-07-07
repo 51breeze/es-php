@@ -8,11 +8,15 @@ class NewExpression extends Syntax{
         }
         let refs = callee;
         if( desc === this.stack.getModuleById("Array") ){
-            const args=this.stack.arguments.map( item=> this.make(item) ).join(",");
+            let args=this.stack.arguments.map( item=> this.make(item) ).join(",");
             if( this.stack.arguments.length >0  ){
-                return `new ArrayObject([${args}])`;
+                if( this.stack.arguments.length === 1 ){
+                    this.addDepend( this.stack.getModuleById("Array") );
+                    return `es_array_new(${args})`;
+                }
+                return `[${args}]`;
             }
-            return `new ArrayObject()`;
+            return `[]`;
         }
         if( this.stack.callee.isParenthesizedExpression ){
             refs = '$'+this.generatorRefName(this.stack.callee, "_refClass", "new", ()=>{
