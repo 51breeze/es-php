@@ -172,9 +172,9 @@ class Syntax extends events.EventEmitter {
         if( module.isDeclaratorModule ){
             const isPolyfill = Polyfill.modules.has( module.id );
             const polyfillModule = isPolyfill ? Polyfill.modules.get( module.id ) : null;
-            const filename = module.id+suffix;
+            const filename = (polyfillModule.export ? polyfillModule.export : module.id)+suffix;
             if( polyfillModule ){
-                return PATH.join(options.output,polyfillModule.namespace,filename).replace(/\\/g,'/');
+                return PATH.join(options.output,polyfillModule.namespace.replace(/\./g,'/'),filename).replace(/\\/g,'/');
             }
             return PATH.join(options.output,module.getName("/")+suffix).replace(/\\/g,'/');
         }
@@ -219,44 +219,6 @@ class Syntax extends events.EventEmitter {
             return config[name];
         }
         return config;
-    }
-    isBlockStatement(){
-        const stack = this.stack;
-        return !!(stack.isFunctionExpression || 
-                stack.isSwitchStatement      ||
-                stack.isIfStatement         ||
-                stack.isForInStatement      ||
-                stack.isForStatement        ||
-                stack.isForOfStatement      ||
-                stack.isDoWhileStatement    ||
-                stack.isBlockStatement      ||
-                stack.isWhileStatement      ||
-                stack.isTryStatement        ||
-                stack.isPackageDeclaration  ||
-                stack.isClassDeclaration    ||
-                stack.isInterfaceDeclaration)         
-    }
-
-    isExpression(){
-        const stack = this.stack;
-        return stack.isVariableDeclaration || 
-               stack.parentStack.isVariableDeclarator || 
-               stack.parentStack.isExpressionStatement || 
-               stack.isSwitchCase || 
-               stack.isBreakStatement || 
-               stack.isReturnStatement || 
-               stack.isExpressionStatement;
-    }
-
-    getBlockStatement( stack ){
-       stack = stack || this.stack.parentStack;
-       while( stack && !(stack.isBlockStatement || stack.isSwitchStatement) ){
-           stack=stack.parentStack;
-       }
-       if(stack && stack.isBlockStatement ){
-           return stack.parentStack;
-       }
-       return stack;
     }
 
     inCaseStatement(){
@@ -306,19 +268,7 @@ class Syntax extends events.EventEmitter {
             return true;
         }) : true;
     }
-    getIdByModule( module ){
-        if( !classMap.has(module) ){
-            classMap.set(module,classMap.size);
-        }
-        return classMap.get(module);
-    }
-    getIdByNamespace( namespace ){
-        if( !namespaceMap.has(namespace) ){
-            namespaceMap.set(namespace,namespaceMap.size);
-        }
-        return namespaceMap.get(namespace);
-    }
-
+   
     addDepend( depModule ){
         const module = this.module;
         if( !depModule.isModule || depModule === module )return;
@@ -329,6 +279,7 @@ class Syntax extends events.EventEmitter {
         this.used(depModule);
         target.add(depModule);
     }
+
     getDependencies( module ){
         return dependModules.get(module) || [];
     }
@@ -338,9 +289,9 @@ class Syntax extends events.EventEmitter {
         const isRequire = !depModule.isDeclaratorModule && 
                             this.isUsed(depModule) &&
                             this.compiler.callUtils("isLocalModule", depModule) && 
-                            !this.compiler.callUtils("checkDepend",module, depModule);         
-        const isPolyfill = depModule.isDeclaratorModule && Polyfill.modules.has(depModule.id);
-        if( isRequire || isPolyfill){
+                            !this.compiler.callUtils("checkDepend", this.module, depModule);
+        const polyfillModule = depModule.isDeclaratorModule && Polyfill.modules.get(depModule.id);
+        if( isRequire || (polyfillModule && polyfillModule.export)){
             return true;
         }
         return false;
@@ -351,6 +302,13 @@ class Syntax extends events.EventEmitter {
         const importAlias = module.importAlias;
         this.getDependencies(module).forEach( depModule=>{
             if( this.isDependModule(depModule) ){
+                const polyfillModule = depModule.isDeclaratorModule && Polyfill.modules.get(depModule.id);
+                if( polyfillModule ){
+                    if( polyfillModule.export ){
+                        refs.push( this.createImport('\\'+polyfillModule.namespace.split('.').concat(polyfillModule.export).join("\\"), null) );
+                    }
+                    return;
+                }
                 const alias = importAlias.has(depModule) ? importAlias.get(depModule) : null;
                 refs.push( this.createImport('\\'+depModule.namespace.getChain().concat(depModule.id).join("\\"), alias) );
             }
@@ -365,42 +323,6 @@ class Syntax extends events.EventEmitter {
         return `use ${name};`;
     }
 
-    definePropertyDescription(target,name,value,isAccessor,modifier,id,compute){
-        const map={
-            "public":Constant.MODIFIER_PUBLIC,
-            "protected":Constant.MODIFIER_PROTECTED,
-            "private":Constant.MODIFIER_PRIVATE,
-        }
-        const items = [`m:${map[modifier]},d:${id}`]
-        if( id === Constant.DECLARE_PROPERTY_VAR ){
-            items.push(`writable:true`);
-        }
-        if( (isAccessor || id === Constant.DECLARE_PROPERTY_VAR || id === Constant.DECLARE_PROPERTY_CONST) && modifier==="public"){
-            items.push(`enumerable:true`);
-        }
-        if( isAccessor ){
-            if( value.get ){
-                items.push(`get:`+value.get);
-            }
-            if( value.set ){
-                items.push(`set:`+value.set);
-            }
-        }else{
-            items.push(`value:`+value);
-        }
-        if( compute ){
-            return `${target}[${name}]={${items.join(",")}};`
-        }
-        return `${target}.${name}={${items.join(",")}};`
-    }
-
-    getDescription(description){
-       if( description.length >0 ){
-           return `{\r\n\t${description.join(",\r\n\t")}\r\n}`;
-       }
-       return `{}`;
-    }
-
     getImps(module){
         return module.implements.filter( module=>{
             const result = !module.isDeclaratorModule && module.isInterface;
@@ -413,10 +335,8 @@ class Syntax extends events.EventEmitter {
 
     getInherit(module){
         const inherit = module.extends.filter( module=>module.isClass );
-        if( inherit[0] ){
-            this.addDepend( inherit[0] );
-        }
         if( this.isDependModule(inherit[0]) ){
+            this.addDepend( inherit[0] );
             return inherit[0];
         }
         return null;

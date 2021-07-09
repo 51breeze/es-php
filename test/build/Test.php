@@ -1,11 +1,11 @@
 <?php
 use \Person;
 use \com\TestInterface;
-use \RegExp;
-use \es\core\Array;
-use \Reflect;
+use \es\core\RegExp;
+use \es\core\Reflect;
 use \Types;
-use \System;
+use \es\core\System;
+use \es\core\ArrayList;
 class Test extends Person{
 	public function __construct(string $name,$age){
 		parent::__construct($name);
@@ -221,7 +221,7 @@ class Test extends Person{
 		$a = [$age,$name];
 		return $a;
 	}
-	private function getTestGenerics($name,$age){
+	private function getTestGenerics($name,String $age):String{
 		$t = new Test('name',$name);
 		return $age;
 	}
@@ -377,7 +377,7 @@ class Test extends Person{
 	public function setName(string $value):string{
 		parent::setName($value);
 	}
-	public function avg($yy,$bbc){
+	public function avg(String $yy,$bbc):String{
 		$ii = function(){
 		return 1;
 		};
@@ -408,11 +408,13 @@ class Test extends Person{
 		$dd = [];
 		$bb = (object)['global'=>1,'private'=>1];
 		array_push($dd,1);
-		Console::log(es_array_filter($dd,function($value,$key,$array){
+		printf('%s %s',json_encode(es_array_filter($dd,function($value,$key,$array){
 			return true;
-		},$this),"============");
+		},$this),true),json_encode((new RegExp('==='))->match("============"),true));
 		$bds = es_array_new($bb->global);
 		count($bds);
+		array_slice($dd,0);
+		System::typeof($dd);
 		return $dd;
 	}
 }

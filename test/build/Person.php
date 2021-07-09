@@ -1,6 +1,5 @@
 <?php
 use \com\TestInterface;
-use \Array;
 class Person implements \com\TestInterface{
 	public function __construct(string $name){
 		$this->_name=$name;

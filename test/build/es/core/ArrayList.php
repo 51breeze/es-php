@@ -69,6 +69,18 @@ function es_array_search_index($array, $value){
     return $result === false ? -1 : $result;
 }
 
+function es_array_search_last_index($array, $value, $formIndex=null ){
+    $len = count($array);
+    $index = $formIndex===null ? $len - 1 : min($len, max($formIndex,$len));
+    while( $index > 0 ){
+        if( isset($array[$index]) && $array[$index] === $value ){
+            return $index;
+        }
+        $index--;
+    }
+    return -1;
+}
+
 function es_array_concat($array, ...$items){
     array_push($array, ...$items);
     return $array;
@@ -167,4 +179,32 @@ function es_array_new( ...$args ){
         return array_fill(0, $args[0], null);
     }
     return array_slice((array)$args,0);
+}
+
+function es_array_copy_within($array,$target, $start, $end){
+    $len = count($array);
+    $relativeTarget = $target >> 0;
+    $to = $relativeTarget < 0 ? max($len + $relativeTarget, 0) : min($relativeTarget, $len);
+    $relativeStart = $start >> 0;
+    $from = $relativeStart < 0 ? max($len + $relativeStart, 0) : min($relativeStart, $len);
+    $relativeEnd = $end === null ? $len : $end >> 0;
+    $final = $relativeEnd < 0 ? max($len + $relativeEnd, 0) : min($relativeEnd, $len);
+    $count = min($final - $from, $len - $to);
+    $direction = 1;
+    if ($from < $to && $to < ($from + $count)) {
+      $direction = -1;
+      $from += $count - 1;
+      $to += $count - 1;
+    }
+    while ($count > 0) {
+      if ( isset($array[from]) ) {
+        $array[ $to ] = $array[ $from ];
+      }else{
+        unset($array[ $to ]);
+      }
+      $from += $direction;
+      $to += $direction;
+      $count--;
+    }
+    return $array;
 }

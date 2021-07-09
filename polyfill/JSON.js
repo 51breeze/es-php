@@ -1,0 +1,16 @@
+module.exports={
+    content:null,
+    export:false,
+    require:[],
+    namespace:"es.core",
+    method(target, name, args, isStatic){
+        if( isStatic ){
+            switch( name ){
+                case "parse" :
+                    return `json_decode(${args[0]})`;
+                case "stringify" :
+                    return `json_encode(${args[0]},JSON_UNESCAPED_UNICODE)`;
+            }
+        }
+    }
+}

@@ -574,12 +574,14 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
         dd.push( 1 );
         console.log( dd.filter((value,key,array)=>{
                return true;
-        }, this), "============" );
+        }, this), "============".match('===') );
 
         var bds = new Array( bb.global );
         bds.length;
+        Array.from(dd);
 
-        Array.form( dd );
+
+           typeof  dd;
 
         return dd;
     }

@@ -4,7 +4,7 @@ class DeclaratorDeclaration extends Syntax{
     emitter(){
         const module = this.module;
         const polyfillModule = Polyfill.modules.get(module.id);
-        if( !polyfillModule ){
+        if( !polyfillModule || !polyfillModule.content || !polyfillModule.export ){
             return null;
         }
         const content = [polyfillModule.content];

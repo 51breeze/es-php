@@ -4,5 +4,5 @@ module.exports={
     content: fs.readFileSync( path.join(__dirname,"./files/RegExp.php") ),
     export:"RegExp",
     require:[],
-    namespace:"core"
+    namespace:"es.core"
 }

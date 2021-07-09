@@ -6,6 +6,10 @@ class UnaryExpression extends Syntax {
        const prefix   = this.stack.node.prefix;
        if( prefix ){
          if( operator==="typeof"){
+            const desc = this.stack.argument.description();
+            if( this.compiler.callUtils("isTypeModule", desc ) ){
+               return desc.isInterface ? `'interface'` : `'class'`;
+            }
             this.addDepend( this.stack.getModuleById("System") );
             return `System::typeof(${argument})`;
          }

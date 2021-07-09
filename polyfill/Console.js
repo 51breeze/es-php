@@ -1,0 +1,13 @@
+module.exports={
+    content: null,
+    export:false,
+    require:[],
+    namespace:"es.core",
+    method(target, name, args){
+        switch( name ){
+            case "log" :
+                const format = Array(args.length).fill("%s",0, args.length).join(" ");
+                return `printf('${format}',${args.map( item=>`json_encode(${item},true)`).join(",")})`;
+        }
+    }
+}
