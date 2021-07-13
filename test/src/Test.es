@@ -570,21 +570,77 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
 
     private address():int[]{
         const dd:int[] = [];
-        const bb = {global:1,private:1};
+        const bb = {global:1,private:1,items:[]};
         dd.push( 1 );
         console.log( dd.filter((value,key,array)=>{
                return true;
         }, this), "============".match('===') );
 
         var bds = new Array( bb.global );
+
         bds.length;
         Array.from(dd);
 
 
-           typeof  dd;
+         var items = bb.items;
+
+         /**
+           $ref1 = &$bb->items;
+           $items = $ref1;
+         */
+
+
+         if( bb.global === 1 ){
+             items = dd;
+             /**
+                $ref2 = &$dd;
+                $items = $ref2;
+            */
+
+
+         }
+
+         items.push(1);
+
+        /**
+            switch( items ){
+                 case $ref1 :
+                   array_push($ref1,1);
+                   items = $ref1;
+                   break;
+                case $ref2 :
+                   array_push($ref2,1);
+                   items = $ref2;
+                   break;
+            }
+        */
+
+
+
+         
+
+         var bs = null ;
+         bs = this.items;
+         bs = dd;
+
+         bs.push(99988);
+
+       typeof  dd;
+
+       this.getArrItems().push( 999 );
 
         return dd;
     }
+
+
+    private getArrItems(){
+        var b =  this.items;
+        return b;
+    }
+
+
+
+    private var items = [];
 
 }
   

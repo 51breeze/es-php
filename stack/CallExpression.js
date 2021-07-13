@@ -6,12 +6,12 @@ class CallExpression extends Syntax{
         if( this.stack.callee.isMemberExpression ){
             const desc = this.stack.callee.object.description();
             const property = this.stack.callee.property.value();
-            const type = this.compiler.callUtils("getOriginType",desc.type());
+            const type = this.compiler.callUtils("getOriginType",this.stack.callee.object.type());
             if( type && this.compiler.callUtils("isTypeModule",type) ){
                 const name = type.id.toString();
                 const polyModule = Polyfill.modules.get(name);
                 if( polyModule && polyModule.method ){
-                    const result = polyModule.method(this, property, args, this.compiler.callUtils("isTypeModule",desc) );
+                    const result = polyModule.method(this, property, args, desc, this.compiler.callUtils("isTypeModule",desc) );
                     if( result ){
                         return result;
                     }

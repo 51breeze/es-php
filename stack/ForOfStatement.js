@@ -1,7 +1,7 @@
 const Syntax = require("../core/Syntax");
 class ForOfStatement extends Syntax{
     emitter(){
-        const left = this.make(this.stack.left);
+        const left = this.make(this.stack.left.declarations[0].id);
         const right = this.make(this.stack.right);
         const body = this.stack.body && this.make(this.stack.body);
         const indent = this.getIndent();

@@ -15,8 +15,8 @@ class Test extends Person{
 	static public function getClass(){
 		$a = Test;
 		$buname = (object)['a'=>1];
-		$buname->test=$a;
-		$buname->person=Person;
+		$buname->test = $a;
+		$buname->person = Person;
 		$test=$buname->test;
 		$test->getClassObject();
 		return $buname;
@@ -24,7 +24,7 @@ class Test extends Person{
 	static public function getClassObject(){
 		$a = Test;
 		$b = (object)['test'=>$a];
-		$b->person=Person;
+		$b->person = Person;
 		return $b->test;
 	}
 	static public function getObject(){
@@ -68,7 +68,7 @@ class Test extends Person{
 		});
 		it('\'this.bbss="666666"\' should is \'666666\' ',function(){
 			expect($this->bbss)->toBe('bbss');
-			$this->bbss="666666";
+			$this->bbss = "666666";
 			expect($this->bbss)->toBe('666666');
 		});
 		it('test name accessor ',function(){
@@ -87,7 +87,7 @@ class Test extends Person{
 				return $this;
 			};
 			$obj = (object)[];
-			$bsp=function($flag)use(&$obj){
+			$bsp = function($flag)use(&$obj){
 				if($flag){
 					return $obj;
 				}else{
@@ -180,6 +180,7 @@ class Test extends Person{
 		$array = [];
 		foreach($this as $val){
 			array_push($array,$val);
+			$array = $array;
 		}
 		it('impls iterator should is [0,1,2,3,4]',function()use(&$array){
 			expect(5)->toBe($array->length);
@@ -228,8 +229,8 @@ class Test extends Person{
 	private function getTestObject(bool $flag){
 		$factor = function(){
 			$o = (object)[];
-			$o->test=new Test('name',1);
-			$o->name="test";
+			$o->test = new Test('name',1);
+			$o->name = "test";
 			return $o->test;
 		};
 		$o = $factor();
@@ -305,17 +306,17 @@ class Test extends Person{
 	public function getIuuu(){
 		$ii = $this->getName();
 		if(6){
-			$ii=[];
+			$ii = [];
 		}
-		$ii=true;
-		return $ii;
+		$ii = true;
+		return [];
 	}
 	public function getData(){
 		$b = [];
 		if(4){
-			$b=$this->avg;
+			$b = $this->avg;
 		}
-		$b=$this->avg;
+		$b = $this->avg;
 		$dd = function(){
 			$bs = new Promise(function($resolve,$reject){
 				setTimeout(function()use(&$resolve){
@@ -341,7 +342,7 @@ class Test extends Person{
 			$a = $this->fetchApi("one",1,800);
 			$bs = (object)['bss'=>$this->fetchApi("two",2,500)];
 			$c = $this->fetchApi("three",3,900);
-			$bs->cc=$c;
+			$bs->cc = $c;
 			return [$a,$bs,$c];
 		}else{
 			$list = [];
@@ -352,9 +353,11 @@ class Test extends Person{
 				case 4 :
 					$bb = $this->fetchApi("five",5,1200);
 					array_push($list,$bb);
+					$list = $list;
 			}
 			for($i = 0;$i < 5;$i++){
 				array_push($list,$this->fetchApi($i + '',$i,100));
+				$list = $list;
 			}
 			array_values($list);
 			return $list;
@@ -367,8 +370,11 @@ class Test extends Person{
 		$cc = [1];
 		$x = [1,1,'one'];
 		array_push($b,'three');
+		$b = $b;
 		array_push($b,'four');
+		$b = $b;
 		array_push($b,[$name,$age]);
+		$b = $b;
 		return [$str,$cc,$x,$b];
 	}
 	public function getName():string{
@@ -394,7 +400,9 @@ class Test extends Person{
 		name($person);
 		$dd = [1,1,"2222","66666","8888"];
 		array_push($bb);
+		$bb = $bb;
 		array_push($dd,1);
+		$dd = $dd;
 		return $yy;
 	}
 	public function map(){
@@ -406,18 +414,43 @@ class Test extends Person{
 	}
 	private function address():Array{
 		$dd = [];
-		$bb = (object)['global'=>1,'private'=>1];
+		$bb = (object)['global'=>1,'private'=>1,'items'=>[]];
 		array_push($dd,1);
+		$dd = $dd;
 		printf('%s %s',json_encode(es_array_filter($dd,function($value,$key,$array){
 			return true;
 		},$this),true),json_encode((new RegExp('==='))->match("============"),true));
 		$bds = es_array_new($bb->global);
 		count($bds);
 		array_slice($dd,0);
+		$items = $_RD = &$bb->items;
+		if($bb->global === 1){
+			$items = $_RD1 = &$dd;
+		}
+		switch($items){
+			case $_RD :
+				array_push($_RD,1);
+				$items = $_RD;
+				break;
+			case $_RD1 :
+				array_push($_RD1,1);
+				$items = $_RD1;
+				break;
+		};
+		$bs = $_RD2 = &$this->items;
+		$bs = $_RD1 = &$dd;
+		array_push($dd,99988);
+		$bs = $dd;
 		System::typeof($dd);
+		array_push($this->getArrItems(),999);
 		return $dd;
 	}
+	private function &getArrItems():Array{
+		$b = $_RD2 = &$this->items;
+		return $this->items;
+	}
+	private $items = [];
 }
 /*externals code*/;
 $test = new Test('Test');
-$test->start();;
+$test->start();

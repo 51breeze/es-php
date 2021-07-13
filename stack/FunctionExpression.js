@@ -21,21 +21,48 @@ class FunctionExpression extends Syntax{
         const startIndent = this.stack.parentStack.isBlockStatement ? endIndent : '';
         const variableRefs = !method ? this.getVariableRefs() : null;
         const useVariables = variableRefs ? 'use('+Array.from( variableRefs.values() ).map( stack=>`&\$${stack.value()}` ).join(", ")+')' : '';
+        const type = this.stack.type(true);
         if( this.stack.isArrowFunctionExpression && this.stack.scope.isExpression ){
             const content = before.concat(insertBefore.splice(0), this.semicolon(`${this.getIndent(1)}return ${body}`) ).join("\r\n");
             return `${startIndent}function(${params.join(",")})${useVariables}{\r\n${content}\r\n${endIndent}}`;
         }else{
             const content = before.concat(insertBefore.splice(0),body);
             if( method ){
-                const type = this.getTypeName( this.stack.type(true) );
-                const typeName = type ? ':'+type : '';
+                let refsAddress = '';
+                const originType = this.compiler.callUtils("getOriginType", type);
+                if( originType.id === "Array" ){
+                    const hasRefs = this.stack.scope.returnItems.some( (item)=>{
+                        item = item.argument;
+                        const type = item.type();
+                        const originType = this.compiler.callUtils("getOriginType", type);
+                        if( originType.id === "Array"){
+                            if( item.isMemberExpression ){
+                                return true;
+                            }
+                            const desc = item.description();
+                            if( desc.isDeclarator && desc.isStack ){
+                                return Array.from(desc.assignItems.values()).some(item=>{
+                                    return !!item.isMemberExpression;
+                                });
+                            }
+                        }
+                        return false;
+                    });
+                    if( hasRefs ){
+                        refsAddress='&';
+                    }
+                }
+
+                let typeName = this.getTypeName( type );
+                typeName = typeName ? ':'+typeName : '';
+
                 if( this.stack.parentStack.isAccessor ){
                     key = this.stack.parentStack.isMethodGetterDefinition ? 'get'+this.firstToUpper( key ) : 'set'+this.firstToUpper( key );
                 }
                 if( this.module.isInterface ){
                     return `function ${key}(${params.join(",")})${typeName}`;
                 }
-                return `function ${key}(${params.join(",")})${typeName}{\r\n${content.join("\r\n")}\r\n${endIndent}}`;
+                return `function ${refsAddress}${key}(${params.join(",")})${typeName}{\r\n${content.join("\r\n")}\r\n${endIndent}}`;
             }else if( this.stack.isFunctionDeclaration ){
                 return `${startIndent}function ${key}(${params.join(",")})${useVariables}{\r\n${content.join("\r\n")}\r\n${endIndent}}`;
             }

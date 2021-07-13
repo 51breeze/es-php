@@ -2,8 +2,6 @@ const Constant = require("./Constant");
 const Polyfill = require("./Polyfill");
 const PATH = require("path");
 const events = require('events');
-const classMap=new Map();
-const namespaceMap=new Map();
 const usedModules = new Set();
 const dependModules = new Map();
 const createdStackData = new Map();
@@ -26,6 +24,28 @@ class Syntax extends events.EventEmitter {
             createdStackData.set(stack,data = {});
         }
         return data;
+    }
+
+    addAssignAddressRef(target, value){
+        const data = this.createDataByStack(target);
+        if( data.assignAddressRef && data.assignAddressRef.scope !== value.scope ){
+            if( !data.assignAddressCrossRefs ){
+                data.assignAddressCrossRefs = new Set();
+                data.assignAddressCrossRefs.add( data.assignAddressRef );
+            }
+            data.assignAddressCrossRefs.add( value );
+        }
+        data.assignAddressRef= value;
+    }
+
+    getAssignAddressRef(target){
+        const data = this.createDataByStack(target);
+        return data.assignAddressRef;
+    }
+
+    getAssignAddressCrossRefs(target){
+        const data = this.createDataByStack(target);
+        return data.assignAddressCrossRefs;
     }
 
     addVariableRefs( stack ){
@@ -149,6 +169,11 @@ class Syntax extends events.EventEmitter {
         return dataset[name] = value;
     }
 
+    getGeneratorVarName(stack,name){
+        const dataset = this.createDataByStack(stack);
+        return dataset[name] || null;
+    }
+
     generatorRefName(target, name, key, callback){
         const dataset = this.createDataByStack(target);
         if( dataset.hasOwnProperty(key) ){
@@ -250,6 +275,9 @@ class Syntax extends events.EventEmitter {
     
     semicolon(expression){
         if( !expression )return "";
+        if( expression.charCodeAt( expression.length-1 )===59){
+            return `${this.getIndent()}${expression}`;
+        }
         return `${this.getIndent()}${expression};`;
     }
 

@@ -19,39 +19,37 @@ class MyClass{
 
     }
 
+    public function &getList(){
+        $a = $this->list;
+        return $this->list;
+    }
+
 }
 
 $obj = new MyClass();
 
+$a = &$obj->list;
+array_push($a , 1,2,3);
 
-echo json_encode( new MyClass );
-
-
-$obj->push(1,2,3);
-
-
-echo print_r( $obj->list, true );
+$aa = ($r = &$a);
 
 
-echo get_class( (object)[] );
+$dd = $obj->list;
 
-echo "\r\n";
+array_push($r , 9,2,3);
+$aa = $r;
 
+switch( $aa ){
 
-echo json_encode( (object)$obj->list,true ) ,   json_encode($obj), json_encode(false),  json_encode('lll') ;
+    case $r : 
+        var_dump( $r === $aa );
 
+}
+print_r(  $r );
 
-echo "\r\n";
-
-$fn = function(){
-    echo "====";
-};
-
-
-
+print_r(  $aa );
 
 
-echo gettype( $fn );
 
 
 

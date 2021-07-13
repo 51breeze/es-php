@@ -13,9 +13,12 @@ const Syntax = require("./core/Syntax");
 const plugin = {
     name:'php',
     platform:'server',
-    make(stack){
+    make(stack, flag=false){
         const Syntax = modules.get( stack.toString() );
         if( Syntax ){
+            if( flag ){
+                return new Syntax(stack);
+            }
             return (new Syntax(stack)).emitter();
         }
         throw new Error(`Stack '${stack.toString()}' is not found.`);

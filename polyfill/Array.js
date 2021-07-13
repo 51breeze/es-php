@@ -5,8 +5,41 @@ module.exports={
     export:"ArrayList",
     require:[],
     namespace:"es.core",
-    method(target, name, args, isStatic){
-        let object = target.make(target.stack.callee.object);
+    method(target, name, args, desc, isStatic){
+
+        const addressRef = target.getAssignAddressRef(desc);
+        const createMethod = (object,name)=>{
+            const addressCrossRefs = target.getAssignAddressCrossRefs(desc);
+            const content = [];
+            const ref = desc.isVariableDeclarator ? target.make( desc.id ) : null;
+            const indent = target.getIndent();
+            if( addressCrossRefs ){
+                addressCrossRefs.forEach( (item)=>{
+                    const address = target.getGeneratorVarName( item.description() ,"_RD");
+                    const refs = address ? `\$${address}` : target.make( item );
+                    content.push(`${indent}\tcase ${refs} :`)
+                    switch( name ){
+                        case "push" :
+                            content.push(`${indent}\t\tarray_push(${[refs].concat(args).join(",")});`);
+                            break;
+                    }
+                    content.push(`${indent}\t\t${ref} = ${refs};`)
+                    content.push(`${indent}\t\tbreak;`)
+                });
+                return [`switch(${ref}){`, content.join("\r\n"), `${indent}}` ].join("\r\n");
+            }
+            switch( name ){
+                case "push" :
+                    content.push(`array_push(${[object].concat(args).join(",")});`);
+                    break;
+            }
+            if( ref ){
+                content.push(`${indent}${ref} = ${object};`);
+            }
+            return content.join("\r\n");
+        }
+
+        let object = target.make(addressRef || target.stack.callee.object);
         if( isStatic ){
             switch( name ){
                 case "isArray" :
@@ -25,7 +58,7 @@ module.exports={
         }
         switch( name ){
             case "push" :
-                return `array_push(${[object].concat(args).join(",")})`;
+                return createMethod(object,name);
             case "unshift" :
                 return `array_unshift(${[object].concat(args).join(",")})`;
             case "pop" :
