@@ -6,7 +6,7 @@ class AssignmentExpression extends Syntax{
         const originType = this.compiler.callUtils("getOriginType",  this.stack.right.type() );
         if( originType.id === "Array" ){
             this.addAssignAddressRef(desc, this.stack.right);
-            if( this.stack.right.isMemberExpression || this.stack.right.isIdentifier  ){
+            if( this.stack.right.isMemberExpression || this.stack.right.isCallExpression || this.stack.right.isIdentifier ){
                 refs = this.generatorVarName( this.stack.right.description(), "_RD" );
             }
         }

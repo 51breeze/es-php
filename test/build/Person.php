@@ -20,9 +20,7 @@ class Person implements \com\TestInterface{
 		$cc = [1];
 		$x = [1,1,'2222',(object)[]];
 		array_push($b,'1');
-		$b = $b;
 		array_push($b,['1',1]);
-		$b = $b;
 		$c = -1968;
 		$bs = 22.366;
 		$bss = 22.366;

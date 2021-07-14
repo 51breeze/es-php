@@ -31,13 +31,13 @@ $obj = new MyClass();
 $a = &$obj->list;
 array_push($a , 1,2,3);
 
-$aa = ($r = &$a);
+$aa = $r = &$a;
 
 
 $dd = $obj->list;
 
-array_push($r , 9,2,3);
-$aa = $r;
+$ss  =  ($num = array_push($r , 9,2,3)) && ($aa=$r) ? $num : 0;
+
 
 switch( $aa ){
 
@@ -48,6 +48,17 @@ switch( $aa ){
 print_r(  $r );
 
 print_r(  $aa );
+
+
+var_dump( $ss  );
+
+
+function names(){
+    return ['names'];
+}
+
+
+print_r( names() );
 
 
 

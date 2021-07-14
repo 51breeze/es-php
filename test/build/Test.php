@@ -5,7 +5,7 @@ use \es\core\RegExp;
 use \es\core\Reflect;
 use \Types;
 use \es\core\System;
-use \es\core\ArrayList;
+use \es\core\ArrayMethod;
 class Test extends Person{
 	public function __construct(string $name,$age){
 		parent::__construct($name);
@@ -107,7 +107,7 @@ class Test extends Person{
 			expect((new RegExp('^\d+'))->exec("123"))->toBe(false);
 		});
 		it("test rest params",function(){
-			$res = $this->restFun(1,"s","test");
+			$res = $_RD = &$this->restFun(1,"s","test");
 			expect($res)->toEqual([1,"s","test"]);
 		});
 		$this->testEnumerableProperty();
@@ -124,7 +124,7 @@ class Test extends Person{
 		it('for( var name in this) should is this or object ',function(){
 			$labels = ["name","data","target","addressName","iuuu"];
 			foreach($this as $key=>$_item){
-				expect($key)->toBe($labels->es_array_search_index($labels,$key));
+				expect($key)->toBe($labels[es_array_search_index($labels,$key)]);
 				expect(Reflect::get(Test,$this,$key))->toBe(Reflect::get(Test,$this,$key));
 			}
 		});
@@ -180,7 +180,6 @@ class Test extends Person{
 		$array = [];
 		foreach($this as $val){
 			array_push($array,$val);
-			$array = $array;
 		}
 		it('impls iterator should is [0,1,2,3,4]',function()use(&$array){
 			expect(5)->toBe($array->length);
@@ -216,13 +215,13 @@ class Test extends Person{
 		$bd = $bsstring;
 		$obj = $this->getTestObject(true);
 		$bsddd = $obj->getNamess(1);
-		$sss = $obj->getClassTestGenerics(1,1);
+		$sss = $_RD1 = &$obj->getClassTestGenerics(1,1);
 	}
-	private function getClassTestGenerics($name,$age):Array{
+	private function getClassTestGenerics($name,$age):array{
 		$a = [$age,$name];
 		return $a;
 	}
-	private function getTestGenerics($name,String $age):String{
+	private function getTestGenerics($name,$age){
 		$t = new Test('name',$name);
 		return $age;
 	}
@@ -294,7 +293,7 @@ class Test extends Person{
 		$d = (object)['value'=>$this->currentIndex++,'done'=>false];
 		return $d;
 	}
-	public function restFun(...$types):Array{
+	public function restFun(...$types):array{
 		return $types;
 	}
 	public function tetObject(){
@@ -346,18 +345,17 @@ class Test extends Person{
 			return [$a,$bs,$c];
 		}else{
 			$list = [];
+					array_push($list,$bb);
 			switch($type){
 				case 3 :
 					$b = $this->fetchApi("four",4,300);
 					return $b;
 				case 4 :
 					$bb = $this->fetchApi("five",5,1200);
-					array_push($list,$bb);
-					$list = $list;
+	
 			}
 			for($i = 0;$i < 5;$i++){
 				array_push($list,$this->fetchApi($i + '',$i,100));
-				$list = $list;
 			}
 			array_values($list);
 			return $list;
@@ -370,11 +368,8 @@ class Test extends Person{
 		$cc = [1];
 		$x = [1,1,'one'];
 		array_push($b,'three');
-		$b = $b;
 		array_push($b,'four');
-		$b = $b;
 		array_push($b,[$name,$age]);
-		$b = $b;
 		return [$str,$cc,$x,$b];
 	}
 	public function getName():string{
@@ -383,12 +378,12 @@ class Test extends Person{
 	public function setName(string $value):string{
 		parent::setName($value);
 	}
-	public function avg(String $yy,$bbc):String{
+	public function avg($yy,$bbc){
 		$ii = function(){
 		return 1;
 		};
 		$bb = ['1'];
-		function name(TestInterface $i){
+		function name($i){
 			$b = $i;
 			$i->avg();
 			$i->method('',1);
@@ -400,9 +395,7 @@ class Test extends Person{
 		name($person);
 		$dd = [1,1,"2222","66666","8888"];
 		array_push($bb);
-		$bb = $bb;
 		array_push($dd,1);
-		$dd = $dd;
 		return $yy;
 	}
 	public function map(){
@@ -412,42 +405,55 @@ class Test extends Person{
 		}];
 		return $ddss;
 	}
-	private function address():Array{
+	private function address():array{
 		$dd = [];
 		$bb = (object)['global'=>1,'private'=>1,'items'=>[]];
 		array_push($dd,1);
-		$dd = $dd;
 		printf('%s %s',json_encode(es_array_filter($dd,function($value,$key,$array){
 			return true;
 		},$this),true),json_encode((new RegExp('==='))->match("============"),true));
 		$bds = es_array_new($bb->global);
 		count($bds);
 		array_slice($dd,0);
-		$items = $_RD = &$bb->items;
+		$items = $_RD2 = &$bb->items;
 		if($bb->global === 1){
-			$items = $_RD1 = &$dd;
+			$items = $_RD3 = &$dd;
 		}
 		switch($items){
-			case $_RD :
-				array_push($_RD,1);
-				$items = $_RD;
-				break;
-			case $_RD1 :
-				array_push($_RD1,1);
-				$items = $_RD1;
-				break;
-		};
-		$bs = $_RD2 = &$this->items;
-		$bs = $_RD1 = &$dd;
-		array_push($dd,99988);
-		$bs = $dd;
+			case $_RD2 :
+				$_RV = array_push($_RD2,1);
+				$items = $_RD2;
+			break;
+			case $_RD3 :
+				$_RV = array_push($_RD3,1);
+				$items = $_RD3;
+			break;
+		}
+		switch($items){
+			case $_RD2 :
+				$_RV1 = array_push($_RD2,9999);
+				$items = $_RD2;
+			break;
+			case $_RD3 :
+				$_RV1 = array_push($_RD3,9999);
+				$items = $_RD3;
+			break;
+		}
+		printf('%s %s',json_encode($_RV,true),json_encode($_RV1,true));
+		$bs = $_RD4 = &$this->items;
+		$bs = $_RD3 = &$dd;
+		array_push($_RD3,99988);
+		$bs = $_RD3;
 		System::typeof($dd);
 		array_push($this->getArrItems(),999);
+		$da = $_RD5 = &$this->getArrItems();
+		array_push($_RD5,9999666);
+		$da = $_RD5;
 		return $dd;
 	}
 	private function &getArrItems():Array{
-		$b = $_RD2 = &$this->items;
-		return $this->items;
+		$b = $_RD4 = &$this->items;
+		return $_RD4;
 	}
 	private $items = [];
 }

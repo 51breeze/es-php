@@ -1,45 +1,60 @@
 const fs = require("fs");
 const path = require("path");
+
+const push = (content, name, object, args, indent, refs, result)=>{
+   
+    switch( name ){
+        case "push" :
+            if( result ){
+                content.push(`${indent}${result} = array_push(${[object].concat(args).join(",")});`);
+            }else{
+                content.push(`${indent}array_push(${[object].concat(args).join(",")});`);
+            }
+            refs && content.push(`${indent}${refs} = ${object};`);
+        break;
+    }
+}
+
+const isExpressionStatement=(target)=>{
+    const parent = target.stack.getParentStack( stack=>{
+        return  !!(stack.isExpressionStatement || 
+                    stack.isArrayExpression   || 
+                    stack.isObjectExpression  || 
+                    stack.isCallExpression    || 
+                    stack.isBlockStatement);
+    });
+    return parent && parent.isExpressionStatement;
+}
+
+const createMethod = (target,desc,object,args,name)=>{
+    const addressCrossRefs = target.getAssignAddressCrossRefs(desc);
+    const content = [];
+    const ref = desc.isVariableDeclarator && target.hasRefAddressVariables( desc ) ? target.make( desc.id ) : null;
+    const indent = target.getIndent();
+    const result = !isExpressionStatement(target) ? '$'+target.generatorVarName(target.stack,"_RV",true) : null;
+    if( addressCrossRefs && ref ){
+        addressCrossRefs.forEach( (item)=>{
+            const address = target.getGeneratorVarName( item.description() ,"_RD");
+            const refs = address ? `\$${address}` : target.make( item );
+            content.push(`${indent}\tcase ${refs} :`)
+            push(content, name, refs, args, `${indent}\t\t`, ref, result);
+            content.push(`${indent}\tbreak;`)
+        });
+        target.insertExpression(target.stack, [`${indent}switch(${ref}){`, content.join("\r\n"), `${indent}}` ].join("\r\n") );
+        return result || true;
+    }
+    push(content, name, object, args, indent, ref, result);
+    target.insertExpression(target.stack, content.join("\r\n") );
+    return result || true;
+}
+
+
 module.exports={
     content: fs.readFileSync( path.join(__dirname,"./files/Array.php") ),
-    export:"ArrayList",
+    export:"ArrayMethod",
     require:[],
     namespace:"es.core",
     method(target, name, args, desc, isStatic){
-
-        const addressRef = target.getAssignAddressRef(desc);
-        const createMethod = (object,name)=>{
-            const addressCrossRefs = target.getAssignAddressCrossRefs(desc);
-            const content = [];
-            const ref = desc.isVariableDeclarator ? target.make( desc.id ) : null;
-            const indent = target.getIndent();
-            if( addressCrossRefs ){
-                addressCrossRefs.forEach( (item)=>{
-                    const address = target.getGeneratorVarName( item.description() ,"_RD");
-                    const refs = address ? `\$${address}` : target.make( item );
-                    content.push(`${indent}\tcase ${refs} :`)
-                    switch( name ){
-                        case "push" :
-                            content.push(`${indent}\t\tarray_push(${[refs].concat(args).join(",")});`);
-                            break;
-                    }
-                    content.push(`${indent}\t\t${ref} = ${refs};`)
-                    content.push(`${indent}\t\tbreak;`)
-                });
-                return [`switch(${ref}){`, content.join("\r\n"), `${indent}}` ].join("\r\n");
-            }
-            switch( name ){
-                case "push" :
-                    content.push(`array_push(${[object].concat(args).join(",")});`);
-                    break;
-            }
-            if( ref ){
-                content.push(`${indent}${ref} = ${object};`);
-            }
-            return content.join("\r\n");
-        }
-
-        let object = target.make(addressRef || target.stack.callee.object);
         if( isStatic ){
             switch( name ){
                 case "isArray" :
@@ -51,14 +66,20 @@ module.exports={
             }
             return null;
         }
+
+        const addressRef = target.getAssignAddressRef(desc);
+        let refsName = addressRef ? target.getGeneratorVarName( addressRef.description() ,"_RD") : null;
+        refsName = refsName ? '$'+refsName : null;
+        let object = refsName || target.make(addressRef || target.stack.callee.object);
         if( target.stack.callee.object.isArrayExpression ){
-            const refs = '$'+target.generatorVarName(target.stack, '_array');
+            const refs = '$'+target.generatorVarName(target.stack, '_AR');
             target.insertExpression(target.stack, target.semicolon(`${refs} = ${object}`));
             object = refs;
         }
+
         switch( name ){
             case "push" :
-                return createMethod(object,name);
+                return createMethod(target,desc,object,args,name);
             case "unshift" :
                 return `array_unshift(${[object].concat(args).join(",")})`;
             case "pop" :

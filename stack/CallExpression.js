@@ -29,7 +29,7 @@ class CallExpression extends Syntax{
         }
         const result = this.intercept(args);
         if( result ){
-            return result;
+            return result === true ? null : result;
         }
         if( this.stack.callee.isMemberExpression ){
             if( desc && desc.isType && desc.isAnyType  ){

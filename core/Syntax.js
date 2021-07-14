@@ -3,6 +3,7 @@ const Polyfill = require("./Polyfill");
 const PATH = require("path");
 const events = require('events');
 const usedModules = new Set();
+const refAddressVariables = new Set();
 const dependModules = new Map();
 const createdStackData = new Map();
 const refsParentVariable = new Map();
@@ -28,6 +29,7 @@ class Syntax extends events.EventEmitter {
 
     addAssignAddressRef(target, value){
         const data = this.createDataByStack(target);
+        refAddressVariables.add( target );
         if( data.assignAddressRef && data.assignAddressRef.scope !== value.scope ){
             if( !data.assignAddressCrossRefs ){
                 data.assignAddressCrossRefs = new Set();
@@ -38,7 +40,16 @@ class Syntax extends events.EventEmitter {
         data.assignAddressRef= value;
     }
 
+    getRefAddressVariables(){
+        return refAddressVariables;
+    }
+
+    hasRefAddressVariables(target){
+        return refAddressVariables.has(target);
+    }
+
     getAssignAddressRef(target){
+        if(!target)return null;
         const data = this.createDataByStack(target);
         return data.assignAddressRef;
     }
@@ -81,6 +92,12 @@ class Syntax extends events.EventEmitter {
 
     getTypeName( type ){
         if( type ){
+            if(type.isGenericValueType || type.isGenericType || type.isClassGenericType){
+                return null;
+            }
+            if( type.isTupleType  ){
+                return 'array';
+            }
             switch( type.toString().toLowerCase() ){
                 case "string" : 
                     return 'string';
