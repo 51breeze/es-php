@@ -308,7 +308,7 @@ class Test extends Person{
 			$ii = [];
 		}
 		$ii = true;
-		return [];
+		return $ii;
 	}
 	public function getData(){
 		$b = [];
@@ -345,14 +345,13 @@ class Test extends Person{
 			return [$a,$bs,$c];
 		}else{
 			$list = [];
-					array_push($list,$bb);
 			switch($type){
 				case 3 :
 					$b = $this->fetchApi("four",4,300);
 					return $b;
 				case 4 :
 					$bb = $this->fetchApi("five",5,1200);
-	
+					array_push($list,$bb);
 			}
 			for($i = 0;$i < 5;$i++){
 				array_push($list,$this->fetchApi($i + '',$i,100));
@@ -419,41 +418,30 @@ class Test extends Person{
 		if($bb->global === 1){
 			$items = $_RD3 = &$dd;
 		}
-		switch($items){
-			case $_RD2 :
-				$_RV = array_push($_RD2,1);
-				$items = $_RD2;
-			break;
-			case $_RD3 :
-				$_RV = array_push($_RD3,1);
-				$items = $_RD3;
-			break;
-		}
-		switch($items){
-			case $_RD2 :
-				$_RV1 = array_push($_RD2,9999);
-				$items = $_RD2;
-			break;
-			case $_RD3 :
-				$_RV1 = array_push($_RD3,9999);
-				$items = $_RD3;
-			break;
-		}
-		printf('%s %s',json_encode($_RV,true),json_encode($_RV1,true));
-		$bs = $_RD4 = &$this->items;
-		$bs = $_RD3 = &$dd;
-		array_push($_RD3,99988);
-		$bs = $_RD3;
+		$items_push = function(...$_args)use(&$items,&$_RD2,&$_RD3){
+			switch($items){
+				case $_RD2 :
+					$_RV = array_push($_RD2,...$_args);
+					$items = $_RD2;
+					return $_RV;
+				case $_RD3 :
+					$_RV = array_push($_RD3,...$_args);
+					$items = $_RD3;
+					return $_RV;
+			}
+		};
+		$items_push(0);
+		printf('%s %s %s',json_encode($items_push(1,9,6),true),json_encode($items = [],true),json_encode($items_push(9999),true));
+		array_push($dd,99988);
 		System::typeof($dd);
 		array_push($this->getArrItems(),999);
-		$da = $_RD5 = &$this->getArrItems();
-		array_push($_RD5,9999666);
-		$da = $_RD5;
+		$da = $_RD4 = &$this->getArrItems();
+		array_push($_RD4,9999666);
+		printf('%s',json_encode($da,true));
 		return $dd;
 	}
 	private function &getArrItems():Array{
-		$b = $_RD4 = &$this->items;
-		return $_RD4;
+		return $this->items;
 	}
 	private $items = [];
 }

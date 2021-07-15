@@ -589,17 +589,20 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
          */
 
 
-         if( bb.global === 1 ){
-             items = dd;
-             /**
+        if( bb.global === 1 ){
+            items = dd;
+            /**
                 $ref2 = &$dd;
                 $items = $ref2;
             */
+        }
+
+        items.push(0);
+
+        var bsdd = items;
 
 
-         }
-
-        console.log( items.push(1),  items.push(9999) );
+        console.log( items.push(1,9,6), items=[],  items.push(9999) );
 
         /**
             switch( items ){
@@ -626,6 +629,8 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
 
         var da = this.getArrItems();
         da.push(9999666);
+
+        console.log( da );
 
         return dd;
     }

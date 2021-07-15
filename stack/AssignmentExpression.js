@@ -3,11 +3,25 @@ class AssignmentExpression extends Syntax{
     emitter(){
         const desc = this.stack.description();
         let refs = null;
-        const originType = this.compiler.callUtils("getOriginType",  this.stack.right.type() );
-        if( originType.id === "Array" ){
-            this.addAssignAddressRef(desc, this.stack.right);
-            if( this.stack.right.isMemberExpression || this.stack.right.isCallExpression || this.stack.right.isIdentifier ){
-                refs = this.generatorVarName( this.stack.right.description(), "_RD" );
+        if( this.stack.right.isMemberExpression || this.stack.right.isCallExpression || this.stack.right.isIdentifier ){
+            const originType = this.compiler.callUtils("getOriginType",  this.stack.right.type() );
+            if( originType.id === "Array" ){
+                this.addAssignAddressRef(desc, this.stack.right);
+                if( desc.isMemberExpression ){
+                    refs = this.generatorVarName( this.stack.right.description(), "_RD" , false, this.scope );
+                }else{
+                    const size = desc.assignItems.size;
+                    if( size > 1 ){
+                        const assignItems = Array.from( desc.assignItems.values() );
+                        const lastItem = assignItems.pop();
+                        if( assignItems.some( value=>lastItem.scope !== value.scope ) ){
+                            refs = this.generatorVarName( this.stack.right.description(), "_RD", false, this.scope );
+                        }
+                    }
+                } 
+                if( !refs ){
+                    return null;
+                }
             }
         }
 

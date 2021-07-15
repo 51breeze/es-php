@@ -2,50 +2,53 @@ const fs = require("fs");
 const path = require("path");
 
 const push = (content, name, object, args, indent, refs, result)=>{
-   
     switch( name ){
         case "push" :
             if( result ){
                 content.push(`${indent}${result} = array_push(${[object].concat(args).join(",")});`);
+                content.push(`${indent}${refs} = ${object};`);
             }else{
-                content.push(`${indent}array_push(${[object].concat(args).join(",")});`);
+                content.push(`array_push(${[object].concat(args).join(",")})`);
             }
-            refs && content.push(`${indent}${refs} = ${object};`);
         break;
     }
 }
 
-const isExpressionStatement=(target)=>{
-    const parent = target.stack.getParentStack( stack=>{
-        return  !!(stack.isExpressionStatement || 
-                    stack.isArrayExpression   || 
-                    stack.isObjectExpression  || 
-                    stack.isCallExpression    || 
-                    stack.isBlockStatement);
-    });
-    return parent && parent.isExpressionStatement;
-}
-
 const createMethod = (target,desc,object,args,name)=>{
-    const addressCrossRefs = target.getAssignAddressCrossRefs(desc);
     const content = [];
+    const addressCrossRefs = target.getAssignAddressCrossRefs(desc);
     const ref = desc.isVariableDeclarator && target.hasRefAddressVariables( desc ) ? target.make( desc.id ) : null;
     const indent = target.getIndent();
-    const result = !isExpressionStatement(target) ? '$'+target.generatorVarName(target.stack,"_RV",true) : null;
     if( addressCrossRefs && ref ){
-        addressCrossRefs.forEach( (item)=>{
-            const address = target.getGeneratorVarName( item.description() ,"_RD");
-            const refs = address ? `\$${address}` : target.make( item );
-            content.push(`${indent}\tcase ${refs} :`)
-            push(content, name, refs, args, `${indent}\t\t`, ref, result);
-            content.push(`${indent}\tbreak;`)
-        });
-        target.insertExpression(target.stack, [`${indent}switch(${ref}){`, content.join("\r\n"), `${indent}}` ].join("\r\n") );
-        return result || true;
+        const dataset = target.createDataByStack(desc);
+        let push_method_name = dataset[ ref+name ];
+        if( !push_method_name ){
+            const useds = [ref];
+            const result = '$'+target.generatorVarName(target.stack,"_RV",true);
+            const push_args_name = '...$'+target.generatorVarName(desc,`_args`,true);
+            push_method_name = ref+target.generatorVarName(desc,`_${name}`,true);
+            addressCrossRefs.forEach( (item)=>{
+                const address = target.getGeneratorVarName( item.description() ,"_RD");
+                const refs = address ? `\$${address}` : target.make( item );
+                useds.push( refs );
+                content.push(`${indent}\t\tcase ${refs} :`);
+                push(content, name, refs, [push_args_name], `${indent}\t\t\t`, ref, result);
+                content.push(`${indent}\t\t\treturn ${result};`);
+            });
+            const push_method = [
+                `function(${push_args_name})use(&${useds.join(',&')}){`,
+                `${indent}\tswitch(${ref}){`, 
+                content.join("\r\n"), 
+                `${indent}\t}`,
+                `${indent}};`
+            ].join("\r\n");
+            target.insertExpression(target.stack, `${indent}${push_method_name} = ${push_method}`);
+            dataset[ ref+name ] = push_method_name;
+        }
+        return `${push_method_name}(${args.join(",")})`;
     }
-    push(content, name, object, args, indent, ref, result);
-    target.insertExpression(target.stack, content.join("\r\n") );
-    return result || true;
+    push(content, name, object, args, indent, null, null);
+    return content.join("\r\n");
 }
 
 
@@ -68,8 +71,9 @@ module.exports={
         }
 
         const addressRef = target.getAssignAddressRef(desc);
-        let refsName = addressRef ? target.getGeneratorVarName( addressRef.description() ,"_RD") : null;
+        let refsName = addressRef ? target.getGeneratorVarName( addressRef.description() ,"_RD", target.scope ) : null;
         refsName = refsName ? '$'+refsName : null;
+       
         let object = refsName || target.make(addressRef || target.stack.callee.object);
         if( target.stack.callee.object.isArrayExpression ){
             const refs = '$'+target.generatorVarName(target.stack, '_AR');

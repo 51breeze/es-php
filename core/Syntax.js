@@ -177,18 +177,33 @@ class Syntax extends events.EventEmitter {
         return name;
     }
 
-    generatorVarName(stack,name,flag=false){
+    generatorVarName(stack,name,flag=false, scope=null){
         const dataset = this.createDataByStack(stack);
         if( dataset.hasOwnProperty(name) ){
             return dataset[name];
         }
-        const value = stack.scope.generateVarName( name , flag);
+        const value = stack.scope.generateVarName(name, flag);
+        if( scope ){
+            const data = this.createDataByStack(scope);
+            if( !data.generatorVariables ){
+                data.generatorVariables = new Set();
+            }
+            data.generatorVariables.add( value );
+        }
         return dataset[name] = value;
     }
 
-    getGeneratorVarName(stack,name){
+    getGeneratorVarName(stack,name,scope=null){
         const dataset = this.createDataByStack(stack);
-        return dataset[name] || null;
+        const value = dataset[name] || null;
+        if( scope ){
+            const data = this.createDataByStack(scope);
+            if( data.generatorVariables && data.generatorVariables.has( value ) ){
+                return value;
+            }
+            return null;
+        }
+        return value
     }
 
     generatorRefName(target, name, key, callback){

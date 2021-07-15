@@ -14,6 +14,16 @@ class Identifier extends Syntax{
           }
           if( desc && desc.isDeclarator && desc.isStack ){
               this.addVariableRefs( desc );
+          //     const addressRef = this.getAssignAddressRef(desc);
+          //     if( addressRef ){
+          //           let refs = this.getGeneratorVarName( addressRef.description() ,"_RD", this.scope );
+          //           if( !refs ){
+          //                refs = this.make( addressRef );
+          //           }else{
+          //                refs = '$'+refs;
+          //           }
+          //           return refs;
+          //     }
               return `\$${this.stack.value()}`;
           }
           return this.stack.value();
