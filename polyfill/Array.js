@@ -4,23 +4,31 @@ const path = require("path");
 const push = (content, name, object, args, indent, refs, result)=>{
     switch( name ){
         case "push" :
-            if( result ){
-                content.push(`${indent}${result} = array_push(${[object].concat(args).join(",")});`);
-                content.push(`${indent}${refs} = ${object};`);
+        case "unshift" :
+        case "pop" :
+        case "shift" :
+        case "splice" :
+            if( result && content ){
+                content.push(`${indent}${result} = array_${name}(${[object].concat(args).join(",")});`);
+                if( refs ){
+                    content.push(`${indent}${refs} = ${object};`);
+                }
+                content.push(`${indent}return ${result};`);
             }else{
-                content.push(`array_push(${[object].concat(args).join(",")})`);
+                return `array_${name}(${[object].concat(args).join(",")})`;
             }
         break;
     }
+    return content;
 }
 
 const createMethod = (target,desc,object,args,name)=>{
-    const content = [];
     const addressCrossRefs = target.getAssignAddressCrossRefs(desc);
-    const ref = desc.isVariableDeclarator && target.hasRefAddressVariables( desc ) ? target.make( desc.id ) : null;
-    const indent = target.getIndent();
-    if( addressCrossRefs && ref ){
+    if( addressCrossRefs && desc.isVariableDeclarator && target.hasRefAddressVariables( desc ) ){
+        const ref = target.make( desc.id );
+        const content = [];
         const dataset = target.createDataByStack(desc);
+        const indent = target.getIndent();
         let push_method_name = dataset[ ref+name ];
         if( !push_method_name ){
             const useds = [ref];
@@ -33,8 +41,9 @@ const createMethod = (target,desc,object,args,name)=>{
                 useds.push( refs );
                 content.push(`${indent}\t\tcase ${refs} :`);
                 push(content, name, refs, [push_args_name], `${indent}\t\t\t`, ref, result);
-                content.push(`${indent}\t\t\treturn ${result};`);
             });
+            content.push(`${indent}\t\tdefault :`);
+            content.push(`${indent}\t\t\treturn ${push(null, name, ref, [push_args_name])};`);
             const push_method = [
                 `function(${push_args_name})use(&${useds.join(',&')}){`,
                 `${indent}\tswitch(${ref}){`, 
@@ -47,8 +56,7 @@ const createMethod = (target,desc,object,args,name)=>{
         }
         return `${push_method_name}(${args.join(",")})`;
     }
-    push(content, name, object, args, indent, null, null);
-    return content.join("\r\n");
+    return push(null, name, object, args);
 }
 
 
@@ -85,15 +93,15 @@ module.exports={
             case "push" :
                 return createMethod(target,desc,object,args,name);
             case "unshift" :
-                return `array_unshift(${[object].concat(args).join(",")})`;
+                return createMethod(target,desc,object,args,name);
             case "pop" :
-                return `array_pop(${object})`;
+                return createMethod(target,desc,object,args,name);
             case "shift" :
-                return `array_shift(${object})`;
+                return createMethod(target,desc,object,args,name);
+            case "splice" :
+                return createMethod(target,desc,object,args,name);
             case "slice" :
                 return `array_slice(${[object].concat(args).join(",")})`;
-            case "splice" :
-                return `array_splice(${[object].concat(args).join(",")})`;
             case "map" :
                 return `es_array_map(${[object].concat(args).join(",")})`;
             case "find" :

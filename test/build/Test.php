@@ -22,7 +22,6 @@ class Test extends Person{
 		return $buname;
 	}
 	static public function getClassObject(){
-		$a = Test;
 		$b = (object)['test'=>$a];
 		$b->person = Person;
 		return $b->test;
@@ -62,8 +61,6 @@ class Test extends Person{
 			expect(Test::getClass()->person)->toBe(Person);
 		});
 		it('\'new (Test.getClass().person)(\'\')\' should is true',function(){
-			$_refClass = Test::getClass()->person;
-			$o = new $_refClass('name');
 			expect($o instanceof Person)->toBeTrue();
 		});
 		it('\'this.bbss="666666"\' should is \'666666\' ',function(){
@@ -77,25 +74,10 @@ class Test extends Person{
 			expect($this->getName())->toBe('test name');
 		});
 		it('\'var bsp = ()=>{}\' should is \'()=>this\' ',function(){
-			$bsp = function(){
-				return $this;
-			};
 			expect($bsp())->toBe($this);
 		});
 		it('once.two.three should is this or object ',function(){
-			$bsp = function(){
-				return $this;
-			};
 			$obj = (object)[];
-			$bsp = function($flag)use(&$obj){
-				if($flag){
-					return $obj;
-				}else{
-					return $this;
-				}
-			};
-			$obds = 1;
-			$three = $bsp(false);
 			$once = (object)['two'=>(object)['three'=>$three,'four'=>$bsp]];
 			expect($once->two->three)->toBe($this);
 			expect($once->two->four(true))->toBe($obj);
@@ -130,7 +112,6 @@ class Test extends Person{
 		});
 	}
 	private function testComputeProperty(){
-		$bname = "123";
 		$_c1=(object)[];
 		$_c1->$bname=3;
 		$_c=(object)[];
@@ -148,8 +129,8 @@ class Test extends Person{
 	}
 	private function testLabel(){
 		$num = 0;
-		start:for($i = 0;$i < 5;$i++){
-			for($j = 0;$j < 5;$j++){
+		start:for(;$i < 5;$i++){
+			for(;$j < 5;$j++){
 				if($i == 3 && $j == 3){
 					goto start;
 				}
@@ -164,7 +145,6 @@ class Test extends Person{
 		$Type=new \ArrayObject([], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
 		$Type[$Type->address=5]='address';
 		$Type[$Type->name=6]='name';
-		$s = Types;
 		$t = $Type->address;
 		$b = Types::ADDRESS;
 		it('Type local enum should is true',function()use(&$t, &$Type){
@@ -184,7 +164,7 @@ class Test extends Person{
 		it('impls iterator should is [0,1,2,3,4]',function()use(&$array){
 			expect(5)->toBe($array->length);
 			for($i = 0;$i < 5;$i++){
-				expect($i)->toBe($array->$i);
+				expect($i)->toBe($array[$i]);
 			}
 		});
 	}
@@ -193,7 +173,6 @@ class Test extends Person{
 		$dd = $ddee;
 		$ccc = $ddee->name((object)['name'=>1,'age'=>1],"123");
 		$cccww = $dd->name((object)['name'=>1,'age'=>30],666);
-		$types = '333';
 		$_c2=(object)[];
 		$_c2->name=123;
 		$_c2->$types=1;
@@ -206,33 +185,19 @@ class Test extends Person{
 		});
 		it('class Generics',function(){
 			$obj = $this->getTestObject(true);
-			$bd = $obj;
 			$bs = $obj->getNamess(1);
 			expect($bs->toFixed(2))->toBe("1.00");
 		});
-		$bsint = $this->getTestGenerics('sssss');
-		$bsstring = $this->getTestGenerics("ssss",'age');
-		$bd = $bsstring;
 		$obj = $this->getTestObject(true);
-		$bsddd = $obj->getNamess(1);
 		$sss = $_RD1 = &$obj->getClassTestGenerics(1,1);
 	}
 	private function getClassTestGenerics($name,$age):array{
-		$a = [$age,$name];
 		return $a;
 	}
 	private function getTestGenerics($name,$age){
-		$t = new Test('name',$name);
 		return $age;
 	}
 	private function getTestObject(bool $flag){
-		$factor = function(){
-			$o = (object)[];
-			$o->test = new Test('name',1);
-			$o->name = "test";
-			return $o->test;
-		};
-		$o = $factor();
 		return $o;
 	}
 	public function getNamess($s){
@@ -290,40 +255,25 @@ class Test extends Person{
 		if(!($this->currentIndex < $this->len)){
 			return (object)['value'=>null,'done'=>true];
 		}
-		$d = (object)['value'=>$this->currentIndex++,'done'=>false];
 		return $d;
 	}
 	public function restFun(...$types):array{
 		return $types;
 	}
 	public function tetObject(){
-		$t = new Test('1',1);
-		$b = $t;
 		$ii = (object)['bb'=>$b];
 		return $ii->bb;
 	}
 	public function getIuuu(){
-		$ii = $this->getName();
 		if(6){
-			$ii = [];
+	
 		}
-		$ii = true;
 		return $ii;
 	}
 	public function getData(){
-		$b = [];
 		if(4){
-			$b = $this->avg;
+	
 		}
-		$b = $this->avg;
-		$dd = function(){
-			$bs = new Promise(function($resolve,$reject){
-				setTimeout(function()use(&$resolve){
-					$resolve([]);
-				},100);
-			});
-			return $bs;
-		};
 		return $b;
 	}
 	public function fetchApi(string $name,int $data,int $delay){
@@ -338,7 +288,6 @@ class Test extends Person{
 	}
 	public function loadRemoteData($type){
 		if($type === 1){
-			$a = $this->fetchApi("one",1,800);
 			$bs = (object)['bss'=>$this->fetchApi("two",2,500)];
 			$c = $this->fetchApi("three",3,900);
 			$bs->cc = $c;
@@ -347,7 +296,7 @@ class Test extends Person{
 			$list = [];
 			switch($type){
 				case 3 :
-					$b = $this->fetchApi("four",4,300);
+	
 					return $b;
 				case 4 :
 					$bb = $this->fetchApi("five",5,1200);
@@ -362,10 +311,7 @@ class Test extends Person{
 	}
 	public function method(string $name,int $age){
 		parent::method($name,$age);
-		$str = ["a","b"];
 		$b = ["one",["one",1]];
-		$cc = [1];
-		$x = [1,1,'one'];
 		array_push($b,'three');
 		array_push($b,'four');
 		array_push($b,[$name,$age]);
@@ -378,19 +324,14 @@ class Test extends Person{
 		parent::setName($value);
 	}
 	public function avg($yy,$bbc){
-		$ii = function(){
-		return 1;
-		};
 		$bb = ['1'];
 		function name($i){
-			$b = $i;
 			$i->avg();
 			$i->method('',1);
 			return $b;
 		}
 		$person = new Person('');
 		name($person);
-		$bbb = name($person);
 		name($person);
 		$dd = [1,1,"2222","66666","8888"];
 		array_push($bb);
@@ -398,10 +339,6 @@ class Test extends Person{
 		return $yy;
 	}
 	public function map(){
-		$ddss = (object)['name'=>function($c,$b){
-			$id = $b;
-			return $c;
-		}];
 		return $ddss;
 	}
 	private function address():array{
@@ -428,20 +365,42 @@ class Test extends Person{
 					$_RV = array_push($_RD3,...$_args);
 					$items = $_RD3;
 					return $_RV;
+				default :
+					return array_push($items,...$_args);
 			}
 		};
 		$items_push(0);
 		printf('%s %s %s',json_encode($items_push(1,9,6),true),json_encode($items = [],true),json_encode($items_push(9999),true));
-		array_push($dd,99988);
+		$items_pop = function(...$_args)use(&$items,&$_RD2,&$_RD3){
+			switch($items){
+				case $_RD2 :
+					$_RV1 = array_pop($_RD2,...$_args);
+					$items = $_RD2;
+					return $_RV1;
+				case $_RD3 :
+					$_RV1 = array_pop($_RD3,...$_args);
+					$items = $_RD3;
+					return $_RV1;
+				default :
+					return array_pop($items,...$_args);
+			}
+		};
+		printf('%s',json_encode($items_pop(),true));
 		System::typeof($dd);
 		array_push($this->getArrItems(),999);
 		$da = $_RD4 = &$this->getArrItems();
 		array_push($_RD4,9999666);
+		$da = ["hhhhhhhhhh"];
 		printf('%s',json_encode($da,true));
+		array_pop($_RD4);
 		return $dd;
 	}
-	private function &getArrItems():Array{
-		return $this->items;
+	private function &getArrItems():array{
+		$b = $_RD5 = &$this->items;
+		if($b){
+			$b = $_RD5 = &$this->items;
+		}
+		return $_RD5;
 	}
 	private $items = [];
 }

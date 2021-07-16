@@ -28,14 +28,17 @@ class Syntax extends events.EventEmitter {
     }
 
     addAssignAddressRef(target, value){
+        if( !value )return;
         const data = this.createDataByStack(target);
         refAddressVariables.add( target );
         if( data.assignAddressRef && data.assignAddressRef.scope !== value.scope ){
-            if( !data.assignAddressCrossRefs ){
-                data.assignAddressCrossRefs = new Set();
-                data.assignAddressCrossRefs.add( data.assignAddressRef );
+            if( data.assignAddressRef.description() !== value.description() ){
+                if( !data.assignAddressCrossRefs ){
+                    data.assignAddressCrossRefs = new Set();
+                    data.assignAddressCrossRefs.add( data.assignAddressRef );
+                }
+                data.assignAddressCrossRefs.add( value );
             }
-            data.assignAddressCrossRefs.add( value );
         }
         data.assignAddressRef= value;
     }
@@ -95,7 +98,7 @@ class Syntax extends events.EventEmitter {
             if(type.isGenericValueType || type.isGenericType || type.isClassGenericType){
                 return null;
             }
-            if( type.isTupleType  ){
+            if( type.isTupleType || type.isLiteralArrayType ){
                 return 'array';
             }
             switch( type.toString().toLowerCase() ){

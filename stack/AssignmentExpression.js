@@ -19,10 +19,14 @@ class AssignmentExpression extends Syntax{
                         }
                     }
                 } 
-                if( !refs ){
-                    return null;
-                }
             }
+        }
+
+        if( !refs && desc.isVariableDeclarator && desc.useRefItems && (
+            desc.useRefItems.size === 0 || 
+            Array.from( desc.useRefItems.values() ).every( item=>item.isReturnStatement )
+        )){
+            return null;
         }
 
         const right= this.make(this.stack.right);

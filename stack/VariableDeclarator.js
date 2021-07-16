@@ -13,24 +13,29 @@ class VariableDeclarator extends Syntax {
                     if( originType.id === "Array" ){
                         this.addAssignAddressRef( this.stack, this.stack.init );
                         if( !this.stack.init.isIdentifier ){
-                            const size = this.stack.assignItems.size;
                             const desc = this.stack.init.description();
-                            if( size > 1 ){
-                                const assignItems = Array.from( this.stack.assignItems.values() );
-                                const lastItem = assignItems.pop();
-                                if( assignItems.some( value=>lastItem.scope !== value.scope ) ){
-                                    refs = this.generatorVarName( desc, "_RD", false, this.scope );
+                            if( desc.isMethodGetterDefinition || this.stack.init.isCallExpression ){
+                                refs = this.generatorVarName( desc, "_RD", false, this.scope );
+                            }else{
+                                const size = this.stack.assignItems.size;
+                                if( size > 1 ){
+                                    const assignItems = Array.from( this.stack.assignItems.values() );
+                                    const lastItem = assignItems.pop();
+                                    if( assignItems.some( value=>lastItem.scope !== value.scope ) ){
+                                        refs = this.generatorVarName( desc, "_RD", false, this.scope );
+                                    }
                                 }
                             }
-                            if( !refs && (desc.isMethodGetterDefinition || this.stack.init.isCallExpression) ){
-                                refs = this.generatorVarName( desc, "_RD", false, this.scope );
-                            }
-                        }
-                        if( !refs ){
-                            return null;
                         }
                     }
                 }
+            }
+
+            if( !refs && this.stack.useRefItems && (
+                this.stack.useRefItems.size === 0 || 
+                Array.from( this.stack.useRefItems.values() ).every( item=>item.isReturnStatement )
+            )){
+                return null;
             }
 
             const init = this.stack.init && this.make(this.stack.init);

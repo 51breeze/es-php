@@ -604,6 +604,9 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
 
         console.log( items.push(1,9,6), items=[],  items.push(9999) );
 
+
+        console.log( items.pop() )
+
         /**
             switch( items ){
                  case $ref1 :
@@ -621,7 +624,7 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
         var bs = null ;
         bs = this.items;
         bs = dd;
-        bs.push(99988);
+        //bs.push(99988);
 
         typeof  dd;
 
@@ -630,7 +633,13 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
         var da = this.getArrItems();
         da.push(9999666);
 
+        da = ["hhhhhhhhhh"];
+
+        var bdsu = da;
+
         console.log( da );
+
+        da.pop();
 
         return dd;
     }
@@ -638,6 +647,11 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
 
     private getArrItems(){
         var b =  this.items;
+        var c = [];
+        if( b ){
+            b = this.items;
+        }
+        b = [];
         return b;
     }
 
