@@ -58,7 +58,6 @@ module.exports={
             case "trimStart" :
                 return `ltrim(${object})`;
             case "valueOf" :
-                return `${object}`;
             case "toString" :
                 return `${object}`;
             case "split" :
@@ -68,7 +67,10 @@ module.exports={
             case "padEnd" :
                 return `str_pad(${[object].concat(args).join(",")}, STR_PAD_RIGHT)`;
             case "normalize" :
-                return `es_array_normalize(${[object].concat(args).join(",")})`;
+                return `es_string_normalize(${[object].concat(args).join(",")})`;
+            case "propertyIsEnumerable" :
+            case "hasOwnProperty" :
+                return `isset(${object}[${args[0]}])`;
         }
     }
 }

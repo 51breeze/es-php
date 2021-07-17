@@ -5,22 +5,27 @@
  * Released under the MIT license
  * https://github.com/51breeze/EaseScript
  * @author Jun Ye <664371281@qq.com>
- * @require BaseObject
  */
-class Map extends BaseObject
+class Map 
 {
     private $dataset = [];
-    private $nullItem = null;
     public function __construct()
     {
     }
 
+    public function __get($name){
+        switch( $name ){
+            case "size" :
+                return count( $this->dataset );
+            default :
+                 throw new \Error( $name.' is not exists.');    
+        }
+    }
+
     private function getItemByKey( $key )
     {
-        foreach( $this->dataset as &$item )
-        {
-            if( $item[0] === $key )
-            {
+        foreach( $this->dataset as &$item ){
+            if( $item[0] === $key ){
                 return $item;
             }
         }
@@ -34,7 +39,7 @@ class Map extends BaseObject
         {
             $item[1] = $value;
         }else{
-            array_push($this->dataset,[$key, $value]);
+            array_push($this->dataset,[$key, &$value]);
         }
     }
 
@@ -46,14 +51,34 @@ class Map extends BaseObject
 
     public function clear()
     {
+        unset( $this->dataset );
         $this->dataset = [];
     }
 
-    public function forEach( $callback )
-    {
-        foreach( $this->dataset as $item)
-        {
-            call_user_func($callback, $item[1], $item[0]);
+    public function has( $key ){
+        return !!$this->getItemByKey( $key );
+    }
+
+    public function keys(){
+        return array_map(function($item){ 
+            return $item[0];
+        }, $this->dataset );
+    }
+
+    public function values(){
+        return array_map(function($item){ 
+            return $item[1];
+        }, $this->dataset );
+    }
+
+    public function entries(){
+        return $this->dataset;
+    }
+
+    public function forEach( $callback , $thisArg=null){
+        $thisArg = $thisArg ? System::bind( $callback, $thisArg) : $callback;
+        foreach( $this->dataset as $item){
+            call_user_func($callback, $item[1], $item[0], $this);
         }
     }
 

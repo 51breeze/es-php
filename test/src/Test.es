@@ -607,6 +607,14 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
 
         console.log( items.pop() )
 
+        console.log( items.splice(0,5, '') );
+
+        console.log( items.shift() );
+        console.log( items.unshift(0,5, '') );
+
+
+
+
         /**
             switch( items ){
                  case $ref1 :
@@ -639,7 +647,13 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
 
         console.log( da );
 
-        da.pop();
+        console.log( da.pop() );
+
+
+         var ui =  "==".concat( 'da' ,  'bs' ) + "=========";
+         var n = 8 + 6;
+
+        console.log( ui, n  );
 
         return dd;
     }

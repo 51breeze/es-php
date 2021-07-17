@@ -33,17 +33,20 @@ const createMethod = (target,desc,object,args,name)=>{
         if( !push_method_name ){
             const useds = [ref];
             const result = '$'+target.generatorVarName(target.stack,"_RV",true);
-            const push_args_name = '...$'+target.generatorVarName(desc,`_args`,true);
+            let push_args_name = '...$'+target.generatorVarName(desc,`_args`,true);
+            if( name ==="pop" || name ==="shift"){
+                push_args_name = ''
+            }
             push_method_name = ref+target.generatorVarName(desc,`_${name}`,true);
             addressCrossRefs.forEach( (item)=>{
                 const address = target.getGeneratorVarName( item.description() ,"_RD");
                 const refs = address ? `\$${address}` : target.make( item );
                 useds.push( refs );
                 content.push(`${indent}\t\tcase ${refs} :`);
-                push(content, name, refs, [push_args_name], `${indent}\t\t\t`, ref, result);
+                push(content, name, refs, push_args_name ? [push_args_name] : [], `${indent}\t\t\t`, ref, result);
             });
             content.push(`${indent}\t\tdefault :`);
-            content.push(`${indent}\t\t\treturn ${push(null, name, ref, [push_args_name])};`);
+            content.push(`${indent}\t\t\treturn ${push(null, name, ref, push_args_name ? [push_args_name] : [])};`);
             const push_method = [
                 `function(${push_args_name})use(&${useds.join(',&')}){`,
                 `${indent}\tswitch(${ref}){`, 
@@ -152,7 +155,7 @@ module.exports={
             case "toString" :
                 return `implode(', ',${object})`;
             case "valueOf" :
-                return `json_encode(${object}, true)`;
+                return `${object}`;
             case "copyWithin" :
                 return `es_array_copy_within(${[object].concat(args).join(",")})`;
             case "hasOwnProperty" :

@@ -14,6 +14,13 @@ class BinaryExpression extends Syntax{
                     return `is_a(${left},'${right}')`;
                }
           }
+          if( operator.charCodeAt(0) === 43 ){
+               const lT = this.stack.left.type().toString().toLowerCase();
+               const rT = this.stack.right.type().toString().toLowerCase();
+               if( lT ==="string" || rT ==="string"){
+                    return `${left} . ${right}`;
+               }
+          }
           return `${left} ${operator} ${right}`;
      }
 }
