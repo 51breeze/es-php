@@ -1,17 +1,3 @@
 /node_modules
 /package-lock.json
 vendor/*
-/test/vendor
-/test/vendor/webmozart
-/test/vendor/bin
-/test/vendor/composer
-/test/vendor/doctrine
-/test/vendor/myclabs
-/test/vendor/nikic
-/test/vendor/phar-io
-/test/vendor/phpdocumentor
-/test/vendor/phpspec
-/test/vendor/phpunit
-/test/vendor/sebastian
-/test/vendor/symfony
-/test/vendor/theseer
