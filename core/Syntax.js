@@ -2,8 +2,8 @@ const Constant = require("./Constant");
 const Polyfill = require("./Polyfill");
 const PATH = require("path");
 const events = require('events');
+const AddressVariable = require("./AddressVariable");
 const usedModules = new Set();
-const refAddressVariables = new Set();
 const dependModules = new Map();
 const createdStackData = new Map();
 const refsParentVariable = new Map();
@@ -30,36 +30,16 @@ class Syntax extends events.EventEmitter {
     addAssignAddressRef(target, value){
         if( !value )return;
         const data = this.createDataByStack(target);
-        refAddressVariables.add( target );
-        if( data.assignAddressRef && data.assignAddressRef.scope !== value.scope ){
-            if( data.assignAddressRef.description() !== value.description() ){
-                if( !data.assignAddressCrossRefs ){
-                    data.assignAddressCrossRefs = new Set();
-                    data.assignAddressCrossRefs.add( data.assignAddressRef );
-                }
-                data.assignAddressCrossRefs.add( value );
-            }
+        if( !data.AddressVariable ){
+            data.AddressVariable = new AddressVariable( target );
         }
-        data.assignAddressRef= value;
-    }
-
-    getRefAddressVariables(){
-        return refAddressVariables;
-    }
-
-    hasRefAddressVariables(target){
-        return refAddressVariables.has(target);
+        data.AddressVariable.add( value );
     }
 
     getAssignAddressRef(target){
         if(!target)return null;
         const data = this.createDataByStack(target);
-        return data.assignAddressRef;
-    }
-
-    getAssignAddressCrossRefs(target){
-        const data = this.createDataByStack(target);
-        return data.assignAddressCrossRefs;
+        return data.AddressVariable;
     }
 
     addVariableRefs( stack ){
@@ -129,7 +109,7 @@ class Syntax extends events.EventEmitter {
     getReferenceNameByModule(module){
         if( this.module ){
             const imports = this.module.imports;
-            if( imports && imports.has( module.id ) && imports.get(module.id).namespace === this.module.namespace){
+            if( imports && imports.has( module.id ) ){
                 return module.id;
             }
             if( this.module.importAlias && this.module.importAlias.has(module) ){
@@ -349,10 +329,7 @@ class Syntax extends events.EventEmitter {
 
     isDependModule(depModule){
         if( !depModule )return false;
-        const isRequire = !depModule.isDeclaratorModule && 
-                            this.isUsed(depModule) &&
-                            this.compiler.callUtils("isLocalModule", depModule) && 
-                            !this.compiler.callUtils("checkDepend", this.module, depModule);
+        const isRequire = this.isUsed(depModule) && !depModule.file.includes("\\easescript\\lib") && !this.compiler.callUtils("checkDepend", this.module, depModule);
         const polyfillModule = depModule.isDeclaratorModule && Polyfill.modules.get(depModule.id);
         if( isRequire || (polyfillModule && polyfillModule.export)){
             return true;

@@ -3,8 +3,8 @@ module.exports={
     export:false,
     require:[],
     namespace:"es.core",
-    method(target, name, args, isStatic){
-        let object = target.make(target.stack.callee.object);
+    method(target, thisObject, name, args, isStatic){
+        let object = target.make(thisObject);
         if( isStatic ){
             switch( name ){
                 case "assign" :

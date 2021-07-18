@@ -5,8 +5,8 @@ module.exports={
     export:"String",
     require:[],
     namespace:"es.core",
-    method(target, name, args){
-        let object = target.make(target.stack.callee.object);
+    method(target, thisObject, name, args){
+        let object = target.make(thisObject);
         switch( name ){
             case "charAt" :
                 return `mb_substr(${object},${args[0]},1)`;

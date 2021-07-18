@@ -11,7 +11,7 @@ class CallExpression extends Syntax{
                 const name = type.id.toString();
                 const polyModule = Polyfill.modules.get(name);
                 if( polyModule && polyModule.method ){
-                    const result = polyModule.method(this, property, args, desc, this.compiler.callUtils("isTypeModule",desc) );
+                    const result = polyModule.method(this, this.stack.callee.object, property, args, desc, this.compiler.callUtils("isTypeModule",desc) );
                     if( result ){
                         return result;
                     }

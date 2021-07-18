@@ -1,8 +1,8 @@
 <?php
 use \com\TestInterface;
-class Person implements \com\TestInterface{
+class Person implements TestInterface{
 	public function __construct(string $name){
-	
+		$this->_name = $name;
 	}
 	public $addressName = 'the Person properyt "addressName"';
 	private $_name = '';
@@ -24,7 +24,7 @@ class Person implements \com\TestInterface{
 		return $this->_name;
 	}
 	public function setName(string $val):string{
-	
+		$this->_name = $val;
 	}
 	public function avg(){
 	

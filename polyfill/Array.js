@@ -23,42 +23,42 @@ const push = (content, name, object, args, indent, refs, result)=>{
 }
 
 const createMethod = (target,desc,object,args,name)=>{
-    const addressCrossRefs = target.getAssignAddressCrossRefs(desc);
-    if( addressCrossRefs && desc.isVariableDeclarator && target.hasRefAddressVariables( desc ) ){
-        const ref = target.make( desc.id );
-        const content = [];
-        const dataset = target.createDataByStack(desc);
-        const indent = target.getIndent();
-        let push_method_name = dataset[ ref+name ];
-        if( !push_method_name ){
-            const useds = [ref];
-            const result = '$'+target.generatorVarName(target.stack,"_RV",true);
-            let push_args_name = '...$'+target.generatorVarName(desc,`_args`,true);
-            if( name ==="pop" || name ==="shift"){
-                push_args_name = ''
-            }
-            push_method_name = ref+target.generatorVarName(desc,`_${name}`,true);
-            addressCrossRefs.forEach( (item)=>{
-                const address = target.getGeneratorVarName( item.description() ,"_RD");
-                const refs = address ? `\$${address}` : target.make( item );
-                useds.push( refs );
-                content.push(`${indent}\t\tcase ${refs} :`);
-                push(content, name, refs, push_args_name ? [push_args_name] : [], `${indent}\t\t\t`, ref, result);
-            });
-            content.push(`${indent}\t\tdefault :`);
-            content.push(`${indent}\t\t\treturn ${push(null, name, ref, push_args_name ? [push_args_name] : [])};`);
-            const push_method = [
-                `function(${push_args_name})use(&${useds.join(',&')}){`,
-                `${indent}\tswitch(${ref}){`, 
-                content.join("\r\n"), 
-                `${indent}\t}`,
-                `${indent}};`
-            ].join("\r\n");
-            target.insertExpression(target.stack, `${indent}${push_method_name} = ${push_method}`);
-            dataset[ ref+name ] = push_method_name;
-        }
-        return `${push_method_name}(${args.join(",")})`;
-    }
+    // const addressCrossRefs = target.getAssignAddressCrossRefs(desc);
+    // if( addressCrossRefs && desc.isVariableDeclarator ){
+    //     const ref = target.make( desc.id );
+    //     const content = [];
+    //     const dataset = target.createDataByStack(desc);
+    //     const indent = target.getIndent();
+    //     let push_method_name = dataset[ ref+name ];
+    //     if( !push_method_name ){
+    //         const useds = [ref];
+    //         const result = '$'+target.generatorVarName(target.stack,"_RV",true);
+    //         let push_args_name = '...$'+target.generatorVarName(desc,`_args`,true);
+    //         if( name ==="pop" || name ==="shift"){
+    //             push_args_name = ''
+    //         }
+    //         push_method_name = ref+target.generatorVarName(desc,`_${name}`,true);
+    //         addressCrossRefs.forEach( (item)=>{
+    //             const address = target.getGeneratorVarName( item.description() ,"_RD");
+    //             const refs = address ? `\$${address}` : target.make( item );
+    //             useds.push( refs );
+    //             content.push(`${indent}\t\tcase ${refs} :`);
+    //             push(content, name, refs, push_args_name ? [push_args_name] : [], `${indent}\t\t\t`, ref, result);
+    //         });
+    //         content.push(`${indent}\t\tdefault :`);
+    //         content.push(`${indent}\t\t\treturn ${push(null, name, ref, push_args_name ? [push_args_name] : [])};`);
+    //         const push_method = [
+    //             `function(${push_args_name})use(&${useds.join(',&')}){`,
+    //             `${indent}\tswitch(${ref}){`, 
+    //             content.join("\r\n"), 
+    //             `${indent}\t}`,
+    //             `${indent}};`
+    //         ].join("\r\n");
+    //         target.insertExpression(target.stack, `${indent}${push_method_name} = ${push_method}`);
+    //         dataset[ ref+name ] = push_method_name;
+    //     }
+    //     return `${push_method_name}(${args.join(",")})`;
+    // }
     return push(null, name, object, args);
 }
 
@@ -68,7 +68,7 @@ module.exports={
     export:"ArrayMethod",
     require:[],
     namespace:"es.core",
-    method(target, name, args, desc, isStatic){
+    method(target, thisObject, name, args, desc, isStatic){
         if( isStatic ){
             switch( name ){
                 case "isArray" :
@@ -81,12 +81,8 @@ module.exports={
             return null;
         }
 
-        const addressRef = target.getAssignAddressRef(desc);
-        let refsName = addressRef ? target.getGeneratorVarName( addressRef.description() ,"_RD", target.scope ) : null;
-        refsName = refsName ? '$'+refsName : null;
-       
-        let object = refsName || target.make(addressRef || target.stack.callee.object);
-        if( target.stack.callee.object.isArrayExpression ){
+        let object =  target.make(thisObject);
+        if( thisObject.isArrayExpression ){
             const refs = '$'+target.generatorVarName(target.stack, '_AR');
             target.insertExpression(target.stack, target.semicolon(`${refs} = ${object}`));
             object = refs;

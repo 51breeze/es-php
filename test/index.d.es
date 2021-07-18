@@ -98,3 +98,13 @@ declare function expect(result:any):Matchers;
 declare class jasmine {
    public static var DEFAULT_TIMEOUT_INTERVAL:int
 }
+
+
+package PHPUnit.Framework{
+
+    declare class TestCase{
+
+       assertEquals(expected:any, actual:any, message?:string);
+
+   }
+}

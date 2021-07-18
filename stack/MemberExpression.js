@@ -1,40 +1,30 @@
 const Syntax = require("../core/Syntax");
+const Polyfill = require("../core/Polyfill");
 class MemberExpression extends Syntax{
 
-   array_method(object,property){
-      switch( property ){
-         case "length" :
-            return `count(${object})`;
+   intercept(desc,object,property){
+      const type = this.compiler.callUtils("getOriginType", desc.type() );
+      if( type && this.compiler.callUtils("isTypeModule",type) ){
+         const name = type.id.toString();
+         const polyModule = Polyfill.modules.get(name);
+         if( polyModule && polyModule.method ){
+            const result = polyModule.method(this, object, property, [], desc, this.compiler.callUtils("isTypeModule",desc) );
+            if( result ){
+               return result;
+            }
+         }
       }
-   }
-
-   intercept(desc, object, property){
-      const type = desc.type();
-      let name = type.toString();
-      switch( true ){
-          case type.isTupleType :
-          case type.isLiteralArrayType :
-              name =  'array';
-           case type.isInstanceofType :
-              name = type.inherit.id;
-          break;
-      }
-      switch( name.toLowerCase() ){
-          case "string" :
-              return null;
-          case "array"  :
-              return this.array_method(object, property);
-      }
-   }
+      return null;
+  }
 
    emitter(){
       const module = this.module;
       const property = this.stack.property.isIdentifier && !this.stack.computed ? this.stack.property.value() : this.make(this.stack.property);
-      const object = this.make(this.stack.object);
-      const result = this.intercept(this.stack.object.description(),object,property);
+      const result = this.intercept(this.stack.object.description(),this.stack.object,property);
       if( result ){
           return result;
       }
+      const object = this.make(this.stack.object);
       const description = this.stack.description();
       let sep =  this.stack.object.isSuperExpression ? "::" : "->";
       if( description && description.isModule && this.compiler.callUtils("isTypeModule",description) ){

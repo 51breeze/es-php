@@ -3,7 +3,7 @@ module.exports={
     export:false,
     require:[],
     namespace:"es.core",
-    method(target, name, args, isStatic){
+    method(target, thisObject, name, args, isStatic){
         if( isStatic ){
             switch( name ){
                 case "parse" :

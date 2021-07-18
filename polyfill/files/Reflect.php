@@ -215,7 +215,7 @@ final class Reflect
         return @$map[$type] ?: null;
     }
 
-    final static private function getReflectionMethodOrProperty( $target, $name, $accessor='',$scope=null, $ns=null)
+    final static private function getReflectionMethodOrProperty( $target, $name, $accessor='',$scope=null)
     {
         if( $target==null )
         {
@@ -231,40 +231,6 @@ final class Reflect
 
         $type = 0;
         $method = null;
-        if( $ns != null )
-        {
-            $ns = is_array($ns) ? $ns : array($ns);
-            $len = count( $ns );
-            $index = 0;
-            $lastProperty = [];
-
-            while ( $index < $len )
-            {
-                $prop =  '_N'. Namespaces::getUid( $ns[$index]->valueOf() ).'_'.$name;
-                $accessor =  '_N'. Namespaces::getUid( $ns[$index]->valueOf() ).'_'.$accessor.$name;
-                if( $reflect->hasProperty( $prop )  )
-                {
-                    $method = $reflect->getProperty($prop);
-                    array_push($lastProperty , array(1,$prop,$method) );
-                }
-                if( $reflect->hasMethod( $accessor ) )
-                {
-                    $method = $reflect->getMethod( $accessor );
-                    array_push($lastProperty , array(2,$accessor,$method) );
-                }
-                $index++;
-            }
-            if( count($lastProperty) !==1 )
-            {
-                if( count($lastProperty)===0 )
-                {
-                   return null;
-                }else{
-                   return false;
-                }
-            }
-            list($type,$name,$method) = $lastProperty[0];
-        }
 
         //在实例对象中查找
         if( $reflect->hasProperty($name) )
@@ -350,7 +316,7 @@ final class Reflect
                 throw new TypeError('Abstract class cannot be instantiated');
             }
 
-            if ($args && System::isArray($args)) {
+            if ($args && is_array($args) ) {
                 return $reflect->newInstanceArgs($args);
             } else {
                 return $reflect->newInstance($args);
@@ -372,10 +338,10 @@ final class Reflect
         {
             $target = System::bind( $target, $thisArgument);
         }
-        return call_user_func_array( $target, $argumentsList==null ? array() : $argumentsList instanceof BaseObject ? $argumentsList->valueOf() : $argumentsList );
+        return call_user_func_array( $target, !is_array($argumentsList) ? array() :  $argumentsList );
     }
 
-    final static public function call( $scope, $target, $name=null, array $args=null, $thisArg=null, $ns=null )
+    final static public function call( $scope, $target, $name=null, array $args=null, $thisArg=null)
     {
         $type = null;
         if( is_string($target) )
@@ -410,7 +376,7 @@ final class Reflect
             throw new ReferenceError( 'target is non-object');
         }
 
-        $desc =  self::getReflectionMethodOrProperty($target, $name,'',$scope,$ns);
+        $desc =  self::getReflectionMethodOrProperty($target, $name,'',$scope);
         if( $desc )
         {
             list($type, $method) = $desc;
@@ -436,9 +402,9 @@ final class Reflect
         }
     }
 
-    final static public function get( $scope, $target, $name, $thisArg=null, $ns=null )
+    final static public function get( $scope, $target, $name, $thisArg=null )
     {
-        if( System::isArray($target) )
+        if( is_array($target) )
         {
             if ( is_string($name) )
             {
@@ -458,7 +424,7 @@ final class Reflect
             }
         }
 
-        $desc =  self::getReflectionMethodOrProperty($target, $name,'Get_', $scope,$ns);
+        $desc =  self::getReflectionMethodOrProperty($target, $name,'get', $scope);
         if( $desc )
         {
             list($type, $method) = $desc;
@@ -485,93 +451,9 @@ final class Reflect
         return $target->__get($name);
     }
 
-    final static public function type($value, $typeClass)
+    final static public function set($scope,$target, $name, $value, $thisArg=null)
     {
-        $original = $value;
-        if( is_string($typeClass) )
-        {
-            $flag = false;
-            switch ( strtolower($typeClass) )
-            {
-                case "integer" :
-                case "int" :
-                case "number":
-                case "uint":
-                    $flag = true;
-                    $value = null;
-                    if( is_numeric($original) )
-                    {
-                        $value = intval($original);
-                        if( strtolower($typeClass) === "uint" && $value < 0 )
-                        {
-                            throw new RangeError($original ." convert failed. can only be an unsigned Integer");
-                        }
-                        if( $value > 2147483647 || $value < -2147483648)
-                        {
-                            throw new RangeError($original . " convert failed. the length of overflow Integer");
-                        }
-                    }
-                    break;
-                case "double":
-                case "float":
-                    $flag = true;
-                    $value = null;
-                    if( is_numeric($original) )
-                    {
-                       $value = floatval($original);
-                    }
-                    break;
-                case "object" :
-                    $flag = true;
-                    $value = null;
-                    if( System::isObject($original,true) )
-                    {
-                       $value = (object)$original;
-                    }
-                    break;
-                case "array" :
-                    $flag = true;
-                    $value = null;
-                    if( System::isObject($original,true) )
-                    {
-                       $value = new ArrayList( (array)$original );
-                    }
-                    break;
-                case "string" :
-                    $flag = true;
-                    $value = $original."";
-                    break;
-                case "boolean" :
-                    $flag = true;
-                    $value = boolval($original);
-                    break;
-            }
-
-            if( $flag ===true )
-            {
-                if( $value === null ) 
-                {
-                    throw new TypeError($original + " can not be converted for " . $typeClass);
-                }
-                return $value;
-            }
-        }
-
-        if( $value == null || $typeClass === "Object" )
-        {
-            return $value;
-        }
-
-        if ( $typeClass && !System::is($value, $typeClass) )
-        {
-            throw new TypeError( 'Specify the type of value do not match. must is "'.$typeClass.'"');
-        }
-        return $value;
-    }
-
-    final static public function set($scope,$target, $name, $value, $thisArg=null,$ns=null )
-    {
-        if( System::isArray($target) )
+        if( is_array($target) )
         {
             if ( is_string($name) )
             {
@@ -584,7 +466,7 @@ final class Reflect
             return $target[$name] = $value;
         }
 
-        $desc =  self::getReflectionMethodOrProperty($target, $name,'Set_', $scope,$ns);
+        $desc =  self::getReflectionMethodOrProperty($target, $name,'set', $scope);
         if( $desc )
         {
             list($type, $method) = $desc;
@@ -610,24 +492,24 @@ final class Reflect
         return $value;
     }
 
-    final static public function has($scope, $target, $name,$ns=null )
+    final static public function has($scope, $target, $name)
     {
-        return !!self::getReflectionMethodOrProperty($target, $name,'Get_', $scope,$ns);
+        return !!self::getReflectionMethodOrProperty($target, $name,'get', $scope);
     }
 
-    final static public function incre($scope,$target, $propertyKey, $flag=true , $ns=null )
+    final static public function incre($scope,$target, $propertyKey, $flag=true)
     {
-        $val = \Reflect::get($scope,$target, $propertyKey, null, $ns );
+        $val = \Reflect::get($scope,$target, $propertyKey, null );
         $ret = $val+1;
-        \Reflect::set($scope,$target, $propertyKey, $ret , null, $ns );
+        \Reflect::set($scope,$target, $propertyKey, $ret , null);
         return $flag ? $val : $ret;
     }
 
-    final static public function decre($scope,$target, $propertyKey, $flag=true , $ns=null )
+    final static public function decre($scope,$target, $propertyKey, $flag=true)
     {
-        $val = \Reflect::get($scope,$target, $propertyKey, null, $ns );
+        $val = \Reflect::get($scope,$target, $propertyKey, null);
         $ret = $val-1;
-        \Reflect::set($scope,$target, $propertyKey, $ret , null, $ns );
+        \Reflect::set($scope,$target, $propertyKey, $ret , null);
         return $flag ? $val : $ret;
     }
 }

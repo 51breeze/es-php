@@ -2,31 +2,24 @@ const Syntax = require("../core/Syntax");
 class AssignmentExpression extends Syntax{
     emitter(){
         const desc = this.stack.description();
+        if( desc && desc.isVariableDeclarator && desc.useRefItems && desc.useRefItems.size === 0){
+            return null;
+        }
+       
         let refs = null;
+        const addressRefObject = this.getAssignAddressRef(desc);
         if( this.stack.right.isMemberExpression || this.stack.right.isCallExpression || this.stack.right.isIdentifier ){
             const originType = this.compiler.callUtils("getOriginType",  this.stack.right.type() );
             if( originType.id === "Array" ){
                 this.addAssignAddressRef(desc, this.stack.right);
-                if( desc.isMemberExpression ){
-                    refs = this.generatorVarName( this.stack.right.description(), "_RD" , false, this.scope );
-                }else{
-                    const size = desc.assignItems.size;
-                    if( size > 1 ){
-                        const assignItems = Array.from( desc.assignItems.values() );
-                        const lastItem = assignItems.pop();
-                        if( assignItems.some( value=>lastItem.scope !== value.scope ) ){
-                            refs = this.generatorVarName( this.stack.right.description(), "_RD", false, this.scope );
-                        }
-                    }
-                } 
+                refs = '&';
             }
         }
 
-        if( !refs && desc.isVariableDeclarator && desc.useRefItems && (
-            desc.useRefItems.size === 0 || 
-            Array.from( desc.useRefItems.values() ).every( item=>item.isReturnStatement )
-        )){
-            return null;
+        if( addressRefObject ){
+            const left = this.make(this.stack.left);
+            const addressIndex = addressRefObject.getIndex( this.stack.right );
+            return `${left} = ${addressIndex}`;
         }
 
         const right= this.make(this.stack.right);
@@ -48,7 +41,7 @@ class AssignmentExpression extends Syntax{
         }
 
         if( refs ){
-            return `${left} = \$${refs} = &${right}`;
+            return `${left} = ${refs}${right}`;
         }
         return `${left} = ${right}`;
     }

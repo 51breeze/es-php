@@ -7,6 +7,8 @@ package;
 import com.TestInterface;
 import Person;
 import Types;
+import Start;
+
 
 /**
 * Test a class
@@ -72,6 +74,8 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
         super(name);
         super.setType('1');
         this.target;
+
+        new Start();
     }
 
     
