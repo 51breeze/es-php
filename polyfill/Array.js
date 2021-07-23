@@ -23,42 +23,49 @@ const push = (content, name, object, args, indent, refs, result)=>{
 }
 
 const createMethod = (target,desc,object,args,name)=>{
-    // const addressCrossRefs = target.getAssignAddressCrossRefs(desc);
-    // if( addressCrossRefs && desc.isVariableDeclarator ){
-    //     const ref = target.make( desc.id );
-    //     const content = [];
-    //     const dataset = target.createDataByStack(desc);
-    //     const indent = target.getIndent();
-    //     let push_method_name = dataset[ ref+name ];
-    //     if( !push_method_name ){
-    //         const useds = [ref];
-    //         const result = '$'+target.generatorVarName(target.stack,"_RV",true);
-    //         let push_args_name = '...$'+target.generatorVarName(desc,`_args`,true);
-    //         if( name ==="pop" || name ==="shift"){
-    //             push_args_name = ''
-    //         }
-    //         push_method_name = ref+target.generatorVarName(desc,`_${name}`,true);
-    //         addressCrossRefs.forEach( (item)=>{
-    //             const address = target.getGeneratorVarName( item.description() ,"_RD");
-    //             const refs = address ? `\$${address}` : target.make( item );
-    //             useds.push( refs );
-    //             content.push(`${indent}\t\tcase ${refs} :`);
-    //             push(content, name, refs, push_args_name ? [push_args_name] : [], `${indent}\t\t\t`, ref, result);
-    //         });
-    //         content.push(`${indent}\t\tdefault :`);
-    //         content.push(`${indent}\t\t\treturn ${push(null, name, ref, push_args_name ? [push_args_name] : [])};`);
-    //         const push_method = [
-    //             `function(${push_args_name})use(&${useds.join(',&')}){`,
-    //             `${indent}\tswitch(${ref}){`, 
-    //             content.join("\r\n"), 
-    //             `${indent}\t}`,
-    //             `${indent}};`
-    //         ].join("\r\n");
-    //         target.insertExpression(target.stack, `${indent}${push_method_name} = ${push_method}`);
-    //         dataset[ ref+name ] = push_method_name;
-    //     }
-    //     return `${push_method_name}(${args.join(",")})`;
-    // }
+    const assignAddress = target.getAssignAddressRef(desc);
+    if( assignAddress && assignAddress.hasCross() && desc.isVariableDeclarator ){
+        const origin = target.make( desc.id );
+        const dataset = target.createDataByStack(desc);
+        let push_method_name = dataset[ origin+name ];
+        if( !push_method_name ){
+            const content = [];
+            const indent = target.getIndent();
+            const assert =  '$'+target.generatorVarName(desc,"_ARV");
+            const uses = [origin,assert];
+            const result = '$'+target.generatorVarName(target.stack,"_RV",true);
+            let push_args_name = '...$'+target.generatorVarName(desc,`_args`,true);
+            if( name ==="pop" || name ==="shift"){
+                push_args_name = ''
+            }
+            push_method_name = origin+target.generatorVarName(desc,`_${name}`,true);
+            const defaultContent = [];
+
+            assignAddress.dataset.forEach( (index,item)=>{
+                const desc = item.description();
+                const refs = '$'+target.generatorVarName(desc,"_RD");
+                uses.push( refs );
+                if( index == 0){
+                    defaultContent.push(`${indent}\t\tdefault :`);
+                    push(defaultContent, name, refs, push_args_name ? [push_args_name] : [], `${indent}\t\t\t`, origin, result);
+                }else{
+                    content.push(`${indent}\t\tcase ${index} :`);
+                    push(content, name, refs, push_args_name ? [push_args_name] : [], `${indent}\t\t\t`, origin, result);
+                }
+            });
+            
+            const push_method = [
+                `function(${push_args_name})use(&${uses.join(',&')}){`,
+                `${indent}\tswitch(${assert}){`, 
+                content.concat(defaultContent).join("\r\n"), 
+                `${indent}\t}`,
+                `${indent}};`
+            ].join("\r\n");
+            target.insertExpression(target.stack, `${indent}${push_method_name} = ${push_method}`);
+            dataset[ origin+name ] = push_method_name;
+        }
+        return `${push_method_name}(${args.join(",")})`;
+    }
     return push(null, name, object, args);
 }
 

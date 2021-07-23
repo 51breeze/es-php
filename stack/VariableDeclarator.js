@@ -16,7 +16,7 @@ class VariableDeclarator extends Syntax {
                     const originType = this.compiler.callUtils("getOriginType", type );
                     if( originType.id === "Array" ){
                         this.addAssignAddressRef( this.stack, this.stack.init );
-                        refs = '&';
+                        refs = '$'+this.generatorVarName(this.stack.init.description(),"_RD") + ' = &';
                     }
                 }
             }

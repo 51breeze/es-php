@@ -9,18 +9,21 @@ public class Start extends TestCase
     testArray(){
 
         var items = this.items; 
-        // var flag  = true;
-        // if( flag ){
-        //     items = this.list;
-        // }
+        var flag  = true;
+        if( flag ){
+            items = this.list;
+        }
 
         items.push(1);
         items.push(2,3,4);
 
         this.assertEquals(4, items.length , "error");
        
-        this.assertEquals(items, this.items, "error");
+        this.assertEquals(items, this.list, "error");
 
+        this.items.push( 5,6,7  );
+
+        this.assertEquals(3,  this.items.length, "error");
 
 
     }

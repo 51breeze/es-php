@@ -108,7 +108,7 @@ class Test extends Person{
 			expect((new RegExp('^\d+'))->exec("123"))->toBe(false);
 		});
 		it("test rest params",function(){
-			$res = &$this->restFun(1,"s","test");
+			$res = $_RD = &$this->restFun(1,"s","test");
 			expect($res)->toEqual([1,"s","test"]);
 		});
 		$this->testEnumerableProperty();
@@ -393,21 +393,100 @@ class Test extends Person{
 		$bds = es_array_new($bb->global);
 		count($bds);
 		array_slice($dd,0);
-		$items = &$bb->items;
+		$items = $_RD1 = &$bb->items;
 		if($bb->global === 1){
-			$items = 1;
+			$_ARV = 1;
+			$items = $_RD2 = &$dd;
 		}
-		array_push($items,0);
-		printf('%s %s %s',json_encode(array_push($items,1,9,6),true),json_encode($items = 2,true),json_encode(array_push($items,9999),true));
-		printf('%s',json_encode(array_pop($items),true));
-		printf('%s',json_encode(array_splice($items,0,5,''),true));
-		printf('%s',json_encode(array_shift($items),true));
-		printf('%s',json_encode(array_unshift($items,0,5,''),true));
+		$items_push = function(...$_args)use(&$items,&$_ARV,&$_RD1,&$_RD2){
+			switch($_ARV){
+				case 1 :
+					$_RV = array_push($_RD2,...$_args);
+					$items = $_RD2;
+					return $_RV;
+				default :
+					$_RV = array_push($_RD1,...$_args);
+					$items = $_RD1;
+					return $_RV;
+			}
+		};
+		$items_push(0);
+		$_ARV = 2;
+		printf('%s %s %s',json_encode($items_push(1,9,6),true),json_encode($items = [],true),json_encode($items_push(9999),true));
+		$items_pop = function()use(&$items,&$_ARV,&$_RD1,&$_RD2,&$_RD3){
+			switch($_ARV){
+				case 1 :
+					$_RV1 = array_pop($_RD2);
+					$items = $_RD2;
+					return $_RV1;
+				case 2 :
+					$_RV1 = array_pop($_RD3);
+					$items = $_RD3;
+					return $_RV1;
+				default :
+					$_RV1 = array_pop($_RD1);
+					$items = $_RD1;
+					return $_RV1;
+			}
+		};
+		printf('%s',json_encode($items_pop(),true));
+		$items_splice = function(...$_args)use(&$items,&$_ARV,&$_RD1,&$_RD2,&$_RD3){
+			switch($_ARV){
+				case 1 :
+					$_RV2 = array_splice($_RD2,...$_args);
+					$items = $_RD2;
+					return $_RV2;
+				case 2 :
+					$_RV2 = array_splice($_RD3,...$_args);
+					$items = $_RD3;
+					return $_RV2;
+				default :
+					$_RV2 = array_splice($_RD1,...$_args);
+					$items = $_RD1;
+					return $_RV2;
+			}
+		};
+		printf('%s',json_encode($items_splice(0,5,''),true));
+		$items_shift = function()use(&$items,&$_ARV,&$_RD1,&$_RD2,&$_RD3){
+			switch($_ARV){
+				case 1 :
+					$_RV3 = array_shift($_RD2);
+					$items = $_RD2;
+					return $_RV3;
+				case 2 :
+					$_RV3 = array_shift($_RD3);
+					$items = $_RD3;
+					return $_RV3;
+				default :
+					$_RV3 = array_shift($_RD1);
+					$items = $_RD1;
+					return $_RV3;
+			}
+		};
+		printf('%s',json_encode($items_shift(),true));
+		$items_unshift = function(...$_args)use(&$items,&$_ARV,&$_RD1,&$_RD2,&$_RD3){
+			switch($_ARV){
+				case 1 :
+					$_RV4 = array_unshift($_RD2,...$_args);
+					$items = $_RD2;
+					return $_RV4;
+				case 2 :
+					$_RV4 = array_unshift($_RD3,...$_args);
+					$items = $_RD3;
+					return $_RV4;
+				default :
+					$_RV4 = array_unshift($_RD1,...$_args);
+					$items = $_RD1;
+					return $_RV4;
+			}
+		};
+		printf('%s',json_encode($items_unshift(0,5,''),true));
 		System::typeof($dd);
 		array_push($this->getArrItems(),999);
-		$da = &$this->getArrItems();
+		$da = $_RD4 = &$this->getArrItems();
 		array_push($da,9999666);
-		$da = 1;
+		$_ARV1 = 1;
+		$da = ["hhhhhhhhhh"];
 		printf('%s',json_encode($da,true));
 		printf('%s',json_encode(array_pop($da),true));
 		$ui = ("==" . 'da' . 'bs') . "=========";
@@ -416,11 +495,13 @@ class Test extends Person{
 		return $dd;
 	}
 	private function &getArrItems():array{
-		$b = &$this->items;
+		$b = $_RD5 = &$this->items;
 		if($b){
-			$b = 1;
+			$_ARV2 = 1;
+			$b = $_RD5 = &$this->items;
 		}
-		$b = 2;
+		$_ARV2 = 2;
+		$b = [];
 		return $b;
 	}
 	private $items = [];

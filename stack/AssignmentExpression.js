@@ -7,19 +7,21 @@ class AssignmentExpression extends Syntax{
         }
        
         let refs = null;
-        const addressRefObject = this.getAssignAddressRef(desc);
-        if( this.stack.right.isMemberExpression || this.stack.right.isCallExpression || this.stack.right.isIdentifier ){
-            const originType = this.compiler.callUtils("getOriginType",  this.stack.right.type() );
-            if( originType.id === "Array" ){
-                this.addAssignAddressRef(desc, this.stack.right);
-                refs = '&';
+        if( desc && desc.isVariableDeclarator ){
+            const addressRefObject = this.getAssignAddressRef(desc);
+            if( this.stack.right.isMemberExpression || this.stack.right.isCallExpression || this.stack.right.isIdentifier ){
+                const originType = this.compiler.callUtils("getOriginType",  this.stack.right.type() );
+                if( originType.id === "Array" ){
+                    this.addAssignAddressRef(desc, this.stack.right);
+                    refs = '$'+this.generatorVarName(this.stack.right.description(),"_RD") + ' = &';
+                }
             }
-        }
 
-        if( addressRefObject ){
-            const left = this.make(this.stack.left);
-            const addressIndex = addressRefObject.getIndex( this.stack.right );
-            return `${left} = ${addressIndex}`;
+            if( addressRefObject ){
+                const left = '$'+this.generatorVarName(desc,"_ARV")
+                const addressIndex = addressRefObject.getIndex( this.stack.right );
+                this.insertExpression( this.stack, this.semicolon(`${left} = ${addressIndex}`) );
+            }
         }
 
         const right= this.make(this.stack.right);
