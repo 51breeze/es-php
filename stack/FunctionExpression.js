@@ -13,7 +13,27 @@ class FunctionExpression extends Syntax{
         const paramItems = this.stack.params;
         const before = [];
         const params = paramItems.map( item=>{
-            return this.make(item);
+            const type = item.type();
+            const originType = this.compiler.callUtils("getOriginType", type);
+            let typeName = '';
+            if(item.acceptType && item.isParamDeclarator ){
+                const t = this.getTypeName( item.acceptType.type() );
+                if( t ){
+                    typeName = t+' ';
+                }
+            }
+            if( originType.id === "Array" ){
+                const refs = '&$'+this.generatorVarName( item.description() , "_RD");
+                if( item.isAssignmentPattern ){
+                    const left = this.make( item.left );
+                    const right = this.make( item.right );
+                    before.push( this.semicolon(`\t${left} = is_null(${left}) ? ${right} : ${refs}`) );
+                }else{
+                    before.push( this.semicolon(`\t${this.make( item )} = ${refs}`) );
+                }
+                return typeName+refs;
+            }
+            return typeName+this.make(item);
         });
         let key = this.stack.isConstructor ? '__construct' : (this.stack.key ? this.stack.key.value() : null);
         const method = !!this.stack.parentStack.isMethodDefinition;

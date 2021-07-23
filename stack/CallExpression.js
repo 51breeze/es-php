@@ -22,7 +22,17 @@ class CallExpression extends Syntax{
     }
 
     emitter(){
-        const args = this.stack.arguments.map( item=>this.make(item));
+
+        const hasAssignmentExpression = this.stack.arguments.some( item=>!!item.isAssignmentExpression );
+        const args = this.stack.arguments.map( item=>{
+            const value = this.make(item);
+            if( hasAssignmentExpression ){
+                const name = '$'+this.generatorVarName(item,"_V" );
+                this.insertExpression( this.stack, this.semicolon(`${name} = ${value}`) );
+                return name;
+            }
+            return value;
+        });
         const desc = this.stack.callee.description();
         if( this.compiler.callUtils("isTypeModule", desc) ){
             this.addDepend( desc );

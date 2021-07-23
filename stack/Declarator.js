@@ -5,12 +5,6 @@ class Declarator  extends Syntax {
         if(desc && this.compiler.callUtils("isTypeModule",desc) ){
             this.module.addDepend( desc );
         }
-        if( this.stack.acceptType && this.stack.isParamDeclarator ){
-            const type = this.getTypeName( this.stack.acceptType.type() );
-            if( type ){
-                return `${type} \$${this.stack.value()}`;
-            }
-        }
         return `\$${this.stack.value()}`;
     }
 }

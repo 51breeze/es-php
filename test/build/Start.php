@@ -31,5 +31,12 @@ class Start extends TestCase{
 		$this->assertEquals($items,$this->list,"error");
 		array_push($this->items,5,6,7);
 		$this->assertEquals(3,count($this->items),"error");
+		$bb = [];
+		$this->addArray($bb,9);
+		$this->assertEquals(1,count($bb),"error");
+	}
+	public function addArray(array &$_RD2,$b){
+		$a = &$_RD2;
+		array_push($a,$b);
 	}
 }

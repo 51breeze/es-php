@@ -24,8 +24,17 @@ public class Start extends TestCase
         this.items.push( 5,6,7  );
 
         this.assertEquals(3,  this.items.length, "error");
+         
+         var bb = [];
+         this.addArray( bb, 9);
+
+         this.assertEquals(1, bb.length, "error");
 
 
+    }
+
+    addArray( a:int[] , b){
+        a.push(b);
     }
 
 }
