@@ -6,8 +6,11 @@
  * https://github.com/51breeze/EaseScript
  * @author Jun Ye <664371281@qq.com>
  */
-class Map 
-{
+////[namespace]
+////[require]
+////[reference]
+
+class Map {
     private $dataset = [];
     public function __construct()
     {
@@ -18,7 +21,7 @@ class Map
             case "size" :
                 return count( $this->dataset );
             default :
-                 throw new \Error( $name.' is not exists.');    
+                throw new \Error( $name.' is not exists.');    
         }
     }
 

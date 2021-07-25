@@ -7,8 +7,30 @@ class NewExpression extends Syntax{
             this.addDepend( desc );
         }
         let refs = callee;
+        const hasAssignmentExpression = this.stack.arguments.some( item=>!!item.isAssignmentExpression );
+        const declareParams = desc.params;
+        const args=this.stack.arguments.map( (item,index)=>{
+            let value = this.make( item );
+            const addressVariable = this.getAssignAddressRef( item.description() );
+            const rd = addressVariable && addressVariable.getLastAssignedRef();
+            if( rd ){
+                value = '$'+rd; 
+            }
+            if( declareParams && declareParams[index] && (hasAssignmentExpression || item.isArrayExpression) ){
+                const declareType = declareParams[index].type();
+                if( declareType ){
+                    const originType = this.compiler.callUtils("getOriginType", declareType );
+                    if( originType.id === "Array" ){
+                        const name = '$'+this.generatorVarName(item,"_V" );
+                        this.insertExpression( this.stack, this.semicolon(`${name} = ${value}`) );
+                        return name;
+                    }
+                }
+            }
+            return value;
+        }).join(",");
+
         if( desc === this.stack.getModuleById("Array") ){
-            let args=this.stack.arguments.map( item=> this.make(item) ).join(",");
             if( this.stack.arguments.length >0  ){
                 if( this.stack.arguments.length === 1 ){
                     this.addDepend( this.stack.getModuleById("Array") );
@@ -18,12 +40,13 @@ class NewExpression extends Syntax{
             }
             return `[]`;
         }
+
         if( this.stack.callee.isParenthesizedExpression ){
             refs = '$'+this.generatorRefName(this.stack.callee, "_refClass", "new", ()=>{
                 return callee;
             });
         }
-        const args=this.stack.arguments.map( item=> this.make(item) ).join(",");
+        
         return `new ${refs}(${args})`;
     }
 }

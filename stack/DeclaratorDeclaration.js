@@ -7,13 +7,31 @@ class DeclaratorDeclaration extends Syntax{
         if( !polyfillModule || !polyfillModule.content || !polyfillModule.export ){
             return null;
         }
-        const content = [polyfillModule.content];
+        const content = polyfillModule.content.toString();
         const refs = [];
+        const requires  = [];
         polyfillModule.require.forEach( name=>{
             this.addDepend( this.stack.getModuleById(name) );
         });
-        this.createDependencies(module,refs);
-        return `${refs.concat(content).join("\r\n")}`;
+        this.createDependencies(module,refs,requires);
+        return content.replace(/\/\/\/\/\[(require|namespace|reference)\](\r?\n)/g,(all,name,line)=>{
+            let result = '';
+            switch( name ){
+                case 'require' :
+                    result = requires.join("\r\n");
+                    break;
+                case 'namespace' :
+                    const namespace = (polyfillModule.namespace || '').replace(/\./g,'\\');
+                    if( namespace ){
+                        result = `namespace ${namespace};`;
+                    }
+                    break;
+                case 'reference' :
+                    result = refs.join("\r\n"); 
+                    break;
+            }
+            return result ? result+line : '';
+        });
     }
 }
 

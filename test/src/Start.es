@@ -30,14 +30,37 @@ public class Start extends TestCase
 
          this.assertEquals(1, bb.length, "error");
 
+         this.addArray([], 6)
+
+         var bs = this.ccArray();
+         bs.push( 6 );
+        this.assertEquals(bs, this.arrItems, "error");
+
+        bs = []
+
+        this.pushArray(bs, 9)
+        this.pushArray(bs, 1)
+         this.assertEquals(bs, [9,1], "error");
 
     }
 
-    addArray( a:int[] , b){
+    addArray( a:string[], b){
+
+        //a = [];
+        
         a.push(b);
+       
+    }
+
+    private const arrItems =[];
+
+    ccArray(){
+        var b =  this.arrItems;
+        return b;
+    }
+
+    pushArray(a, b){
+        a.push( b );
     }
 
 }
-
-    
-

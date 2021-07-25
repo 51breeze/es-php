@@ -23,20 +23,33 @@ class CallExpression extends Syntax{
 
     emitter(){
 
-        const hasAssignmentExpression = this.stack.arguments.some( item=>!!item.isAssignmentExpression );
-        const args = this.stack.arguments.map( item=>{
-            const value = this.make(item);
-            if( hasAssignmentExpression ){
-                const name = '$'+this.generatorVarName(item,"_V" );
-                this.insertExpression( this.stack, this.semicolon(`${name} = ${value}`) );
-                return name;
-            }
-            return value;
-        });
-        const desc = this.stack.callee.description();
+        const desc = this.stack.description();
         if( this.compiler.callUtils("isTypeModule", desc) ){
             this.addDepend( desc );
         }
+        const hasAssignmentExpression = this.stack.arguments.some( item=>!!item.isAssignmentExpression );
+        const declareParams = desc.params;
+        const args = this.stack.arguments.map( (item,index)=>{
+            let value = this.make( item );
+            const addressVariable = this.getAssignAddressRef( item.description() );
+            const rd = addressVariable && addressVariable.getLastAssignedRef();
+            if( rd ){
+                value = '$'+rd; 
+            }
+            if( declareParams && declareParams[index] && (hasAssignmentExpression || item.isArrayExpression) ){
+                const declareType = declareParams[index].type();
+                if( declareType ){
+                    const originType = this.compiler.callUtils("getOriginType", declareType );
+                    if( originType.id === "Array" ){
+                        const name = '$'+this.generatorVarName(item,"_V" );
+                        this.insertExpression( this.stack, this.semicolon(`${name} = ${value}`) );
+                        return name;
+                    }
+                }
+            }
+            return value;
+        });
+        
         const result = this.intercept(args);
         if( result ){
             return result === true ? null : result;
@@ -44,10 +57,11 @@ class CallExpression extends Syntax{
         if( this.stack.callee.isMemberExpression ){
             if( desc && desc.isType && desc.isAnyType  ){
                 this.addDepend( this.stack.getModuleById("Reflect") );
+               
                 if( args.length > 0 ){
-                    return `${this.checkRefsName("Reflect")}::call(${this.module.id},${this.make(this.stack.callee.object)},"${this.stack.callee.property.value()}",[${args.join(",")}])`;
+                    return `${this.checkRefsName("Reflect")}::call(${this.getClassStringName(this.module)},${this.make(this.stack.callee.object)},"${this.stack.callee.property.value()}",[${args.join(",")}])`;
                 }else{
-                    return `${this.checkRefsName("Reflect")}::call(${this.module.id},${this.make(this.stack.callee.object)},"${this.stack.callee.property.value()}")`;
+                    return `${this.checkRefsName("Reflect")}::call(${this.getClassStringName(this.module)},${this.make(this.stack.callee.object)},"${this.stack.callee.property.value()}")`;
                 }
             }
         }

@@ -108,3 +108,8 @@ package PHPUnit.Framework{
 
    }
 }
+
+declare function require_once( $name );
+
+declare function spl_autoload_register(callback: (name:string)=>void, throwError?:boolean,  prepend?:boolean);
+

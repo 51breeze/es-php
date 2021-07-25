@@ -6,6 +6,10 @@
  * @author Jun Ye <664371281@qq.com>
  * @require System,ReferenceError,TypeError
  */
+////[namespace]
+////[require]
+////[reference]
+
 class Date
 {
     private $dateString=null;

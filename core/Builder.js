@@ -10,7 +10,6 @@ class Builder extends Syntax{
         const compilation = this.compilation;
         const buildModules = new Set();
         const config      = this.getConfig();
-        const fileSystem  = this.compiler.getOutputFileSystem(this.name); 
         const isNeedBuild=(module)=>{
             const isDeclaratorModule = module.isDeclaratorModule;
             const isPolyfill = isDeclaratorModule && Polyfill.modules.has( module.id );

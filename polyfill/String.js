@@ -3,7 +3,8 @@ const path = require("path");
 module.exports={
     content: fs.readFileSync( path.join(__dirname,"./files/String.php") ),
     export:"String",
-    require:[],
+    require:['RegExp'],
+    isClass:false,
     namespace:"es.core",
     method(target, thisObject, name, args){
         let object = target.make(thisObject);
@@ -17,23 +18,20 @@ module.exports={
             case "includes" :
                 return `strpos(${[object].concat(args).join(",")}) !== false`;
             case "indexOf" :
-                return `es_string_indexOf(${[object].concat(args).join(",")})`;
+                return `es_string_index(${[object].concat(args).join(",")})`;
+            case "lastIndexOf" :
+                return `es_string_last_index(${[object].concat(args).join(",")})`;
             case "localeCompare" :
                 return `strcmp(${[object].concat(args).join(",")})`;
             case "match" :
-                target.addDepend( target.stack.getModuleById('RegExp') );
                 return `(new RegExp(${args[0]}))->match(${object})`;
             case "matchAll" :
-                target.addDepend( target.stack.getModuleById('RegExp') );
                 return `(new RegExp(${args[0]}))->matchAll(${object})`;
             case "replace" :
-                target.addDepend( target.stack.getModuleById('RegExp') );
-                return `(new RegExp(${args[0]}))->replace(${object},${args[1]})`;
+                return `es_string_replace(${[object].concat(args).join(",")})`;
             case "replaceAll" :
-                target.addDepend( target.stack.getModuleById('RegExp') );
-                return `(new RegExp(${args[0]}))->replaceAll(${object},${args[1]})`;
+                return `es_string_replace_all(${[object].concat(args).join(",")})`;
             case "search" :
-                target.addDepend( target.stack.getModuleById('RegExp') );
                 return `(new RegExp(${args[0]}))->search(${object})`;
             case "slice" :
                 return `mb_substr(${[object].concat(args).join(",")})`;

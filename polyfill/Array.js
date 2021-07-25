@@ -8,12 +8,16 @@ const push = (content, name, object, args, indent, refs, result)=>{
         case "pop" :
         case "shift" :
         case "splice" :
-            if( result && content ){
-                content.push(`${indent}${result} = array_${name}(${[object].concat(args).join(",")});`);
-                if( refs ){
-                    content.push(`${indent}${refs} = ${object};`);
+            if( content ){
+                if( result ){
+                    content.push(`${indent}${result} = array_${name}(${[object].concat(args).join(",")});`);
+                    if( refs ){
+                        content.push(`${indent}${refs} = ${object};`);
+                    }
+                    content.push(`${indent}return ${result};`);
+                }else{
+                    content.push(`${indent}return array_${name}(${[object].concat(args).join(",")});`); 
                 }
-                content.push(`${indent}return ${result};`);
             }else{
                 return `array_${name}(${[object].concat(args).join(",")})`;
             }
@@ -24,8 +28,8 @@ const push = (content, name, object, args, indent, refs, result)=>{
 
 const createMethod = (target,desc,object,args,name)=>{
     const assignAddress = target.getAssignAddressRef(desc);
-    if( assignAddress && assignAddress.hasCross() && desc.isVariableDeclarator ){
-        const origin = target.make( desc.id );
+    if( assignAddress && target.hasCrossScopeAssignment( desc.assignItems ) ){
+        const origin = desc.isVariableDeclarator ? target.make( desc.id ) : desc.isAssignmentPattern ? target.make( desc.left ) : target.make( desc );
         const dataset = target.createDataByStack(desc);
         let push_method_name = dataset[ origin+name ];
         if( !push_method_name ){
@@ -41,18 +45,19 @@ const createMethod = (target,desc,object,args,name)=>{
             push_method_name = origin+target.generatorVarName(desc,`_${name}`,true);
             const defaultContent = [];
 
-            assignAddress.dataset.forEach( (index,item)=>{
+            let itemIndex = 0;
+            desc.assignItems.forEach( (item)=>{
                 const desc = item.description();
-                const refs = '$'+target.generatorVarName(desc,"_RD");
-                uses.push( refs );
-                if( index == 0){
-                    defaultContent.push(`${indent}\t\tdefault :`);
-                    push(defaultContent, name, refs, push_args_name ? [push_args_name] : [], `${indent}\t\t\t`, origin, result);
-                }else{
-                    content.push(`${indent}\t\tcase ${index} :`);
+                if( assignAddress.hasName(desc) ){
+                    const refs = '$'+assignAddress.getName(desc);
+                    uses.push( refs );
+                    content.push(`${indent}\t\tcase ${itemIndex++} :`);
                     push(content, name, refs, push_args_name ? [push_args_name] : [], `${indent}\t\t\t`, origin, result);
                 }
             });
+
+            content.push(`${indent}\t\tdefault:`);
+            push(content, name, origin, push_args_name ? [push_args_name] : [], `${indent}\t\t\t`);
             
             const push_method = [
                 `function(${push_args_name})use(&${uses.join(',&')}){`,
@@ -73,7 +78,8 @@ const createMethod = (target,desc,object,args,name)=>{
 module.exports={
     content: fs.readFileSync( path.join(__dirname,"./files/Array.php") ),
     export:"ArrayMethod",
-    require:[],
+    require:['System'],
+    isClass:false,
     namespace:"es.core",
     method(target, thisObject, name, args, desc, isStatic){
         if( isStatic ){
@@ -88,7 +94,9 @@ module.exports={
             return null;
         }
 
-        let object =  target.make(thisObject);
+        const addressVariable = target.getAssignAddressRef(desc);
+        const rd = addressVariable && addressVariable.getLastAssignedRef();
+        let object = rd ? '$'+rd : target.make(thisObject);
         if( thisObject.isArrayExpression ){
             const refs = '$'+target.generatorVarName(target.stack, '_AR');
             target.insertExpression(target.stack, target.semicolon(`${refs} = ${object}`));

@@ -5,52 +5,36 @@
  * Released under the MIT license
  * https://github.com/51breeze/EaseScript
  * @author Jun Ye <664371281@qq.com>
- * @require TypeError,System,ReferenceError,ArrayList
  */
-final class Reflect
-{
-    final static private function funMap($type)
-    {
+////[namespace]
+////[require]
+////[reference]
+
+final class Reflect{
+    /**
+     * 针对全局对象中的方法进行兼容
+     */
+    final static private function method($type){
         static $map=null;
-        if( $map === null )
-        {
+        if( $map === null ){
             $map = [
-                "system"=>function (&$target, &$name, $args=null){
-                    
-                    switch ( $name ) {
-                        case "isDefined":
-                            return ["isset", [&$target]];
-                        case "trim" :
-                            return ["trim",[&$target]];
-                        case "isString" :
-                            return ["is_string",[&$target]];
-                        case "isFunction" :
-                            return ["is_callable",[&$target]];
-                        case "parseInt" :
-                            return ["intval",[&$target]];
-                    }
-                    return null;
-                },
                 "function"=>function (&$target, &$name, $args=null) {
                     switch ( $name ) {
                         case "call" :
-                            return  [["\\es\\system\\Reflect","call"], $args ];
+                            return  [["\\es\\core\\Reflect","call"], $args ];
                         case "apply" :
-                            return  [["\\es\\system\\Reflect","apply"], $args ];
+                            return  [["\\es\\core\\Reflect","apply"], $args ];
                         case "bind" :
-                            return  [["\\es\\system\\System","bind"], $args ];
+                            return  [["\\es\\core\\System","bind"], $args ];
                     }
                     return null;
                 },
-                "array"=>function (&$target, &$name, $args=null)
-                {
+                "array"=>function (&$target, &$name, $args=null){
                     switch ( $name ){
                         case "slice" :
                             return ["array_slice", $args];
                         case "indexOf" :
-                            return [function(&$target,&$needle){ 
-                                return ($result = array_search($needle, $target)) !== false ? $result : -1;
-                            }, array_merge( [&$target], $args) ];
+                            return ['es_array_search_index', array_merge( [&$target], $args) ];
                         case "splice" :
                             return ["array_splice", array_merge( [&$target], $args) ];
                         case "push" :
@@ -64,23 +48,7 @@ final class Reflect
                         case "length" :
                             return ["count", [&$target] ];
                         case "concat" :
-                            return [function(&$args){
-                                $results = [];
-                                foreach( $args as $value )
-                                {
-                                    if( $value instanceof \es\system\BaseObject )
-                                    {
-                                        $value = $value->valueOf();
-                                    }
-                                    if( System::isArray($value) )
-                                    {
-                                        $results = array_merge($results, $value);
-                                    }else{
-                                        array_push($results,  $value);
-                                    }
-                                }
-                                return $results;
-                            }, [array_merge( [&$target], $args)] ];
+                            return ['es_array_concat', [array_merge( [&$target], $args)] ];
                         case "fill" :
                             return ["array_fill", array_merge( [&$target], $args) ];
                         case "filter" :
@@ -96,48 +64,22 @@ final class Reflect
                         case "map" :
                             return ["array_map", array_merge($args, [&$target] ) ];
                         case "lastIndexOf" :
-                            return [function(&$target,&$needle){
-                                $len = count( $target );
-                                while( $len > 0 )
-                                {
-                                    if( $target[ --$len ] === $needle )
-                                    {
-                                        return $len;
-                                    }
-                                }
-                                return null;
-                            }, array_merge( [&$target], $args) ];
+                            return ['es_array_search_last_index', array_merge( [&$target], $args) ];
                         case "find" :
-                            return [function(&$target,&$needle){
-                                $len = count( $target );
-                                for( $index = 0; $index < $len;$index++ )
-                                {
-                                    if( $target[ $index ] === $needle )
-                                    {
-                                        return  $target[ $index ];
-                                    }
-                                }
-                                return null;
-                            }, array_merge( [&$target], $args) ];
+                            return ['es_array_find', array_merge( [&$target], $args) ];
                     }
                     return null;
                 },
-                "string"=>function (&$target, &$name, $args=null)
-                {
-                    switch ( $name )
-                    {
+                "string"=>function (&$target, &$name, $args=null){
+                    switch ( $name ){
                         case "length" :
                             return ["mb_strlen", [$target] ];
                         case "replace" :
                             return ["str_replace", array_merge($args,[$target])];
                         case "indexOf" :
-                            return [function(&$target,&$needle){
-                                return ($result = strpos($target, $needle )) !== false ? $result : -1;
-                            }, array_merge( [$target], $args) ];
+                            return ['es_string_index', array_merge( [$target], $args) ];
                         case "lastIndexOf" :
-                            return [function(&$target,&$needle){
-                                return ($result = strrpos($target, $needle )) !== false ? $result : -1;
-                            }, array_merge( [$target], $args) ];
+                            return ['es_string_last_index', array_merge( [$target], $args) ];
                         case "match" :
                             return [ [$args[0],$name], [$target] ];
                         case "matchAll" :
@@ -146,18 +88,14 @@ final class Reflect
                             return ["explode", [$args[0],$target]];
                         case "search" :
                             return [function(&$target,&$needle){
-                                if( is_string($needle) )
-                                {
-                                    return ($result = strpos($target, $needle )) !== false ? $result : -1;
-
-                                }else if( $needle instanceof \es\system\RegExp )
-                                {
+                                if( $needle instanceof \es\core\RegExp ){
                                     return $needle->search( $target );
+                                }else{
+                                    return ($result = strpos($target, $needle)) !== false ? $result : -1;
                                 }
-                                throw new \es\system\TypeError("String.search parameter can only be String or RegExp");
                             }, array_merge( [$target], $args) ];
                         case "charAt" :
-                            return ["substr", [$target,$args[0],$args[0]+1] ];
+                            return ["mb_substr", [$target,$args[0],$args[0]+1] ];
                         case "charCodeAt" :
                             return ["ord", [substr($target,$args[0],$args[0]+1)]];
                         case "repeat" :
@@ -192,15 +130,9 @@ final class Reflect
                             return ["str_pad", array_merge([$target], array_merge( array_pad( $args,3," " ),STR_PAD_LEFT))];
                     }
                     return null;
-                } ,
-                "regexp"=>function (&$target, &$name, $args=null)
-                {
-                    return null;
                 },
-                "math"=>function (&$target, &$name, $args=null)
-                {
-                    switch ( $name )
-                    {
+                "math"=>function (&$target, &$name, $args=null){
+                    switch ( $name ){
                         case "random" :
                             return [function(){
                                 return mt_rand(1,2147483647) / 2147483647;
@@ -212,13 +144,14 @@ final class Reflect
                 }
             ];
         }
-        return @$map[$type] ?: null;
+        return $map[ $type ] ?? null;
     }
 
-    final static private function getReflectionMethodOrProperty( $target, $name, $accessor='',$scope=null)
-    {
-        if( $target==null )
-        {
+    /**
+     * 获取对象中的方法或者属性
+     */
+    final static private function getReflectionMethodOrProperty( $target, $name, $accessor='',$scope=null){
+        if( $target==null ){
             return null;
         }
 
@@ -306,108 +239,90 @@ final class Reflect
      * @param argumentsList
      * @returns {*}
      */
-    final static public function construct($scope, $target , $args=null )
-    {
-        if( class_exists($target) )
-        {
+    final static public function construct($scope, $target , $args=null ){
+        if( class_exists($target) ){
             $reflect = new \ReflectionClass( $target );
-            if( $reflect->isAbstract() )
-            {
+            if( $reflect->isAbstract() ){
                 throw new TypeError('Abstract class cannot be instantiated');
             }
-
             if ($args && is_array($args) ) {
                 return $reflect->newInstanceArgs($args);
             } else {
                 return $reflect->newInstance($args);
             }
-
-        }else
-        {
-            throw new TypeError('Not found the "'.$target.'" class.');
+        }else{
+            throw new \TypeError('Not found the "'.$target.'" class.');
         }
     }
 
-    final static public function apply( $target, $thisArgument=null, $argumentsList=null )
-    {
-        if( !is_callable($target) )
-        {
+    /**
+     * 调用指定的方法
+     */
+    final static public function apply( $target, $thisArgument=null, $argumentsList=null ){
+        if( !is_callable($target) ){
             throw new TypeError('target is not callable');
         }
-        if( $thisArgument !=null )
-        {
+        if( $thisArgument !== null ){
             $target = System::bind( $target, $thisArgument);
         }
         return call_user_func_array( $target, !is_array($argumentsList) ? array() :  $argumentsList );
     }
 
-    final static public function call( $scope, $target, $name=null, array $args=null, $thisArg=null)
-    {
+    /**
+     * 调用指定对象中的方法
+     */
+    final static public function call( $scope, &$target, $name=null, array $args=null, $thisArg=null){
         $type = null;
-        if( is_string($target) )
-        {
+        if( is_string($target) ){
             $type = "string";
-        }else if( is_array($target) )
-        {
+        }else if( is_array($target) ){
             $type = "array";
         }
 
-        if( $type )
-        {
-            $fn = Reflect::funMap( $type );
-            if( $fn )
-            {
+        if( $type ){
+            $fn = Reflect::method( $type );
+            if( $fn ){
                 $args = $args ?: [];
                 $method = $fn($target, $name, $args);
-                if( $method )
-                {
+                if( $method ){
                     return call_user_func_array($method[0], $method[1]);
                 }
             }
         }
 
-        if( is_callable($target) && $name==null )
-        {
+        if( is_callable($target) && $name==null ){
             return Reflect::apply($target, $thisArg, $args);
         }
 
-        if( !is_object($target) )
-        {
-            throw new ReferenceError( 'target is non-object');
+        if( !is_object($target) ){
+            throw new \Exception( 'target is non-object');
         }
 
         $desc =  self::getReflectionMethodOrProperty($target, $name,'',$scope);
-        if( $desc )
-        {
+        if( $desc ){
             list($type, $method) = $desc;
             $desc = false;
-            if( $type===2 )
-            {
+            if( $type===2 ){
                 $thisArg = $thisArg==null && !is_string($target) ? $target : $thisArg;
-                if( $thisArg != null && $thisArg !== $target )
-                {
+                if( $thisArg != null && $thisArg !== $target ){
                     $fn = \Closure::bind( $method->getClosure($thisArg), $thisArg );
                     return $args==null ? $fn() : call_user_func_array($fn, $args);
                 }
                 return $args==null ? $method->invoke( $thisArg ) : $method->invokeArgs( $thisArg , $args );
             }
         }
-
-        if( $desc==false )
-        {
+        if( $desc==false ){
             return $target->__call($name, $args==null ? [] : $args );
-        }else
-        {
-            throw new ReferenceError( $name." method is not accessible", __FILE__, __LINE__);
         }
+        throw new \Exception( $name." method is not accessible");
     }
 
-    final static public function get( $scope, $target, $name, $thisArg=null )
-    {
-        if( is_array($target) )
-        {
-            if ( is_string($name) )
-            {
+    /**
+     * 获取指定对象中的属性值
+     */
+    final static public function get( $scope, $target, $name, $thisArg=null ){
+        if( is_array($target) ){
+            if ( is_string($name) ){
                 switch ($name) {
                     case 'length' :
                         return count($target);
@@ -416,8 +331,7 @@ final class Reflect
             return isset($target[$name]) ? $target[$name] : null;
         }
 
-        if ( is_string($target) )
-        {
+        if ( is_string($target) ){
             switch ($name) {
                 case 'length' :
                     return strlen( $target );
@@ -425,40 +339,36 @@ final class Reflect
         }
 
         $desc =  self::getReflectionMethodOrProperty($target, $name,'get', $scope);
-        if( $desc )
-        {
+        if( $desc ){
             list($type, $method) = $desc;
-            if( $type === 3 )
-            {
+            if( $type === 3 ){
                 return $method->getClosure($target);
             }
 
-            if( $type===2 )
-            {
+            if( $type===2 ){
                 $thisArg = $thisArg==null ? $target : $thisArg;
-                if( $thisArg !== $target )
-                {
+                if( $thisArg !== $target ){
                     $fn = \Closure::bind( $method->getClosure($target), $thisArg );
                     return $fn();
                 }
                 return $method->invoke( $thisArg );
-
-            }else
-            {
+            }else{
                 return $method->getValue($target);
             }
+        }
+        if( !is_object($target) ){
+            throw new \Exception( 'target is non-object');
         }
         return $target->__get($name);
     }
 
-    final static public function set($scope,$target, $name, $value, $thisArg=null)
-    {
-        if( is_array($target) )
-        {
-            if ( is_string($name) )
-            {
-                switch ($name)
-                {
+    /**
+     * 设置指定对象中的属性值
+     */
+    final static public function set($scope,$target, $name, $value, $thisArg=null){
+        if( is_array($target) ){
+            if ( is_string($name) ){
+                switch ($name){
                     case 'length' :
                         return count($target);
                 }
@@ -467,12 +377,10 @@ final class Reflect
         }
 
         $desc =  self::getReflectionMethodOrProperty($target, $name,'set', $scope);
-        if( $desc )
-        {
+        if( $desc ){
             list($type, $method) = $desc;
             $desc = false;
-            if( $type===2 )
-            {
+            if( $type===2 ){
                 $thisArg = $thisArg==null ? $target : $thisArg;
                 if( $thisArg!==$target )
                 {
@@ -482,31 +390,39 @@ final class Reflect
                 $method->invoke( $thisArg , $value );
                 return $value;
 
-            }else
-            {
+            }else{
                 $method->setValue($target, $value);
                 return $value;
             }
+        }
+        if( !is_object($target) ){
+            throw new \Exception( 'target is non-object');
         }
         $target->__set($name,$value);
         return $value;
     }
 
-    final static public function has($scope, $target, $name)
-    {
+    /**
+     * 指定对象中的属性值是否存在
+     */
+    final static public function has($scope, $target, $name){
         return !!self::getReflectionMethodOrProperty($target, $name,'get', $scope);
     }
 
-    final static public function incre($scope,$target, $propertyKey, $flag=true)
-    {
+    /**
+     * 对指定对象中的属性做增量操作
+     */
+    final static public function incre($scope,$target, $propertyKey, $flag=true){
         $val = \Reflect::get($scope,$target, $propertyKey, null );
         $ret = $val+1;
         \Reflect::set($scope,$target, $propertyKey, $ret , null);
         return $flag ? $val : $ret;
     }
 
-    final static public function decre($scope,$target, $propertyKey, $flag=true)
-    {
+    /**
+     * 对指定对象中的属性做减量操作
+     */
+    final static public function decre($scope,$target, $propertyKey, $flag=true){
         $val = \Reflect::get($scope,$target, $propertyKey, null);
         $ret = $val-1;
         \Reflect::set($scope,$target, $propertyKey, $ret , null);

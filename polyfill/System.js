@@ -5,5 +5,6 @@ module.exports={
     export:"System",
     require:[],
     isSystem:true,
+    isClass:true,
     namespace:"es.core"
 }

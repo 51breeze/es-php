@@ -5,9 +5,9 @@
  * https://github.com/51breeze/EaseScript
  * @author Jun Ye <664371281@qq.com>
  */
-
-namespace \es\core;
-use System;
+namespace es\core;
+require_once('es/core/System.php');
+use \es\core\System;
 
 function es_array_filter($array, $callback, $thisArg=null){
     $callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
@@ -81,10 +81,10 @@ function es_array_search_last_index($array, $value, $formIndex=null ){
     return -1;
 }
 
-function es_array_concat($array, ...$items){
-    array_push($array, ...$items);
-    return $array;
+function es_array_concat(array $array, ...$items){
+    return $array + es_array_flat( $items );
 }
+
 
 function es_array_fill($array, $value, $start=0, $end=0){
     $len = count($array);
@@ -104,7 +104,7 @@ function es_array_foreach($array, $callback, $thisArg=null){
 
 function es_array_flat($array, $depth=1){
     return es_array_reduce($array, function($all, $val){
-        $result = (array)(is_array($val) ? es_array_flat($val, $depth - 1) : $val);
+        $result = (array)(is_array($val) && $depth > 0 ? es_array_flat($val, $depth - 1) : $val);
         array_push($all, ...$result);
         return $all;
     },[]);

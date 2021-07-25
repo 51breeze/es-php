@@ -16,7 +16,8 @@ class Person implements TestInterface{
 	public function method(string $name,int $age){
 		$b = ["",["1",1]];
 		array_push($b,'1');
-		array_push($b,['1',1]);
+		$_V = ['1',1];
+		array_push($b,$_V);
 		$this->getTarget()->address();
 		return "sssss";
 	}

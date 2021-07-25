@@ -12,11 +12,22 @@ class VariableDeclarator extends Syntax {
             let refs = null;
             const type = this.stack.init && this.stack.init.type();
             if( this.stack.init ){
-                if( this.stack.init.isMemberExpression || this.stack.init.isCallExpression || this.stack.init.isIdentifier){
+                const maybeArrayRef = this.stack.init.isMemberExpression || this.stack.init.isCallExpression || this.stack.init.isIdentifier;
+                if( maybeArrayRef ){
                     const originType = this.compiler.callUtils("getOriginType", type );
                     if( originType.id === "Array" ){
-                        this.addAssignAddressRef( this.stack, this.stack.init );
-                        refs = '$'+this.generatorVarName(this.stack.init.description(),"_RD") + ' = &';
+                        const address = this.addAssignAddressRef( this.stack, this.stack.init);
+                        if( this.hasAssigned(this.stack) ){
+                            const name = address.createName( this.stack.init.description() );
+                            refs = `\$${name} = &`;
+                        }else{
+                            refs = `&`;
+                        }
+                        if( this.hasCrossScopeAssignment(this.stack.assignItems) ){
+                            const left = '$'+this.generatorVarName(this.stack,"_ARV")
+                            const addressIndex = address.getIndex( this.stack.init );
+                            this.insertExpression( this.stack, this.semicolon(`${left} = ${addressIndex}`) );
+                        }
                     }
                 }
             }

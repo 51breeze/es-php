@@ -1,4 +1,5 @@
 <?php 
+namespace es\core;
 
 class RegExp {
 
@@ -111,6 +112,10 @@ class RegExp {
         $flags   = $this->flags;
         $pattern = $flags ? $pattern.$flags : $pattern;
         return $pattern;
+    }
+
+    public function __toString(){
+        return $this->toString();
     }
 
 }

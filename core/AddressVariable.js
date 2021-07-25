@@ -1,9 +1,43 @@
 class AddressVariable {
-    constructor( target ){
+    constructor( target, syntax){
        this.dataset = new Map();
+       this.refs = new Map();
        this.target = target;
+       this.syntax = syntax;
        this.cross = 0;
        this.last = null;
+    }
+
+    setName(desc, name){
+        this.refs.set( desc, name );
+    }
+
+    getName(desc){
+        return this.refs.get( desc );
+    }
+
+    hasName(desc){
+        return this.refs.has( desc );
+    }
+
+    getLastAssignedRef(){
+        if( !this.hasCross() && this.last ){
+           const name = this.getName( this.last.description() );
+           if( name ){
+               return name;
+           }
+        }
+        return null;
+    }
+
+    createName(description){
+        if( !description )return null;
+        if( !this.refs.has( description ) ){
+            const name = this.syntax.generatorVarName(description,"_RD");
+            this.setName(description, name );
+            return name;
+        }
+        return this.getName(description);
     }
 
     add(value){

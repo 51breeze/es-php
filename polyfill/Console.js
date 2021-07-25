@@ -2,6 +2,7 @@ module.exports={
     content: null,
     export:false,
     require:[],
+    isClass:false,
     namespace:"es.core",
     method(target, thisObject, name, args){
         switch( name ){

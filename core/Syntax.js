@@ -28,12 +28,33 @@ class Syntax extends events.EventEmitter {
     }
 
     addAssignAddressRef(target, value){
-        if( !value )return;
         const data = this.createDataByStack(target);
         if( !data.AddressVariable ){
-            data.AddressVariable = new AddressVariable( target );
+            data.AddressVariable = new AddressVariable( target, this );
         }
-        data.AddressVariable.add( value );
+        if( value ){
+            data.AddressVariable.add( value );
+        }
+        return data.AddressVariable;
+    }
+
+    hasCrossScopeAssignment( assignSetObject ){
+        const items = Array.from( assignSetObject.values() );
+        if( items.length < 1 )return false;
+        const firstScope = items[0].scope;
+        return items.some( item=>{
+           return item.scope !== firstScope;
+        });
+    }
+
+    hasAssigned( stack ){
+        if( stack && (stack.isVariableDeclarator || stack.isParamDeclarator) ){
+            if( stack.isAssignmentPattern || stack.init ){
+                return stack.assignItems.size > 1;
+            }
+            return stack.assignItems.size > 0;
+        }
+        return false;
     }
 
     getAssignAddressRef(target){
@@ -117,6 +138,11 @@ class Syntax extends events.EventEmitter {
             }
         }
         return '\\'+module.namespace.getChain().concat(module.id).join("\\");
+    }
+
+    getClassStringName( module ){
+        const name = this.getReferenceNameByModule(module);
+        return `'${name}'`;
     }
 
     getEventName( name ){
@@ -272,13 +298,14 @@ class Syntax extends events.EventEmitter {
     getIndent(num=null){
         let level = num === null ? this.scope.level : num;
         if( num === null ){
-            const asyncIndent =  0;
-            if( this.scope.parent && this.stack.isFunctionExpression ) {
+            const fnScope = this.scope.getScopeByType("function");
+            if( fnScope && fnScope.parent && fnScope.parent.type("top") && !this.stack.parentStack.isCallExpression ){
+                level+=1;
+            }else if( this.scope.parent && this.stack.isFunctionExpression ) {
                 level = this.scope.parent.level;
             }else if( !this.stack.isBreakStatement && this.inCaseStatement() ){
                 level+=1;
             }
-            level+=asyncIndent;
         }
         level = this.getLevel(level);
         return level > 0 ? "\t".repeat( level ) : '';
@@ -314,7 +341,7 @@ class Syntax extends events.EventEmitter {
    
     addDepend( depModule ){
         const module = this.module;
-        if( !depModule.isModule || depModule === module )return;
+        if( !depModule.isModule || depModule === this.module )return;
         if( !dependModules.has( module ) ){
             dependModules.set(module,new Set());
         }
@@ -324,7 +351,7 @@ class Syntax extends events.EventEmitter {
     }
 
     getDependencies( module ){
-        return dependModules.get(module) || [];
+        return dependModules.get( module ) || [];
     }
 
     isDependModule(depModule){
@@ -337,20 +364,29 @@ class Syntax extends events.EventEmitter {
         return false;
     }
 
-    createDependencies(module, refs){
+    createDependencies(module, refs, requires){
         refs = refs || [];
+        requires = requires || refs;
         const importAlias = module.importAlias;
         this.getDependencies(module).forEach( depModule=>{
             if( this.isDependModule(depModule) ){
                 const polyfillModule = depModule.isDeclaratorModule && Polyfill.modules.get(depModule.id);
+                const alias = importAlias.has(depModule) ? importAlias.get(depModule) : null;
+                let paths = null;
                 if( polyfillModule ){
                     if( polyfillModule.export ){
-                        refs.push( this.createImport('\\'+polyfillModule.namespace.split('.').concat(polyfillModule.export).join("\\"), null) );
+                        paths = polyfillModule.namespace.split('.').concat(polyfillModule.export);
+                        requires.unshift( `require_once('${paths.join("/")}.php');` );
+                        if( !polyfillModule.isClass ){
+                            paths = null;
+                        }
                     }
-                    return;
+                }else{
+                    paths = depModule.namespace.getChain().concat(depModule.id);
                 }
-                const alias = importAlias.has(depModule) ? importAlias.get(depModule) : null;
-                refs.push( this.createImport('\\'+depModule.namespace.getChain().concat(depModule.id).join("\\"), alias) );
+                if( paths ){
+                    refs.push( this.createImport('\\'+paths.join("\\"), alias) );
+                }
             }
         });
         return refs;

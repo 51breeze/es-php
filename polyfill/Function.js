@@ -3,6 +3,7 @@ module.exports={
     export:false,
     require:['Reflect','System'],
     namespace:"es.core",
+    isClass:false,
     method(target, thisObject, name, args, isStatic){
         let object = target.make(thisObject);
         if( isStatic ){

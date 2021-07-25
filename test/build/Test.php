@@ -1,11 +1,14 @@
 <?php
+require_once('es/core/ArrayMethod.php');
+require_once('es/core/System.php');
+require_once('es/core/Reflect.php');
+require_once('es/core/RegExp.php');
 use \Person;
 use \com\TestInterface;
 use \es\core\RegExp;
 use \es\core\Reflect;
 use \Types;
 use \es\core\System;
-use \es\core\ArrayMethod;
 use \Start;
 class Test extends Person{
 	public function __construct(string $name,$age){
@@ -108,7 +111,7 @@ class Test extends Person{
 			expect((new RegExp('^\d+'))->exec("123"))->toBe(false);
 		});
 		it("test rest params",function(){
-			$res = $_RD = &$this->restFun(1,"s","test");
+			$res = &$this->restFun(1,"s","test");
 			expect($res)->toEqual([1,"s","test"]);
 		});
 		$this->testEnumerableProperty();
@@ -234,8 +237,7 @@ class Test extends Person{
 	private function testAwait(){
 		it('test Await',function($done){
 			$res = $this->loadRemoteData(1);
-			$res->then(function(&$_RD1)use(&$done){
-				$data = &$_RD1;
+			$res->then(function(&$data)use(&$done){
 				expect(Reflect::get(Test,$data,0))->toEqual(['one',1]);
 				expect(Reflect::get(Test,$data,1))->toEqual((object)['bss'=>['two',2],'cc'=>['three',3]]);
 				expect(Reflect::get(Test,$data,2))->toEqual(['three',3]);
@@ -244,8 +246,7 @@ class Test extends Person{
 		});
 		it('test for Await',function($done){
 			$res = $this->loadRemoteData(2);
-			$res->then(function(&$_RD2)use(&$done){
-				$data = &$_RD2;
+			$res->then(function(&$data)use(&$done){
 				expect(Reflect::get(Test,$data,0))->toEqual(['0',0]);
 				expect(Reflect::get(Test,$data,1))->toEqual(['1',1]);
 				expect(Reflect::get(Test,$data,2))->toEqual(['2',2]);
@@ -256,16 +257,14 @@ class Test extends Person{
 		});
 		it('test switch Await',function($done){
 			$res = $this->loadRemoteData(3);
-			$res->then(function(&$_RD3)use(&$done){
-				$data = &$_RD3;
+			$res->then(function(&$data)use(&$done){
 				expect($data)->toEqual(['four',4]);
 				$done();
 			});
 		});
 		it('test switch and for Await',function($done){
 			$res = $this->loadRemoteData(4);
-			$res->then(function(&$_RD4)use(&$done){
-				$data = &$_RD4;
+			$res->then(function(&$data)use(&$done){
 				expect($data)->toEqual([['five',5],['0',0],['1',1],['2',2],['3',3],['4',4]]);
 				$done();
 			});
@@ -290,8 +289,7 @@ class Test extends Person{
 		$d = (object)['value'=>$this->currentIndex++,'done'=>false];
 		return $d;
 	}
-	public function restFun(array &$_RD5):array{
-		...$types = &$_RD5;
+	public function restFun(array &...$types):array{
 		return $types;
 	}
 	public function tetObject(){
@@ -318,7 +316,8 @@ class Test extends Person{
 	public function fetchApi(string $name,int $data,int $delay){
 		return new Promise(function($resolve,$reject)use(&$delay){
 			setTimeout(function()use(&$name, &$data, &$resolve){
-				$resolve([$name,$data]);
+				$_V = [$name,$data];
+				$resolve($_V);
 			},$delay);
 		});
 	}
@@ -357,7 +356,8 @@ class Test extends Person{
 		$x = [1,1,'one'];
 		array_push($b,'three');
 		array_push($b,'four');
-		array_push($b,[$name,$age]);
+		$_V1 = [$name,$age];
+		array_push($b,$_V1);
 		return [$str,$cc,$x,$b];
 	}
 	public function getName():string{
@@ -392,109 +392,100 @@ class Test extends Person{
 		$dd = [];
 		$bb = (object)['global'=>1,'private'=>1,'items'=>[]];
 		array_push($dd,1);
-		printf('%s %s',json_encode(es_array_filter($dd,function($value,$key,&$_RD6){
-			$array = &$_RD6;
+		printf('%s %s',json_encode(es_array_filter($dd,function($value,$key,&$array){
 			return true;
 		},$this),true),json_encode((new RegExp('==='))->match("============"),true));
 		$bds = es_array_new($bb->global);
 		count($bds);
 		array_slice($dd,0);
-		$items = $_RD7 = &$bb->items;
+		$_ARV = 0;
+		$items = $_RD = &$bb->items;
 		if($bb->global === 1){
 			$_ARV = 1;
-			$items = $_RD8 = &$dd;
+			$items = $_RD1 = &$dd;
 		}
-		$items_push = function(...$_args)use(&$items,&$_ARV,&$_RD7,&$_RD8){
+		$items_push = function(...$_args)use(&$items,&$_ARV,&$_RD,&$_RD1){
 			switch($_ARV){
+				case 0 :
+					$_RV = array_push($_RD,...$_args);
+					$items = $_RD;
+					return $_RV;
 				case 1 :
-					$_RV = array_push($_RD8,...$_args);
-					$items = $_RD8;
+					$_RV = array_push($_RD1,...$_args);
+					$items = $_RD1;
 					return $_RV;
-				default :
-					$_RV = array_push($_RD7,...$_args);
-					$items = $_RD7;
-					return $_RV;
+				default:
+					return array_push($items,...$_args);
 			}
 		};
 		$items_push(0);
-		$_V = $items_push(1,9,6);
+		$_V2 = $items_push(1,9,6);
 		$_ARV = 2;
-		$_V1 = $items = [];
-		$_V2 = $items_push(9999);
-		printf('%s %s %s',json_encode($_V,true),json_encode($_V1,true),json_encode($_V2,true));
-		$items_pop = function()use(&$items,&$_ARV,&$_RD7,&$_RD8,&$_RD9){
+		printf('%s %s %s',json_encode($_V2,true),json_encode($items = [],true),json_encode($items_push(9999),true));
+		$items_pop = function()use(&$items,&$_ARV,&$_RD,&$_RD1){
 			switch($_ARV){
+				case 0 :
+					$_RV1 = array_pop($_RD);
+					$items = $_RD;
+					return $_RV1;
 				case 1 :
-					$_RV1 = array_pop($_RD8);
-					$items = $_RD8;
+					$_RV1 = array_pop($_RD1);
+					$items = $_RD1;
 					return $_RV1;
-				case 2 :
-					$_RV1 = array_pop($_RD9);
-					$items = $_RD9;
-					return $_RV1;
-				default :
-					$_RV1 = array_pop($_RD7);
-					$items = $_RD7;
-					return $_RV1;
+				default:
+					return array_pop($items);
 			}
 		};
 		printf('%s',json_encode($items_pop(),true));
-		$items_splice = function(...$_args)use(&$items,&$_ARV,&$_RD7,&$_RD8,&$_RD9){
+		$items_splice = function(...$_args)use(&$items,&$_ARV,&$_RD,&$_RD1){
 			switch($_ARV){
+				case 0 :
+					$_RV2 = array_splice($_RD,...$_args);
+					$items = $_RD;
+					return $_RV2;
 				case 1 :
-					$_RV2 = array_splice($_RD8,...$_args);
-					$items = $_RD8;
+					$_RV2 = array_splice($_RD1,...$_args);
+					$items = $_RD1;
 					return $_RV2;
-				case 2 :
-					$_RV2 = array_splice($_RD9,...$_args);
-					$items = $_RD9;
-					return $_RV2;
-				default :
-					$_RV2 = array_splice($_RD7,...$_args);
-					$items = $_RD7;
-					return $_RV2;
+				default:
+					return array_splice($items,...$_args);
 			}
 		};
 		printf('%s',json_encode($items_splice(0,5,''),true));
-		$items_shift = function()use(&$items,&$_ARV,&$_RD7,&$_RD8,&$_RD9){
+		$items_shift = function()use(&$items,&$_ARV,&$_RD,&$_RD1){
 			switch($_ARV){
+				case 0 :
+					$_RV3 = array_shift($_RD);
+					$items = $_RD;
+					return $_RV3;
 				case 1 :
-					$_RV3 = array_shift($_RD8);
-					$items = $_RD8;
+					$_RV3 = array_shift($_RD1);
+					$items = $_RD1;
 					return $_RV3;
-				case 2 :
-					$_RV3 = array_shift($_RD9);
-					$items = $_RD9;
-					return $_RV3;
-				default :
-					$_RV3 = array_shift($_RD7);
-					$items = $_RD7;
-					return $_RV3;
+				default:
+					return array_shift($items);
 			}
 		};
 		printf('%s',json_encode($items_shift(),true));
-		$items_unshift = function(...$_args)use(&$items,&$_ARV,&$_RD7,&$_RD8,&$_RD9){
+		$items_unshift = function(...$_args)use(&$items,&$_ARV,&$_RD,&$_RD1){
 			switch($_ARV){
+				case 0 :
+					$_RV4 = array_unshift($_RD,...$_args);
+					$items = $_RD;
+					return $_RV4;
 				case 1 :
-					$_RV4 = array_unshift($_RD8,...$_args);
-					$items = $_RD8;
+					$_RV4 = array_unshift($_RD1,...$_args);
+					$items = $_RD1;
 					return $_RV4;
-				case 2 :
-					$_RV4 = array_unshift($_RD9,...$_args);
-					$items = $_RD9;
-					return $_RV4;
-				default :
-					$_RV4 = array_unshift($_RD7,...$_args);
-					$items = $_RD7;
-					return $_RV4;
+				default:
+					return array_unshift($items,...$_args);
 			}
 		};
 		printf('%s',json_encode($items_unshift(0,5,''),true));
 		System::typeof($dd);
 		array_push($this->getArrItems(),999);
-		$da = $_RD10 = &$this->getArrItems();
-		array_push($da,9999666);
-		$_ARV1 = 1;
+		$da = $_RD2 = &$this->getArrItems();
+		array_push($_RD2,9999666);
 		$da = ["hhhhhhhhhh"];
 		printf('%s',json_encode($da,true));
 		printf('%s',json_encode(array_pop($da),true));
@@ -504,12 +495,13 @@ class Test extends Person{
 		return $dd;
 	}
 	private function &getArrItems():array{
-		$b = $_RD11 = &$this->items;
+		$_ARV1 = 0;
+		$b = $_RD3 = &$this->items;
 		if($b){
-			$_ARV2 = 1;
-			$b = $_RD11 = &$this->items;
+			$_ARV1 = 1;
+			$b = $_RD3 = &$this->items;
 		}
-		$_ARV2 = 2;
+		$_ARV1 = 2;
 		$b = [];
 		return $b;
 	}

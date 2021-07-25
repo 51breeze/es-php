@@ -67,6 +67,7 @@ class ClassDeclaration extends Syntax{
             defaultConstructor.push('}');
         }
         const construct = module.methodConstructor ? this.emitStack(module.methodConstructor,false) : `${defaultConstructor.join("\r\n")}`;
+        const external = this.buildExternal();
         this.createDependencies(module,refs);
 
         const body = [];
@@ -80,7 +81,6 @@ class ClassDeclaration extends Syntax{
         push(body,  inherit ? `extends ${this.getReferenceNameByModule(inherit)}` : null);
         push(body,  imps.length > 0 ? `implements ${imps.map(impModule=>this.getReferenceNameByModule(impModule)).join(",")}` : null);
         const parts = refs.concat(body.join(" ")+'{', '\t'+[construct].concat(content).join("\r\n").replace(/\r\n/g,'\r\n\t'),'}');
-        const external = this.buildExternal();
         if( external ){
             parts.push( external );
         }

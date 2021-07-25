@@ -9,7 +9,6 @@ class FunctionExpression extends Syntax{
             }
         });
 
-        const body = this.stack.body && this.make(this.stack.body);
         const paramItems = this.stack.params;
         const before = [];
         const params = paramItems.map( item=>{
@@ -23,19 +22,26 @@ class FunctionExpression extends Syntax{
                 }
             }
             if( originType.id === "Array" ){
-                const refs = '&$'+this.generatorVarName( item.description() , "_RD");
-                if( item.isAssignmentPattern ){
-                    const left = this.make( item.left );
-                    const right = this.make( item.right );
-                    before.push( this.semicolon(`\t${left} = is_null(${left}) ? ${right} : ${refs}`) );
-                }else{
-                    before.push( this.semicolon(`\t${this.make( item )} = ${refs}`) );
+                const desc = item.description();
+                const has = item.isAssignmentPattern ? desc.assignItems.size > 1 : desc.assignItems.size > 0;
+                if( has ){
+                    const address = this.addAssignAddressRef(desc);
+                    const refs = '$'+address.createName( desc );
+                    if( item.isAssignmentPattern ){
+                        const left = this.make( item.left );
+                        before.push( this.semicolon(`\t${left} = ${refs}`) );
+                    }else{
+                        before.push( this.semicolon(`\t${this.make( item )} = ${refs}`) );
+                    }
+                    return typeName+'&'+refs;
                 }
-                return typeName+refs;
+                return typeName+'&'+this.make(item);
             }
             return typeName+this.make(item);
         });
+
         let key = this.stack.isConstructor ? '__construct' : (this.stack.key ? this.stack.key.value() : null);
+        const body = this.stack.body && this.make(this.stack.body);
         const method = !!this.stack.parentStack.isMethodDefinition;
         const endIndent = this.getIndent();
         const startIndent = this.stack.parentStack.isBlockStatement ? endIndent : '';

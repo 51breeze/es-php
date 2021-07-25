@@ -7,17 +7,20 @@ class AssignmentExpression extends Syntax{
         }
        
         let refs = null;
-        if( desc && desc.isVariableDeclarator ){
-            const addressRefObject = this.getAssignAddressRef(desc);
-            if( this.stack.right.isMemberExpression || this.stack.right.isCallExpression || this.stack.right.isIdentifier ){
+        if( desc && (desc.isVariableDeclarator || desc.isParamDeclarator) ){
+            let addressRefObject = this.getAssignAddressRef(desc);
+            const maybeArrayRef = this.stack.right.isMemberExpression || this.stack.right.isCallExpression || this.stack.right.isIdentifier;
+            if(addressRefObject || maybeArrayRef ){
                 const originType = this.compiler.callUtils("getOriginType",  this.stack.right.type() );
                 if( originType.id === "Array" ){
-                    this.addAssignAddressRef(desc, this.stack.right);
-                    refs = '$'+this.generatorVarName(this.stack.right.description(),"_RD") + ' = &';
+                    addressRefObject = this.addAssignAddressRef(desc, this.stack.right );
+                    if( maybeArrayRef ){
+                        const name = addressRefObject.createName( this.stack.right.description() );
+                        refs = `\$${name} = &`;
+                    }
                 }
             }
-
-            if( addressRefObject ){
+            if( addressRefObject && this.hasCrossScopeAssignment(desc.assignItems) ){
                 const left = '$'+this.generatorVarName(desc,"_ARV")
                 const addressIndex = addressRefObject.getIndex( this.stack.right );
                 this.insertExpression( this.stack, this.semicolon(`${left} = ${addressIndex}`) );
