@@ -4,6 +4,9 @@ module.exports={
     require:['Reflect','System'],
     namespace:"es.core",
     isClass:false,
+    getName(name){
+        return '\\'+this.namespace.split('.').concat( name ).join('\\');
+    },
     method(target, thisObject, name, args, isStatic){
         let object = target.make(thisObject);
         if( isStatic ){

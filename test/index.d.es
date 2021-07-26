@@ -103,9 +103,93 @@ declare class jasmine {
 package PHPUnit.Framework{
 
     declare class TestCase{
-
        assertEquals(expected:any, actual:any, message?:string);
-
+       assertNotEquals(expected:any, actual:any, message?:string);
+       assertAttributeEquals(expected:any, actual:any, message?:string);
+       assertAttributeNotEquals(expected:any, actual:any, message?:string);
+       assertArrayHasKey(key:string | number, array:[], message?:string );
+       assertClassHasAttribute(attributeName:string, className:string, message?:string );
+       assertArraySubset(subset:[], array:[], strict?:boolean, message?:string);
+       assertClassHasStaticAttribute(attributeName:string, className:string, message?:string );
+       assertContains(needle:any, haystack:[] | Iterator, message?:string, ignoreCase:boolean=false );
+       assertNotContains(needle:any, haystack:[] | Iterator, message?:string, ignoreCase:boolean=false );
+       assertAttributeContains(needle:any, haystack:[] | Iterator, message?:string, ignoreCase:boolean=false );
+       assertAttributeNotContains(needle:any, haystack:[] | Iterator, message?:string, ignoreCase:boolean=false );
+       assertContainsOnly(type:string, haystack:[] | Iterator, isNativeType?:boolean ,message?:string );
+       assertNotContainsOnly(type:string, haystack:[] | Iterator, isNativeType?:boolean ,message?:string );
+       assertAttributeContainsOnly(type:string, haystack:[] | Iterator, isNativeType?:boolean ,message?:string );
+       assertAttributeNotContainsOnly(type:string, haystack:[] | Iterator, isNativeType?:boolean ,message?:string );
+       assertContainsOnlyInstancesOf(classname:string, haystack:[], message?:string );
+       assertCount(expectedCount:number, haystack:any, message?:string );
+       assertDirectoryExists(directory:string, message?:string );
+       assertDirectoryNotExists(directory:string, message?:string );
+       assertDirectoryIsReadable(directory:string, message?:string );
+       assertDirectoryNotIsReadable(directory:string, message?:string );
+       assertDirectoryIsWritable(directory:string, message?:string );
+       assertDirectoryNotIsWritable(directory:string, message?:string );
+       assertEmpty(actual:any, message?:string);
+       assertNotEmpty(actual:any, message?:string);
+       assertAttributeEmpty(actual:any, message?:string);
+       assertAttributeNotEmpty(actual:any, message?:string);
+       assertFalse(condition:boolean, message?:string);
+       assertNotFalse(condition:boolean, message?:string);
+       assertFileEquals(expected:string , actual:string, message?:string);
+       assertFileNotEquals(expected:string , actual:string, message?:string);
+       assertFileExists(filename:string , message?:string);
+       assertFileNotExists(filename:string , message?:string);
+       assertFileIsReadable(filename:string , message?:string);
+       assertFileNotIsReadable(filename:string , message?:string);
+       assertFileIsWritable(filename:string , message?:string);
+       assertFileNotIsWritable(filename:string , message?:string);
+       assertGreaterThan(expected:any ,actual:any, message?:string);
+       assertAttributeGreaterThan(expected:any ,actual:any, message?:string);
+       assertGreaterThanOrEqual(expected:any ,actual:any, message?:string);
+       assertAttributeGreaterThanOrEqual(expected:any ,actual:any, message?:string);
+       assertInfinite(variable:any , message?:string);
+       assertFinite(variable:any , message?:string);
+       assertInstanceOf(expected:any , actual:any, message?:string);
+       assertNotInstanceOf(expected:any , actual:any, message?:string);
+       assertAttributeInstanceOf(expected:any , actual:any, message?:string);
+       assertAttributeNotInstanceOf(expected:any , actual:any, message?:string);
+       assertInternalType(expected:any , actual:any, message?:string);
+       assertNotInternalType(expected:any , actual:any, message?:string);
+       assertAttributeInternalType(expected:any , actual:any, message?:string);
+       assertAttributeNotInternalType(expected:any , actual:any, message?:string);
+       assertIsReadable(filename:string ,  message?:string);
+       assertNotIsReadable(filename:string ,  message?:string);
+       assertIsWritable(filename:string ,  message?:string);
+       assertNotIsWritable(filename:string ,  message?:string);
+       assertJsonFileEqualsJsonFile(expectedFile:any ,actualFile:any, message?:string);
+       assertJsonStringEqualsJsonFile(expectedFile:string ,actualJson:string, message?:string);
+       assertJsonStringEqualsJsonString(expectedJson:string ,actualJson:string, message?:string);
+       assertLessThan(expected:any ,actual:string, message?:string);
+       assertAttributeLessThan(expected:any ,actual:string, message?:string);
+       assertLessThanOrEqual(expected:any ,actual:string, message?:string);
+       assertAttributeLessThanOrEqual(expected:any ,actual:string, message?:string);
+       assertNan(variable:any, message?:string);
+       assertNull(variable:any, message?:string);
+       assertNotNull(variable:any, message?:string);
+       assertObjectHasAttribute(attributeName:string, object:object, message?:string);
+       assertObjectNotHasAttribute(attributeName:string, object:object, message?:string);
+       assertRegExp(pattern:string, target:string, message?:string);
+       assertNotRegExp(pattern:string, target:string, message?:string);
+       assertStringMatchesFormat(format:string, target:string, message?:string);
+       assertStringNotMatchesFormat(format:string, target:string, message?:string);
+       assertStringMatchesFormatFile(formatFile:string, target:string, message?:string);
+       assertStringNotMatchesFormatFile(formatFile:string, target:string, message?:string);
+       assertSame(expected:any, actual:any, message?:string);
+       assertNotSame(expected:any, actual:any, message?:string);
+       assertAttributeSame(expected:any, actual:any, message?:string);
+       assertAttributeNotSame(expected:any, actual:any, message?:string);
+       assertStringEndsWith(suffix:string, actual:string, message?:string);
+       assertStringEndsNotWith(suffix:string, actual:string, message?:string);
+       assertStringEqualsFile(expectedFile:string, actualString:string, message?:string);
+       assertStringNotEqualsFile(expectedFile:string, actualString:string, message?:string);
+       assertStringStartsWith(prefix:string, target:string, message?:string);
+       assertStringStartsNotWith(prefix:string, target:string, message?:string);
+       assertThat(value:any, constraint:any, message?:string);
+       assertTrue(condition:boolean, message?:string);
+       assertNotTrue(condition:boolean, message?:string);
    }
 }
 

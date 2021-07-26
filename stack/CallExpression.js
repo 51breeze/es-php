@@ -57,7 +57,6 @@ class CallExpression extends Syntax{
         if( this.stack.callee.isMemberExpression ){
             if( desc && desc.isType && desc.isAnyType  ){
                 this.addDepend( this.stack.getModuleById("Reflect") );
-               
                 if( args.length > 0 ){
                     return `${this.checkRefsName("Reflect")}::call(${this.getClassStringName(this.module)},${this.make(this.stack.callee.object)},"${this.stack.callee.property.value()}",[${args.join(",")}])`;
                 }else{

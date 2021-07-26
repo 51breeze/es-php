@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev-test": "jasmine ./test/index.js",
-    "dev-run": "jasmine ./test/build/main.js",
+    "dev-run": "node ./test/php.js",
     "dev-test-run": "npm run dev-test & npm run dev-run"
   },
   "repository": {
@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/51breeze/es-javascript#readme",
   "dependencies": {
-    "easescript": "0.0.15",
+    "easescript": "0.0.17",
     "lodash": "^4.17.21"
   },
   "devDependencies": {

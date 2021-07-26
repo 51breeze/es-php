@@ -31,11 +31,14 @@ class AssignmentExpression extends Syntax{
         if( desc.isAnyType ){
             if( this.stack.left.isMemberExpression ){
                 if( this.stack.left.computed ){
-                   const left = this.make(this.stack.left.object);
-                   const property = this.make(this.stack.left.property);
-                   const reflect = this.checkRefsName("Reflect");
-                   this.addDepend( this.stack.getModuleById("Reflect") );
-                   return `${reflect}::set(${this.module.id},${left},${property},${right})`;
+                    const objectDesc = this.stack.left.object.description();
+                    if( !this.isBaseType( objectDesc.type() ) || (objectDesc.assignItems && objectDesc.assignItems.size > 1) ){
+                        const left = this.make(this.stack.left.object);
+                        const property = this.make(this.stack.left.property);
+                        const reflect = this.checkRefsName("Reflect");
+                        this.addDepend( this.stack.getModuleById("Reflect") );
+                        return `${reflect}::set(${this.getClassStringName(this.module)},${left},${property},${right})`;
+                    }
                 }
             }
         }

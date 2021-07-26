@@ -35,7 +35,7 @@ class RegExp {
     public function exec( $value ){
         $pattern = $this->getPattern();
         $matches = null;
-        $result = preg_match( $pattern, $value, $matches, $this->lastIndex, PREG_OFFSET_CAPTURE );
+        $result = preg_match( $pattern, $value, $matches,PREG_OFFSET_CAPTURE,$this->lastIndex);
         if( $result && $matches ){
             if( $this->global ){
                 $this->lastIndex = isset($matches[0][0]) ? mb_strlen($matches[0][0] ) : 0;
@@ -55,15 +55,15 @@ class RegExp {
 
         $pattern = $this->getPattern();
         $matches = null;
-        $result = $this->global ? preg_match_all( $pattern, $value, $matches, $this->lastIndex, PREG_OFFSET_CAPTURE) : 
-                                  preg_match( $pattern, $value, $matches, $this->lastIndex, PREG_OFFSET_CAPTURE );
-        if( $result && $matches ){
-            $index = $matches[1][1] ?? 0;
-            $result = new ArrayObject( array_map(function($item){
-                return  $item[0];
-            },$matches) );
-            $result->index = $index;
-            $result->input = $value;
+        $count = $this->global ? preg_match_all( $pattern, $value, $matches, PREG_OFFSET_CAPTURE, $this->lastIndex) : 
+                                  preg_match( $pattern, $value, $matches, PREG_OFFSET_CAPTURE, $this->lastIndex);
+        if( $count && $matches ){
+            $index = $matches[0][1] ?? 0;
+            $result = array_map(function($item){
+                return $item[0];
+            },$matches);
+            $result['index'] = $index;
+            $result['input'] = $value;
             return $result;
         }
         return null;
@@ -73,7 +73,7 @@ class RegExp {
 
         $pattern = $this->getPattern();
         $matches = null;
-        $result = preg_match_all( $pattern, $value, $matches, $this->lastIndex, PREG_OFFSET_CAPTURE);
+        $result = preg_match_all( $pattern, $value, $matches, PREG_OFFSET_CAPTURE, $this->lastIndex);
         if( $result && $matches ){
             $index = $matches[1][1] ?? 0;
             $result = new ArrayObject( array_map(function($item){
@@ -105,7 +105,7 @@ class RegExp {
     public function search( $value ){
         $pattern = $this->getPattern();
         $matches = null;
-        $result = preg_match( $pattern, $value, $matches, $this->lastIndex, PREG_OFFSET_CAPTURE );
+        $result = preg_match( $pattern, $value, $matches, PREG_OFFSET_CAPTURE, $this->lastIndex );
         return $matches[1][1] ?? -1;
     }
 

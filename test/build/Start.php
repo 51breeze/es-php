@@ -1,7 +1,8 @@
 <?php
-require_once('es/core/Reflect.php');
+require_once('es/core/RegExp.php');
+require_once('es/core/String.php');
 use \PHPUnit\Framework\TestCase;
-use \es\core\Reflect;
+use \es\core\RegExp;
 class Start extends TestCase{
 	public function __construct(){
 		parent::__construct();
@@ -57,7 +58,20 @@ class Start extends TestCase{
 		$b = &$this->arrItems;
 		return $b;
 	}
-	public function pushArray(&$a,$b){
-		Reflect::call('\Start',$a,"push",[$b]);
+	public function pushArray(array &$a,$b){
+		array_push($a,$b);
+	}
+	public function testString(){
+		$str = 'aab';
+		$this->assertEquals(\es\core\es_string_replace($str,'a','A'),"Aab");
+		$this->assertEquals(\es\core\es_string_index($str,'b'),2);
+		$this->assertEquals(mb_substr($str,0,1),'a');
+		$this->assertEquals(mb_ord(mb_substr($str,0,1),'UTF-8'),97);
+		$this->assertEquals(mb_ord(mb_substr($str,2,1),'UTF-8'),98);
+		$obj = ['b'];
+		$obj['index'] = 2;
+		$obj['input'] = 'aab';
+		$this->assertEquals((new RegExp('b'))->match($str),$obj);
+		$this->assertEquals($obj['index'],2);
 	}
 }

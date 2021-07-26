@@ -22,7 +22,7 @@ module.exports={
             case "hasOwnProperty" :
                 return `property_exists(${[object].concat(args).join(",")})`;
             case "valueOf" :
-                return `json_encode(${object}, true)`;
+                return `${object}`;
             case "toLocaleString" :
             case "toString" :
                 return `sprintf('[object %s]', get_class(${object})`;

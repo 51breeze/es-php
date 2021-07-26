@@ -3,9 +3,12 @@ const path = require("path");
 module.exports={
     content: fs.readFileSync( path.join(__dirname,"./files/String.php") ),
     export:"String",
-    require:['RegExp'],
+    require:[],
     isClass:false,
     namespace:"es.core",
+    getName(name){
+        return '\\'+this.namespace.split('.').concat( name ).join('\\');
+    },
     method(target, thisObject, name, args){
         let object = target.make(thisObject);
         switch( name ){
@@ -18,20 +21,24 @@ module.exports={
             case "includes" :
                 return `strpos(${[object].concat(args).join(",")}) !== false`;
             case "indexOf" :
-                return `es_string_index(${[object].concat(args).join(",")})`;
+                return `${this.getName('es_string_index')}(${[object].concat(args).join(",")})`;
             case "lastIndexOf" :
-                return `es_string_last_index(${[object].concat(args).join(",")})`;
+                return `${this.getName('es_string_last_index')}(${[object].concat(args).join(",")})`;
             case "localeCompare" :
                 return `strcmp(${[object].concat(args).join(",")})`;
             case "match" :
+                target.addDepend( target.stack.getModuleById("RegExp") );
                 return `(new RegExp(${args[0]}))->match(${object})`;
             case "matchAll" :
+                target.addDepend( target.stack.getModuleById("RegExp") );
                 return `(new RegExp(${args[0]}))->matchAll(${object})`;
             case "replace" :
-                return `es_string_replace(${[object].concat(args).join(",")})`;
+                target.addDepend( target.stack.getModuleById("String") );
+                return `${this.getName('es_string_replace')}(${[object].concat(args).join(",")})`;
             case "replaceAll" :
-                return `es_string_replace_all(${[object].concat(args).join(",")})`;
+                return `${this.getName('es_string_replace_all')}(${[object].concat(args).join(",")})`;
             case "search" :
+                target.addDepend( target.stack.getModuleById("RegExp") );
                 return `(new RegExp(${args[0]}))->search(${object})`;
             case "slice" :
                 return `mb_substr(${[object].concat(args).join(",")})`;
@@ -42,7 +49,7 @@ module.exports={
             case "substr" :
                 return `mb_substr(${[object].concat(args).join(",")})`;
             case "substring" :
-                return `es_string_substring(${[object].concat(args).join(",")})`;
+                return `${this.getName('es_string_substring')}(${[object].concat(args).join(",")})`;
             case "toLowerCase" :
             case "toLocaleLowerCase" :
                 return `mb_strtolower(${object})`;
@@ -65,7 +72,7 @@ module.exports={
             case "padEnd" :
                 return `str_pad(${[object].concat(args).join(",")}, STR_PAD_RIGHT)`;
             case "normalize" :
-                return `es_string_normalize(${[object].concat(args).join(",")})`;
+                return `${this.getName('es_string_normalize')}(${[object].concat(args).join(",")})`;
             case "propertyIsEnumerable" :
             case "hasOwnProperty" :
                 return `isset(${object}[${args[0]}])`;

@@ -6,8 +6,6 @@
  * @author Jun Ye <664371281@qq.com>
  */
 namespace es\core;
-require_once('es/core/RegExp.php');
-use \es\core\RegExp;
 
 function es_string_index($target,$value){
     $index = strpos($target, $value);

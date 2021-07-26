@@ -1,12 +1,12 @@
 <?php
 require_once('es/core/ArrayMethod.php');
 require_once('es/core/System.php');
-require_once('es/core/Reflect.php');
 require_once('es/core/RegExp.php');
+require_once('es/core/Reflect.php');
 use \Person;
 use \com\TestInterface;
-use \es\core\RegExp;
 use \es\core\Reflect;
+use \es\core\RegExp;
 use \Types;
 use \es\core\System;
 use \Start;
@@ -103,7 +103,7 @@ class Test extends Person{
 			$once = (object)['two'=>(object)['three'=>$three,'four'=>$bsp]];
 			expect($once->two->three)->toBe($this);
 			expect($once->two->four(true))->toBe($obj);
-			$once->$obds;
+			Reflect::get('\Test',$once,$obds);
 		});
 		it('/d+/.test( "123" ) should is true ',function(){
 			expect((new RegExp('\d+'))->test("123"))->toBe(true);
@@ -128,8 +128,8 @@ class Test extends Person{
 		it('for( var name in this) should is this or object ',function(){
 			$labels = ["name","data","target","addressName","iuuu"];
 			foreach($this as $key=>$_item){
-				expect($key)->toBe($labels[es_array_search_index($labels,$key)]);
-				expect(Reflect::get(Test,$this,$key))->toBe(Reflect::get(Test,$this,$key));
+				expect($key)->toBe(Reflect::get('\Test',$labels,\es\core\es_array_search_index($labels,$key)));
+				expect(Reflect::get('\Test',$this,$key))->toBe(Reflect::get('\Test',$this,$key));
 			}
 		});
 	}
@@ -143,11 +143,11 @@ class Test extends Person{
 		$_c->uuu=$_c1;
 		$o = $_c;
 		it('compute property should is true ',function()use(&$bname, &$o){
-			expect($o->$bname)->toBe(1);
-			expect($o->uuu->$bname)->toBe(3);
-			expect($o->uuu->{"123"})->toBe(3);
-			Reflect::set(Test,$o->{"uuu"},$bname,true);
-			expect(Reflect::get(Test,$o->{"uuu"},$bname))->toBe(true);
+			expect(Reflect::get('\Test',$o,$bname))->toBe(1);
+			expect(Reflect::get('\Test',$o->uuu,$bname))->toBe(3);
+			expect(Reflect::get('\Test',$o->uuu,"123"))->toBe(3);
+			Reflect::set('\Test',Reflect::get('\Test',$o,"uuu"),$bname,true);
+			expect(Reflect::get('\Test',Reflect::get('\Test',$o,"uuu"),$bname))->toBe(true);
 		});
 	}
 	private function testLabel(){
@@ -201,7 +201,7 @@ class Test extends Person{
 		$_c2->name=123;
 		$_c2->$types=1;
 		$bds = $_c2;
-		Reflect::set(Test,$bds,$types,99);
+		Reflect::set('\Test',$bds,$types,99);
 		it('Generics should is true',function()use(&$ccc, &$cccww){
 			expect(System::typeof($this->avg("test")))->toBe('string');
 			expect($ccc->name->toFixed(2))->toBe("1.00");
@@ -238,20 +238,20 @@ class Test extends Person{
 		it('test Await',function($done){
 			$res = $this->loadRemoteData(1);
 			$res->then(function(&$data)use(&$done){
-				expect(Reflect::get(Test,$data,0))->toEqual(['one',1]);
-				expect(Reflect::get(Test,$data,1))->toEqual((object)['bss'=>['two',2],'cc'=>['three',3]]);
-				expect(Reflect::get(Test,$data,2))->toEqual(['three',3]);
+				expect(Reflect::get('\Test',$data,0))->toEqual(['one',1]);
+				expect(Reflect::get('\Test',$data,1))->toEqual((object)['bss'=>['two',2],'cc'=>['three',3]]);
+				expect(Reflect::get('\Test',$data,2))->toEqual(['three',3]);
 				$done();
 			});
 		});
 		it('test for Await',function($done){
 			$res = $this->loadRemoteData(2);
 			$res->then(function(&$data)use(&$done){
-				expect(Reflect::get(Test,$data,0))->toEqual(['0',0]);
-				expect(Reflect::get(Test,$data,1))->toEqual(['1',1]);
-				expect(Reflect::get(Test,$data,2))->toEqual(['2',2]);
-				expect(Reflect::get(Test,$data,3))->toEqual(['3',3]);
-				expect(Reflect::get(Test,$data,4))->toEqual(['4',4]);
+				expect(Reflect::get('\Test',$data,0))->toEqual(['0',0]);
+				expect(Reflect::get('\Test',$data,1))->toEqual(['1',1]);
+				expect(Reflect::get('\Test',$data,2))->toEqual(['2',2]);
+				expect(Reflect::get('\Test',$data,3))->toEqual(['3',3]);
+				expect(Reflect::get('\Test',$data,4))->toEqual(['4',4]);
 				$done();
 			});
 		});
@@ -392,7 +392,7 @@ class Test extends Person{
 		$dd = [];
 		$bb = (object)['global'=>1,'private'=>1,'items'=>[]];
 		array_push($dd,1);
-		printf('%s %s',json_encode(es_array_filter($dd,function($value,$key,&$array){
+		printf('%s %s',json_encode(\es\core\es_array_filter($dd,function($value,$key,&$array){
 			return true;
 		},$this),true),json_encode((new RegExp('==='))->match("============"),true));
 		$bds = es_array_new($bb->global);

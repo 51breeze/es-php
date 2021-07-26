@@ -369,7 +369,7 @@ final class Reflect{
     /**
      * 设置指定对象中的属性值
      */
-    final static public function set($scope,$target, $name, $value, $thisArg=null){
+    final static public function set($scope,&$target, $name, $value, $thisArg=null){
         if( is_array($target) ){
             if ( is_string($name) ){
                 switch ($name){
@@ -416,7 +416,7 @@ final class Reflect{
     /**
      * 对指定对象中的属性做增量操作
      */
-    final static public function incre($scope,$target, $propertyKey, $flag=true){
+    final static public function incre($scope, &$target, $propertyKey, $flag=true){
         $val = \Reflect::get($scope,$target, $propertyKey, null );
         $ret = $val+1;
         \Reflect::set($scope,$target, $propertyKey, $ret , null);
@@ -426,7 +426,7 @@ final class Reflect{
     /**
      * 对指定对象中的属性做减量操作
      */
-    final static public function decre($scope,$target, $propertyKey, $flag=true){
+    final static public function decre($scope, &$target, $propertyKey, $flag=true){
         $val = \Reflect::get($scope,$target, $propertyKey, null);
         $ret = $val-1;
         \Reflect::set($scope,$target, $propertyKey, $ret , null);

@@ -36,9 +36,10 @@ class MemberExpression extends Syntax{
       }
 
       if(this.stack.computed){
-         if( !this.compiler.callUtils("isLiteralObjectType", this.stack.object.type()) ){
+         const objectDesc = this.stack.object.description();
+         if( !this.isBaseType( this.stack.object.type() ) || (objectDesc.assignItems && objectDesc.assignItems.size > 1) ){
             this.addDepend( this.stack.getModuleById("Reflect") );
-            return `${this.checkRefsName("Reflect")}::get(${module.id},${object},${property})`;
+            return `${this.checkRefsName("Reflect")}::get(${this.getClassStringName(module)},${object},${property})`;
          }
          if(this.getTypeName( this.stack.object.type() ) ==="array" ){
             return `${object}[${property}]`;
@@ -51,7 +52,7 @@ class MemberExpression extends Syntax{
 
       if( description && description.isType && description.isAnyType ){
          this.addDepend( this.stack.getModuleById("Reflect") );
-         return `${this.checkRefsName("Reflect")}::get(${module.id},${object},"${property}")`;
+         return `${this.checkRefsName("Reflect")}::get(${this.getClassStringName(module)},${object},"${property}")`;
       }
 
       if( description && description.isMethodGetterDefinition ){

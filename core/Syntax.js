@@ -364,6 +364,21 @@ class Syntax extends events.EventEmitter {
         return false;
     }
 
+    isBaseType( type ){
+        if( !type )return false;
+        switch( true ){
+            case type.LiteralObjectType :
+            case type.isLiteralArrayType :
+                return true;
+        }
+        switch( type.toString() ){
+            case 'string' :
+            case 'RegExp' :
+                return true;
+        }
+        return false;
+    }
+
     createDependencies(module, refs, requires){
         refs = refs || [];
         requires = requires || refs;
