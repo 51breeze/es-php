@@ -12,7 +12,7 @@ class RegExp {
     public $source    = null;
     private $flags = null;
 
-    public function __construct($pattern, $flags=null){
+    public function __construct(string $pattern, $flags=null){
         $this->source = $pattern;
         if( $flags && is_string($flags) ){
             $this->global = strpos($flags,'g') !== false || strpos($flags,'y') !== false;
@@ -106,7 +106,7 @@ class RegExp {
         $pattern = $this->getPattern();
         $matches = null;
         $result = preg_match( $pattern, $value, $matches, PREG_OFFSET_CAPTURE, $this->lastIndex );
-        return $matches[1][1] ?? -1;
+        return $matches[0][1] ?? -1;
     }
 
     public function toString(){

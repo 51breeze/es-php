@@ -28,10 +28,18 @@ module.exports={
                 return `strcmp(${[object].concat(args).join(",")})`;
             case "match" :
                 target.addDepend( target.stack.getModuleById("RegExp") );
-                return `(new RegExp(${args[0]}))->match(${object})`;
+                if( target.stack.arguments[0].type().toString().toLowerCase()==="regexp"  ){
+                    return `${args[0]}->match(${object})`;
+                }else{
+                    return `(new RegExp(${args[0]}))->match(${object})`;
+                }
             case "matchAll" :
                 target.addDepend( target.stack.getModuleById("RegExp") );
-                return `(new RegExp(${args[0]}))->matchAll(${object})`;
+                if( target.stack.arguments[0].type().toString().toLowerCase()==="regexp"  ){
+                    return `${args[0]}->matchAll(${object})`;
+                }else{
+                    return `(new RegExp(${args[0]}))->matchAll(${object})`;
+                }
             case "replace" :
                 target.addDepend( target.stack.getModuleById("String") );
                 return `${this.getName('es_string_replace')}(${[object].concat(args).join(",")})`;
@@ -39,9 +47,13 @@ module.exports={
                 return `${this.getName('es_string_replace_all')}(${[object].concat(args).join(",")})`;
             case "search" :
                 target.addDepend( target.stack.getModuleById("RegExp") );
-                return `(new RegExp(${args[0]}))->search(${object})`;
+                if( target.stack.arguments[0].type().toString().toLowerCase()==="regexp" ){
+                    return `${args[0]}->search(${object})`;
+                }else{
+                    return `(new RegExp(${args[0]}))->search(${object})`;
+                }
             case "slice" :
-                return `mb_substr(${[object].concat(args).join(",")})`;
+                return `${this.getName('es_string_slice')}(${[object].concat(args).join(",")})`;
             case "repeat" :
                 return `str_repeat(${[object].concat(args).join(",")})`;
             case "length" :

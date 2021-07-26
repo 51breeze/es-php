@@ -33,22 +33,22 @@ class Start extends TestCase{
 		};
 		$items_push(1);
 		$items_push(2,3,4);
-		$this->assertEquals(4,count($items),"error");
-		$this->assertEquals($items,$this->list,"error");
+		$this->assertEquals(4,count($items));
+		$this->assertEquals($items,$this->list);
 		array_push($this->items,5,6,7);
-		$this->assertEquals(3,count($this->items),"error");
+		$this->assertEquals(3,count($this->items));
 		$bb = [];
 		$this->addArray($bb,9);
-		$this->assertEquals(1,count($bb),"error");
+		$this->assertEquals(1,count($bb));
 		$_V = [];
 		$this->addArray($_V,6);
 		$bs = $_RD2 = &$this->ccArray();
 		array_push($_RD2,6);
-		$this->assertEquals($_RD2,$this->arrItems,"error");
+		$this->assertEquals($_RD2,$this->arrItems);
 		$bs = [];
 		$this->pushArray($bs,9);
 		$this->pushArray($bs,1);
-		$this->assertEquals($bs,[9,1],"error");
+		$this->assertEquals($bs,[9,1]);
 	}
 	public function addArray(array &$a,$b){
 		array_push($a,$b);
@@ -73,5 +73,34 @@ class Start extends TestCase{
 		$obj['input'] = 'aab';
 		$this->assertEquals((new RegExp('b'))->match($str),$obj);
 		$this->assertEquals($obj['index'],2);
+		$this->assertEquals(($str) . 'AAB',($str . 'AAB'));
+		$this->assertEquals(0,strcmp($str,'aab'));
+		$this->assertEquals(1,strcmp($str,'aaa'));
+		$this->assertEquals(-1,strcmp($str,'aac'));
+		$this->assertEquals('AAB',mb_strtoupper($str));
+		$this->assertEquals('aab',mb_strtolower('AAB'));
+		$this->assertEquals('AAB',trim('AAB  '));
+		$this->assertEquals(['A','A','B'],explode('.','A.A.B'));
+		$this->assertEquals('def',\es\core\es_string_slice('abcdefg',3,6));
+		$str2 = 'The quick brown fox jumps over the lazy dog.';
+		$this->assertEquals('the lazy dog.',\es\core\es_string_slice($str2,31));
+		$this->assertEquals('quick brown fox',\es\core\es_string_slice($str2,4,19));
+		$this->assertEquals('dog.',\es\core\es_string_slice($str2,-4));
+		$this->assertEquals('lazy',\es\core\es_string_slice($str2,-9,-5));
+		$chinese = '中中国人民解放军';
+		$this->assertEquals(8,mb_strlen($chinese));
+		$this->assertEquals(3,\es\core\es_string_index($chinese,"人"));
+		$this->assertEquals(3,\es\core\es_string_last_index($chinese,"人"));
+		$this->assertEquals('全' . ($chinese),\es\core\es_string_replace($chinese,'中','全中'));
+		$mixed = "中国人A民bc解De放军FFFDDdd";
+		$this->assertEquals(19,mb_strlen($mixed));
+		$this->assertEquals(12,\es\core\es_string_index($mixed,"F"));
+		$this->assertEquals(14,\es\core\es_string_last_index($mixed,"F"));
+		$this->assertEquals('中国人A民bc解De放军FFFdddd',\es\core\es_string_replace($mixed,'DD','dd'));
+		$this->assertEquals('民bc解',mb_substr($mixed,4,4));
+		$paragraph = 'The quick brown fox jumps over the lazy dog. If the dog barked, was it really lazy?';
+		$regex = new RegExp('[^\w\s]','g');
+		$this->assertEquals(43,$regex->search($paragraph));
+		$this->assertEquals('.',$paragraph[$regex->search($paragraph)]);
 	}
 }

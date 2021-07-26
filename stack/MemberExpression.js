@@ -41,7 +41,8 @@ class MemberExpression extends Syntax{
             this.addDepend( this.stack.getModuleById("Reflect") );
             return `${this.checkRefsName("Reflect")}::get(${this.getClassStringName(module)},${object},${property})`;
          }
-         if(this.getTypeName( this.stack.object.type() ) ==="array" ){
+         const tName = this.getTypeName( this.stack.object.type() );
+         if( tName === "array" || tName ==="string" ){
             return `${object}[${property}]`;
          }
          if( this.stack.property.isLiteral ){

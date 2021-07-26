@@ -10,12 +10,12 @@
 ////[reference]
 
 function es_string_index($target,$value){
-    $index = strpos($target, $value);
+    $index = mb_strpos($target, $value);
     return $index === false ? -1 : $index;
 }
 
 function es_string_last_index($target,$value){
-    $index = strrpos($target, $value);
+    $index = mb_strrpos($target, $value);
     return $index === false ? -1 : $index;
 }
 
@@ -30,6 +30,22 @@ function es_string_substring($target,$start=0, $end=null){
         return mb_substr($target, $end, $start);
     }
     return mb_substr($target,$start, $end);
+}
+
+function es_string_slice($target, $start=0, $end=null){
+    $len = mb_strlen($target);
+    if( $end === null ){
+        $end =  $len;
+    }
+    if( $end < 0 ){
+        $end = $len + $end;
+    }
+    if( $start < 0 ){
+        $start = $len + $start;
+    }
+    $start = max( min($start,$len), 0);
+    $end = max( min($end,$len), 0);
+    return mb_substr($target, $start, $end-$start);
 }
 
 function es_string_normalize($target){

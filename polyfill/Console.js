@@ -8,7 +8,7 @@ module.exports={
         switch( name ){
             case "log" :
                 const format = Array(args.length).fill("%s",0, args.length).join(" ");
-                return `printf('${format}',${args.map( item=>`json_encode(${item},true)`).join(",")})`;
+                return `printf('${format}',${args.map( item=>`json_encode(${item},JSON_UNESCAPED_UNICODE)`).join(",")})`;
         }
     }
 }

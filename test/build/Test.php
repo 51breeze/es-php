@@ -394,7 +394,7 @@ class Test extends Person{
 		array_push($dd,1);
 		printf('%s %s',json_encode(\es\core\es_array_filter($dd,function($value,$key,&$array){
 			return true;
-		},$this),true),json_encode((new RegExp('==='))->match("============"),true));
+		},$this),JSON_UNESCAPED_UNICODE),json_encode((new RegExp('==='))->match("============"),JSON_UNESCAPED_UNICODE));
 		$bds = es_array_new($bb->global);
 		count($bds);
 		array_slice($dd,0);
@@ -421,7 +421,7 @@ class Test extends Person{
 		$items_push(0);
 		$_V2 = $items_push(1,9,6);
 		$_ARV = 2;
-		printf('%s %s %s',json_encode($_V2,true),json_encode($items = [],true),json_encode($items_push(9999),true));
+		printf('%s %s %s',json_encode($_V2,JSON_UNESCAPED_UNICODE),json_encode($items = [],JSON_UNESCAPED_UNICODE),json_encode($items_push(9999),JSON_UNESCAPED_UNICODE));
 		$items_pop = function()use(&$items,&$_ARV,&$_RD,&$_RD1){
 			switch($_ARV){
 				case 0 :
@@ -436,7 +436,7 @@ class Test extends Person{
 					return array_pop($items);
 			}
 		};
-		printf('%s',json_encode($items_pop(),true));
+		printf('%s',json_encode($items_pop(),JSON_UNESCAPED_UNICODE));
 		$items_splice = function(...$_args)use(&$items,&$_ARV,&$_RD,&$_RD1){
 			switch($_ARV){
 				case 0 :
@@ -451,7 +451,7 @@ class Test extends Person{
 					return array_splice($items,...$_args);
 			}
 		};
-		printf('%s',json_encode($items_splice(0,5,''),true));
+		printf('%s',json_encode($items_splice(0,5,''),JSON_UNESCAPED_UNICODE));
 		$items_shift = function()use(&$items,&$_ARV,&$_RD,&$_RD1){
 			switch($_ARV){
 				case 0 :
@@ -466,7 +466,7 @@ class Test extends Person{
 					return array_shift($items);
 			}
 		};
-		printf('%s',json_encode($items_shift(),true));
+		printf('%s',json_encode($items_shift(),JSON_UNESCAPED_UNICODE));
 		$items_unshift = function(...$_args)use(&$items,&$_ARV,&$_RD,&$_RD1){
 			switch($_ARV){
 				case 0 :
@@ -481,17 +481,17 @@ class Test extends Person{
 					return array_unshift($items,...$_args);
 			}
 		};
-		printf('%s',json_encode($items_unshift(0,5,''),true));
+		printf('%s',json_encode($items_unshift(0,5,''),JSON_UNESCAPED_UNICODE));
 		System::typeof($dd);
 		array_push($this->getArrItems(),999);
 		$da = $_RD2 = &$this->getArrItems();
 		array_push($_RD2,9999666);
 		$da = ["hhhhhhhhhh"];
-		printf('%s',json_encode($da,true));
-		printf('%s',json_encode(array_pop($da),true));
+		printf('%s',json_encode($da,JSON_UNESCAPED_UNICODE));
+		printf('%s',json_encode(array_pop($da),JSON_UNESCAPED_UNICODE));
 		$ui = ("==" . 'da' . 'bs') . "=========";
 		$n = 8 + 6;
-		printf('%s %s',json_encode($ui,true),json_encode($n,true));
+		printf('%s %s',json_encode($ui,JSON_UNESCAPED_UNICODE),json_encode($n,JSON_UNESCAPED_UNICODE));
 		return $dd;
 	}
 	private function &getArrItems():array{
