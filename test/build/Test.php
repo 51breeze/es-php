@@ -1,6 +1,6 @@
 <?php
-require_once('es/core/ArrayMethod.php');
 require_once('es/core/System.php');
+require_once('es/core/ArrayMethod.php');
 require_once('es/core/RegExp.php');
 require_once('es/core/Reflect.php');
 use \Person;
@@ -363,7 +363,7 @@ class Test extends Person{
 	public function getName():string{
 		return parent::getName();
 	}
-	public function setName(string $value):string{
+	public function setName(string $value){
 		parent::setName($value);
 	}
 	public function avg($yy,$bbc){

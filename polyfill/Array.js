@@ -120,50 +120,66 @@ module.exports={
             case "slice" :
                 return `array_slice(${[object].concat(args).join(",")})`;
             case "map" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_map')}(${[object].concat(args).join(",")})`;
             case "find" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_find')}(${[object].concat(args).join(",")})`;
             case "findIndex" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_find_index')}(${[object].concat(args).join(",")})`;
             case "filter" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_filter')}(${[object].concat(args).join(",")})`;
             case "indexOf" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_search_index')}(${[object].concat(args).join(",")})`;
             case "includes" :
                 return `in_array(${args[0]},${object})`;
             case "length" :
                 return `count(${object})`;
             case "concat" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_concat')}(${[object].concat(args).join(',')})`;
             case "entries" :
                 return `array_values(${[object]})`;
             case "every" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_every')}(${[object].concat(args).join(",")})`;
             case "some" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_some')}(${[object].concat(args).join(",")})`;
             case "fill" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_fill')}(${[object].concat(args).join(",")})`;
             case "values" :
                 return `array_values(${object})`;
             case "forEach" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_foreach')}(${[object].concat(args).join(",")})`;
             case "flat" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_flat')}(${[object].concat(args).join(",")})`;
             case "flatMap" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_flat_map')}(${[object].concat(args).join(",")})`;
             case "reduce" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_reduce')}(${[object].concat(args).join(",")})`;
             case "reduceRight" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_reduce_right')}(${[object].concat(args).join(",")})`;
             case "join" :
                 return `implode(${args[0]}, ${object})`;
             case "sort" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_sort')}(${[object].concat(args).join(",")})`;
             case "keys" :
                 return `array_keys(${object})`;
             case "reverse" :
                 return `array_reverse(${object})`;
             case "lastIndexOf" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_search_last_index')}(${object})`;
             case "toLocaleString" :
             case "toString" :
@@ -171,6 +187,7 @@ module.exports={
             case "valueOf" :
                 return `${object}`;
             case "copyWithin" :
+                target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_copy_within')}(${[object].concat(args).join(",")})`;
             case "hasOwnProperty" :
                 return `array_key_exists(${[object].concat(args).join(",")})`;

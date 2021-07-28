@@ -24,7 +24,7 @@ class Person implements TestInterface{
 	public function getName():string{
 		return $this->_name;
 	}
-	public function setName(string $val):string{
+	public function setName(string $val){
 		$this->_name = $val;
 	}
 	public function avg(){

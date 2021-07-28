@@ -58,9 +58,9 @@ function es_array_some($array, $callback, $thisArg=null){
 
 function es_array_map($array, $callback, $thisArg=null){
     $callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
-    return array_map(function($value,$key)use(&$array,&$callback){
-        $callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
-        return $callback($value,$key,$array);
+    $index = 0;
+    return array_map(function($value)use(&$array,&$callback,&$index){
+        return $callback($value,$index++,$array);
     },$array);
 }
 
@@ -165,7 +165,7 @@ function es_array_reduce_right($array, $callback, $initial=null){
     return $value;
 }
 
-function es_array_sort($array, $callback){
+function es_array_sort(&$array, $callback=null){
     if( is_callable($callback) ){
         usort($array, $callback);
         return $array;

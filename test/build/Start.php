@@ -1,6 +1,7 @@
 <?php
 require_once('es/core/RegExp.php');
 require_once('es/core/String.php');
+require_once('es/core/ArrayMethod.php');
 use \PHPUnit\Framework\TestCase;
 use \es\core\RegExp;
 class Start extends TestCase{
@@ -49,6 +50,18 @@ class Start extends TestCase{
 		$this->pushArray($bs,9);
 		$this->pushArray($bs,1);
 		$this->assertEquals($bs,[9,1]);
+		$newBs = \es\core\es_array_map($bs,function($val,$index){
+			return $val;
+		});
+		$this->assertEquals($bs,$newBs);
+		array_push($newBs,5,12,0,3,3,1);
+		$dd = \es\core\es_array_sort($newBs);
+		$this->assertEquals([0,1,1,12,3,3,5,9],$dd);
+		$this->assertEquals($dd,$newBs);
+		$af = [];
+		array_push($af,1,6,0,9,'a',"B","A");
+		\es\core\es_array_sort($af);
+		$this->assertEquals([0,1,6,9,'A','B','a'],$af);
 	}
 	public function addArray(array &$a,$b){
 		array_push($a,$b);

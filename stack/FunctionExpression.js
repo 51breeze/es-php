@@ -49,7 +49,7 @@ class FunctionExpression extends Syntax{
         const useVariables = variableRefs ? 'use('+Array.from( variableRefs.values() ).map( stack=>`&\$${stack.value()}` ).join(", ")+')' : '';
         const type = this.stack.type(true);
         if( this.stack.isArrowFunctionExpression && this.stack.scope.isExpression ){
-            const content = before.concat(insertBefore.splice(0), this.semicolon(`${this.getIndent(1)}return ${body}`) ).join("\r\n");
+            const content = before.concat(insertBefore.splice(0), this.semicolon(`${this.getIndent(1)}\treturn ${body}`) ).join("\r\n");
             return `${startIndent}function(${params.join(",")})${useVariables}{\r\n${content}\r\n${endIndent}}`;
         }else{
             const content = before.concat(insertBefore.splice(0),body);

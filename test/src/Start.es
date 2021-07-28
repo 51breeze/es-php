@@ -38,6 +38,19 @@ public class Start extends TestCase
         this.pushArray(bs, 1)
         this.assertEquals(bs, [9,1] );
 
+        var newBs = bs.map<number>( (val,index)=>val );
+        this.assertEquals(bs, newBs );
+
+        newBs.push( 5, 12, 0, 3,3, 1 )
+        var dd = newBs.sort();
+        this.assertEquals([0,1,1,12,3,3,5,9], dd );
+        this.assertEquals(dd, newBs);
+
+        var af = [];
+        af.push(1,6,0, 9,'a',"B","A");
+        af.sort();
+        this.assertEquals([0,1,6,9,'A','B','a'], af);
+
     }
 
     addArray( a:string[], b){
