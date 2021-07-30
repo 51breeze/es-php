@@ -1,8 +1,10 @@
 <?php
 require_once('es/core/RegExp.php');
 require_once('es/core/String.php');
+require_once('es/core/System.php');
 require_once('es/core/ArrayMethod.php');
 use \PHPUnit\Framework\TestCase;
+use \es\core\System;
 use \es\core\RegExp;
 class Start extends TestCase{
 	public function __construct(){
@@ -62,6 +64,16 @@ class Start extends TestCase{
 		array_push($af,1,6,0,9,'a',"B","A");
 		\es\core\es_array_sort($af);
 		$this->assertEquals([0,1,6,9,'A','B','a'],$af);
+		$this->assertEquals([0,1,6,9],\es\core\es_array_filter($af,function($value){
+			return System::typeof($value) === 'number';
+		}));
+		$this->assertEquals([0,1,6,9,"A","B",'a',10,11,12,13,'15',[16]],\es\core\es_array_concat($af,10,[11,12],13,'15',[[16]]));
+		$this->assertEquals("16ABa",\es\core\es_array_reduce($af,function($all,$value){
+			return System::addition($all,$value);
+		}));
+		$this->assertEquals("aBA9610",\es\core\es_array_reduce_right($af,function($all,$value){
+			return System::addition($all,$value);
+		}));
 	}
 	public function addArray(array &$a,$b){
 		array_push($a,$b);

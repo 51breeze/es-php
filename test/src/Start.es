@@ -50,6 +50,10 @@ public class Start extends TestCase
         af.push(1,6,0, 9,'a',"B","A");
         af.sort();
         this.assertEquals([0,1,6,9,'A','B','a'], af);
+        this.assertEquals( [0,1,6,9], af.filter( value=>typeof value === 'number') );
+        this.assertEquals( [0,1,6,9,"A","B",'a',10,11,12,13,'15',[16]], af.concat(10,[11,12], 13,'15', [ [16] ] ) );
+        this.assertEquals("16ABa", af.reduce( (all,value)=>all+value ) );
+        this.assertEquals("aBA9610", af.reduceRight( (all,value)=>all+value ) );
 
     }
 

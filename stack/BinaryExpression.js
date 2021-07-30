@@ -14,10 +14,11 @@ class BinaryExpression extends Syntax{
                     return `is_a(${left},'${right}')`;
                }
           }
-          if( operator.charCodeAt(0) === 43 ){
-               const lT = this.stack.left.type().toString().toLowerCase();
-               const rT = this.stack.right.type().toString().toLowerCase();
-               if( lT ==="string" || rT ==="string"){
+          if( operator.charCodeAt(0) === 43 && !this.isNumberType(this.stack.left, this.stack.right) ){
+               if( this.stack.left.type().toString() ==="any" && this.stack.right.type().toString() ==="any" ){
+                    this.addDepend( this.getModuleById("System") );
+                    return `System::addition(${left},${right})`;
+               }else{
                     return `${left} . ${right}`;
                }
           }

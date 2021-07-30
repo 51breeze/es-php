@@ -19,6 +19,29 @@ class Syntax extends events.EventEmitter {
         this.module = stack.module; 
     }
 
+    getModuleById( id ){
+        return this.compilation.getModuleById(id);
+    }
+
+    getGlobalModuleById( id ){
+        return this.compilation.getGlobalModuleById(id);
+    }
+
+    isNumberType(){
+        return Array.from(arguments).every( stack=>{
+            const name = stack.type().toString();
+            switch( name ){
+                case "number" :
+                case "int" :
+                case "uint" :
+                case "float" :
+                case "double" :
+                    return true;
+            }
+            return false;
+        });
+    }
+
     createDataByStack(stack){
         let data = createdStackData.get(stack);
         if( !data ){

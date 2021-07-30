@@ -17,12 +17,19 @@ final class System
     public static function typeof( $obj ){
         if( is_callable( $obj ) ){
             return 'function';
-        }else if( $obj === NaN ){
+        }else if( $obj === NaN || is_numeric($obj) ){
             return 'number';
         }else if( $obj instanceof \es\core\RegExp ){
             return 'regexp';
         }
         return gettype($obj);
+    }
+
+    public static function addition($left,$right){
+        if( is_numeric($left) && is_numeric($right) ){
+            return $left + $right;
+        }
+        return $left . $right;
     }
 
     public static function bind($callback,$thisArg=null, ...$rest )

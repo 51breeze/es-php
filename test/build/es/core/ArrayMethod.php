@@ -82,9 +82,8 @@ function es_array_search_last_index($array, $value, $formIndex=null ){
 }
 
 function es_array_concat(array $array, ...$items){
-    return $array + es_array_flat( $items );
+    return array_merge($array, es_array_flat( $items ) );
 }
-
 
 function es_array_fill($array, $value, $start=0, $end=0){
     $len = count($array);
