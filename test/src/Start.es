@@ -54,6 +54,28 @@ public class Start extends TestCase
         this.assertEquals( [0,1,6,9,"A","B",'a',10,11,12,13,'15',[16]], af.concat(10,[11,12], 13,'15', [ [16] ] ) );
         this.assertEquals("16ABa", af.reduce( (all,value)=>all+value ) );
         this.assertEquals("aBA9610", af.reduceRight( (all,value)=>all+value ) );
+        var searchItem = 'B';
+        this.assertEquals("B", af.find( val=> val===searchItem )  );
+        this.assertEquals(6, af.find( val=> val > 5 )  );
+        this.assertEquals(5, af.findIndex( val=> val==='B' )  );
+
+        this.assertEquals([0, 1, 2, [3, 4] ], [0, 1, 2, [3, 4] ].flat(0) );
+        this.assertEquals([0,1,2,3,4], [0, 1, 2, [3, 4] ].flat() );
+        this.assertEquals([0,1,2,[3,4] ], [0, 1, 2, [[[3, 4]]] ].flat(2) );
+        this.assertEquals([0,1,2,3,4 ], [0, 1, 2, [[[3, 4]]] ].flat(3) );
+
+        this.assertEquals([0,1,2,3,4], [0, 1, 2, [3, 4] ].flatMap( val=> val ) );
+        this.assertEquals([0,1,2,[[3,4]] ], [0, 1, 2, [[[3, 4]]] ].flatMap( val=> val ) );
+
+        this.assertFalse( ['a','b',1].every( val=> typeof val ==='string' )  );
+        this.assertTrue( [1,2,3].every( val=> typeof val ==='number' )  );
+        this.assertTrue( [1,2,3,'a','b'].some( val=> typeof val ==='string' ) );
+
+        //this.assertTrue( [1,2,3,'a','b'].includes('a') ); 
+        this.assertEquals( [0,1,2,3,4], [1,2,3,'a','b'].keys() ); 
+        this.assertEquals( [1,2,3,'a','b'], [1,2,3,'a','b'].values() );
+
+        this.assertEquals( [1,2,3,'a','b'], [1, 2, 3, 4,'ssss'].fill(6) );
 
     }
 

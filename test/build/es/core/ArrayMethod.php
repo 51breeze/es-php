@@ -102,8 +102,11 @@ function es_array_foreach($array, $callback, $thisArg=null){
 }
 
 function es_array_flat($array, $depth=1){
-    return es_array_reduce($array, function($all, $val){
-        $result = (array)(is_array($val) && $depth > 0 ? es_array_flat($val, $depth - 1) : $val);
+    if( $depth < 1){
+        return $array;
+    }
+    return es_array_reduce($array, function($all, $val)use($depth){
+        $result = (array)(is_array($val) && $depth > 1 ? es_array_flat($val, $depth - 1) : $val);
         array_push($all, ...$result);
         return $all;
     },[]);
@@ -111,7 +114,7 @@ function es_array_flat($array, $depth=1){
 
 function es_array_flat_map($array, $callback, $thisArg=null){
     $callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
-    return es_array_reduce( $array, function($all, $val, $index, $array){
+    return es_array_reduce( $array, function($all, $val, $index, $array)use(&$callback){
         $result = (array)$callback($val,$index,$array);
         array_push($all, ...$result);
         return $all;

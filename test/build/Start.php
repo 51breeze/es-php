@@ -74,6 +74,48 @@ class Start extends TestCase{
 		$this->assertEquals("aBA9610",\es\core\es_array_reduce_right($af,function($all,$value){
 			return System::addition($all,$value);
 		}));
+		$searchItem = 'B';
+		$this->assertEquals("B",\es\core\es_array_find($af,function($val)use(&$searchItem){
+			return $val === $searchItem;
+		}));
+		$this->assertEquals(6,\es\core\es_array_find($af,function($val){
+			return $val > 5;
+		}));
+		$this->assertEquals(5,\es\core\es_array_find_index($af,function($val){
+			return $val === 'B';
+		}));
+		$_AR = [0,1,2,[3,4]];
+		$this->assertEquals([0,1,2,[3,4]],\es\core\es_array_flat($_AR,0));
+		$_AR1 = [0,1,2,[3,4]];
+		$this->assertEquals([0,1,2,3,4],\es\core\es_array_flat($_AR1));
+		$_AR2 = [0,1,2,[[[3,4]]]];
+		$this->assertEquals([0,1,2,[3,4]],\es\core\es_array_flat($_AR2,2));
+		$_AR3 = [0,1,2,[[[3,4]]]];
+		$this->assertEquals([0,1,2,3,4],\es\core\es_array_flat($_AR3,3));
+		$_AR4 = [0,1,2,[3,4]];
+		$this->assertEquals([0,1,2,3,4],\es\core\es_array_flat_map($_AR4,function(&$val){
+			return $val;
+		}));
+		$_AR5 = [0,1,2,[[[3,4]]]];
+		$this->assertEquals([0,1,2,[[3,4]]],\es\core\es_array_flat_map($_AR5,function(&$val){
+			return $val;
+		}));
+		$_AR6 = ['a','b',1];
+		$this->assertFalse(\es\core\es_array_every($_AR6,function(&$val){
+			return System::typeof($val) === 'string';
+		}));
+		$_AR7 = [1,2,3];
+		$this->assertTrue(\es\core\es_array_every($_AR7,function(&$val){
+			return System::typeof($val) === 'number';
+		}));
+		$_AR8 = [1,2,3,'a','b'];
+		$this->assertTrue(\es\core\es_array_some($_AR8,function(&$val){
+			return System::typeof($val) === 'string';
+		}));
+		$_AR9 = [1,2,3,'a','b'];
+		$this->assertEquals([0,1,2,3,4],array_keys($_AR9));
+		$_AR10 = [1,2,3,'a','b'];
+		$this->assertEquals([1,2,3,'a','b'],array_values($_AR10));
 	}
 	public function addArray(array &$a,$b){
 		array_push($a,$b);
