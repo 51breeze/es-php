@@ -199,7 +199,7 @@ function es_array_copy_within($array,$target, $start, $end){
       $to += $count - 1;
     }
     while ($count > 0) {
-      if ( isset($array[from]) ) {
+      if ( isset($array[$from]) ) {
         $array[ $to ] = $array[ $from ];
       }else{
         unset($array[ $to ]);

@@ -71,11 +71,29 @@ public class Start extends TestCase
         this.assertTrue( [1,2,3].every( val=> typeof val ==='number' )  );
         this.assertTrue( [1,2,3,'a','b'].some( val=> typeof val ==='string' ) );
 
-        //this.assertTrue( [1,2,3,'a','b'].includes('a') ); 
+        this.assertTrue( [1,2,3,'a','b'].includes('a') ); 
         this.assertEquals( [0,1,2,3,4], [1,2,3,'a','b'].keys() ); 
         this.assertEquals( [1,2,3,'a','b'], [1,2,3,'a','b'].values() );
 
-        this.assertEquals( [1,2,3,'a','b'], [1, 2, 3, 4,'ssss'].fill(6) );
+        this.assertEquals( [1,2,6,6,'ssss'], [1, 2, 3, 4,'ssss'].fill(6,2,4) );
+        this.assertEquals( [2,1], [1, 2].reverse() );
+
+        const months = ['Jan', 'March', 'April', 'June'];
+        this.assertEquals([], months.splice(1, 0, 'Feb') );
+        this.assertEquals(["Jan", "Feb", "March", "April", "June"], months);
+
+        this.assertEquals(["Jan"], months.splice(0, 1, 'Feb') );
+        this.assertEquals(["Feb", "Feb", "March", "April", "June"], months );
+        this.assertEquals("Feb, Feb, March, April, June", months.toString() );
+        this.assertEquals("Feb- Feb- March- April- June", months.join('- ') );
+
+        this.assertEquals(["April", "June","March", "April", "June"], months.copyWithin(0,3,5) );
+        this.assertEquals(["d", "b", "c", "d", "e"], ['a', 'b', 'c', 'd', 'e'].copyWithin(0,3,4) );
+
+        this.assertTrue( months.hasOwnProperty(2) );
+        this.assertTrue( months.propertyIsEnumerable(2) );
+        this.assertFalse( Array.isArray('') );
+        this.assertTrue( Array.isArray(['']) );
 
     }
 
@@ -140,7 +158,22 @@ public class Start extends TestCase
         this.assertEquals(43, paragraph.search(regex) );
         this.assertEquals('.', paragraph[ paragraph.search(regex) ] );
 
+        this.names = "Ye Jun";
+        this.assertEquals('Ye Jun',  this.names  );
 
     }
 
+
+    get names():string{
+        return this._names;
+    }
+
+    private var _names:string = 'test';
+    
+    set names( val:string){
+        this._names = val;
+    }
+
 }
+
+

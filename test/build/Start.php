@@ -84,38 +84,43 @@ class Start extends TestCase{
 		$this->assertEquals(5,\es\core\es_array_find_index($af,function($val){
 			return $val === 'B';
 		}));
-		$_AR = [0,1,2,[3,4]];
-		$this->assertEquals([0,1,2,[3,4]],\es\core\es_array_flat($_AR,0));
-		$_AR1 = [0,1,2,[3,4]];
-		$this->assertEquals([0,1,2,3,4],\es\core\es_array_flat($_AR1));
-		$_AR2 = [0,1,2,[[[3,4]]]];
-		$this->assertEquals([0,1,2,[3,4]],\es\core\es_array_flat($_AR2,2));
-		$_AR3 = [0,1,2,[[[3,4]]]];
-		$this->assertEquals([0,1,2,3,4],\es\core\es_array_flat($_AR3,3));
-		$_AR4 = [0,1,2,[3,4]];
-		$this->assertEquals([0,1,2,3,4],\es\core\es_array_flat_map($_AR4,function(&$val){
+		$this->assertEquals([0,1,2,[3,4]],\es\core\es_array_flat([0,1,2,[3,4]],0));
+		$this->assertEquals([0,1,2,3,4],\es\core\es_array_flat([0,1,2,[3,4]]));
+		$this->assertEquals([0,1,2,[3,4]],\es\core\es_array_flat([0,1,2,[[[3,4]]]],2));
+		$this->assertEquals([0,1,2,3,4],\es\core\es_array_flat([0,1,2,[[[3,4]]]],3));
+		$this->assertEquals([0,1,2,3,4],\es\core\es_array_flat_map([0,1,2,[3,4]],function($val){
 			return $val;
 		}));
-		$_AR5 = [0,1,2,[[[3,4]]]];
-		$this->assertEquals([0,1,2,[[3,4]]],\es\core\es_array_flat_map($_AR5,function(&$val){
+		$this->assertEquals([0,1,2,[[3,4]]],\es\core\es_array_flat_map([0,1,2,[[[3,4]]]],function($val){
 			return $val;
 		}));
-		$_AR6 = ['a','b',1];
-		$this->assertFalse(\es\core\es_array_every($_AR6,function(&$val){
+		$this->assertFalse(\es\core\es_array_every(['a','b',1],function($val){
 			return System::typeof($val) === 'string';
 		}));
-		$_AR7 = [1,2,3];
-		$this->assertTrue(\es\core\es_array_every($_AR7,function(&$val){
+		$this->assertTrue(\es\core\es_array_every([1,2,3],function($val){
 			return System::typeof($val) === 'number';
 		}));
-		$_AR8 = [1,2,3,'a','b'];
-		$this->assertTrue(\es\core\es_array_some($_AR8,function(&$val){
+		$this->assertTrue(\es\core\es_array_some([1,2,3,'a','b'],function($val){
 			return System::typeof($val) === 'string';
 		}));
-		$_AR9 = [1,2,3,'a','b'];
-		$this->assertEquals([0,1,2,3,4],array_keys($_AR9));
-		$_AR10 = [1,2,3,'a','b'];
-		$this->assertEquals([1,2,3,'a','b'],array_values($_AR10));
+		$this->assertTrue(in_array('a',[1,2,3,'a','b']));
+		$this->assertEquals([0,1,2,3,4],array_keys([1,2,3,'a','b']));
+		$this->assertEquals([1,2,3,'a','b'],array_values([1,2,3,'a','b']));
+		$this->assertEquals([1,2,6,6,'ssss'],\es\core\es_array_fill([1,2,3,4,'ssss'],6,2,4));
+		$this->assertEquals([2,1],array_reverse([1,2]));
+		$months = ['Jan','March','April','June'];
+		$this->assertEquals([],array_splice($months,1,0,'Feb'));
+		$this->assertEquals(["Jan","Feb","March","April","June"],$months);
+		$this->assertEquals(["Jan"],array_splice($months,0,1,'Feb'));
+		$this->assertEquals(["Feb","Feb","March","April","June"],$months);
+		$this->assertEquals("Feb, Feb, March, April, June",implode(', ',$months));
+		$this->assertEquals("Feb- Feb- March- April- June",implode('- ', $months));
+		$this->assertEquals(["April","June","March","April","June"],\es\core\es_array_copy_within($months,0,3,5));
+		$this->assertEquals(["d","b","c","d","e"],\es\core\es_array_copy_within(['a','b','c','d','e'],0,3,4));
+		$this->assertTrue(array_key_exists(2,$months));
+		$this->assertTrue(array_key_exists(2,$months));
+		$this->assertFalse(is_array(''));
+		$this->assertTrue(is_array(['']));
 	}
 	public function addArray(array &$a,$b){
 		array_push($a,$b);
@@ -169,5 +174,14 @@ class Start extends TestCase{
 		$regex = new RegExp('[^\w\s]','g');
 		$this->assertEquals(43,$regex->search($paragraph));
 		$this->assertEquals('.',$paragraph[$regex->search($paragraph)]);
+		$this->setNames("Ye Jun");
+		$this->assertEquals('Ye Jun',$this->getNames());
 	}
+	public function getNames():string{
+		return $this->_names;
+	}
+	public function setNames(string $val){
+		$this->_names = $val;
+	}
+	private $_names = 'test';
 }

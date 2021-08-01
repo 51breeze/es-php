@@ -99,24 +99,27 @@ module.exports={
 
         const addressVariable = target.getAssignAddressRef(desc);
         const rd = addressVariable && addressVariable.getLastAssignedRef();
-        let object = rd ? '$'+rd : target.make(thisObject);
-        if( thisObject.isArrayExpression ){
-            const refs = '$'+target.generatorVarName(target.stack, '_AR');
-            target.insertExpression(target.stack, target.semicolon(`${refs} = ${object}`));
-            object = refs;
+        const object = rd ? '$'+rd : target.make(thisObject);
+        const getObject=()=>{
+            if( thisObject.isArrayExpression ){
+                const refs = '$'+target.generatorVarName(target.stack, '_AR');
+                target.insertExpression(target.stack, target.semicolon(`${refs} = ${object}`));
+                return refs;
+            }
+            return object;
         }
 
         switch( name ){
             case "push" :
-                return createMethod(target,desc,object,args,name);
+                return createMethod(target,desc,getObject(),args,name);
             case "unshift" :
-                return createMethod(target,desc,object,args,name);
+                return createMethod(target,desc,getObject(),args,name);
             case "pop" :
-                return createMethod(target,desc,object,args,name);
+                return createMethod(target,desc,getObject(),args,name);
             case "shift" :
-                return createMethod(target,desc,object,args,name);
+                return createMethod(target,desc,getObject(),args,name);
             case "splice" :
-                return createMethod(target,desc,object,args,name);
+                return createMethod(target,desc,getObject(),args,name);
             case "slice" :
                 return `array_slice(${[object].concat(args).join(",")})`;
             case "map" :
@@ -173,7 +176,7 @@ module.exports={
                 return `implode(${args[0]}, ${object})`;
             case "sort" :
                 target.addDepend( target.stack.getModuleById("Array") );
-                return `${this.getName('es_array_sort')}(${[object].concat(args).join(",")})`;
+                return `${this.getName('es_array_sort')}(${[getObject()].concat(args).join(",")})`;
             case "keys" :
                 return `array_keys(${object})`;
             case "reverse" :
@@ -190,9 +193,9 @@ module.exports={
                 target.addDepend( target.stack.getModuleById("Array") );
                 return `${this.getName('es_array_copy_within')}(${[object].concat(args).join(",")})`;
             case "hasOwnProperty" :
-                return `array_key_exists(${[object].concat(args).join(",")})`;
+                return `array_key_exists(${args.concat(object).join(",")})`;
             case "propertyIsEnumerable" :
-                return `array_key_exists(${[object].concat(args).join(",")})`;
+                return `array_key_exists(${args.concat(object).join(",")})`;
         }
     }
 }
