@@ -32,7 +32,7 @@ final class System
         return $left . $right;
     }
 
-    public static function bind($callback,$thisArg=null, ...$rest )
+    public static function bind($callback, $thisArg=null, ...$rest )
     {
         if( is_array($callback) )
         {

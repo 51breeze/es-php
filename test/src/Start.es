@@ -95,6 +95,9 @@ public class Start extends TestCase
         this.assertFalse( Array.isArray('') );
         this.assertTrue( Array.isArray(['']) );
 
+        console.log(  [].slice.call( [1,2,3], 1 ) );
+        console.log(  [].slice.call( new Array(1,2,34,56) , 1 ) );
+
     }
 
     addArray( a:string[], b){

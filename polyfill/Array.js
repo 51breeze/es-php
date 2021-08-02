@@ -84,14 +84,17 @@ module.exports={
     getName(name){
         return '\\'+this.namespace.split('.').concat( name ).join('\\');
     },
-    method(target, thisObject, name, args, desc, isStatic){
+    method(target, thisObject, name, args, desc, isStatic, getter=false){
         if( isStatic ){
             switch( name ){
                 case "isArray" :
+                    target.addDepend( target.stack.getModuleById("Array") );
                     return `is_array(${args.join(",")})`;
                 case "from" :
+                    target.addDepend( target.stack.getModuleById("Array") );
                     return `array_slice(${args.join(",")},0)`;
                 case "of" :
+                    target.addDepend( target.stack.getModuleById("Array") );
                     return `${this.getName('es_array_new')}(${args.join(",")})`;
             }
             return null;
@@ -121,6 +124,9 @@ module.exports={
             case "splice" :
                 return createMethod(target,desc,getObject(),args,name);
             case "slice" :
+                if( getter ){
+                    return `array_slice`;
+                }
                 return `array_slice(${[object].concat(args).join(",")})`;
             case "map" :
                 target.addDepend( target.stack.getModuleById("Array") );

@@ -269,7 +269,7 @@ class Test extends Person{
 				$done();
 			});
 		});
-		'';
+		Reflect::get('\Test',$this->getJson(),"name");
 	}
 	public function getJson(){
 		return (object)['name'=>123];

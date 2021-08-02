@@ -1,13 +1,13 @@
 module.exports={
     content:null,
     export:false,
-    require:['Reflect','System'],
+    require:[],
     namespace:"es.core",
     isClass:false,
     getName(name){
         return '\\'+this.namespace.split('.').concat( name ).join('\\');
     },
-    method(target, thisObject, name, args, isStatic){
+    method(target, thisObject, name, args, desc, isStatic, getter=false){
         let object = target.make(thisObject);
         if( isStatic ){
             switch( name ){
@@ -15,15 +15,26 @@ module.exports={
                     return `''`;
             }
         }
+
         switch( name ){
             case "apply" :
-                return `Reflect::apply(${[object].concat(args).join(",")})`;
             case "call" :
-                return `Reflect::call(${[object].concat(args).join(",")})`;
+                const firstArg = target.stack.arguments && target.stack.arguments[0];
+                const targetType =firstArg && firstArg.type();
+                if( targetType ){
+                    const type = target.compiler.callUtils("getOriginType",targetType );
+                    if( type && type.id ==="Array"){
+                        return `${object}(${args.join(",")})`;
+                    }
+                }
+                target.addDepend( target.stack.getModuleById("Reflect") );
+                return `Reflect::apply('${object}',${args[0]},[${args.slice(1).join(",")}])`;
             case "bind" :
+                target.addDepend( target.stack.getModuleById("Reflect") );
                 return `System::bind(${[object].concat(args).join(",")})`;
             case "toString" :
                 return `''`;
         }
     }
+    
 }

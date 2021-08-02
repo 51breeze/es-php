@@ -121,6 +121,8 @@ class Start extends TestCase{
 		$this->assertTrue(array_key_exists(2,$months));
 		$this->assertFalse(is_array(''));
 		$this->assertTrue(is_array(['']));
+		printf('%s',json_encode(array_slice([1,2,3],1),JSON_UNESCAPED_UNICODE));
+		printf('%s',json_encode(array_slice([1,2,34,56],1),JSON_UNESCAPED_UNICODE));
 	}
 	public function addArray(array &$a,$b){
 		array_push($a,$b);

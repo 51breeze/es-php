@@ -8,7 +8,7 @@ class MemberExpression extends Syntax{
          const name = type.id.toString();
          const polyModule = Polyfill.modules.get(name);
          if( polyModule && polyModule.method ){
-            const result = polyModule.method(this, object, property, [], desc, this.compiler.callUtils("isTypeModule",desc) );
+            const result = polyModule.method(this, object, property, [], desc, this.compiler.callUtils("isTypeModule",desc) , true);
             if( result ){
                return result;
             }
