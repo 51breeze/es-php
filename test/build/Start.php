@@ -20,33 +20,19 @@ class Start extends TestCase{
 			$_ARV = 1;
 			$items = $_RD1 = &$this->list;
 		}
-		$items_push = function(...$_args)use(&$items,&$_ARV,&$_RD,&$_RD1){
-			if($_ARV===null)$_ARV=2;
-			switch($_ARV){
-				case 0 :
-					$_RV = array_push($_RD,...$_args);
-					$items = $_RD;
-					return $_RV;
-				case 1 :
-					$_RV = array_push($_RD1,...$_args);
-					$items = $_RD1;
-					return $_RV;
-				default:
-					return array_push($items,...$_args);
-			}
-		};
-		$items_push(1);
-		$items_push(2,3,4);
-		$this->assertEquals(4,count($items));
-		$items_REFS = function &()use(&$items,&$_ARV,&$_RD,&$_RD1){
-			if($_ARV===null)$_ARV=2;
+		/*References $items memory address*/
+		$_REF = function &()use(&$items,&$_ARV,&$_RD,&$_RD1){
+			if($_ARV===null)return $items;
 			switch($_ARV){
 				case 0 : return $_RD;
 				case 1 : return $_RD1;
 				default: return $items;
 			}
 		};
-		$this->assertEquals($items_REFS(),$this->list);
+		array_push($_REF(),1);
+		array_push($_REF(),2,3,4);
+		$this->assertEquals(4,count($_REF()));
+		$this->assertEquals($_REF(),$this->list);
 		array_push($this->items,5,6,7);
 		$this->assertEquals(3,count($this->items));
 		$bb = [];
@@ -139,26 +125,16 @@ class Start extends TestCase{
 			$_ARV1 = 0;
 			$ip = $_RD3 = &$this->arrItems;
 		}
-		$ip_splice = function(...$_args1)use(&$ip,&$_ARV1,&$_RD3){
-			if($_ARV1===null)$_ARV1=1;
-			switch($_ARV1){
-				case 0 :
-					$_RV1 = array_splice($_RD3,...$_args1);
-					$ip = $_RD3;
-					return $_RV1;
-				default:
-					return array_splice($ip,...$_args1);
-			}
-		};
-		$ip_splice(0,1,1);
-		$ip_REFS1 = function &()use(&$ip,&$_ARV1,&$_RD3){
-			if($_ARV1===null)$_ARV1=1;
+		/*References $ip memory address*/
+		$_REF1 = function &()use(&$ip,&$_ARV1,&$_RD3){
+			if($_ARV1===null)return $ip;
 			switch($_ARV1){
 				case 0 : return $_RD3;
 				default: return $ip;
 			}
 		};
-		$this->assertEquals([1],$ip_REFS1());
+		array_splice($_REF1(),0,1,1);
+		$this->assertEquals([1],$_REF1());
 	}
 	public function addArray(array &$a,$b){
 		array_push($a,$b);

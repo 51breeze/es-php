@@ -42,7 +42,10 @@ class CallExpression extends Syntax{
                     }
                 }
             }
-            return this.createArrayRefs(item.description(), value);
+            if( item.isIdentifier ){
+                return this.createArrayRefs(item.description(), value);
+            }
+            return value;
         });
         
         const result = this.intercept(args);

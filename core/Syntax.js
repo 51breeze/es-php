@@ -62,6 +62,7 @@ class Syntax extends events.EventEmitter {
     }
 
     hasCrossScopeAssignment( assignSetObject ){
+        if( !assignSetObject )return false;
         const items = Array.from( assignSetObject.values() );
         if( items.length < 1 )return false;
         const firstScope = items[0].scope;
@@ -121,7 +122,7 @@ class Syntax extends events.EventEmitter {
                     const assert =  '$'+this.generatorVarName(desc,"_ARV");
                     const uses = [object, assert];
                     let itemIndex = 0;
-                    method_name = object+this.generatorVarName(desc,`_REFS`,true);
+                    method_name = '$'+this.generatorVarName(desc,`_REF`,true);
                     desc.assignItems.forEach( (item)=>{
                         const desc = item.description();
                         if( assignAddress.hasName(desc) ){
@@ -133,13 +134,13 @@ class Syntax extends events.EventEmitter {
                     content.push(`${indent}\t\tdefault: return ${object};`);
                     const push_method = [
                         `function &()use(&${uses.join(',&')}){`,
-                        `${indent}\tif(${assert}===null)${assert}=${itemIndex};`,
+                        `${indent}\tif(${assert}===null)return ${object};`,
                         `${indent}\tswitch(${assert}){`, 
                         content.join("\r\n"), 
                         `${indent}\t}`,
                         `${indent}};`
                     ].join("\r\n");
-                    this.insertExpression(this.stack, `${indent}${method_name} = ${push_method}`);
+                    this.insertExpression(this.stack, `${indent}/*References ${object} memory address*/\r\n${indent}${method_name} = ${push_method}`);
                     dataset[ key ] = method_name;
                 }
                 return `${method_name}()`;

@@ -15,30 +15,28 @@ module.exports={
                     return `''`;
             }
         }
-
         switch( name ){
             case "apply" :
             case "call" :
-                if( getter ){
-                    return object;
-                }
+                if( getter )return object;
                 const firstArg = target.stack.arguments && target.stack.arguments[0];
                 const targetType =firstArg && firstArg.type();
+                const targetObject = args.shift();
                 if( targetType ){
                     const type = target.compiler.callUtils("getOriginType",targetType);
                     if(type && type.id ==="Array"){
                         switch( object ){
                             case "array_splice" :
-                                if( args.length > 4 ){
-                                    args = args.slice(0,3).concat(`[${args.slice(3).join(',')}]`);
+                                if( args.length > 3 ){
+                                    args = args.slice(0,2).concat(`[${args.slice(2).join(',')}]`);
                                 }
                             break;
                         }
-                        return `${object}(${args.join(",")})`;
+                        return `${object}(${[targetObject].concat(args).join(",")})`;
                     }
                 }
                 target.addDepend( target.stack.getModuleById("Reflect") );
-                return `Reflect::apply('${object}',${args[0]},[${args.slice(1).join(",")}])`;
+                return `Reflect::apply('${object}',${targetObject},[${args.slice(1).join(",")}])`;
             case "bind" :
                 target.addDepend( target.stack.getModuleById("Reflect") );
                 return `System::bind(${[object].concat(args).join(",")})`;
