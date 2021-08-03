@@ -21,6 +21,7 @@ class Start extends TestCase{
 			$items = $_RD1 = &$this->list;
 		}
 		$items_push = function(...$_args)use(&$items,&$_ARV,&$_RD,&$_RD1){
+			if($_ARV===null)$_ARV=2;
 			switch($_ARV){
 				case 0 :
 					$_RV = array_push($_RD,...$_args);
@@ -37,7 +38,15 @@ class Start extends TestCase{
 		$items_push(1);
 		$items_push(2,3,4);
 		$this->assertEquals(4,count($items));
-		$this->assertEquals($items,$this->list);
+		$items_REFS = function &()use(&$items,&$_ARV,&$_RD,&$_RD1){
+			if($_ARV===null)$_ARV=2;
+			switch($_ARV){
+				case 0 : return $_RD;
+				case 1 : return $_RD1;
+				default: return $items;
+			}
+		};
+		$this->assertEquals($items_REFS(),$this->list);
 		array_push($this->items,5,6,7);
 		$this->assertEquals(3,count($this->items));
 		$bb = [];
@@ -121,8 +130,35 @@ class Start extends TestCase{
 		$this->assertTrue(array_key_exists(2,$months));
 		$this->assertFalse(is_array(''));
 		$this->assertTrue(is_array(['']));
-		printf('%s',json_encode(array_slice([1,2,3],1),JSON_UNESCAPED_UNICODE));
-		printf('%s',json_encode(array_slice([1,2,34,56],1),JSON_UNESCAPED_UNICODE));
+		$ip = [];
+		array_splice($ip,0,0,[2,3,5]);
+		$this->assertEquals([2,3,5],$ip);
+		array_splice($ip,1,1,[2,3,6,5]);
+		$this->assertEquals([2,2,3,6,5,5],$ip);
+		if($ip){
+			$_ARV1 = 0;
+			$ip = $_RD3 = &$this->arrItems;
+		}
+		$ip_splice = function(...$_args1)use(&$ip,&$_ARV1,&$_RD3){
+			if($_ARV1===null)$_ARV1=1;
+			switch($_ARV1){
+				case 0 :
+					$_RV1 = array_splice($_RD3,...$_args1);
+					$ip = $_RD3;
+					return $_RV1;
+				default:
+					return array_splice($ip,...$_args1);
+			}
+		};
+		$ip_splice(0,1,1);
+		$ip_REFS1 = function &()use(&$ip,&$_ARV1,&$_RD3){
+			if($_ARV1===null)$_ARV1=1;
+			switch($_ARV1){
+				case 0 : return $_RD3;
+				default: return $ip;
+			}
+		};
+		$this->assertEquals([1],$ip_REFS1());
 	}
 	public function addArray(array &$a,$b){
 		array_push($a,$b);

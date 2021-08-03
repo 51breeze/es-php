@@ -19,11 +19,21 @@ module.exports={
         switch( name ){
             case "apply" :
             case "call" :
+                if( getter ){
+                    return object;
+                }
                 const firstArg = target.stack.arguments && target.stack.arguments[0];
                 const targetType =firstArg && firstArg.type();
                 if( targetType ){
-                    const type = target.compiler.callUtils("getOriginType",targetType );
-                    if( type && type.id ==="Array"){
+                    const type = target.compiler.callUtils("getOriginType",targetType);
+                    if(type && type.id ==="Array"){
+                        switch( object ){
+                            case "array_splice" :
+                                if( args.length > 4 ){
+                                    args = args.slice(0,3).concat(`[${args.slice(3).join(',')}]`);
+                                }
+                            break;
+                        }
                         return `${object}(${args.join(",")})`;
                     }
                 }

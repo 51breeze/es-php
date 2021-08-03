@@ -95,8 +95,19 @@ public class Start extends TestCase
         this.assertFalse( Array.isArray('') );
         this.assertTrue( Array.isArray(['']) );
 
-        console.log(  [].slice.call( [1,2,3], 1 ) );
-        console.log(  [].slice.call( new Array(1,2,34,56) , 1 ) );
+        var ip = [];
+        [].splice.call.call.call(ip, 0, 0, 2, 3, 5 );
+
+        this.assertEquals([2,3,5],  ip );
+        ip.splice(1,1, 2,3,6,5);
+        this.assertEquals([2,2,3,6,5,5], ip );
+
+        if( ip ){
+            ip = this.arrItems;
+        }
+
+        ip.splice(0, 1, 1);
+        this.assertEquals([1], ip );
 
     }
 

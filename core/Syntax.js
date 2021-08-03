@@ -108,6 +108,51 @@ class Syntax extends events.EventEmitter {
         }
     }
 
+    createArrayRefs(desc,object){
+        const assignAddress = this.getAssignAddressRef(desc);
+        if( assignAddress ){
+            if( this.hasCrossScopeAssignment( desc.assignItems ) ){
+                const dataset = this.createDataByStack(desc);
+                const key = `get_array_refs_${object}`;
+                let method_name = dataset[ key ];
+                if( !method_name ){
+                    const content = [];
+                    const indent =  this.getIndent();
+                    const assert =  '$'+this.generatorVarName(desc,"_ARV");
+                    const uses = [object, assert];
+                    let itemIndex = 0;
+                    method_name = object+this.generatorVarName(desc,`_REFS`,true);
+                    desc.assignItems.forEach( (item)=>{
+                        const desc = item.description();
+                        if( assignAddress.hasName(desc) ){
+                            const refs = '$'+assignAddress.getName(desc);
+                            uses.push( refs );
+                            content.push(`${indent}\t\tcase ${itemIndex++} : return ${refs};`);
+                        }
+                    });
+                    content.push(`${indent}\t\tdefault: return ${object};`);
+                    const push_method = [
+                        `function &()use(&${uses.join(',&')}){`,
+                        `${indent}\tif(${assert}===null)${assert}=${itemIndex};`,
+                        `${indent}\tswitch(${assert}){`, 
+                        content.join("\r\n"), 
+                        `${indent}\t}`,
+                        `${indent}};`
+                    ].join("\r\n");
+                    this.insertExpression(this.stack, `${indent}${method_name} = ${push_method}`);
+                    dataset[ key ] = method_name;
+                }
+                return `${method_name}()`;
+            }else{
+                const rd = assignAddress.getLastAssignedRef();
+                if( rd ){
+                   return '$'+rd; 
+                }
+            }
+        }
+        return object;
+    }
+
     getVariableRefs(){
         const funScope = this.scope.getScopeByType("function");
         return refsParentVariable.get(funScope);

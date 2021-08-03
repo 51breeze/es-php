@@ -405,6 +405,7 @@ class Test extends Person{
 			$items = $_RD1 = &$dd;
 		}
 		$items_push = function(...$_args)use(&$items,&$_ARV,&$_RD,&$_RD1){
+			if($_ARV===null)$_ARV=2;
 			switch($_ARV){
 				case 0 :
 					$_RV = array_push($_RD,...$_args);
@@ -421,8 +422,17 @@ class Test extends Person{
 		$items_push(0);
 		$_V2 = $items_push(1,9,6);
 		$_ARV = 2;
-		printf('%s %s %s',json_encode($_V2,JSON_UNESCAPED_UNICODE),json_encode($items = [],JSON_UNESCAPED_UNICODE),json_encode($items_push(9999),JSON_UNESCAPED_UNICODE));
+		$items = []_REFS = function &()use(&$items = [],&$_ARV,&$_RD,&$_RD1){
+			if($_ARV===null)$_ARV=2;
+			switch($_ARV){
+				case 0 : return $_RD;
+				case 1 : return $_RD1;
+				default: return $items = [];
+			}
+		};
+		printf('%s %s %s',json_encode($_V2,JSON_UNESCAPED_UNICODE),json_encode($items = []_REFS(),JSON_UNESCAPED_UNICODE),json_encode($items_push(9999),JSON_UNESCAPED_UNICODE));
 		$items_pop = function()use(&$items,&$_ARV,&$_RD,&$_RD1){
+			if($_ARV===null)$_ARV=2;
 			switch($_ARV){
 				case 0 :
 					$_RV1 = array_pop($_RD);
@@ -438,6 +448,7 @@ class Test extends Person{
 		};
 		printf('%s',json_encode($items_pop(),JSON_UNESCAPED_UNICODE));
 		$items_splice = function(...$_args)use(&$items,&$_ARV,&$_RD,&$_RD1){
+			if($_ARV===null)$_ARV=2;
 			switch($_ARV){
 				case 0 :
 					$_RV2 = array_splice($_RD,...$_args);
@@ -453,6 +464,7 @@ class Test extends Person{
 		};
 		printf('%s',json_encode($items_splice(0,5,''),JSON_UNESCAPED_UNICODE));
 		$items_shift = function()use(&$items,&$_ARV,&$_RD,&$_RD1){
+			if($_ARV===null)$_ARV=2;
 			switch($_ARV){
 				case 0 :
 					$_RV3 = array_shift($_RD);
@@ -468,6 +480,7 @@ class Test extends Person{
 		};
 		printf('%s',json_encode($items_shift(),JSON_UNESCAPED_UNICODE));
 		$items_unshift = function(...$_args)use(&$items,&$_ARV,&$_RD,&$_RD1){
+			if($_ARV===null)$_ARV=2;
 			switch($_ARV){
 				case 0 :
 					$_RV4 = array_unshift($_RD,...$_args);

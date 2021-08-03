@@ -43,8 +43,6 @@ const createMethod = (target,desc,object,args,name)=>{
                 push_args_name = ''
             }
             push_method_name = origin+target.generatorVarName(desc,`_${name}`,true);
-            const defaultContent = [];
-
             let itemIndex = 0;
             desc.assignItems.forEach( (item)=>{
                 const desc = item.description();
@@ -61,8 +59,9 @@ const createMethod = (target,desc,object,args,name)=>{
             
             const push_method = [
                 `function(${push_args_name})use(&${uses.join(',&')}){`,
+                `${indent}\tif(${assert}===null)${assert}=${itemIndex};`,
                 `${indent}\tswitch(${assert}){`, 
-                content.concat(defaultContent).join("\r\n"), 
+                content.join("\r\n"), 
                 `${indent}\t}`,
                 `${indent}};`
             ].join("\r\n");
@@ -122,6 +121,12 @@ module.exports={
             case "shift" :
                 return createMethod(target,desc,getObject(),args,name);
             case "splice" :
+                if( getter ){
+                    return `array_splice`;
+                }
+                if( args.length > 3 ){
+                    args = args.slice(0,2).concat(`[${args.slice(2).join(',')}]`);
+                }
                 return createMethod(target,desc,getObject(),args,name);
             case "slice" :
                 if( getter ){

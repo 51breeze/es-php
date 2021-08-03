@@ -31,11 +31,6 @@ class CallExpression extends Syntax{
         const declareParams = desc.params;
         const args = this.stack.arguments.map( (item,index)=>{
             let value = this.make( item );
-            const addressVariable = this.getAssignAddressRef( item.description() );
-            const rd = addressVariable && addressVariable.getLastAssignedRef();
-            if( rd ){
-                value = '$'+rd; 
-            }
             if( declareParams && declareParams[index] && (hasAssignmentExpression || item.isArrayExpression) ){
                 const declareType = declareParams[index].type();
                 if( declareType ){
@@ -47,7 +42,7 @@ class CallExpression extends Syntax{
                     }
                 }
             }
-            return value;
+            return this.createArrayRefs(item.description(), value);
         });
         
         const result = this.intercept(args);
