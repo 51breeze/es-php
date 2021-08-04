@@ -109,6 +109,22 @@ public class Start extends TestCase
         ip.splice(0, 1, 1);
         this.assertEquals([1], ip );
 
+        const ds = [1,2,3];
+        const _splice = [].splice.bind( ds );
+        const _splicesss = [].splice.bind( 'ds' );
+        console.log( _splicesss );
+
+        this.assertEquals([1,2], _splice(0,2) );
+        this.assertEquals([3], ds );
+
+        const testObj = {0:66};
+        const _splice2 = [].splice.bind( testObj );
+        const _push = [].push.bind( testObj );
+
+        _splice2(0,1,3,6,9);
+        _push("Jun");
+        this.assertEquals([3,6,9,'Jun'], (array)testObj );
+
     }
 
     addArray( a:string[], b){

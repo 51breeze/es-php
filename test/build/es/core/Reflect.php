@@ -262,12 +262,12 @@ final class Reflect{
     /**
      * 调用指定的方法
      */
-    final static public function apply( $target, $thisArgument=null, $argumentsList=null ){
+    final static public function apply( $target, &$thisArg=null, array $argumentsList=[] ){
         if( !is_callable($target) ){
             throw new TypeError('target is not callable');
         }
-        if( $thisArgument !== null ){
-            $target = System::bind( $target, $thisArgument);
+        if( $thisArg !== null ){
+            $target = System::bind($target, $thisArg);
         }
         return call_user_func_array( $target, !is_array($argumentsList) ? array() :  $argumentsList );
     }
@@ -275,7 +275,7 @@ final class Reflect{
     /**
      * 调用指定对象中的方法
      */
-    final static public function call( $scope, &$target, $name=null, array $args=null, $thisArg=null){
+    final static public function call( $scope, &$target, $name=null, array $args=[], $thisArg=null){
         $type = null;
         if( is_string($target) ){
             $type = "string";

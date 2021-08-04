@@ -504,8 +504,14 @@ class Syntax extends events.EventEmitter {
 
     emitter(){}
 
-    error(code,...args){
-        this.stack.error(code,...args);
+    error( message , stack=null){
+        if( stack===null ){
+            stack = this.stack;
+        }
+        const range = this.compilation.getRangeByNode(stack.node);
+        const file  = this.compilation.file;
+        message+= ` (${file}:${range.start.line}:${range.start.column})`;
+        this.compiler.callUtils("error",message);
     }
 
     warn(code,...args){

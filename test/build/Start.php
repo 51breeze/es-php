@@ -1,10 +1,12 @@
 <?php
 require_once('es/core/RegExp.php');
 require_once('es/core/String.php');
+require_once('es/core/Reflect.php');
 require_once('es/core/System.php');
 require_once('es/core/ArrayMethod.php');
 use \PHPUnit\Framework\TestCase;
 use \es\core\System;
+use \es\core\Reflect;
 use \es\core\RegExp;
 class Start extends TestCase{
 	public function __construct(){
@@ -135,6 +137,18 @@ class Start extends TestCase{
 		};
 		array_splice($_REF1(),0,1,1);
 		$this->assertEquals([1],$_REF1());
+		$ds = [1,2,3];
+		$_splice = System::bind('array_splice',$ds);
+		$_splicesss = System::bind('array_splice','ds');
+		printf('%s',json_encode($_splicesss,JSON_UNESCAPED_UNICODE));
+		$this->assertEquals([1,2],$_splice(0,2));
+		$this->assertEquals([3],$ds);
+		$testObj = (object)['0'=>66];
+		$_splice2 = System::bind('array_splice',$testObj);
+		$_push = System::bind('array_push',$testObj);
+		$_splice2(0,1,3,6,9);
+		$_push("Jun");
+		$this->assertEquals([3,6,9,'Jun'],(array)$testObj);
 	}
 	public function addArray(array &$a,$b){
 		array_push($a,$b);
