@@ -111,20 +111,18 @@ public class Start extends TestCase
 
         const ds = [1,2,3];
         const _splice = [].splice.bind( ds );
-        const _splicesss = [].splice.bind( 'ds' );
-        console.log( _splicesss );
-
         this.assertEquals([1,2], _splice(0,2) );
         this.assertEquals([3], ds );
 
-        const testObj = {0:66};
+        const testObj = {name:66};
         const _splice2 = [].splice.bind( testObj );
         const _push = [].push.bind( testObj );
-
-        _splice2(0,1,3,6,9);
+        const s = _splice2(0,1,3,6,9);
         _push("Jun");
-        this.assertEquals([3,6,9,'Jun'], (array)testObj );
 
+        console.log( testObj );
+
+        this.assertEquals({0:3,1:6,2:9,3:"Jun",length:4,name:66}, testObj );
     }
 
     addArray( a:string[], b){

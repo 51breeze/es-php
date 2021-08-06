@@ -10,7 +10,7 @@ class UnaryExpression extends Syntax {
             if( this.compiler.callUtils("isTypeModule", desc ) ){
                return desc.isInterface ? `'interface'` : `'class'`;
             }
-            this.addDepend( this.stack.getModuleById("System") );
+            this.addDepend("System");
             return `System::typeof(${argument})`;
          }
          return `${operator}${argument}`;

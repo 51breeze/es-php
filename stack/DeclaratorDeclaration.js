@@ -11,7 +11,7 @@ class DeclaratorDeclaration extends Syntax{
         const refs = [];
         const requires  = [];
         polyfillModule.require.forEach( name=>{
-            this.addDepend( this.stack.getModuleById(name) );
+            this.addDepend(name);
         });
         this.createDependencies(module,refs,requires);
         return content.replace(/\/\/\/\/\[(require|namespace|reference)\](\r?\n)/g,(all,name,line)=>{

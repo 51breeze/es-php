@@ -90,18 +90,32 @@ final class System
                     };
                 }else if(is_object($thisArg)){
                     return function(...$args)use($callback, &$thisArg, &$get_args){
-                        $array = (array)$thisArg;
-                        $keys  = array_keys( $array );
+                        $origin = (array)$thisArg;
+                        $array = System::toArray( $origin );
+                        $keys  = array_keys( $origin );
                         $result= call_user_func_array($callback, array_merge([&$array], $get_args($args) ) );
                         $diff = array_diff($keys, array_keys($array));
-                        $len = count($diff);
-                        for($i=0;$i<$len;$i++){
-                            unset( $thisArg->{$diff[$i]} );
+                        foreach($diff as $v){
+                            if( is_numeric($v) ){
+                                unset($thisArg->{$v});
+                            }
                         }
+                        $count = 0;
                         foreach($array as $key=>$value){
-                            $thisArg->{$key} = $value;
+                            if( is_numeric($key) ){
+                                $count++;
+                                $thisArg->{$key} = $value;
+                            }
                         }
-                        return $thisArg;
+                        $thisArg->length = $count;
+
+                        print_r( $thisArg );
+                        print_r( $array );
+                        print_r(  $get_args($args) );
+                        echo "============\r\n";
+
+
+                        return $result;
                     };
                 }
             }
@@ -114,6 +128,39 @@ final class System
             return $method;
         }
         throw new TypeError('callback is not callable');
+    }
+
+    static function toArray( $target ){
+        $array = [];
+        $type = 0;
+        $len  = 0;
+        if( is_array( $target) ){
+            $type = 1;
+            $target = array_filter($target, function($key){
+                return is_numeric($key);
+            },ARRAY_FILTER_USE_KEY);
+            $len = count($target);
+        }else if( is_object($target) ){
+            $type = 2;
+            if( is_a($target,'\Countable') ){
+                $len = count($target);
+            }else{
+                $len = isset($target->length) ? $target->length : 0;
+            }
+        }else if( is_string($target) ){
+            $type = 3;
+            $len = mb_strlen($target);
+        }
+        for($i=0;$i<$len;$i++){
+            if( $type===1 ){
+                $array[] = $target[ $i ];
+            }else if( $type===2 ){
+                $array[] = $target->{$i};
+            }else if( $type===3 ){
+                $array[] = mb_substr($target,$i,1);
+            }
+        }
+        return $array;
     }
 
     static function getDefinitionByName( $name )

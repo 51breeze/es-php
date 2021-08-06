@@ -38,10 +38,10 @@ class MemberExpression extends Syntax{
       if(this.stack.computed){
          const objectDesc = this.stack.object.description();
          if( !this.isBaseType( this.stack.object.type() ) || (objectDesc.assignItems && objectDesc.assignItems.size > 1) ){
-            this.addDepend( this.stack.getModuleById("Reflect") );
+            this.addDepend("Reflect");
             return `${this.checkRefsName("Reflect")}::get(${this.getClassStringName(module)},${object},${property})`;
          }
-         const tName = this.getTypeName( this.stack.object.type() );
+         const tName = this.getAvailableTypeName( this.stack.object.type() );
          if( tName === "array" || tName ==="string" ){
             return `${object}[${property}]`;
          }
@@ -52,7 +52,7 @@ class MemberExpression extends Syntax{
       }
 
       if( description && description.isType && description.isAnyType ){
-         this.addDepend( this.stack.getModuleById("Reflect") );
+         this.addDepend( "Reflect" );
          return `${this.checkRefsName("Reflect")}::get(${this.getClassStringName(module)},${object},"${property}")`;
       }
 

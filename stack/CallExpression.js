@@ -37,7 +37,7 @@ class CallExpression extends Syntax{
                     const originType = this.compiler.callUtils("getOriginType", declareType );
                     if( originType.id === "Array" ){
                         const name = '$'+this.generatorVarName(item,"_V" );
-                        this.insertExpression( this.stack, this.semicolon(`${name} = ${value}`) );
+                        this.insertExpression( this.semicolon(`${name} = ${value}`) );
                         return name;
                     }
                 }
@@ -54,7 +54,7 @@ class CallExpression extends Syntax{
         }
         if( this.stack.callee.isMemberExpression ){
             if( desc && desc.isType && desc.isAnyType  ){
-                this.addDepend( this.stack.getModuleById("Reflect") );
+                this.addDepend("Reflect");
                 if( args.length > 0 ){
                     return `${this.checkRefsName("Reflect")}::call(${this.getClassStringName(this.module)},${this.make(this.stack.callee.object)},"${this.stack.callee.property.value()}",[${args.join(",")}])`;
                 }else{

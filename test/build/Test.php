@@ -397,7 +397,7 @@ class Test extends Person{
 		},$this),JSON_UNESCAPED_UNICODE),json_encode((new RegExp('==='))->match("============"),JSON_UNESCAPED_UNICODE));
 		$bds = es_array_new($bb->global);
 		count($bds);
-		array_slice($dd,0);
+		System::toArray($dd);
 		$_ARV = 0;
 		$items = $_RD = &$bb->items;
 		if($bb->global === 1){

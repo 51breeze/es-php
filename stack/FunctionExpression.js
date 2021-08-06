@@ -16,7 +16,7 @@ class FunctionExpression extends Syntax{
             const originType = this.compiler.callUtils("getOriginType", type);
             let typeName = '';
             if(item.acceptType && item.isParamDeclarator ){
-                const t = this.getTypeName( item.acceptType.type() );
+                const t = this.getAvailableTypeName( item.acceptType.type() );
                 if( t ){
                     typeName = t+' ';
                 }
@@ -79,7 +79,7 @@ class FunctionExpression extends Syntax{
                     }
                 }
 
-                let typeName = this.getTypeName( type );
+                let typeName = this.getAvailableTypeName( type );
                 typeName = typeName ? ':'+typeName : '';
 
                 if( this.stack.parentStack.isAccessor ){

@@ -27,26 +27,26 @@ module.exports={
             case "localeCompare" :
                 return `strcmp(${[object].concat(args).join(",")})`;
             case "match" :
-                target.addDepend( target.stack.getModuleById("RegExp") );
+                target.addDepend("RegExp");
                 if( target.stack.arguments[0].type().toString().toLowerCase()==="regexp"  ){
                     return `${args[0]}->match(${object})`;
                 }else{
                     return `(new RegExp(${args[0]}))->match(${object})`;
                 }
             case "matchAll" :
-                target.addDepend( target.stack.getModuleById("RegExp") );
+                target.addDepend("RegExp");
                 if( target.stack.arguments[0].type().toString().toLowerCase()==="regexp"  ){
                     return `${args[0]}->matchAll(${object})`;
                 }else{
                     return `(new RegExp(${args[0]}))->matchAll(${object})`;
                 }
             case "replace" :
-                target.addDepend( target.stack.getModuleById("String") );
+                target.addDepend("String");
                 return `${this.getName('es_string_replace')}(${[object].concat(args).join(",")})`;
             case "replaceAll" :
                 return `${this.getName('es_string_replace_all')}(${[object].concat(args).join(",")})`;
             case "search" :
-                target.addDepend( target.stack.getModuleById("RegExp") );
+                target.addDepend("RegExp");
                 if( target.stack.arguments[0].type().toString().toLowerCase()==="regexp" ){
                     return `${args[0]}->search(${object})`;
                 }else{

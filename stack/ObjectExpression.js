@@ -14,7 +14,7 @@ class ObjectExpression extends Syntax{
 
         if( this.stack.hasChildComputed  ){
             const refs = '$'+this.generatorVarName(this.stack,"_c");
-            this.insertExpression(this.stack,[
+            this.insertExpression([
                 this.semicolon(`${refs}=(object)[]`),
                 properties.map( item=>this.semicolon(item) ).join("\r\n")
             ].join("\r\n"));

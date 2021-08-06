@@ -16,7 +16,7 @@ class BinaryExpression extends Syntax{
           }
           if( operator.charCodeAt(0) === 43 && !this.isNumberType(this.stack.left, this.stack.right) ){
                if( this.stack.left.type().toString() ==="any" && this.stack.right.type().toString() ==="any" ){
-                    this.addDepend( this.getModuleById("System") );
+                    this.addDepend("System");
                     return `System::addition(${left},${right})`;
                }else{
                     return `${left} . ${right}`;

@@ -3,7 +3,7 @@ class Literal extends Syntax{
      emitter(){
           const type = this.stack.type();
           if( type.toString().toLowerCase() === "regexp"){
-               this.addDepend( this.stack.getModuleById("RegExp") );
+               this.addDepend("RegExp");
                const args = this.stack.raw().split('/').filter( item=>!!item );
                const parent = this.stack.parentStack;
                if( parent && (parent.isVariableDeclarator || parent.isAssignmentExpression || parent.isAssignmentPattern) ){

@@ -17,7 +17,7 @@ class NewExpression extends Syntax{
                     const originType = this.compiler.callUtils("getOriginType", declareType );
                     if( originType.id === "Array" ){
                         const name = '$'+this.generatorVarName(item,"_V" );
-                        this.insertExpression( this.stack, this.semicolon(`${name} = ${value}`) );
+                        this.insertExpression(this.semicolon(`${name} = ${value}`) );
                         return name;
                     }
                 }
@@ -31,7 +31,7 @@ class NewExpression extends Syntax{
         if( desc === this.stack.getModuleById("Array") ){
             if( this.stack.arguments.length >0  ){
                 if( this.stack.arguments.length === 1 ){
-                    this.addDepend( this.stack.getModuleById("Array") );
+                    this.addDepend("Array");
                     return `es_array_new(${args})`;
                 }
                 return `[${args}]`;

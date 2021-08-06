@@ -21,7 +21,7 @@ module.exports={
         if( first){
             if( first.isArrayExpression || first.isObjectExpression ){
                 const refs = '$'+target.generatorVarName(target.stack, '_AR');
-                target.insertExpression(target.stack, target.semicolon(`${refs} = ${targetObject}`));
+                target.insertExpression(target.semicolon(`${refs} = ${targetObject}`));
                 targetObject = refs;
             }
             if( first.isLiteral && name==="bind" ){
@@ -54,10 +54,10 @@ module.exports={
                 if( getter )return object;
                 const method = intercept();
                 if( method )return method;
-                target.addDepend( target.stack.getModuleById("Reflect") );
+                target.addDepend("Reflect");
                 return `Reflect::apply('${object}',${targetObject},[${args.join(",")}])`;
             case "bind" :
-                target.addDepend( target.stack.getModuleById("Reflect") );
+                target.addDepend("Reflect");
                 return `System::bind(${[object,targetObject].concat(args).join(",")})`;
             case "toString" :
                 return `${object}`;

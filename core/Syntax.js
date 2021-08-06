@@ -140,7 +140,7 @@ class Syntax extends events.EventEmitter {
                         `${indent}\t}`,
                         `${indent}};`
                     ].join("\r\n");
-                    this.insertExpression(this.stack, `${indent}/*References ${object} memory address*/\r\n${indent}${method_name} = ${push_method}`);
+                    this.insertExpression(`${indent}/*References ${object} memory address*/\r\n${indent}${method_name} = ${push_method}`);
                     dataset[ key ] = method_name;
                 }
                 return `${method_name}()`;
@@ -163,7 +163,7 @@ class Syntax extends events.EventEmitter {
         return name.substr(0,1).toUpperCase()+name.substr(1);
     }
 
-    getTypeName( type ){
+    getAvailableTypeName( type ){
         if( type ){
             if(type.isGenericValueType || type.isGenericType || type.isClassGenericType){
                 return null;
@@ -295,7 +295,8 @@ class Syntax extends events.EventEmitter {
         return dataset[key] = refName;
     }
 
-    insertExpression(target, expression){
+    insertExpression(expression,target=null){
+        target = target || this.stack; 
         const block = target.getParentStack( stack=>!!stack.isBlockStatement );
         block.dispatcher("insert",expression);
     }
@@ -410,6 +411,9 @@ class Syntax extends events.EventEmitter {
    
     addDepend( depModule ){
         const module = this.module;
+        if( typeof depModule === "string"){
+            depModule = this.getModuleById(depModule);
+        }
         if( !depModule.isModule || depModule === this.module )return;
         if( !dependModules.has( module ) ){
             dependModules.set(module,new Set());
@@ -503,7 +507,6 @@ class Syntax extends events.EventEmitter {
     }
 
     emitter(){}
-
     error( message , stack=null){
         if( stack===null ){
             stack = this.stack;
@@ -513,9 +516,14 @@ class Syntax extends events.EventEmitter {
         message+= ` (${file}:${range.start.line}:${range.start.column})`;
         this.compiler.callUtils("error",message);
     }
-
-    warn(code,...args){
-        this.stack.warn(code,...args);
+    warn(message , stack=null){
+        if( stack===null ){
+            stack = this.stack;
+        }
+        const range = this.compilation.getRangeByNode(stack.node);
+        const file  = this.compilation.file;
+        message+= ` (${file}:${range.start.line}:${range.start.column})`;
+        this.compiler.callUtils("warn",message);
     }
 }
 

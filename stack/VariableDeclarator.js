@@ -34,7 +34,7 @@ class VariableDeclarator extends Syntax {
                         if( this.hasCrossScopeAssignment(this.stack.assignItems) ){
                             const left = '$'+this.generatorVarName(this.stack,"_ARV")
                             const addressIndex = address.getIndex( this.stack.init );
-                            this.insertExpression( this.stack, this.semicolon(`${left} = ${addressIndex}`) );
+                            this.insertExpression(this.semicolon(`${left} = ${addressIndex}`) );
                         }
                     }
                 }

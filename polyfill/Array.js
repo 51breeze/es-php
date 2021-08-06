@@ -65,7 +65,7 @@ const createMethod = (target,desc,object,args,name)=>{
                 `${indent}\t}`,
                 `${indent}};`
             ].join("\r\n");
-            target.insertExpression(target.stack, `${indent}${push_method_name} = ${push_method}`);
+            target.insertExpression(`${indent}${push_method_name} = ${push_method}`);
             dataset[ origin+name ] = push_method_name;
         }
         return `${push_method_name}(${args.join(",")})`;
@@ -87,13 +87,12 @@ module.exports={
         if( isStatic ){
             switch( name ){
                 case "isArray" :
-                    target.addDepend( target.stack.getModuleById("Array") );
                     return `is_array(${args.join(",")})`;
                 case "from" :
-                    target.addDepend( target.stack.getModuleById("Array") );
-                    return `array_slice(${args.join(",")},0)`;
+                    target.addDepend("System");
+                    return `System::toArray(${args.join(",")})`;
                 case "of" :
-                    target.addDepend( target.stack.getModuleById("Array") );
+                    target.addDepend("Array");
                     return `${this.getName('es_array_new')}(${args.join(",")})`;
             }
             return null;
@@ -103,7 +102,7 @@ module.exports={
         const getObject=()=>{
             if( thisObject.isArrayExpression ){
                 const refs = '$'+target.generatorVarName(target.stack, '_AR');
-                target.insertExpression(target.stack, target.semicolon(`${refs} = ${object}`));
+                target.insertExpression(target.semicolon(`${refs} = ${object}`));
                 return refs;
             }
             return object;
@@ -136,23 +135,23 @@ module.exports={
                 if( getter )return getMethodName(`array_slice`);
                 return `array_slice(${[object].concat(args).join(",")})`;
             case "map" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_map'));
                 return `${this.getName('es_array_map')}(${[object].concat(args).join(",")})`;
             case "find" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_find'));
                 return `${this.getName('es_array_find')}(${[object].concat(args).join(",")})`;
             case "findIndex" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_find_index'));
                 return `${this.getName('es_array_find_index')}(${[object].concat(args).join(",")})`;
             case "filter" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend( "Array" );
                 if( getter )return getMethodName(this.getName('es_array_filter'));
                 return `${this.getName('es_array_filter')}(${[object].concat(args).join(",")})`;
             case "indexOf" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_search_index'));
                 return `${this.getName('es_array_search_index')}(${[object].concat(args).join(",")})`;
             case "includes" :
@@ -161,52 +160,52 @@ module.exports={
             case "length" :
                 return `count(${object})`;
             case "concat" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_concat'));
                 return `${this.getName('es_array_concat')}(${[object].concat(args).join(',')})`;
             case "entries" :
                 if( getter )return getMethodName(`array_values`);
                 return `array_values(${[object]})`;
             case "every" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_every'));
                 return `${this.getName('es_array_every')}(${[object].concat(args).join(",")})`;
             case "some" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_some'));
                 return `${this.getName('es_array_some')}(${[object].concat(args).join(",")})`;
             case "fill" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_fill'));
                 return `${this.getName('es_array_fill')}(${[object].concat(args).join(",")})`;
             case "values" :
                 if( getter )return getMethodName(`array_values`);
                 return `array_values(${object})`;
             case "forEach" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_foreach'));
                 return `${this.getName('es_array_foreach')}(${[object].concat(args).join(",")})`;
             case "flat" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_flat'));
                 return `${this.getName('es_array_flat')}(${[object].concat(args).join(",")})`;
             case "flatMap" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_flat_map'));
                 return `${this.getName('es_array_flat_map')}(${[object].concat(args).join(",")})`;
             case "reduce" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_reduce'));
                 return `${this.getName('es_array_reduce')}(${[object].concat(args).join(",")})`;
             case "reduceRight" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_reduce_right'));
                 return `${this.getName('es_array_reduce_right')}(${[object].concat(args).join(",")})`;
             case "join" :
                 if( getter )return `function($obj,$val){return implode($val,$obj);}`;
                 return `implode(${args[0]}, ${object})`;
             case "sort" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_sort'));
                 return `${this.getName('es_array_sort')}(${[getObject()].concat(args).join(",")})`;
             case "keys" :
@@ -216,7 +215,7 @@ module.exports={
                 if( getter )return getMethodName(`array_reverse`);
                 return `array_reverse(${object})`;
             case "lastIndexOf" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_search_last_index'));
                 return `${this.getName('es_array_search_last_index')}(${object})`;
             case "toLocaleString" :
@@ -227,7 +226,7 @@ module.exports={
                 if( getter )return object;
                 return `${object}`;
             case "copyWithin" :
-                target.addDepend( target.stack.getModuleById("Array") );
+                target.addDepend("Array");
                 if( getter )return getMethodName(this.getName('es_array_copy_within'));
                 return `${this.getName('es_array_copy_within')}(${[object].concat(args).join(",")})`;
             case "hasOwnProperty" :

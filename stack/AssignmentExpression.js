@@ -23,7 +23,7 @@ class AssignmentExpression extends Syntax{
             if( addressRefObject && this.hasCrossScopeAssignment(desc.assignItems) ){
                 const left = '$'+this.generatorVarName(desc,"_ARV")
                 const addressIndex = addressRefObject.getIndex( this.stack.right );
-                this.insertExpression( this.stack, this.semicolon(`${left} = ${addressIndex}`) );
+                this.insertExpression(this.semicolon(`${left} = ${addressIndex}`) );
             }
         }
 
@@ -36,7 +36,7 @@ class AssignmentExpression extends Syntax{
                         const left = this.make(this.stack.left.object);
                         const property = this.make(this.stack.left.property);
                         const reflect = this.checkRefsName("Reflect");
-                        this.addDepend( this.stack.getModuleById("Reflect") );
+                        this.addDepend("Reflect");
                         return `${reflect}::set(${this.getClassStringName(this.module)},${left},${property},${right})`;
                     }
                 }

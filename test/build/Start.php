@@ -139,16 +139,14 @@ class Start extends TestCase{
 		$this->assertEquals([1],$_REF1());
 		$ds = [1,2,3];
 		$_splice = System::bind('array_splice',$ds);
-		$_splicesss = System::bind('array_splice','ds');
-		printf('%s',json_encode($_splicesss,JSON_UNESCAPED_UNICODE));
 		$this->assertEquals([1,2],$_splice(0,2));
 		$this->assertEquals([3],$ds);
-		$testObj = (object)['0'=>66];
+		$testObj = (object)['name'=>66];
 		$_splice2 = System::bind('array_splice',$testObj);
 		$_push = System::bind('array_push',$testObj);
-		$_splice2(0,1,3,6,9);
 		$_push("Jun");
-		$this->assertEquals([3,6,9,'Jun'],(array)$testObj);
+		printf('%s',json_encode($testObj,JSON_UNESCAPED_UNICODE));
+		$this->assertEquals((object)['0'=>3,'1'=>6,'2'=>9,'3'=>"Jun",'length'=>4,'name'=>66],$testObj);
 	}
 	public function addArray(array &$a,$b){
 		array_push($a,$b);
