@@ -155,7 +155,7 @@ module.exports={
                 if( getter )return getMethodName(this.getName('es_array_search_index'));
                 return `${this.getName('es_array_search_index')}(${[object].concat(args).join(",")})`;
             case "includes" :
-                if( getter )return `function($obj,$val){return in_array($val,$obj);}`;
+                if( getter )return getMethodName(`in_array`);
                 return `in_array(${args[0]},${object})`;
             case "length" :
                 return `count(${object})`;

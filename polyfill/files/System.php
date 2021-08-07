@@ -97,10 +97,12 @@ final class System
                         $keys  = array_keys( $origin );
                         $result= call_user_func_array($callback, array_merge([&$array], $get_args($args) ) );
                         $diff = array_diff($keys, array_keys($array));
+                        $props = [];
                         foreach($diff as $v){
-                            if( is_numeric($v) ){
-                                unset($thisArg->{$v});
+                            if( !is_numeric($v) ){
+                                $props[$v] = $thisArg->{$v};
                             }
+                            unset($thisArg->{$v});
                         }
                         $count = 0;
                         foreach($array as $key=>$value){
@@ -109,14 +111,10 @@ final class System
                                 $thisArg->{$key} = $value;
                             }
                         }
+                        foreach($props as $name=>$value){
+                            $thisArg->{$name} = $value;
+                        }
                         $thisArg->length = $count;
-
-                        print_r( $thisArg );
-                        print_r( $array );
-                        print_r(  $get_args($args) );
-                        echo "============\r\n";
-
-
                         return $result;
                     };
                 }
@@ -165,18 +163,40 @@ final class System
         return $array;
     }
 
-    static function getDefinitionByName( $name )
-    {
+    static function isObject($target){
+        return is_object($target) || is_array($target);
+    }
+
+    static function merge(&$target,...$args){
+        $isObj = is_object($target);
+        if( !($isObj || is_array($target)) ) {
+            throw new TypeError('Cannot convert null to object');
+        }
+        $len = count($args);
+        for ($index = 0; $index < $len; $index++) {
+            $nextSource = $args[ $index ];
+            if( System::isObject($nextSource) ) {
+                foreach ($nextSource as $key => $value) {
+                    if( $isObj ){
+                        $target->{$key} = $value; 
+                    }else{
+                        $target[$key] = $value;
+                    }
+                }
+            }
+        }
+        return $target;
+    }
+
+    static function getDefinitionByName( $name ){
         $name = str_replace(".",'\\',$name);
-        if( !class_exists( $name, true ) )
-        {
+        if( !class_exists( $name, true ) ){
             throw ReferenceError("is not exists ". $name );
         }
         return $name;
     }
 
-    static function getQualifiedObjectName( $object )
-    {
+    static function getQualifiedObjectName( $object ){
         return get_class($object);
     }
 

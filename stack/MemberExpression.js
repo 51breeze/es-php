@@ -26,6 +26,18 @@ class MemberExpression extends Syntax{
       }
       const object = this.make(this.stack.object);
       const description = this.stack.description();
+      const type = this.stack.type();
+      if(type && type.isFunctionType ){
+         const inCall = !!(this.parentStack && this.parentStack.isCallExpression);
+         if( !inCall ){
+            if( this.stack.computed ){
+               return `[${this.make(this.stack.object)},${property}]`;
+            }else{
+               return `[${this.make(this.stack.object)},'${property}']`;
+            }
+         }
+      }
+
       let sep =  this.stack.object.isSuperExpression ? "::" : "->";
       if( description && description.isModule && this.compiler.callUtils("isTypeModule",description) ){
          this.addDepend( description );

@@ -117,12 +117,15 @@ public class Start extends TestCase
         const testObj = {name:66};
         const _splice2 = [].splice.bind( testObj );
         const _push = [].push.bind( testObj );
-        const s = _splice2(0,1,3,6,9);
-        _push("Jun");
-
-        console.log( testObj );
-
+        var s = _splice2(0,1,3,6,9);
+         _push("Jun");
+        this.assertEquals([], s );
         this.assertEquals({0:3,1:6,2:9,3:"Jun",length:4,name:66}, testObj );
+        s = _splice2(0,2);
+        this.assertEquals({0:9,1:"Jun",length:2,name:66}, testObj );
+        this.assertEquals([3,6],s);
+        this.assertEquals(6, [].pop.call(s) );
+        this.assertEquals(3, s.pop() );
     }
 
     addArray( a:string[], b){
@@ -167,7 +170,6 @@ public class Start extends TestCase
         this.assertEquals( 'dog.', str2.slice(-4));
         this.assertEquals( 'lazy', str2.slice(-9, -5));
 
-
         const chinese = '中中国人民解放军';
         this.assertEquals( 8, chinese.length);
         this.assertEquals( 3, chinese.indexOf("人") );
@@ -191,6 +193,19 @@ public class Start extends TestCase
 
     }
 
+
+    testObject(){
+          
+          var name = "Jun Ye";
+          var o = {name};
+          this.assertEquals({name:"Jun Ye"},  o);
+          this.assertEquals({name:"ssss",age:30},  Object.assign(o,{age:30,name:"ssss"}) );
+    
+    }
+
+    getObject(){
+        return this;
+    }
 
     get names():string{
         return this._names;

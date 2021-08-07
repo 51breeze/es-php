@@ -144,9 +144,15 @@ class Start extends TestCase{
 		$testObj = (object)['name'=>66];
 		$_splice2 = System::bind('array_splice',$testObj);
 		$_push = System::bind('array_push',$testObj);
+		$s = $_splice2(0,1,3,6,9);
 		$_push("Jun");
-		printf('%s',json_encode($testObj,JSON_UNESCAPED_UNICODE));
+		$this->assertEquals([],$s);
 		$this->assertEquals((object)['0'=>3,'1'=>6,'2'=>9,'3'=>"Jun",'length'=>4,'name'=>66],$testObj);
+		$s = $_splice2(0,2);
+		$this->assertEquals((object)['0'=>9,'1'=>"Jun",'length'=>2,'name'=>66],$testObj);
+		$this->assertEquals([3,6],$s);
+		$this->assertEquals(6,Reflect::apply('array_pop',$s));
+		$this->assertEquals(3,Reflect::call('\Start',$s,"pop"));
 	}
 	public function addArray(array &$a,$b){
 		array_push($a,$b);
@@ -202,6 +208,15 @@ class Start extends TestCase{
 		$this->assertEquals('.',$paragraph[$regex->search($paragraph)]);
 		$this->setNames("Ye Jun");
 		$this->assertEquals('Ye Jun',$this->getNames());
+	}
+	public function testObject(){
+		$name = "Jun Ye";
+		$o = (object)['name'=>$name];
+		$this->assertEquals((object)['name'=>"Jun Ye"],$o);
+		$this->assertEquals((object)['name'=>"ssss",'age'=>30],System::merge($o,(object)['age'=>30,'name'=>"ssss"]));
+	}
+	public function getObject():Start{
+		return $this;
 	}
 	public function getNames():string{
 		return $this->_names;

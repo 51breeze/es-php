@@ -22,18 +22,28 @@ final class Reflect{
         static $map=null;
         if( $map === null ){
             $map = [
-                "function"=>function (&$target, &$name, $args=null) {
+                "function"=>function (&$target, &$name, $args=[]) {
                     switch ( $name ) {
                         case "call" :
-                            return  [["\\es\\core\\Reflect","call"], $args ];
                         case "apply" :
-                            return  [["\\es\\core\\Reflect","apply"], $args ];
+                            return  [["Reflect","apply"], $args ];
                         case "bind" :
-                            return  [["\\es\\core\\System","bind"], $args ];
+                            return  [["System","bind"], $args ];
                     }
                     return null;
                 },
-                "array"=>function (&$target, &$name, $args=null){
+                "array"=>function (&$target, &$name, $args=[]){
+                    if( $target ==='Array' ){
+                        switch( $name ){
+                            case 'from' :
+                                return [['System','toArray'], $args ];
+                            case 'of'  :   
+                                return ['es_array_new', $args ];
+                            case 'isArray'  :   
+                                return ['is_array', $args ];
+                        }
+                        return null;
+                    }
                     switch ( $name ){
                         case "slice" :
                             return ["array_slice", $args];
@@ -48,7 +58,7 @@ final class Reflect{
                         case "unshift" :
                             return ["array_unshift", array_merge( [&$target], $args) ];
                         case "pop" :
-                            return ["array_unshift", [&$target] ];
+                            return ["array_pop", [&$target] ];
                         case "length" :
                             return ["count", [&$target] ];
                         case "concat" :
@@ -56,60 +66,91 @@ final class Reflect{
                         case "fill" :
                             return ["array_fill", array_merge( [&$target], $args) ];
                         case "filter" :
-                            return ["array_filter", array_merge( [&$target], $args) ];
+                            return ["es_array_filter", array_merge( [&$target], $args) ];
                         case "forEach" :
-                            return ["array_walk", array_merge( [&$target], $args) ];
+                            return ["es_array_foreach", array_merge( [&$target], $args) ];
                         case "join" :
                             return ["implode", array_merge($args,[&$target]) ];
                         case "unique" :
                             return ["array_unique", [&$target] ];
                         case "sort" :
-                            return ["usort", array_merge( [&$target], $args) ];
+                            return ["es_array_sort", array_merge( [&$target], $args) ];
                         case "map" :
-                            return ["array_map", array_merge($args, [&$target] ) ];
+                            return ["es_array_map", array_merge([&$target],$args) ];
                         case "lastIndexOf" :
                             return ['es_array_search_last_index', array_merge( [&$target], $args) ];
                         case "find" :
                             return ['es_array_find', array_merge( [&$target], $args) ];
+                        case "includes" :
+                            return ['in_array', array_merge($args, [&$target]) ];
+                        case "entries" :
+                        case "values" :
+                            return ['array_values', [&$target] ];
+                        case "every" :
+                            return ['es_array_every', array_merge( [&$target], $args)];
+                        case "some" :
+                            return ['es_array_some', array_merge( [&$target], $args)];
+                        case "fill" :
+                            return ['es_array_fill', array_merge( [&$target], $args)];
+                        case "flat" :
+                            return ['es_array_flat', array_merge( [&$target], $args)];
+                        case "flatMap" :
+                            return ['es_array_flat_map', array_merge( [&$target], $args)];
+                        case "reduce" :
+                            return ['es_array_reduce', array_merge( [&$target], $args)];
+                        case "reduceRight" :
+                            return ['es_array_reduce_right', array_merge( [&$target], $args)];
+                        case "keys" :
+                            return ['array_keys', [&$target]];
+                        case "reverse" :
+                            return ['array_reverse',  [&$target]];
+                        case "copyWithin" :
+                            return ['es_array_copy_within',  [&$target]];
+                        case "hasOwnProperty" :
+                        case "propertyIsEnumerable" :
+                            return ['array_key_exists',  array_merge($args,[&$target])];
+                        case "toLocaleString" :
+                        case "toString" :
+                            return ['implode',  [', ',&$target]];
+                        case "valueOf" :
+                            return [function()use(&$target){return $target;},[]];
                     }
                     return null;
                 },
-                "string"=>function (&$target, &$name, $args=null){
+                "string"=>function (&$target, &$name, $args=[]){
                     switch ( $name ){
                         case "length" :
                             return ["mb_strlen", [$target] ];
                         case "replace" :
-                            return ["str_replace", array_merge($args,[$target])];
+                            return ["es_string_replace", array_merge([$target],$args)];
+                        case "replaceAll" :
+                            return ["es_string_replace_all", array_merge([$target],$args)];
                         case "indexOf" :
                             return ['es_string_index', array_merge( [$target], $args) ];
                         case "lastIndexOf" :
                             return ['es_string_last_index', array_merge( [$target], $args) ];
                         case "match" :
-                            return [ [$args[0],$name], [$target] ];
                         case "matchAll" :
-                            return [ [$args[0],$name], [$target] ];
+                        case "search" :
+                            if( $args[0] instanceof \es\core\RegExp){
+                                return [ [$args[0],$name], [$target] ];
+                            }else{
+                                return [ [new \es\core\RegExp($args[0]),$name], [$target] ];
+                            }
                         case "split" :
                             return ["explode", [$args[0],$target]];
-                        case "search" :
-                            return [function(&$target,&$needle){
-                                if( $needle instanceof \es\core\RegExp ){
-                                    return $needle->search( $target );
-                                }else{
-                                    return ($result = strpos($target, $needle)) !== false ? $result : -1;
-                                }
-                            }, array_merge( [$target], $args) ];
                         case "charAt" :
                             return ["mb_substr", [$target,$args[0],$args[0]+1] ];
                         case "charCodeAt" :
-                            return ["ord", [substr($target,$args[0],$args[0]+1)]];
+                            return ["ord", [mb_substr($target,$args[0],$args[0]+1)]];
                         case "repeat" :
                             return ["str_repeat",  array_merge([$target], $args)];
                         case "slice" :
-                            return ["substr",array_merge([$target], $args)];
+                            return ["es_string_slice",array_merge([$target], $args)];
                         case "substring" :
-                            return ["substr",array_merge([$target], $args)];
+                            return ["es_string_substring",array_merge([$target], $args)];
                         case "substr" :
-                            return ["substr",array_merge([$target], $args)];
+                            return ["mb_substr",array_merge([$target], $args)];
                         case "toLocaleLowerCase" :
                         case "toLowerCase" :
                             return ["strtolower",[$target]];
@@ -123,26 +164,66 @@ final class Reflect{
                         case "trimLeft" :
                             return ["ltrim",[$target]];
                         case "includes" :
-                            return [function(&$target,&$needle){
+                            return [function($target,$needle){
                                 return @strpos( $target, $needle) !== false;
                             },array_merge([$target], $args)];
                         case "concat" :
-                            return ["implode",  array_merge([""], [array_merge([$target], $args)])];
+                            return ["implode",  array_merge([""], array_merge([$target], $args))];
                         case "padEnd" :
-                            return ["str_pad", array_merge([$target], array_merge( array_pad( $args,3," " ),STR_PAD_RIGHT))];
+                            return ["str_pad", array_merge([$target], array_merge( array_pad( $args,3," " ), [STR_PAD_RIGHT] ))];
                         case "padStart" :
-                            return ["str_pad", array_merge([$target], array_merge( array_pad( $args,3," " ),STR_PAD_LEFT))];
+                            return ["str_pad", array_merge([$target], array_merge( array_pad( $args,3," " ), [STR_PAD_LEFT] ))];
+                        case "valueOf" :
+                        case "toString" :
+                            return ['strval', [$target]];
+                        case "propertyIsEnumerable" :
+                        case "hasOwnProperty" :
+                            return ['isset', array_merge([$target],$args) ];
                     }
                     return null;
                 },
                 "math"=>function (&$target, &$name, $args=null){
+                    $callback = function($val){return $val;};
                     switch ( $name ){
+                        case "E" :
+                            return [$callback,[2.718281828459045]];
+                        case "LN10" :
+                            return [$callback,[2.302585092994046]];
+                        case "LN2" :
+                            return [$callback,[0.6931471805599453]];
+                        case "LOG2E" :
+                            return [$callback,[1.4426950408889634]];
+                        case "LOG10E" :
+                            return [$callback,[0.4342944819032518]];
+                        case "PI" :
+                            return [$callback,[3.141592653589793]];
+                        case "SQRT1_2" :
+                            return [$callback,[0.7071067811865476]];
+                        case "SQRT2" :
+                            return [$callback,[1.4142135623730951]];
+                        case "abs" :
+                        case "acos" :
+                        case "asin" :
+                        case "atan" :
+                        case "atan2" :
+                        case "ceil" :
+                        case "cos" :
+                        case "exp" :
+                        case "log" :
+                        case "max" :
+                        case "min" :
+                        case "pow" :
+                        case "sin" :
+                        case "sqrt" :
+                        case "tan" :
+                        case "round" :    
+                        case "floor" :
+                            return [$name, [$args[0]]];
                         case "random" :
                             return [function(){
                                 return mt_rand(1,2147483647) / 2147483647;
                             },[]];
-                        default :
-                            return [$name, $args];
+                       
                     }
                     return null;
                 }
@@ -275,10 +356,17 @@ final class Reflect{
     /**
      * 调用指定对象中的方法
      */
-    final static public function call( $scope, &$target, $name=null, array $args=[], $thisArg=null){
+    final static public function call( $scope, &$target, $name=null, array $args=[], $thisArg=null, $isStatic=false){
         $type = null;
         if( is_string($target) ){
             $type = "string";
+            if( $isStatic ){
+                if( $target ==="Array"){
+                    $type = "array";
+                }else if( $target ==="Math"){
+                    $type = "math";
+                }
+            }
         }else if( is_array($target) ){
             $type = "array";
         }
@@ -310,13 +398,13 @@ final class Reflect{
                 $thisArg = $thisArg==null && !is_string($target) ? $target : $thisArg;
                 if( $thisArg != null && $thisArg !== $target ){
                     $fn = \Closure::bind( $method->getClosure($thisArg), $thisArg );
-                    return $args==null ? $fn() : call_user_func_array($fn, $args);
+                    return call_user_func_array($fn, $args);
                 }
-                return $args==null ? $method->invoke( $thisArg ) : $method->invokeArgs( $thisArg , $args );
+                return !$args ? $method->invoke( $thisArg ) : $method->invokeArgs( $thisArg , $args );
             }
         }
-        if( $desc==false ){
-            return $target->__call($name, $args==null ? [] : $args );
+        if( $desc==false && method_exists($target, '__call') ){
+            return $target->__call($name, $args);
         }
         throw new \Exception( $name." method is not accessible");
     }
@@ -363,7 +451,10 @@ final class Reflect{
         if( !is_object($target) ){
             throw new \Exception( 'target is non-object');
         }
-        return $target->__get($name);
+        if( method_exists($target, '__get') ){
+            return $target->__get($name);
+        }
+        return null;
     }
 
     /**

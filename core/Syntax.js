@@ -24,7 +24,7 @@ class Syntax extends events.EventEmitter {
     }
 
     getGlobalModuleById( id ){
-        return this.compilation.getGlobalModuleById(id);
+        return this.compilation.getGlobalTypeById(id);
     }
 
     isNumberType(){

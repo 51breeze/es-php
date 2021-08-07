@@ -9,13 +9,6 @@ module.exports={
     },
     method(target, thisObject, name, args, desc, isStatic, getter=false){
         let object = target.make(thisObject);
-        if( isStatic ){
-            switch( name ){
-                case "name" :
-                    return `''`;
-            }
-        }
-
         let targetObject = args.shift();
         const first = target.stack.arguments && target.stack.arguments[0];
         if( first){
@@ -42,6 +35,8 @@ module.exports={
                                 args = args.slice(0,2).concat(`[${args.slice(2).join(',')}]`);
                             }
                         break;
+                        case "in_array" :
+                            return `${object}(${args.concat(targetObject).join(",")})`;
                     }
                     return `${object}(${[targetObject].concat(args).join(",")})`;
                 }
@@ -55,7 +50,11 @@ module.exports={
                 const method = intercept();
                 if( method )return method;
                 target.addDepend("Reflect");
-                return `Reflect::apply('${object}',${targetObject},[${args.join(",")}])`;
+                if(args.length > 0){
+                    return `Reflect::apply(${object},${targetObject},[${args.join(",")}])`;
+                }else{
+                    return `Reflect::apply(${object},${targetObject})`;
+                }
             case "bind" :
                 target.addDepend("Reflect");
                 return `System::bind(${[object,targetObject].concat(args).join(",")})`;
