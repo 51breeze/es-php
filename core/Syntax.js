@@ -260,7 +260,8 @@ class Syntax extends events.EventEmitter {
         if( dataset.hasOwnProperty(name) ){
             return dataset[name];
         }
-        const value = stack.scope.generateVarName(name, flag);
+        const stackScope = stack.scope || this.scope;
+        const value = stackScope.generateVarName(name, flag);
         if( scope ){
             const data = this.createDataByStack(scope);
             if( !data.generatorVariables ){
@@ -448,6 +449,16 @@ class Syntax extends events.EventEmitter {
             case 'string' :
             case 'RegExp' :
                 return true;
+        }
+        return false;
+    }
+
+    isDeclaratorModuleMember( desc , global=false){
+        if( !desc )return false;
+        if( desc.isStack && desc.module && desc.module.isDeclaratorModule){
+            return global ? desc.module.file.includes("\\easescript\\lib") : true;
+        }else if( desc.isType && desc.target && desc.target.module && desc.target.module.isDeclaratorModule ){
+            return global ? desc.target.module.file.includes("\\easescript\\lib") : true;
         }
         return false;
     }

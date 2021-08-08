@@ -23,7 +23,7 @@ class VariableDeclarator extends Syntax {
                             const initDescType = initDesc.type();
                             needAddressRef = initDescType.isThisType || (initDescType.target && initDescType.target.isThisType);
                         }
-                        if( needAddressRef && initDesc.isStack ){
+                        if( needAddressRef && !this.isDeclaratorModuleMember(initDesc,true) ){
                             if( this.hasAssigned(this.stack) ){
                                 const name = address.createName( initDesc );
                                 refs = `\$${name} = &`;

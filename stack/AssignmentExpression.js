@@ -8,13 +8,13 @@ class AssignmentExpression extends Syntax{
         let refs = null;
         if( desc && (desc.isVariableDeclarator || desc.isParamDeclarator) ){
             let addressRefObject = this.getAssignAddressRef(desc);
-            const maybeArrayRef = this.stack.right.isMemberExpression || this.stack.right.isCallExpression || this.stack.right.isIdentifier;
+            let maybeArrayRef = this.stack.right.isMemberExpression || this.stack.right.isCallExpression || this.stack.right.isIdentifier;
             if(addressRefObject || maybeArrayRef ){
                 const originType = this.compiler.callUtils("getOriginType",  this.stack.right.type() );
                 if( originType.id === "Array" ){
                     addressRefObject = this.addAssignAddressRef(desc, this.stack.right );
                     const rDesc = this.stack.right.description();
-                    if( maybeArrayRef && rDesc.isStack ){
+                    if( maybeArrayRef && !this.isDeclaratorModuleMember(rDesc,true) ){
                         const name = addressRefObject.createName( rDesc );
                         refs = `\$${name} = &`;
                     }
