@@ -31,7 +31,7 @@ class AddressVariable {
     }
 
     createName(description){
-        if( !description )return null;
+        if( !description || !description.isStack )return null;
         if( !this.refs.has( description ) ){
             const name = this.syntax.generatorVarName(description,"_RD");
             this.setName(description, name );

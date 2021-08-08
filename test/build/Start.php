@@ -151,8 +151,8 @@ class Start extends TestCase{
 		$s = $_splice2(0,2);
 		$this->assertEquals((object)['0'=>9,'1'=>"Jun",'length'=>2,'name'=>66],$testObj);
 		$this->assertEquals([3,6],$s);
-		$this->assertEquals(6,Reflect::apply('array_pop',$s));
-		$this->assertEquals(3,Reflect::call('\Start',$s,"pop"));
+		$this->assertEquals(6,array_pop($s));
+		$this->assertEquals(3,array_pop($s,));
 	}
 	public function addArray(array &$a,$b){
 		array_push($a,$b);
@@ -173,10 +173,10 @@ class Start extends TestCase{
 		$this->assertEquals(mb_ord(mb_substr($str,0,1),'UTF-8'),97);
 		$this->assertEquals(mb_ord(mb_substr($str,2,1),'UTF-8'),98);
 		$obj = ['b'];
-		$obj['index'] = 2;
-		$obj['input'] = 'aab';
+		Reflect::set('\Start',$obj,'index',2);
+		Reflect::set('\Start',$obj,'input','aab');
 		$this->assertEquals((new RegExp('b'))->match($str),$obj);
-		$this->assertEquals($obj['index'],2);
+		$this->assertEquals(Reflect::get('\Start',$obj,'index'),2);
 		$this->assertEquals(($str) . 'AAB',($str . 'AAB'));
 		$this->assertEquals(0,strcmp($str,'aab'));
 		$this->assertEquals(1,strcmp($str,'aaa'));
@@ -205,7 +205,7 @@ class Start extends TestCase{
 		$paragraph = 'The quick brown fox jumps over the lazy dog. If the dog barked, was it really lazy?';
 		$regex = new RegExp('[^\w\s]','g');
 		$this->assertEquals(43,$regex->search($paragraph));
-		$this->assertEquals('.',$paragraph[$regex->search($paragraph)]);
+		$this->assertEquals('.',Reflect::get('\Start',$paragraph,$regex->search($paragraph)));
 		$this->setNames("Ye Jun");
 		$this->assertEquals('Ye Jun',$this->getNames());
 	}
@@ -214,8 +214,14 @@ class Start extends TestCase{
 		$o = (object)['name'=>$name];
 		$this->assertEquals((object)['name'=>"Jun Ye"],$o);
 		$this->assertEquals((object)['name'=>"ssss",'age'=>30],System::merge($o,(object)['age'=>30,'name'=>"ssss"]));
+		$this->assertEquals($this,Reflect::call('\Start',Reflect::call('\Start',$this,"call"),"getObject"));
+		$fn = Reflect::get('\Start',$this,'getObject');
+		$this->assertEquals($this,$fn());
 	}
-	public function getObject():Start{
+	public function getObject($name=null){
+		return $this;
+	}
+	public function call():Start{
 		return $this;
 	}
 	public function getNames():string{

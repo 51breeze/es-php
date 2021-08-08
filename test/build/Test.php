@@ -11,7 +11,7 @@ use \Types;
 use \es\core\System;
 use \Start;
 class Test extends Person{
-	public function __construct(string $name,$age){
+	public function __construct(string $name,$age=null){
 		parent::__construct($name);
 		parent::setType('1');
 		$this->getTarget();
@@ -102,7 +102,7 @@ class Test extends Person{
 			$obds = 1;
 			$three = $bsp(false);
 			$once = (object)['two'=>(object)['three'=>$three,'four'=>$bsp]];
-			expect($once->two->three)->toBe($this);
+			expect(Reflect::get('\Test',$once->two,'three'))->toBe($this);
 			expect($once->two->four(true))->toBe($obj);
 			Reflect::get('\Test',$once,$obds);
 		});
@@ -188,7 +188,7 @@ class Test extends Person{
 		it('impls iterator should is [0,1,2,3,4]',function()use(&$array){
 			expect(5)->toBe(count($array));
 			for($i = 0;$i < 5;$i++){
-				expect($i)->toBe($array[$i]);
+				expect($i)->toBe(Reflect::get('\Test',$array,$i));
 			}
 		});
 	}
@@ -215,14 +215,14 @@ class Test extends Person{
 		});
 		$obj = $this->getTestObject(true);
 	}
-	private function getClassTestGenerics($name,$age):array{
+	private function getClassTestGenerics($name,$age=null):array{
 		$a = [$age,$name];
 		return $a;
 	}
-	private function getTestGenerics($name,$age){
+	private function getTestGenerics($name,$age=null){
 		return $age;
 	}
-	private function getTestObject(bool $flag){
+	private function getTestObject(bool $flag=null){
 		$factor = function(){
 			$o = (object)[];
 			$o->test = new Test('name',1);
@@ -270,7 +270,7 @@ class Test extends Person{
 				$done();
 			});
 		});
-		Reflect::get('\Test',$this->getJson(),"name");
+		Reflect::get('\Test',$this->getJson(),'name');
 	}
 	public function getJson(){
 		return (object)['name'=>123];
@@ -309,9 +309,9 @@ class Test extends Person{
 	public function getData(){
 		$b = [];
 		if(4){
-			$b = [$this,'avg'];
+			$b = Reflect::get('\Test',$this,'avg');
 		}
-		$b = [$this,'avg'];
+		$b = Reflect::get('\Test',$this,'avg');
 		return $b;
 	}
 	public function fetchApi(string $name,int $data,int $delay){
@@ -367,7 +367,7 @@ class Test extends Person{
 	public function setName(string $value){
 		parent::setName($value);
 	}
-	public function avg($yy,$bbc){
+	public function avg($yy,$bbc=null){
 		$bb = ['1'];
 		function name($i){
 			$b = $i;
@@ -393,9 +393,9 @@ class Test extends Person{
 		$dd = [];
 		$bb = (object)['global'=>1,'private'=>1,'items'=>[]];
 		array_push($dd,1);
-		printf("\r\n%s %s",json_encode(\es\core\es_array_filter($dd,function($value,$key,&$array){
+		System::print(\es\core\es_array_filter($dd,function($value,$key,&$array){
 			return true;
-		},$this),JSON_UNESCAPED_UNICODE),json_encode((new RegExp('==='))->match("============"),JSON_UNESCAPED_UNICODE));
+		},$this),(new RegExp('==='))->match("============"));
 		$bds = es_array_new($bb->global);
 		count($bds);
 		System::toArray($dd);
@@ -417,21 +417,21 @@ class Test extends Person{
 		array_push($_REF(),0);
 		$_V2 = array_push($_REF(),1,9,6);
 		$_ARV = 2;
-		printf("\r\n%f %s %f",$_V2,json_encode($items = [],JSON_UNESCAPED_UNICODE),array_push($_REF(),9999));
-		printf("\r\n%s",json_encode(array_pop($_REF(),),JSON_UNESCAPED_UNICODE));
-		printf("\r\n%s",json_encode(array_splice($_REF(),0,5,''),JSON_UNESCAPED_UNICODE));
-		printf("\r\n%s",json_encode(array_shift($_REF(),),JSON_UNESCAPED_UNICODE));
-		printf("\r\n%f",array_unshift($_REF(),0,5,''));
+		System::print($_V2,$items = [],array_push($_REF(),9999));
+		System::print(array_pop($_REF(),));
+		System::print(array_splice($_REF(),0,5,''));
+		System::print(array_shift($_REF(),));
+		System::print(array_unshift($_REF(),0,5,''));
 		System::typeof($dd);
 		array_push($this->getArrItems(),999);
 		$da = $_RD2 = &$this->getArrItems();
 		array_push($_RD2,9999666);
 		$da = ["hhhhhhhhhh"];
-		printf("\r\n%s",json_encode($da,JSON_UNESCAPED_UNICODE));
-		printf("\r\n%s",json_encode(array_pop($da,),JSON_UNESCAPED_UNICODE));
+		System::print($da);
+		System::print(array_pop($da,));
 		$ui = ("==" . 'da' . 'bs') . "=========";
 		$n = 8 + 6;
-		printf("\r\n%s %f",$ui,$n);
+		System::print($ui,$n);
 		return $dd;
 	}
 	private function &getArrItems():array{

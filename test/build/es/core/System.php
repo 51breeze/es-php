@@ -23,6 +23,17 @@ final class System
         return gettype($obj);
     }
 
+    public static function print(...$args){
+        $items = array_map(function($item){
+            if( $item instanceof \Closure ){
+                $item = new \ReflectionFunction( $item );
+                return '[Function: '.$item->getName().']';
+            }
+            return System::isObject( $item ) ? json_encode( $item, JSON_UNESCAPED_UNICODE) : $item;
+        },$args);
+        echo PHP_EOL,implode(" ", $items);
+    }
+
     public static function addition($left,$right){
         if( is_numeric($left) && is_numeric($right) ){
             return $left + $right;

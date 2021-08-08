@@ -22,7 +22,6 @@ class CallExpression extends Syntax{
     }
 
     emitter(){
-
         const desc = this.stack.description();
         if( this.compiler.callUtils("isTypeModule", desc) ){
             this.addDepend( desc );
@@ -47,7 +46,6 @@ class CallExpression extends Syntax{
             }
             return value;
         });
-        
         const result = this.intercept(args);
         if( result ){
             return result === true ? null : result;
@@ -55,10 +53,11 @@ class CallExpression extends Syntax{
         if( this.stack.callee.isMemberExpression ){
             if( desc && desc.isType && desc.isAnyType  ){
                 this.addDepend("Reflect");
+                const property = this.stack.callee.property.isIdentifier && !this.stack.callee.computed ? `'${this.stack.callee.property.value()}'` : this.make(this.stack.callee.property);
                 if( args.length > 0 ){
-                    return `${this.checkRefsName("Reflect")}::call(${this.getClassStringName(this.module)},${this.make(this.stack.callee.object)},"${this.stack.callee.property.value()}",[${args.join(",")}])`;
+                    return `${this.checkRefsName("Reflect")}::call(${this.getClassStringName(this.module)},${this.make(this.stack.callee.object)},${property},[${args.join(",")}])`;
                 }else{
-                    return `${this.checkRefsName("Reflect")}::call(${this.getClassStringName(this.module)},${this.make(this.stack.callee.object)},"${this.stack.callee.property.value()}")`;
+                    return `${this.checkRefsName("Reflect")}::call(${this.getClassStringName(this.module)},${this.make(this.stack.callee.object)},${property})`;
                 }
             }
         }

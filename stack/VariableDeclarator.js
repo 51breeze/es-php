@@ -17,13 +17,13 @@ class VariableDeclarator extends Syntax {
                     const originType = this.compiler.callUtils("getOriginType", type );
                     if( originType.id === "Array" ){
                         const initDesc = this.stack.init.description();
-                        const address = this.addAssignAddressRef( this.stack, this.stack.init);
+                        const address = this.addAssignAddressRef(this.stack, this.stack.init);
                         let needAddressRef = true;
                         if( initDesc.module === originType ){
                             const initDescType = initDesc.type();
                             needAddressRef = initDescType.isThisType || (initDescType.target && initDescType.target.isThisType);
                         }
-                        if( needAddressRef ){
+                        if( needAddressRef && initDesc.isStack ){
                             if( this.hasAssigned(this.stack) ){
                                 const name = address.createName( initDesc );
                                 refs = `\$${name} = &`;

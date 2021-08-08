@@ -46,7 +46,7 @@ final class Reflect{
                     }
                     switch ( $name ){
                         case "slice" :
-                            return ["array_slice", $args];
+                            return ["array_slice", array_merge( [&$target], $args) ];
                         case "indexOf" :
                             return ['es_array_search_index', array_merge( [&$target], $args) ];
                         case "splice" :
@@ -60,7 +60,7 @@ final class Reflect{
                         case "pop" :
                             return ["array_pop", [&$target] ];
                         case "length" :
-                            return ["count", [&$target] ];
+                            return ["count", [&$target], 2];
                         case "concat" :
                             return ['es_array_concat', [array_merge( [&$target], $args)] ];
                         case "fill" :
@@ -120,7 +120,7 @@ final class Reflect{
                 "string"=>function (&$target, &$name, $args=[]){
                     switch ( $name ){
                         case "length" :
-                            return ["mb_strlen", [$target] ];
+                            return ["mb_strlen", [$target], 2];
                         case "replace" :
                             return ["es_string_replace", array_merge([$target],$args)];
                         case "replaceAll" :
@@ -251,19 +251,14 @@ final class Reflect{
         $method = null;
 
         //在实例对象中查找
-        if( $reflect->hasProperty($name) )
-        {
+        if( $reflect->hasProperty($name) ){
             $type = 1;
             $method = $reflect->getProperty($name);
-
-        }else if(  $reflect->hasMethod( $accessor.$name ) )
-        {
+        }else if( $accessor && $reflect->hasMethod( $accessor.$name ) ){
             $type = 2;
             $name = $accessor.$name;
             $method = $reflect->getMethod( $name );
-
-        }else if(  $reflect->hasMethod( $name ) )
-        {
+        }else if(  $reflect->hasMethod( $name ) ){
             $type = 3;
             $name = $name;
             $method = $reflect->getMethod( $name );
@@ -272,50 +267,37 @@ final class Reflect{
         $scopeReflect = null;
 
         //如果指定的$target是$scope的子类，尝试在作用域中查找
-        if( $type === 0 && $scope && is_subclass_of($target, $scope) )
-        {
+        if( $type === 0 && $scope && is_subclass_of($target, $scope) ){
             $scopeReflect = is_string($scope) ? new \ReflectionClass($scope) : new \ReflectionObject( $scope );
-            if( $scopeReflect->hasProperty($name) )
-            {
+            if( $scopeReflect->hasProperty($name) ){
                 $type = 1;
                 $method = $scopeReflect->getProperty($name);
-
-            }else if(  $scopeReflect->hasMethod( $accessor.$name ) )
-            {
+            }else if( $accessor && $scopeReflect->hasMethod( $accessor.$name ) ){
                 $type = 2;
                 $name = $accessor.$name;
                 $method = $scopeReflect->getMethod( $name );
-            
-            }else if(  $scopeReflect->hasMethod( $name ) )
-            {
+            }else if( $scopeReflect->hasMethod( $name ) ){
                 $type = 3;
                 $name = $name;
                 $method = $scopeReflect->getMethod( $name );
             }
         }
 
-        if( $method == null )return null;
-
+        if( $method === null )return null;
         $accessible = $method->isPublic();
-        if( $scope != null && !$accessible )
-        {
-            if( $scopeReflect ===null )
-            {
+        if( $scope != null && !$accessible ){
+            if( $scopeReflect ===null ){
                 $scopeReflect = is_string($scope) ? new \ReflectionClass($scope) : new \ReflectionObject( $scope );
             }
-
-            if( $method->isPrivate() && $method->class === $scopeReflect->getName() )
-            {
+            if( $method->isPrivate() && $method->class === $scopeReflect->getName() ){
                 $method->setAccessible( true );
                 $accessible = true;
-
-            }else if( $method->isProtected() && ( $method->class === $scopeReflect->getName() || $scopeReflect->isSubclassOf( $method->class ) ) )
-            {
+            }else if( $method->isProtected() && ( $method->class === $scopeReflect->getName() || $scopeReflect->isSubclassOf( $method->class ) ) ){
                 $method->setAccessible( true );
                 $accessible=true;
             }
         }
-        return $accessible ? array($type, $method, $reflect) : null;
+        return array($type, $method, $accessible, $reflect);
     }
 
     /**
@@ -345,7 +327,7 @@ final class Reflect{
      */
     final static public function apply( $target, &$thisArg=null, array $argumentsList=[] ){
         if( !is_callable($target) ){
-            throw new TypeError('target is not callable');
+            throw new \TypeError('target is not callable');
         }
         if( $thisArg !== null ){
             $target = System::bind($target, $thisArg);
@@ -357,144 +339,160 @@ final class Reflect{
      * 调用指定对象中的方法
      */
     final static public function call( $scope, &$target, $name=null, array $args=[], $thisArg=null, $isStatic=false){
-        $type = null;
-        if( is_string($target) ){
-            $type = "string";
-            if( $isStatic ){
-                if( $target ==="Array"){
-                    $type = "array";
-                }else if( $target ==="Math"){
-                    $type = "math";
-                }
-            }
-        }else if( is_array($target) ){
-            $type = "array";
-        }
-
-        if( $type ){
-            $fn = Reflect::method( $type );
-            if( $fn ){
-                $args = $args ?: [];
-                $method = $fn($target, $name, $args);
-                if( $method ){
-                    return call_user_func_array($method[0], $method[1]);
-                }
+        $type_name = gettype($target);
+        if($isStatic===true){
+            if( $target ==='Array' ){
+                $type_name = 'array';
+            }else if( $target ==='Math' ){
+                $type_name = 'math';
             }
         }
+        switch ($type_name) {
+            case 'string' :
+            case 'array' :
+            case 'math' :
+                $object = self::method( $type_name );
+                if( $object ){
+                    $method_array = $object($target,$name, []);
+                    if( $method_array ){
+                        list($method,$args,$type) = $method_array;
+                        if( $type !== 2 ){
+                            return call_user_func_array($method, $args);
+                        }
+                        throw new \Error( $name." is not callable.");
+                    }
+                }
+                throw new \Error( $name." method is not exists.");
+        }
 
-        if( is_callable($target) && $name==null ){
+        if( is_callable($target) && $name===null ){
             return Reflect::apply($target, $thisArg, $args);
-        }
-
-        if( !is_object($target) ){
-            throw new \Exception( 'target is non-object');
         }
 
         $desc =  self::getReflectionMethodOrProperty($target, $name,'',$scope);
         if( $desc ){
-            list($type, $method) = $desc;
-            $desc = false;
-            if( $type===2 ){
+            list($type, $method, $accessible) = $desc;
+            if( !$accessible ){
+                throw new \Error( $name." method is not accessible");
+            }
+            if( $type===3 ){
                 $thisArg = $thisArg==null && !is_string($target) ? $target : $thisArg;
                 if( $thisArg != null && $thisArg !== $target ){
                     $fn = \Closure::bind( $method->getClosure($thisArg), $thisArg );
                     return call_user_func_array($fn, $args);
                 }
                 return !$args ? $method->invoke( $thisArg ) : $method->invokeArgs( $thisArg , $args );
+            }else if( method_exists($target, '__call') ){
+                return $target->__call($name, $args);
             }
         }
-        if( $desc==false && method_exists($target, '__call') ){
-            return $target->__call($name, $args);
+        if( !is_object($target) ){
+            throw new \Error( 'target is non-object');
         }
-        throw new \Exception( $name." method is not accessible");
+        throw new \Error( $name." method is not exists.");
     }
 
     /**
      * 获取指定对象中的属性值
      */
-    final static public function get( $scope, $target, $name, $thisArg=null ){
-        if( is_array($target) ){
-            if ( is_string($name) ){
-                switch ($name) {
-                    case 'length' :
-                        return count($target);
+    final static public function get( $scope, $target, $name, $thisArg=null, $isStatic=false){
+        $type_name = gettype($target);
+        if($isStatic===true){
+            if( $target ==='Array' ){
+                $type_name = 'array';
+            }else if( $target ==='Math' ){
+                $type_name = 'math';
+            }
+        }
+        switch ($type_name) {
+            case 'string' :
+            case 'array' :
+            case 'math' :
+                if( isset( $target[$name] ) ){
+                    return $target[$name];
+                }else{
+                    $object = self::method( $type_name );
+                    if( $object ){
+                        $method_array = $object($target,$name, []);
+                        if( $method_array ){
+                            list($method,$args,$type) = $method_array;
+                            if( $type === 2 ){
+                                return call_user_func_array($method, $args);
+                            }
+                            return (new \ReflectionFunction($method))->getClosure();
+                        }
+                    }
                 }
-            }
-            return isset($target[$name]) ? $target[$name] : null;
+                return null;
         }
 
-        if ( is_string($target) ){
-            switch ($name) {
-                case 'length' :
-                    return strlen( $target );
-            }
-        }
-
-        $desc =  self::getReflectionMethodOrProperty($target, $name,'get', $scope);
+        $desc = self::getReflectionMethodOrProperty($target, $name,'get', $scope);
         if( $desc ){
-            list($type, $method) = $desc;
+            list($type, $method, $accessible) = $desc;
+            if( !$accessible ){
+                throw new \Error( $name." is not accessible");
+            }
             if( $type === 3 ){
                 return $method->getClosure($target);
-            }
-
-            if( $type===2 ){
+            }else if( $type===2 ){
                 $thisArg = $thisArg==null ? $target : $thisArg;
                 if( $thisArg !== $target ){
                     $fn = \Closure::bind( $method->getClosure($target), $thisArg );
                     return $fn();
                 }
                 return $method->invoke( $thisArg );
-            }else{
+            }else if($type===1){
                 return $method->getValue($target);
             }
-        }
-        if( !is_object($target) ){
-            throw new \Exception( 'target is non-object');
-        }
-        if( method_exists($target, '__get') ){
+        }else if( method_exists($target, '__get') ){
             return $target->__get($name);
         }
-        return null;
+        if( !is_object($target) ){
+            throw new \Error( 'target is non-object');
+        }
+        throw new \Error( $name." is not exists.");
     }
 
     /**
      * 设置指定对象中的属性值
      */
-    final static public function set($scope,&$target, $name, $value, $thisArg=null){
-        if( is_array($target) ){
-            if ( is_string($name) ){
-                switch ($name){
-                    case 'length' :
-                        return count($target);
+    final static public function set($scope, &$target, $name, $value, $thisArg=null, $isStatic=false){
+        $type_name = gettype($target);
+        switch ($type_name) {
+            case 'array' :
+                return $target[ $name ]=$value;
+            case 'object' :
+                if( $target instanceof \stdClass){
+                    return $target[ $name ]=$value;    
                 }
-            }
-            return $target[$name] = $value;
         }
 
         $desc =  self::getReflectionMethodOrProperty($target, $name,'set', $scope);
         if( $desc ){
-            list($type, $method) = $desc;
-            $desc = false;
+            list($type, $method, $accessible) = $desc;
+            if( !$accessible ){
+                throw new \Error( $name." is not accessible");
+            }
             if( $type===2 ){
                 $thisArg = $thisArg==null ? $target : $thisArg;
-                if( $thisArg!==$target )
-                {
-                    $fn = \Closure::bind( $method->getClosure($target), $thisArg );
+                if( $thisArg!==$target ){
+                    $fn = \Closure::bind( $method->getClosure($target), $thisArg);
                     return $fn( $value );
                 }
                 $method->invoke( $thisArg , $value );
                 return $value;
-
-            }else{
+            }else if($type === 1){
                 $method->setValue($target, $value);
                 return $value;
             }
+            throw new \Error( $name." is not writeable.");
+        }else if( method_exists($target, '__set') ){
+            return $target->__set($name,$value);
         }
         if( !is_object($target) ){
-            throw new \Exception( 'target is non-object');
+            throw new \Error( 'target is non-object');
         }
-        $target->__set($name,$value);
-        return $value;
+        throw new \Error( $name." is not exists.");
     }
 
     /**

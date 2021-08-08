@@ -28,13 +28,16 @@ class MemberExpression extends Syntax{
       const description = this.stack.description();
       const type = this.stack.type();
       if(type && type.isFunctionType ){
-         const inCall = !!(this.parentStack && this.parentStack.isCallExpression);
+         const inCall = !!(this.parentStack && this.parentStack.isCallExpression && this.parentStack.arguments.indexOf(this.stack) < 0);
          if( !inCall ){
-            if( this.stack.computed ){
-               return `[${this.make(this.stack.object)},${property}]`;
-            }else{
-               return `[${this.make(this.stack.object)},'${property}']`;
-            }
+            this.addDepend( "Reflect" );
+            const propName = this.stack.property.isIdentifier && !this.stack.computed ? `'${property}'` : property;
+            return `${this.checkRefsName("Reflect")}::get(${this.getClassStringName(module)},${object},${propName})`;
+            // if( this.stack.computed ){
+            //    return `[${this.make(this.stack.object)},${property}]`;
+            // }else{
+            //    return `[${this.make(this.stack.object)},'${property}']`;
+            // }
          }
       }
 
@@ -47,25 +50,27 @@ class MemberExpression extends Syntax{
          sep = "::";
       }
 
-      if(this.stack.computed){
-         const objectDesc = this.stack.object.description();
-         if( !this.isBaseType( this.stack.object.type() ) || (objectDesc.assignItems && objectDesc.assignItems.size > 1) ){
-            this.addDepend("Reflect");
-            return `${this.checkRefsName("Reflect")}::get(${this.getClassStringName(module)},${object},${property})`;
-         }
-         const tName = this.getAvailableTypeName( this.stack.object.type() );
-         if( tName === "array" || tName ==="string" ){
-            return `${object}[${property}]`;
-         }
-         if( this.stack.property.isLiteral ){
-            return `${object}${sep}{${property}}`;
-         }
-         return `${object}${sep}${property}`;
-      }
-
-      if( description && description.isType && description.isAnyType ){
+      // if(this.stack.computed){
+      //    const objectDesc = this.stack.object.description();
+      //    const objectType = this.stack.object.type();
+      //    if( !this.isBaseType( objectType ) || (objectDesc.assignItems && objectDesc.assignItems.size > 1) ){
+      //       this.addDepend("Reflect");
+      //       return `${this.checkRefsName("Reflect")}::get(${this.getClassStringName(module)},${object},${property})`;
+      //    }
+      //    const tName = this.getAvailableTypeName( objectType );
+      //    if( tName === "array" || tName ==="string" ){
+      //       return `${object}[${property}]`;
+      //    }
+      //    if( this.stack.property.isLiteral ){
+      //       return `${object}${sep}{${property}}`;
+      //    }
+      //    return `${object}${sep}${property}`;
+      // }
+      
+      if( type && type.isType && type.isAnyType ){
          this.addDepend( "Reflect" );
-         return `${this.checkRefsName("Reflect")}::get(${this.getClassStringName(module)},${object},"${property}")`;
+         const propName = this.stack.property.isIdentifier && !this.stack.computed ? `'${property}'` : property;
+         return `${this.checkRefsName("Reflect")}::get(${this.getClassStringName(module)},${object},${propName})`;
       }
 
       if( description && description.isMethodGetterDefinition ){

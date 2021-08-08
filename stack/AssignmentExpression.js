@@ -5,7 +5,6 @@ class AssignmentExpression extends Syntax{
         if( desc && desc.isVariableDeclarator && desc.useRefItems && desc.useRefItems.size === 0){
             return null;
         }
-       
         let refs = null;
         if( desc && (desc.isVariableDeclarator || desc.isParamDeclarator) ){
             let addressRefObject = this.getAssignAddressRef(desc);
@@ -14,8 +13,9 @@ class AssignmentExpression extends Syntax{
                 const originType = this.compiler.callUtils("getOriginType",  this.stack.right.type() );
                 if( originType.id === "Array" ){
                     addressRefObject = this.addAssignAddressRef(desc, this.stack.right );
-                    if( maybeArrayRef ){
-                        const name = addressRefObject.createName( this.stack.right.description() );
+                    const rDesc = this.stack.right.description();
+                    if( maybeArrayRef && rDesc.isStack ){
+                        const name = addressRefObject.createName( rDesc );
                         refs = `\$${name} = &`;
                     }
                 }
@@ -28,18 +28,18 @@ class AssignmentExpression extends Syntax{
         }
 
         const right= this.make(this.stack.right);
-        if( desc.isAnyType ){
-            if( this.stack.left.isMemberExpression ){
-                if( this.stack.left.computed ){
-                    const objectDesc = this.stack.left.object.description();
-                    if( !this.isBaseType( objectDesc.type() ) || (objectDesc.assignItems && objectDesc.assignItems.size > 1) ){
+        if( this.stack.left.isMemberExpression ){
+            if( this.stack.left.computed ){
+                //if( this.stack.left.computed ){
+                    //const objectDesc = this.stack.left.object.description();
+                    //if( !this.isBaseType( objectDesc.type() ) || (objectDesc.assignItems && objectDesc.assignItems.size > 1) ){
                         const left = this.make(this.stack.left.object);
                         const property = this.make(this.stack.left.property);
                         const reflect = this.checkRefsName("Reflect");
                         this.addDepend("Reflect");
                         return `${reflect}::set(${this.getClassStringName(this.module)},${left},${property},${right})`;
-                    }
-                }
+                    //}
+                //}
             }
         }
 

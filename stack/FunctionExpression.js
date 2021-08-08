@@ -15,6 +15,10 @@ class FunctionExpression extends Syntax{
             const type = item.type();
             const originType = this.compiler.callUtils("getOriginType", type);
             let typeName = '';
+            let defaultValue = '';
+            if( !item.isAssignmentPattern && item.question ){
+                defaultValue = '=null';
+            }
             if(item.acceptType && item.isParamDeclarator ){
                 const t = this.getAvailableTypeName( item.acceptType.type() );
                 if( t ){
@@ -33,11 +37,11 @@ class FunctionExpression extends Syntax{
                     }else{
                         before.push( this.semicolon(`\t${this.make( item )} = ${refs}`) );
                     }
-                    return typeName+'&'+refs;
+                    return typeName+'&'+refs+defaultValue;
                 }
-                return typeName+'&'+this.make(item);
+                return typeName+'&'+this.make(item)+defaultValue;
             }
-            return typeName+this.make(item);
+            return typeName+this.make(item)+defaultValue;
         });
 
         let key = this.stack.isConstructor ? '__construct' : (this.stack.key ? this.stack.key.value() : null);

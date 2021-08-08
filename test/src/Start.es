@@ -116,7 +116,7 @@ public class Start extends TestCase
 
         const testObj = {name:66};
         const _splice2 = [].splice.bind( testObj );
-        const _push = [].push.bind( testObj );
+        const _push = [1].push.bind( testObj );
         var s = _splice2(0,1,3,6,9);
          _push("Jun");
         this.assertEquals([], s );
@@ -200,10 +200,16 @@ public class Start extends TestCase
           var o = {name};
           this.assertEquals({name:"Jun Ye"},  o);
           this.assertEquals({name:"ssss",age:30},  Object.assign(o,{age:30,name:"ssss"}) );
-    
+          this.assertEquals(this, this["call"]()["getObject"]() );
+          var fn = this.getObject;
+          this.assertEquals(this, fn() );
     }
 
-    getObject(){
+    getObject(name?:any):any{
+        return this;
+    }
+
+    call(){
         return this;
     }
 
