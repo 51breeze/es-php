@@ -205,13 +205,13 @@ class Test extends Person{
 		Reflect::set('\Test',$bds,$types,99);
 		it('Generics should is true',function()use(&$ccc, &$cccww){
 			expect(System::typeof($this->avg("test")))->toBe('string');
-			expect($ccc->name->toFixed(2))->toBe("1.00");
+			expect(floatval(number_format($ccc->name,2,.,)))->toBe("1.00");
 			expect($cccww->age)->toBe(30);
 		});
 		it('class Generics',function(){
 			$obj = $this->getTestObject(true);
 			$bs = $obj->getNamess(1);
-			expect($bs->toFixed(2))->toBe("1.00");
+			expect(floatval(number_format($bs,2,.,)))->toBe("1.00");
 		});
 		$obj = $this->getTestObject(true);
 	}

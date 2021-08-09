@@ -11,6 +11,7 @@
 ////[reference]
 
 define('NaN','NaN');
+define('Infinity','Infinity');
 
 final class System
 {
@@ -174,8 +175,24 @@ final class System
         return $array;
     }
 
+    static function toPrecision($value, $decimals=null){
+        if( !($decimals > 1) )return strval($value);
+        if( $decimals * 10 < $value){
+            return sprintf('%'.($decimals-1).'e',$value);
+        }
+        return number_format($value,$decimals,'.','');
+    }
+
     static function isObject($target){
         return is_object($target) || is_array($target);
+    }
+
+    static function isNaN( $value ){
+        return $value === NaN;
+    }
+
+    static function isFinite( $value ){
+        return $value === Infinity;
     }
 
     static function merge(&$target,...$args){

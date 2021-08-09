@@ -9,6 +9,7 @@
 namespace es\core;
 
 define('NaN','NaN');
+define('Infinity','Infinity');
 
 final class System
 {
@@ -174,6 +175,14 @@ final class System
 
     static function isObject($target){
         return is_object($target) || is_array($target);
+    }
+
+    static function isNaN( $value ){
+        return $value === NaN;
+    }
+
+    static function isFinite( $value ){
+        return $value === Infinity;
     }
 
     static function merge(&$target,...$args){

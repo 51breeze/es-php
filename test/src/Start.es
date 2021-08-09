@@ -116,7 +116,7 @@ public class Start extends TestCase
 
         const testObj = {name:66};
         const _splice2 = [].splice.bind( testObj );
-        const _push = [1].push.bind( testObj );
+        const _push = [].push.bind( testObj );
         var s = _splice2(0,1,3,6,9);
          _push("Jun");
         this.assertEquals([], s );
@@ -126,6 +126,7 @@ public class Start extends TestCase
         this.assertEquals([3,6],s);
         this.assertEquals(6, [].pop.call(s) );
         this.assertEquals(3, s.pop() );
+
     }
 
     addArray( a:string[], b){
@@ -203,6 +204,10 @@ public class Start extends TestCase
           this.assertEquals(this, this["call"]()["getObject"]() );
           var fn = this.getObject;
           this.assertEquals(this, fn() );
+
+          var num = 77.1234;
+          num = 5.123456;
+          console.log( num.toPrecision(1) );
     }
 
     getObject(name?:any):any{

@@ -217,6 +217,9 @@ class Start extends TestCase{
 		$this->assertEquals($this,Reflect::call('\Start',Reflect::call('\Start',$this,"call"),"getObject"));
 		$fn = Reflect::get('\Start',$this,'getObject');
 		$this->assertEquals($this,$fn());
+		$num = 77.1234;
+		$num = 5.123456;
+		System::print(number_format($num,1,'.',''));
 	}
 	public function getObject($name=null){
 		return $this;
