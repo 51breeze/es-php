@@ -1,4 +1,5 @@
 <?php
+require_once('es/core/Number.php');
 require_once('es/core/RegExp.php');
 require_once('es/core/String.php');
 require_once('es/core/Reflect.php');
@@ -217,12 +218,40 @@ class Start extends TestCase{
 		$this->assertEquals($this,Reflect::call('\Start',Reflect::call('\Start',$this,"call"),"getObject"));
 		$fn = Reflect::get('\Start',$this,'getObject');
 		$this->assertEquals($this,$fn());
-		$num = 77.1234;
-		$num = 5.123456;
-		System::print(number_format($num,1,'.',''));
 	}
 	public function getObject($name=null){
 		return $this;
+	}
+	public function testNumber(){
+		$num = 5.123456;
+		$this->assertEquals(5,\es\core\es_number_to_precision($num,1));
+		$num = 77.1234;
+		$this->assertEquals(8e+1,\es\core\es_number_to_precision($num,1));
+		$nums = 999999;
+		$bf = System::bind('\es\core\es_number_to_precision',$nums);
+		$this->assertEquals(999999,$bf(6));
+		$df = 1.236999999;
+		$bfs = System::bind(function($__bindThisObject__,$decimals=0,$f=null){return sprintf('%.'.$decimals.'e',$__bindThisObject__);},$df);
+		$this->assertEquals(1.237000e+0,$bfs(6));
+
+
+		/**
+		 * $target 
+		 */ 
+		$fn = function($target){
+
+		};
+
+		$ref = new \ReflectionFunction( $fn );
+
+		$pars = $ref->getParameters();
+		print_r( $pars );
+
+		echo $ref->getDocComment();
+		echo "\n";
+		echo $ref->getName();
+
+
 	}
 	public function call():Start{
 		return $this;

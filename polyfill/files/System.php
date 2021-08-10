@@ -44,49 +44,44 @@ final class System
         return $left . $right;
     }
 
-    public static function bind($callback, &$thisArg=null, ...$rest )
-    {
+    public static function bind($callback, &$thisArg=null, ...$rest){
+        if( !is_callable($callback) ){
+            throw new TypeError('callback is not callable');
+        }
         $thisObject = $thisArg;
-        if( is_array($callback) )
-        {
-            if( count($callback) === 2 )
-            {
-                $reflect = null;
-                if( is_string($callback[0]) )
-                {
-                    $reflect = new \ReflectionClass($callback[0]);
-                }else
-                {
+        $is_warp = false;
+        $getBindThisIndex = function( $items ){
+            $name = '__bindThisObject__';
+            $len = count( $items );
+            for($i=0;$i<$len;$i++){
+                if( $items[$i]->getName() === $name){
+                    return $i;
+                }
+            }
+            return -1;
+        };
+        $thisIndex = null;
+        if( is_array($callback) ){
+            if( count($callback) === 2 ){
+                if( !is_object( $callback[0] ) ){
+                    $method = $callback;
+                    $reflect = new \ReflectionMethod($callback[0],$callback[1]);
+                    $thisIndex = $thisObject !== null ? $getBindThisIndex( $reflect->getParameters() ) : -1;
+                    $is_warp = true;
+                    $callback = function(...$args)use($method){
+                        return call_user_func_array($method, $args);
+                    };
+                }else{
                     $reflect = new \ReflectionObject($callback[0]);
-                    if( !$thisArg )
-                    {
-                        $thisObject  = $callback[0];
-                    }
+                    $callback = $reflect->getMethod($callback[1])->getClosure( $callback[0] );
                 }
-
-                if ($reflect->hasMethod($callback[1])) 
-                {
-                    $method = $reflect->getMethod($callback[1]);
-                    $method = is_string($callback[0]) ? $method->getClosure() : $method->getClosure($callback[0]);
-                    if( $thisObject )
-                    {
-                        $method = \Closure::bind($method, $thisObject);
-                    }
-                    if( count($rest) > 0 )
-                    {
-                        return function()use( $method, $rest )
-                        {
-                            return call_user_func_array( $method, $rest );
-                        };
-                    }
-                    return $method;
-                }
-            }else
-            {
+            }else{
                 $callback = $callback[0];
             }
         }
-        if( is_callable($callback) ){
+
+        $method  =  $callback;
+        if( $is_warp === false ){
             $reflect = new \ReflectionFunction($callback);
             $is_array_method = false !== stripos( $reflect->getName(), 'array_');
             if( $is_array_method ){
@@ -99,15 +94,15 @@ final class System
                     return $args;
                 };
                 if( is_array($thisArg) ){
-                    return function(...$args)use( $callback, &$thisArg, &$get_args ){
-                        return call_user_func_array($callback, array_merge([&$thisArg], $get_args($args) ) );
+                    return function(...$args)use( $callback, &$thisArg, &$get_args,&$rest){
+                        return call_user_func_array($callback, array_merge([&$thisArg], $get_args($args), $rest) );
                     };
                 }else if(is_object($thisArg)){
-                    return function(...$args)use($callback, &$thisArg, &$get_args){
+                    return function(...$args)use($callback, &$thisArg, &$get_args,&$rest){
                         $origin = (array)$thisArg;
                         $array = System::toArray( $origin );
                         $keys  = array_keys( $origin );
-                        $result= call_user_func_array($callback, array_merge([&$array], $get_args($args) ) );
+                        $result= call_user_func_array($callback, array_merge([&$array], $get_args($args), $rest) );
                         $diff = array_diff($keys, array_keys($array));
                         $props = [];
                         foreach($diff as $v){
@@ -131,15 +126,31 @@ final class System
                     };
                 }
             }
-            $method = $thisObject ? \Closure::bind( $reflect->getClosure(), $thisObject) : $reflect->getClosure();
-            if( count($rest) > 0 ){
-                return function()use( $method, $rest ){
-                    return call_user_func_array( $method, $rest );
-                };
-            }
-            return $method;
+            $thisIndex = $thisObject !== null ? $getBindThisIndex( $reflect->getParameters() ) : -1;
+            $method = $reflect->getClosure();
         }
-        throw new TypeError('callback is not callable');
+
+        if( $thisObject && is_object($thisObject) ){
+            $method = \Closure::bind($method, $thisObject);
+        }
+
+        if( count($rest) > 0 ){
+            return function(...$args)use($method, $thisObject, $thisIndex, $rest){
+                $args = array_merge($args,$rest);
+                if( $thisIndex>=0 && $thisObject){
+                    array_splice($args,$thisIndex,0,[$thisObject]);
+                }
+                return call_user_func_array($method, $args );
+            };
+        }else if( $thisIndex >= 0 ){
+            return function(...$args)use($method, $thisObject, $thisIndex){
+                if( $thisIndex>=0 ){
+                    array_splice($args,$thisIndex,0,[$thisObject]);
+                }
+                return call_user_func_array($method, $args);
+            };
+        }
+        return $method;
     }
 
     static function toArray( $target ){
@@ -175,24 +186,8 @@ final class System
         return $array;
     }
 
-    static function toPrecision($value, $decimals=null){
-        if( !($decimals > 1) )return strval($value);
-        if( $decimals * 10 < $value){
-            return sprintf('%'.($decimals-1).'e',$value);
-        }
-        return number_format($value,$decimals,'.','');
-    }
-
     static function isObject($target){
         return is_object($target) || is_array($target);
-    }
-
-    static function isNaN( $value ){
-        return $value === NaN;
-    }
-
-    static function isFinite( $value ){
-        return $value === Infinity;
     }
 
     static function merge(&$target,...$args){

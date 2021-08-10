@@ -194,25 +194,37 @@ public class Start extends TestCase
 
     }
 
-
     testObject(){
-          
           var name = "Jun Ye";
           var o = {name};
           this.assertEquals({name:"Jun Ye"},  o);
           this.assertEquals({name:"ssss",age:30},  Object.assign(o,{age:30,name:"ssss"}) );
           this.assertEquals(this, this["call"]()["getObject"]() );
           var fn = this.getObject;
-          this.assertEquals(this, fn() );
-
-          var num = 77.1234;
-          num = 5.123456;
-          console.log( num.toPrecision(1) );
+          this.assertEquals(this, fn());  
     }
 
     getObject(name?:any):any{
         return this;
     }
+
+
+    testNumber(){
+        var num = 5.123456;
+        this.assertEquals( 5, num.toPrecision(1) );
+
+        num = 77.1234
+        this.assertEquals(8e+1, num.toPrecision(1) );
+
+        var nums = 999999;
+        var bf = nums.toPrecision.bind( nums );
+        this.assertEquals(999999, bf(6) );
+
+        var df = 1.236999999 ;
+        var bfs = nums.toExponential.bind( df );
+        this.assertEquals(1.237000e+0, bfs(6) );
+    }
+
 
     call(){
         return this;

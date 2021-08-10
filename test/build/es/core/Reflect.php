@@ -369,6 +369,10 @@ final class Reflect{
             return Reflect::apply($target, $thisArg, $args);
         }
 
+        if( !is_object($target) ){
+            throw new \Error( 'target is non-object');
+        }
+
         $desc =  self::getReflectionMethodOrProperty($target, $name,'',$scope);
         if( $desc ){
             list($type, $method, $accessible) = $desc;
@@ -385,9 +389,6 @@ final class Reflect{
             }else if( method_exists($target, '__call') ){
                 return $target->__call($name, $args);
             }
-        }
-        if( !is_object($target) ){
-            throw new \Error( 'target is non-object');
         }
         throw new \Error( $name." method is not exists.");
     }
@@ -426,6 +427,10 @@ final class Reflect{
                 return null;
         }
 
+        if( !is_object($target) ){
+            throw new \Error( 'target is non-object');
+        }
+
         $desc = self::getReflectionMethodOrProperty($target, $name,'get', $scope);
         if( $desc ){
             list($type, $method, $accessible) = $desc;
@@ -444,11 +449,6 @@ final class Reflect{
             }else if($type===1){
                 return $method->getValue($target);
             }
-        }else if( method_exists($target, '__get') ){
-            return $target->__get($name);
-        }
-        if( !is_object($target) ){
-            throw new \Error( 'target is non-object');
         }
         throw new \Error( $name." is not exists.");
     }
@@ -465,6 +465,10 @@ final class Reflect{
                 if( $target instanceof \stdClass){
                     return $target[ $name ]=$value;    
                 }
+        }
+
+        if( !is_object($target) ){
+            throw new \Error( 'target is non-object');
         }
 
         $desc =  self::getReflectionMethodOrProperty($target, $name,'set', $scope);
@@ -486,11 +490,6 @@ final class Reflect{
                 return $value;
             }
             throw new \Error( $name." is not writeable.");
-        }else if( method_exists($target, '__set') ){
-            return $target->__set($name,$value);
-        }
-        if( !is_object($target) ){
-            throw new \Error( 'target is non-object');
         }
         throw new \Error( $name." is not exists.");
     }
