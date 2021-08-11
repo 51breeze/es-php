@@ -10,20 +10,20 @@
 ////[reference]
 
 /**
- * es_number_to_precision
- * @reference $_bindThisObject_
+ * @name toPrecision
+ * @bind target
  */
-function es_number_to_precision($__bindThisObject__, $decimals=null){
-    if( !($decimals > 0) )return strval($__bindThisObject__);
-    $result = sprintf('%.'.($decimals-1).'e',$__bindThisObject__);
-    if( strlen(strval(round($__bindThisObject__))) >  $decimals){
+function es_number_to_precision($target, $decimals=null){
+    if( !($decimals > 0) )return strval($target);
+    $result = sprintf('%.'.($decimals-1).'e',$target);
+    if( strlen(strval(round($target))) >  $decimals){
         return $result;
     }
     return strval(floatval($result));
 }
 
 /**
- * toFixed
+ * @name toFixed
  * @bind target
  */
 function es_number_to_fixed($target,$decimals=0){
@@ -31,9 +31,25 @@ function es_number_to_fixed($target,$decimals=0){
 }
 
 /**
- * toFixed
+ * @name toExponential
  * @bind target
  */
 function es_number_to_exponential($target,$decimals=0){
     return sprintf('%.'.$decimals.'e',$target);
+}
+
+/**
+ * @name valueOf
+ * @bind target
+ */
+function es_number_value_of($target){
+    return intval($target);
+}
+
+/**
+ * @name toString
+ * @bind target
+ */
+function es_number_to_string($target){
+    return strval($target);
 }

@@ -15,6 +15,11 @@ module.exports={
     method(target, thisObject, name, args, desc, isStatic, getter=false){
         let object = target.make(thisObject);
         if( isStatic ){
+            const throwError=()=>{
+                if( getter ){
+                    target.throwError('Number static method can only called.');
+                } 
+            }
             switch( name ){
                 case "MAX_VALUE" :
                     return `1.79E+308`;
@@ -29,44 +34,38 @@ module.exports={
                 case "EPSILON" :
                     return `2.220446049250313e-16`;
                 case "isFinite" :
+                    throwError();
                     return `${object} === Infinity`;
                 case "isInteger" :
+                    throwError();
                     return `is_int(${object})`;
                 case "isNaN" :
+                    throwError();
                     return `${object} === NaN`;
                 case "isSafeInteger" :
+                    throwError();
                     return `is_int(${object})`;
                 case "parseFloat" :
+                    throwError();
                     return `floatval(${object})`;
                 case "parseInt" :
+                    throwError();
                     return `intval(${object})`;
             }
             return null;
         }
 
-        const getObject = ()=>{
-            let use = '';
-            if( thisObject.isCallExpression || thisObject.isMemberExpression ){
-                const refs = '$'+target.generatorVarName(target.stack, '_AR');
-                target.insertExpression(target.semicolon(`${refs} = ${object}`));
-                object = refs;
-                use = `use(${object})`;
-            }else if( thisObject.isIdentifier ){
-                use = `use(${object})`;
-            }
-            return {target:object,use};
-        }
-
         switch( name ){
             case "toFixed" :
                 if( getter ){
-                    const {target,use} = getObject();
-                    return `function($decimals=0)${use}{return floatval(number_format(${target},$decimals,'.',''));}`
+                    target.addDepend("Number");
+                    return this.getMethodName( this.getName(`es_number_to_fixed`) );
                 }
                 return `floatval(number_format(${[object].concat(args,'.','').join(",")}))`
             case "toExponential" :
                 if( getter ){
-                    return `function($__bindThisObject__,$decimals=0,$f=null){return sprintf('%.'.$decimals.'e',$__bindThisObject__);}`
+                    target.addDepend("Number");
+                    return this.getMethodName( this.getName(`es_number_to_exponential`) );
                 }
                 if( args.length > 0 ){
                     return `sprintf('%.${args[0]}e',${object})`;
@@ -74,8 +73,8 @@ module.exports={
                     return `sprintf('%e',${object})`;
                 }
             case "toPrecision" :
-                target.addDepend("Number");
                 if( getter ){
+                    target.addDepend("Number");
                     return this.getMethodName( this.getName(`es_number_to_precision`) );
                 }
                 if( args.length > 0 ){
@@ -85,14 +84,14 @@ module.exports={
                 }
             case "valueOf" :
                 if( getter ){
-                    const {target,use} = getObject();
-                    return `function()${use}{return ${target};}`;
+                    target.addDepend("Number");
+                    return this.getMethodName( this.getName(`es_number_value_of`) );
                 }
-                return `${object}`;
+                return `intval(${object})`;
             case "toString" :
                 if( getter ){
-                    const {target,use} = getObject();
-                    return `function()${use}{return strval(${target});}`;
+                    target.addDepend("Number");
+                    return this.getMethodName( this.getName(`es_number_to_string`) );
                 }
                 return `strval(${object})`;
         }

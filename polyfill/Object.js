@@ -4,7 +4,7 @@ module.exports={
     require:[],
     isClass:false,
     namespace:"es.core",
-    method(target, thisObject, name, args, isStatic){
+    method(target, thisObject, name, args, isStatic, getter=false){
         if( isStatic ){
             switch( name ){
                 case "assign" :

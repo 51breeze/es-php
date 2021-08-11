@@ -231,27 +231,8 @@ class Start extends TestCase{
 		$bf = System::bind('\es\core\es_number_to_precision',$nums);
 		$this->assertEquals(999999,$bf(6));
 		$df = 1.236999999;
-		$bfs = System::bind(function($__bindThisObject__,$decimals=0,$f=null){return sprintf('%.'.$decimals.'e',$__bindThisObject__);},$df);
+		$bfs = System::bind('\es\core\es_number_to_exponential',$df);
 		$this->assertEquals(1.237000e+0,$bfs(6));
-
-
-		/**
-		 * $target 
-		 */ 
-		$fn = function($target){
-
-		};
-
-		$ref = new \ReflectionFunction( $fn );
-
-		$pars = $ref->getParameters();
-		print_r( $pars );
-
-		echo $ref->getDocComment();
-		echo "\n";
-		echo $ref->getName();
-
-
 	}
 	public function call():Start{
 		return $this;

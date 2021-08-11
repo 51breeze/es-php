@@ -50,12 +50,16 @@ final class System
         }
         $thisObject = $thisArg;
         $is_warp = false;
-        $getBindThisIndex = function( $items ){
-            $name = '__bindThisObject__';
-            $len = count( $items );
-            for($i=0;$i<$len;$i++){
-                if( $items[$i]->getName() === $name){
-                    return $i;
+        $getBindThisIndex = function( $items , $comment){
+            if( $comment && preg_match('/@bind\s+(\w+)/', $comment, $matching) ){
+                $name = $matching[1] ?? null;
+                if( $name ){
+                    $len = count( $items );
+                    for($i=0;$i<$len;$i++){
+                        if( $items[$i]->getName() === $name){
+                            return $i;
+                        }
+                    }
                 }
             }
             return -1;
@@ -66,7 +70,7 @@ final class System
                 if( !is_object( $callback[0] ) ){
                     $method = $callback;
                     $reflect = new \ReflectionMethod($callback[0],$callback[1]);
-                    $thisIndex = $thisObject !== null ? $getBindThisIndex( $reflect->getParameters() ) : -1;
+                    $thisIndex = $thisObject !== null ? $getBindThisIndex( $reflect->getParameters(), $reflect->getDocComment() ) : -1;
                     $is_warp = true;
                     $callback = function(...$args)use($method){
                         return call_user_func_array($method, $args);
@@ -126,7 +130,7 @@ final class System
                     };
                 }
             }
-            $thisIndex = $thisObject !== null ? $getBindThisIndex( $reflect->getParameters() ) : -1;
+            $thisIndex = $thisObject !== null ? $getBindThisIndex( $reflect->getParameters(), $reflect->getDocComment() ) : -1;
             $method = $reflect->getClosure();
         }
 
