@@ -9,6 +9,10 @@ namespace es\core;
 require_once('es/core/System.php');
 use \es\core\System;
 
+/**
+ * @name filter
+ * @bind array
+ */
 function es_array_filter($array, $callback, $thisArg=null){
     $callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
     return array_filter($array,function($value,$key)use(&$array,&$callback){
@@ -16,6 +20,10 @@ function es_array_filter($array, $callback, $thisArg=null){
     },ARRAY_FILTER_USE_BOTH);
 }
 
+/**
+ * @name findIndex
+ * @bind array
+ */
 function es_array_find_index($array, $callback, $thisArg=null){
     $callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
     foreach( $array as $key=>$value){
@@ -26,6 +34,10 @@ function es_array_find_index($array, $callback, $thisArg=null){
     return -1;
 }
 
+/**
+ * @name find
+ * @bind array
+ */
 function es_array_find($array, $callback, $thisArg=null){
     $callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
     foreach( $array as $key=>$value){
@@ -36,6 +48,10 @@ function es_array_find($array, $callback, $thisArg=null){
     return null;
 }
 
+/**
+ * @name every
+ * @bind array
+ */
 function es_array_every($array, $callback, $thisArg=null){
     $callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
     foreach( $array as $key=>$value){
@@ -46,6 +62,10 @@ function es_array_every($array, $callback, $thisArg=null){
     return true;
 }
 
+/**
+ * @name some
+ * @bind array
+ */
 function es_array_some($array, $callback, $thisArg=null){
     $callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
     foreach( $array as $key=>$value){
@@ -56,6 +76,10 @@ function es_array_some($array, $callback, $thisArg=null){
     return false;
 }
 
+/**
+ * @name map
+ * @bind array
+ */
 function es_array_map($array, $callback, $thisArg=null){
     $callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
     $index = 0;
@@ -64,11 +88,19 @@ function es_array_map($array, $callback, $thisArg=null){
     },$array);
 }
 
+/**
+ * @name searchIndex
+ * @bind array
+ */
 function es_array_search_index($array, $value){
     $result = array_search($value,$array);
     return $result === false ? -1 : $result;
 }
 
+/**
+ * @name searchLastIndex
+ * @bind array
+ */
 function es_array_search_last_index($array, $value, $formIndex=null ){
     $len = count($array);
     $index = $formIndex===null ? $len - 1 : min($len, max($formIndex,$len));
@@ -81,10 +113,18 @@ function es_array_search_last_index($array, $value, $formIndex=null ){
     return -1;
 }
 
+/**
+ * @name concat
+ * @bind array
+ */
 function es_array_concat(array $array, ...$items){
     return array_merge($array, es_array_flat( $items ) );
 }
 
+/**
+ * @name fill
+ * @bind array
+ */
 function es_array_fill($array, $value, $start=0, $end=0){
     $len = count($array);
     $start = $start < 0 ? max($start+$len, 0) : min($start,$len);
@@ -96,11 +136,19 @@ function es_array_fill($array, $value, $start=0, $end=0){
     return $array;
 }
 
+/**
+ * @name foreach
+ * @bind array
+ */
 function es_array_foreach($array, $callback, $thisArg=null){
     $callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
     array_walk($array,$callback,$array);
 }
 
+/**
+ * @name flat
+ * @bind array
+ */
 function es_array_flat($array, $depth=1){
     if( $depth < 1){
         return $array;
@@ -112,6 +160,10 @@ function es_array_flat($array, $depth=1){
     },[]);
 }
 
+/**
+ * @name flatMap
+ * @bind array
+ */
 function es_array_flat_map($array, $callback, $thisArg=null){
     $callback = $thisArg ? System::bind($callback,$thisArg) : $callback;
     return es_array_reduce( $array, function($all, $val, $index, $array)use(&$callback){
@@ -121,6 +173,10 @@ function es_array_flat_map($array, $callback, $thisArg=null){
     },[]);
 }
 
+/**
+ * @name reduce
+ * @bind array
+ */
 function es_array_reduce($array, $callback, $initial=null){
     $len = count( $array );
     $k = 0;
@@ -144,6 +200,10 @@ function es_array_reduce($array, $callback, $initial=null){
     return $value;
 }
 
+/**
+ * @name reduceRight
+ * @bind array
+ */
 function es_array_reduce_right($array, $callback, $initial=null){
     $len = count( $array );
     $k = $len-1;
@@ -167,6 +227,11 @@ function es_array_reduce_right($array, $callback, $initial=null){
     return $value;
 }
 
+/**
+ * @name sort
+ * @bind array
+ * @reference array
+ */
 function es_array_sort(&$array, $callback=null){
     if( is_callable($callback) ){
         usort($array, $callback);
@@ -176,6 +241,10 @@ function es_array_sort(&$array, $callback=null){
     return $array;
 }
 
+/**
+ * @name Array
+ * @bind array
+ */
 function es_array_new( ...$args ){
     if( count($args) === 1 && is_numeric($args[0]) ){
         return array_fill(0, $args[0], null);
@@ -183,6 +252,10 @@ function es_array_new( ...$args ){
     return array_slice((array)$args,0);
 }
 
+/**
+ * @name copyWithin
+ * @bind array
+ */
 function es_array_copy_within($array,$target, $start, $end){
     $len = count($array);
     $relativeTarget = $target >> 0;

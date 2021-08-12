@@ -226,12 +226,4 @@ final class System
     static function getQualifiedObjectName( $object ){
         return get_class($object);
     }
-
-    static function propertyIsEnumerable($object, $name){
-        
-    }
-
-    static function hasOwnProperty(){
-        
-    }
 }

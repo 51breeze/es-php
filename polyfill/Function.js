@@ -7,6 +7,9 @@ module.exports={
     getName(name){
         return '\\'+this.namespace.split('.').concat( name ).join('\\');
     },
+    getMethodName(name){
+        return `'${name}'`;
+    },
     method(target, thisObject, name, args, desc, isStatic, getter=false){
         let object = target.make(thisObject);
         let targetObject = args.shift();
@@ -58,8 +61,13 @@ module.exports={
             case "bind" :
                 target.addDepend("Reflect");
                 return `System::bind(${[object,targetObject].concat(args).join(",")})`;
+            case "toLocaleString" :
             case "toString" :
-                return `${object}`;
+                target.addDepend("Object");
+                if( getter ){
+                    return this.getMethodName( this.getName(`es_object_to_string`) );
+                }
+                return this.getName(`es_object_to_string`)+`(${object})`;
         }
     }
     

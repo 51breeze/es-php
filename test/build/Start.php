@@ -1,10 +1,11 @@
 <?php
 require_once('es/core/Number.php');
+require_once('es/core/Object.php');
 require_once('es/core/RegExp.php');
 require_once('es/core/String.php');
 require_once('es/core/Reflect.php');
 require_once('es/core/System.php');
-require_once('es/core/ArrayMethod.php');
+require_once('es/core/Array.php');
 use \PHPUnit\Framework\TestCase;
 use \es\core\System;
 use \es\core\Reflect;
@@ -111,12 +112,12 @@ class Start extends TestCase{
 		$this->assertEquals(["Jan","Feb","March","April","June"],$months);
 		$this->assertEquals(["Jan"],array_splice($months,0,1,'Feb'));
 		$this->assertEquals(["Feb","Feb","March","April","June"],$months);
-		$this->assertEquals("Feb, Feb, March, April, June",implode(', ',$months));
+		$this->assertEquals("Feb, Feb, March, April, June",implode(', ', $months));
 		$this->assertEquals("Feb- Feb- March- April- June",implode('- ', $months));
 		$this->assertEquals(["April","June","March","April","June"],\es\core\es_array_copy_within($months,0,3,5));
 		$this->assertEquals(["d","b","c","d","e"],\es\core\es_array_copy_within(['a','b','c','d','e'],0,3,4));
-		$this->assertTrue(array_key_exists(2,$months));
-		$this->assertTrue(array_key_exists(2,$months));
+		$this->assertTrue(isset($months[2]));
+		$this->assertTrue(isset($months[2]));
 		$this->assertFalse(is_array(''));
 		$this->assertTrue(is_array(['']));
 		$ip = [];
@@ -169,7 +170,7 @@ class Start extends TestCase{
 	public function testString(){
 		$str = 'aab';
 		$this->assertEquals(\es\core\es_string_replace($str,'a','A'),"Aab");
-		$this->assertEquals(\es\core\es_string_index($str,'b'),2);
+		$this->assertEquals(\es\core\es_string_index_of($str,'b'),2);
 		$this->assertEquals(mb_substr($str,0,1),'a');
 		$this->assertEquals(mb_ord(mb_substr($str,0,1),'UTF-8'),97);
 		$this->assertEquals(mb_ord(mb_substr($str,2,1),'UTF-8'),98);
@@ -194,13 +195,13 @@ class Start extends TestCase{
 		$this->assertEquals('lazy',\es\core\es_string_slice($str2,-9,-5));
 		$chinese = '中中国人民解放军';
 		$this->assertEquals(8,mb_strlen($chinese));
-		$this->assertEquals(3,\es\core\es_string_index($chinese,"人"));
-		$this->assertEquals(3,\es\core\es_string_last_index($chinese,"人"));
+		$this->assertEquals(3,\es\core\es_string_index_of($chinese,"人"));
+		$this->assertEquals(3,\es\core\es_string_last_index_of($chinese,"人"));
 		$this->assertEquals('全' . ($chinese),\es\core\es_string_replace($chinese,'中','全中'));
 		$mixed = "中国人A民bc解De放军FFFDDdd";
 		$this->assertEquals(19,mb_strlen($mixed));
-		$this->assertEquals(12,\es\core\es_string_index($mixed,"F"));
-		$this->assertEquals(14,\es\core\es_string_last_index($mixed,"F"));
+		$this->assertEquals(12,\es\core\es_string_index_of($mixed,"F"));
+		$this->assertEquals(14,\es\core\es_string_last_index_of($mixed,"F"));
 		$this->assertEquals('中国人A民bc解De放军FFFdddd',\es\core\es_string_replace($mixed,'DD','dd'));
 		$this->assertEquals('民bc解',mb_substr($mixed,4,4));
 		$paragraph = 'The quick brown fox jumps over the lazy dog. If the dog barked, was it really lazy?';
@@ -214,7 +215,7 @@ class Start extends TestCase{
 		$name = "Jun Ye";
 		$o = (object)['name'=>$name];
 		$this->assertEquals((object)['name'=>"Jun Ye"],$o);
-		$this->assertEquals((object)['name'=>"ssss",'age'=>30],System::merge($o,(object)['age'=>30,'name'=>"ssss"]));
+		$this->assertEquals((object)['name'=>"ssss",'age'=>30],\es\core\es_object_assign($o,(object)['age'=>30,'name'=>"ssss"]));
 		$this->assertEquals($this,Reflect::call('\Start',Reflect::call('\Start',$this,"call"),"getObject"));
 		$fn = Reflect::get('\Start',$this,'getObject');
 		$this->assertEquals($this,$fn());

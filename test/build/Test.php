@@ -1,6 +1,7 @@
 <?php
+require_once('es/core/Promise.php');
 require_once('es/core/System.php');
-require_once('es/core/ArrayMethod.php');
+require_once('es/core/Array.php');
 require_once('es/core/RegExp.php');
 require_once('es/core/Reflect.php');
 use \Person;
@@ -9,6 +10,7 @@ use \es\core\Reflect;
 use \es\core\RegExp;
 use \Types;
 use \es\core\System;
+use \es\core\Promise;
 use \Start;
 class Test extends Person{
 	public function __construct(string $name,$age=null){
@@ -17,7 +19,7 @@ class Test extends Person{
 		$this->getTarget();
 		new Start();
 	}
-	static public function getClass(){
+	static public function getClass():Object{
 		$a = Test;
 		$buname = (object)['a'=>1];
 		$buname->test = $a;
@@ -283,7 +285,7 @@ class Test extends Person{
 	}
 	private $len = 5;
 	private $currentIndex = 0;
-	public function next(){
+	public function next():Object{
 		if(!($this->currentIndex < $this->len)){
 			return (object)['value'=>null,'done'=>true];
 		}
@@ -314,7 +316,7 @@ class Test extends Person{
 		$b = Reflect::get('\Test',$this,'avg');
 		return $b;
 	}
-	public function fetchApi(string $name,int $data,int $delay){
+	public function fetchApi(string $name,int $data,int $delay):Promise{
 		return new Promise(function($resolve,$reject)use(&$delay){
 			setTimeout(function()use(&$name, &$data, &$resolve){
 				$_V = [$name,$data];
@@ -322,7 +324,7 @@ class Test extends Person{
 			},$delay);
 		});
 	}
-	public function loadRemoteData2(){
+	public function loadRemoteData2():Promise{
 		return $this->fetchApi("one",1,800);
 	}
 	public function loadRemoteData($type){
@@ -383,7 +385,7 @@ class Test extends Person{
 		array_push($dd,1);
 		return $yy;
 	}
-	public function map(){
+	public function map():Object{
 		$ddss = (object)['name'=>function($c,$b){
 			return $c;
 		}];

@@ -9,16 +9,28 @@
 ////[require]
 ////[reference]
 
-function es_string_index($target,$value){
+/**
+ * @name indexOf
+ * @bind target
+ */
+function es_string_index_of($target,$value){
     $index = mb_strpos($target, $value);
     return $index === false ? -1 : $index;
 }
 
-function es_string_last_index($target,$value){
+/**
+ * @name lastIndexOf
+ * @bind target
+ */
+function es_string_last_index_of($target,$value){
     $index = mb_strrpos($target, $value);
     return $index === false ? -1 : $index;
 }
 
+/**
+ * @name substring
+ * @bind target
+ */
 function es_string_substring($target,$start=0, $end=null){
     $len = mb_strlen($target);
     if( $end === null ){
@@ -32,6 +44,10 @@ function es_string_substring($target,$start=0, $end=null){
     return mb_substr($target,$start, $end);
 }
 
+/**
+ * @name slice
+ * @bind target
+ */
 function es_string_slice($target, $start=0, $end=null){
     $len = mb_strlen($target);
     if( $end === null ){
@@ -48,6 +64,10 @@ function es_string_slice($target, $start=0, $end=null){
     return mb_substr($target, $start, $end-$start);
 }
 
+/**
+ * @name normalize
+ * @bind target
+ */
 function es_string_normalize($target){
     return preg_replace_callback('/\\\\u([0-9a-f]{4})/i', function($matches) {
         if(function_exists("mb_convert_encoding")) {
@@ -58,6 +78,10 @@ function es_string_normalize($target){
     },$target);
 }
 
+/**
+ * @name replace
+ * @bind target
+ */
 function es_string_replace($target,$search,$replacement=''){
     if( $search instanceof \es\core\RegExp ){
         return $search->replace($target, $replacement);
@@ -73,6 +97,10 @@ function es_string_replace($target,$search,$replacement=''){
     }
 }
 
+/**
+ * @name replaceAll
+ * @bind target
+ */
 function es_string_replace_all($target,$search,$replacement=''){
     if( $search instanceof \es\core\RegExp ){
         return $search->replaceAll($target, $replacement);

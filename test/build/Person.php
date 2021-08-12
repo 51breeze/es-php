@@ -1,7 +1,9 @@
 <?php
+require_once('es/core/Object.php');
 use \com\TestInterface;
-class Person implements TestInterface{
+class Person extends \Object implements TestInterface{
 	public function __construct(string $name){
+		parent::__construct();
 		$this->_name = $name;
 	}
 	public $addressName = 'the Person properyt "addressName"';

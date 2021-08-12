@@ -9,7 +9,12 @@ module.exports={
     getName(name){
         return '\\'+this.namespace.split('.').concat( name ).join('\\');
     },
-    method(target, thisObject, name, args){
+    method(target, thisObject, name, args, desc, isStatic, getter=false){
+        const throwError=()=>{
+            if( getter ){
+                target.error('Array static method can only called.');
+            } 
+        }
         switch( name ){
             case "E" :
                 return 2.718281828459045;
@@ -42,12 +47,16 @@ module.exports={
             case "sin" :
             case "sqrt" :
             case "tan" :
+                throwError();
                 return `${name}(${args.join(",")})`;
             case "random" :
+                throwError();
                 return `(mt_rand(1,2147483647) / 2147483647)`;
             case "round" :
+                throwError();
                 return `round(${args[0]})`;
             case "floor" :
+                throwError();
                 return `floor(${args[0]})`;
         }
     }

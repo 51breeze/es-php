@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const ObjectMethod = require("./Object");
 module.exports={
     content: fs.readFileSync( path.join(__dirname,"./files/Number.php") ),
     export:'Number',
@@ -17,7 +18,7 @@ module.exports={
         if( isStatic ){
             const throwError=()=>{
                 if( getter ){
-                    target.throwError('Number static method can only called.');
+                    target.error('Number static method can only called.');
                 } 
             }
             switch( name ){
@@ -88,12 +89,16 @@ module.exports={
                     return this.getMethodName( this.getName(`es_number_value_of`) );
                 }
                 return `intval(${object})`;
+            case "toLocaleString" :
             case "toString" :
                 if( getter ){
                     target.addDepend("Number");
                     return this.getMethodName( this.getName(`es_number_to_string`) );
                 }
                 return `strval(${object})`;
+            default :
+                return ObjectMethod.method(target, thisObject, name, args, desc, isStatic, getter, object );
+
         }
     }
 }

@@ -7,7 +7,9 @@
  * @author Jun Ye <664371281@qq.com>
  */
 namespace es\core;
-require_once('es/core/ArrayMethod.php');
+require_once('es/core/Number.php');
+require_once('es/core/Object.php');
+require_once('es/core/Array.php');
 require_once('es/core/String.php');
 require_once('es/core/RegExp.php');
 require_once('es/core/System.php');

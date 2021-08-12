@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const ObjectMethod = require("./Object");
 module.exports={
     content: fs.readFileSync( path.join(__dirname,"./files/String.php") ),
     export:"String",
@@ -9,7 +10,10 @@ module.exports={
     getName(name){
         return '\\'+this.namespace.split('.').concat( name ).join('\\');
     },
-    method(target, thisObject, name, args){
+    getMethodName(name){
+        return `'${name}'`;
+    },
+    method(target, thisObject, name, args, desc, isStatic, getter=false){
         let object = target.make(thisObject);
         switch( name ){
             case "charAt" :
@@ -21,9 +25,13 @@ module.exports={
             case "includes" :
                 return `strpos(${[object].concat(args).join(",")}) !== false`;
             case "indexOf" :
-                return `${this.getName('es_string_index')}(${[object].concat(args).join(",")})`;
+                target.addDepend("String");
+                if( getter )return this.getMethodName( this.getName('es_string_index_of') );
+                return `${this.getName('es_string_index_of')}(${[object].concat(args).join(",")})`;
             case "lastIndexOf" :
-                return `${this.getName('es_string_last_index')}(${[object].concat(args).join(",")})`;
+                target.addDepend("String");
+                if( getter )return this.getMethodName( this.getName('es_string_last_index_of') );
+                return `${this.getName('es_string_last_index_of')}(${[object].concat(args).join(",")})`;
             case "localeCompare" :
                 return `strcmp(${[object].concat(args).join(",")})`;
             case "match" :
@@ -37,10 +45,15 @@ module.exports={
                 }
             case "replace" :
                 target.addDepend("String");
+                if( getter )return this.getMethodName( this.getName('es_string_replace') );
                 return `${this.getName('es_string_replace')}(${[object].concat(args).join(",")})`;
             case "replaceAll" :
+                target.addDepend("String");
+                if( getter )return this.getMethodName( this.getName('es_string_replace_all') );
                 return `${this.getName('es_string_replace_all')}(${[object].concat(args).join(",")})`;
             case "slice" :
+                target.addDepend("String");
+                if( getter )return this.getMethodName( this.getName('es_string_slice') );
                 return `${this.getName('es_string_slice')}(${[object].concat(args).join(",")})`;
             case "repeat" :
                 return `str_repeat(${[object].concat(args).join(",")})`;
@@ -49,22 +62,26 @@ module.exports={
             case "substr" :
                 return `mb_substr(${[object].concat(args).join(",")})`;
             case "substring" :
+                target.addDepend("String");
+                if( getter )return this.getMethodName( this.getName('es_string_substring') );
                 return `${this.getName('es_string_substring')}(${[object].concat(args).join(",")})`;
             case "toLowerCase" :
             case "toLocaleLowerCase" :
+                if( getter )return this.getMethodName(`mb_strtolower`);
                 return `mb_strtolower(${object})`;
             case "toUpperCase" :
             case "toLocaleUpperCase" :
+                if( getter )return this.getMethodName(`mb_strtoupper`);
                 return `mb_strtoupper(${object})`;
             case "trim" :
+                if( getter )return this.getMethodName(`trim`);
                 return `trim(${object})`;
             case "trimEnd" :
+                if( getter )return this.getMethodName(`rtrim`);
                 return `rtrim(${object})`;
             case "trimStart" :
+                if( getter )return this.getMethodName(`ltrim`);
                 return `ltrim(${object})`;
-            case "valueOf" :
-            case "toString" :
-                return `${object}`;
             case "split" :
                 return `explode(${args[0]},${object})`;
             case "padStart" :
@@ -72,9 +89,20 @@ module.exports={
             case "padEnd" :
                 return `str_pad(${[object].concat(args).join(",")}, STR_PAD_RIGHT)`;
             case "normalize" :
+                target.addDepend("String");
+                if( getter )return this.getMethodName( this.getName('es_string_normalize') );
                 return `${this.getName('es_string_normalize')}(${[object].concat(args).join(",")})`;
+            case "valueOf" :
+            case "toString" :
+                if( getter ){
+                    return ObjectMethod.method(target, thisObject, name, args, desc, isStatic, getter, object);
+                }
+                return `${object}`;
             case "propertyIsEnumerable" :
             case "hasOwnProperty" :
+                if( getter ){
+                    return ObjectMethod.method(target, thisObject, name, args, desc, isStatic, getter, object);
+                }
                 return `isset(${object}[${args[0]}])`;
         }
     }

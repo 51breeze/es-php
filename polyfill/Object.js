@@ -1,41 +1,68 @@
+const fs = require("fs");
+const path = require("path");
 module.exports={
-    content:null,
-    export:false,
+    content:fs.readFileSync( path.join(__dirname,"./files/Object.php") ),
+    export:'Object',
     require:[],
     isClass:false,
     namespace:"es.core",
-    method(target, thisObject, name, args, isStatic, getter=false){
+    getName(name){
+        return '\\'+this.namespace.split('.').concat( name ).join('\\');
+    },
+    getMethodName(name){
+        return `'${name}'`;
+    },
+    method(target, thisObject, name, args, desc, isStatic, getter=false,makedThisObject=null){
+        let object = makedThisObject || target.make(thisObject);
         if( isStatic ){
+            const throwError=()=>{
+                if( getter ){
+                    target.error('Object static method can only called.');
+                } 
+            }
             switch( name ){
                 case "assign" :
-                    target.addDepend("System");
-                    let targetObject = args.shift();
-                    const first = target.stack.arguments && target.stack.arguments[0];
-                    if( first){
-                        if( first.isArrayExpression || first.isObjectExpression || first.isLiteral ){
-                            const refs = '$'+target.generatorVarName(target.stack, '_AR');
-                            target.insertExpression(target.semicolon(`${refs} = ${targetObject}`));
-                            targetObject = refs; 
-                        }
-                    }
-                    return `System::merge(${[targetObject].concat(args).join(",")})`;
+                    target.addDepend("Object");
+                    throwError();
+                    return this.getName(`es_object_assign`)+`(${args.join(",")})`;
                 case "keys" :
-                    return `array_keys(${args.map(item=>`(array)${item}`).join(",")})`;
+                    target.addDepend("Object");
+                    throwError();
+                    return this.getName(`es_object_keys`)+`(${args.join(",")})`;
                 case "values" :
-                    return `array_values(${args.map(item=>`(array)${item}`).join(",")})`;
+                    target.addDepend("Object");
+                    throwError();
+                    return this.getName(`es_object_values`)+`(${args.join(",")})`;
             }
+            return null;
         }
-        let object = target.make(thisObject);
         switch( name ){
             case "propertyIsEnumerable" :
-                return `property_exists(${[object].concat(args).join(",")})`;
+                target.addDepend("Object");
+                if( getter ){
+                    return this.getMethodName( this.getName(`es_object_property_is_enumerable`) );
+                }
+                return this.getName(`es_object_property_is_enumerable`)+`(${[object].concat(args).join(",")})`;
             case "hasOwnProperty" :
-                return `property_exists(${[object].concat(args).join(",")})`;
+                target.addDepend("Object");
+                if( getter ){
+                    return this.getMethodName( this.getName(`es_object_has_own_property`) );
+                }
+                return this.getName(`es_object_has_own_property`)+`(${[object].concat(args).join(",")})`;
             case "valueOf" :
-                return `${object}`;
+                target.addDepend("Object");
+                if( getter ){
+                    return this.getMethodName( this.getName(`es_object_value_of`) );
+                }
+                return this.getName(`es_object_value_of`)+`(${[object].concat(args).join(",")})`;
             case "toLocaleString" :
             case "toString" :
-                return `sprintf('[object %s]', get_class(${object}))`;
+                target.addDepend("Object");
+                if( getter ){
+                    return this.getMethodName( this.getName(`es_object_to_string`) );
+                }
+                return this.getName(`es_object_to_string`)+`(${[object].concat(args).join(",")})`;
         }
+        return null;
     }
 }
