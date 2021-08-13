@@ -1,21 +1,24 @@
 const Syntax = require("../core/Syntax");
 const Polyfill = require("../core/Polyfill");
+const { takeRightWhile } = require("lodash");
 class MemberExpression extends Syntax{
 
    intercept(desc,object,property){
       const type = this.compiler.callUtils("getOriginType", desc.type() );
       if( type && this.compiler.callUtils("isTypeModule",type) ){
-         const name = type.id.toString();
-         const polyModule = Polyfill.modules.get(name);
-         if( polyModule && polyModule.method ){
-            const result = polyModule.method(this, object, property, [], desc, this.compiler.callUtils("isTypeModule",desc) , true);
-            if( result ){
-               return result;
+         const typeName = type.id.toString();
+         for(var name of [typeName,'Object']){
+            const polyModule = Polyfill.modules.get(name);
+            if( polyModule && polyModule.method ){
+               const result = polyModule.method(this, object, property, [], desc, this.compiler.callUtils("isTypeModule",desc) , true);
+               if( result ){
+                  return result;
+               }
             }
          }
       }
       return null;
-  }
+   }
 
    emitter(){
       const module = this.module;
@@ -74,13 +77,13 @@ class MemberExpression extends Syntax{
       }
 
       if( description && description.isMethodGetterDefinition ){
-         const name = this.firstToUpper(property);
-         return `${object}${sep}get${name}()`;
+         const name = this.getAccessorName(description,"get",property);
+         return `${object}${sep}${name}()`;
       }
 
       if( description && description.isMethodSetterDefinition ){
-         const name = this.firstToUpper(property);
-         return `${object}${sep}set${name}`;
+         const name = this.getAccessorName(description,"set",property);
+         return `${object}${sep}${name}`;
       }
       
       return `${object}${sep}${property}`;

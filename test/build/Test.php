@@ -1,24 +1,35 @@
 <?php
+require_once('Start.php');
 require_once('es/core/Promise.php');
 require_once('es/core/System.php');
+require_once('Types.php');
 require_once('es/core/Array.php');
 require_once('es/core/RegExp.php');
 require_once('es/core/Reflect.php');
-use \Person;
+require_once('com/TestInterface.php');
+require_once('Person.php');
 use \com\TestInterface;
 use \es\core\Reflect;
 use \es\core\RegExp;
-use \Types;
 use \es\core\System;
 use \es\core\Promise;
-use \Start;
-class Test extends Person{
+class Test extends Person implements \Iterator{
+
+	/**
+	* @constructor Test
+	* a constructor method
+	*/
 	public function __construct(string $name,$age=null){
 		parent::__construct($name);
 		parent::setType('1');
 		$this->getTarget();
 		new Start();
 	}
+
+	/**
+	* @method getClass
+	* 返回一个类的引用
+	*/
 	static public function getClass():Object{
 		$a = Test;
 		$buname = (object)['a'=>1];
@@ -28,21 +39,56 @@ class Test extends Person{
 		$test->getClassObject();
 		return $buname;
 	}
+
+	/**
+	* @method getClassObject
+	*/
 	static public function getClassObject(){
 		$a = Test;
 		$b = (object)['test'=>$a];
 		$b->person = Person;
 		return $b->test;
 	}
+
+	/**
+	* @method getObject
+	*/
 	static public function getObject(){
 		return new Test('1','2');
 	}
+
+	/**
+	* @getter uuName
+	* @public
+	* the is static getter
+	*/
 	static public function getUuName():string{
 		return 'uuName';
 	}
+
+	/**
+	* @property iiu
+	* @private
+	* the is class type.
+	*/
 	static private $iiu = Test;
+
+	/**
+	* @property bbss
+	* @private
+	* Automatic inference string type
+	*/
 	private $bbss = 'bbss';
+
+	/**
+	* @property age
+	* property const age
+	*/
 	private $age = 40;
+
+	/**
+	* @method start
+	*/
 	public function start(){
 		it('static get uuName accessor',function(){
 			expect(Test::getClassObject()->getUuName())->toBe("uuName");
@@ -127,6 +173,10 @@ class Test extends Person{
 		$this->testTuple();
 		$this->next();
 	}
+
+	/**
+	* @method testEnumerableProperty
+	*/
 	private function testEnumerableProperty(){
 		it('for( var name in this) should is this or object ',function(){
 			$labels = ["name","data","target","addressName","iuuu"];
@@ -136,6 +186,10 @@ class Test extends Person{
 			}
 		});
 	}
+
+	/**
+	* @method testComputeProperty
+	*/
 	private function testComputeProperty(){
 		$bname = "123";
 		$_c1=(object)[];
@@ -153,6 +207,10 @@ class Test extends Person{
 			expect(Reflect::get('\Test',Reflect::get('\Test',$o,"uuu"),$bname))->toBe(true);
 		});
 	}
+
+	/**
+	* @method testLabel
+	*/
 	private function testLabel(){
 		$num = 0;
 		start:for($i = 0;$i < 5;$i++){
@@ -167,6 +225,10 @@ class Test extends Person{
 			expect($num)->toBe(18);
 		});
 	}
+
+	/**
+	* @method testEnum
+	*/
 	private function testEnum(){
 		$Type=new \ArrayObject([], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
 		$Type[$Type->address=5]='address';
@@ -182,6 +244,10 @@ class Test extends Person{
 			expect(Types::NAME)->toBe(1);
 		});
 	}
+
+	/**
+	* @method testIterator
+	*/
 	private function testIterator(){
 		$array = [];
 		foreach($this as $val){
@@ -194,6 +260,10 @@ class Test extends Person{
 			}
 		});
 	}
+
+	/**
+	* @method testGenerics
+	*/
 	private function testGenerics(){
 		$ddee = $this->map();
 		$dd = $ddee;
@@ -207,23 +277,35 @@ class Test extends Person{
 		Reflect::set('\Test',$bds,$types,99);
 		it('Generics should is true',function()use(&$ccc, &$cccww){
 			expect(System::typeof($this->avg("test")))->toBe('string');
-			expect(floatval(number_format($ccc->name,2,.,)))->toBe("1.00");
+			expect(floatval(number_format($ccc->name,2,'.','')))->toBe("1.00");
 			expect($cccww->age)->toBe(30);
 		});
 		it('class Generics',function(){
 			$obj = $this->getTestObject(true);
 			$bs = $obj->getNamess(1);
-			expect(floatval(number_format($bs,2,.,)))->toBe("1.00");
+			expect(floatval(number_format($bs,2,'.','')))->toBe("1.00");
 		});
 		$obj = $this->getTestObject(true);
 	}
+
+	/**
+	* @method getClassTestGenerics
+	*/
 	private function getClassTestGenerics($name,$age=null):array{
 		$a = [$age,$name];
 		return $a;
 	}
+
+	/**
+	* @method getTestGenerics
+	*/
 	private function getTestGenerics($name,$age=null){
 		return $age;
 	}
+
+	/**
+	* @method getTestObject
+	*/
 	private function getTestObject(bool $flag=null){
 		$factor = function(){
 			$o = (object)[];
@@ -234,9 +316,17 @@ class Test extends Person{
 		$o = $factor();
 		return $o;
 	}
+
+	/**
+	* @method getNamess
+	*/
 	public function getNamess($s){
 		return $s;
 	}
+
+	/**
+	* @method testAwait
+	*/
 	private function testAwait(){
 		it('test Await',function($done){
 			$res = $this->loadRemoteData(1);
@@ -274,17 +364,37 @@ class Test extends Person{
 		});
 		Reflect::get('\Test',$this->getJson(),'name');
 	}
+
+	/**
+	* @method getJson
+	*/
 	public function getJson(){
 		return (object)['name'=>123];
 	}
+
+	/**
+	* @method testTuple
+	*/
 	public function testTuple(){
 		$data = $this->method("end",9);
 		it('test tuple',function()use(&$data){
 			expect($data)->toEqual([['a','b'],[1],[1,1,'one'],['one',['one',1],'three','four',['end',9]]]);
 		});
 	}
+
+	/**
+	* @property len
+	*/
 	private $len = 5;
+
+	/**
+	* @property currentIndex
+	*/
 	private $currentIndex = 0;
+
+	/**
+	* @method next
+	*/
 	public function next():Object{
 		if(!($this->currentIndex < $this->len)){
 			return (object)['value'=>null,'done'=>true];
@@ -292,14 +402,26 @@ class Test extends Person{
 		$d = (object)['value'=>$this->currentIndex++,'done'=>false];
 		return $d;
 	}
+
+	/**
+	* @method restFun
+	*/
 	public function restFun(array &...$types):array{
 		return $types;
 	}
+
+	/**
+	* @method tetObject
+	*/
 	public function tetObject(){
 		$b = $t;
 		$ii = (object)['bb'=>$b];
 		return $ii->bb;
 	}
+
+	/**
+	* @getter iuuu
+	*/
 	public function getIuuu(){
 		$ii = $this->getName();
 		if(6){
@@ -308,6 +430,10 @@ class Test extends Person{
 		$ii = true;
 		return $ii;
 	}
+
+	/**
+	* @getter data
+	*/
 	public function getData(){
 		$b = [];
 		if(4){
@@ -316,6 +442,10 @@ class Test extends Person{
 		$b = Reflect::get('\Test',$this,'avg');
 		return $b;
 	}
+
+	/**
+	* @method fetchApi
+	*/
 	public function fetchApi(string $name,int $data,int $delay):Promise{
 		return new Promise(function($resolve,$reject)use(&$delay){
 			setTimeout(function()use(&$name, &$data, &$resolve){
@@ -324,9 +454,17 @@ class Test extends Person{
 			},$delay);
 		});
 	}
+
+	/**
+	* @method loadRemoteData2
+	*/
 	public function loadRemoteData2():Promise{
 		return $this->fetchApi("one",1,800);
 	}
+
+	/**
+	* @method loadRemoteData
+	*/
 	public function loadRemoteData($type){
 		if($type === 1){
 			$a = $this->fetchApi("one",1,800);
@@ -351,6 +489,10 @@ class Test extends Person{
 			return $list;
 		}
 	}
+
+	/**
+	* @method method
+	*/
 	public function method(string $name,int $age){
 		parent::method($name,$age);
 		$str = ["a","b"];
@@ -363,12 +505,24 @@ class Test extends Person{
 		array_push($b,$_V1);
 		return [$str,$cc,$x,$b];
 	}
+
+	/**
+	* @getter name
+	*/
 	public function getName():string{
 		return parent::getName();
 	}
+
+	/**
+	* @setter name
+	*/
 	public function setName(string $value){
 		parent::setName($value);
 	}
+
+	/**
+	* @method avg
+	*/
 	public function avg($yy,$bbc=null){
 		$bb = ['1'];
 		function name($i){
@@ -385,12 +539,20 @@ class Test extends Person{
 		array_push($dd,1);
 		return $yy;
 	}
+
+	/**
+	* @method map
+	*/
 	public function map():Object{
 		$ddss = (object)['name'=>function($c,$b){
 			return $c;
 		}];
 		return $ddss;
 	}
+
+	/**
+	* @method address
+	*/
 	private function address():array{
 		$dd = [];
 		$bb = (object)['global'=>1,'private'=>1,'items'=>[]];
@@ -436,6 +598,10 @@ class Test extends Person{
 		System::print($ui,$n);
 		return $dd;
 	}
+
+	/**
+	* @method getArrItems
+	*/
 	private function &getArrItems():array{
 		$_ARV1 = 0;
 		$b = $_RD3 = &$this->items;
@@ -447,6 +613,10 @@ class Test extends Person{
 		$b = [];
 		return $b;
 	}
+
+	/**
+	* @property items
+	*/
 	private $items = [];
 }
 /*externals code*/;

@@ -27,7 +27,7 @@ class EnumDeclaration extends Syntax{
         const body = [];
         body.push( 'class' );
         body.push( module.id);
-        if( inherit ){
+        if( inherit && this.isDependModule(inherit) ){
             body.push( `extends ${this.getReferenceNameByModule(inherit)}`);
         }
         const parts = refs.concat(body.join(" ")+'{', content.join("\r\n") ,"}");

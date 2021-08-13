@@ -28,11 +28,15 @@ final class System
 
     public static function print(...$args){
         $items = array_map(function($item){
-            if( $item instanceof \Closure ){
-                $item = new \ReflectionFunction( $item );
-                return '[Function: '.$item->getName().']';
+            if( is_callable($item) || $item instanceof \Closure ){
+                $reflect = new \ReflectionFunction($callback);
+                if( !$reflect->isClosure() ){
+                    return sprintf('function %s(){[local code]}', $reflect->getName());
+                }else{
+                    return 'function {[local code]}';
+                }
             }
-            return System::isObject( $item ) ? json_encode( $item, JSON_UNESCAPED_UNICODE) : $item;
+            return json_encode( $item, JSON_UNESCAPED_UNICODE);
         },$args);
         echo PHP_EOL,implode(" ", $items);
     }

@@ -1,6 +1,5 @@
 <?php
-require_once('es/core/Object.php');
-class Types extends \Object{
+class Types{
 	public const ADDRESS = 0;
 	public const NAME = 1;
 	static public function getName($value){

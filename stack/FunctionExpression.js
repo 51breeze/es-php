@@ -85,9 +85,12 @@ class FunctionExpression extends Syntax{
 
                 let typeName = this.getAvailableTypeName( type );
                 typeName = typeName ? ':'+typeName : '';
-
                 if( this.stack.parentStack.isAccessor ){
-                    key = this.stack.parentStack.isMethodGetterDefinition ? 'get'+this.firstToUpper( key ) : 'set'+this.firstToUpper( key );
+                    if( this.stack.parentStack.isMethodGetterDefinition ){
+                        key = this.getAccessorName( this.stack.parentStack, 'get', key);
+                    }else{
+                        key = this.getAccessorName( this.stack.parentStack, 'set', key);
+                    } 
                 }
                 if( this.module.isInterface ){
                     return `function ${key}(${params.join(",")})${typeName}`;

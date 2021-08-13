@@ -89,7 +89,7 @@ function es_object_value_of($target){
 function es_object_to_string($target){
     if( is_callable($target) ){
         $reflect = new \ReflectionFunction($callback);
-        if( $reflect->isClosure() ){
+        if( !$reflect->isClosure() ){
             return sprintf('function %s(){[local code]}', $reflect->getName());
         }else{
             return 'function {[local code]}';
@@ -99,5 +99,5 @@ function es_object_to_string($target){
     }else if( is_array($target) ){
         return implode(', ', $target);
     }
-    return json_encode($target);
+    return json_encode($target,JSON_UNESCAPED_UNICODE);
 }

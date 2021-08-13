@@ -111,3 +111,80 @@ function es_string_replace_all($target,$search,$replacement=''){
         return str_replace($search, $replacement, $target);
     }
 }
+
+/**
+ * @name match
+ * @bind target
+ */
+function es_string_match($target,$regexp){
+    if( $regexp instanceof \es\core\RegExp ){
+        return $search->match( $target );
+    }else{
+        return (new \es\core\RegExp( $regexp ))->match( $target );
+    }
+}
+
+/**
+ * @name matchAll
+ * @bind target
+ */
+function es_string_match_all($target,$regexp){
+    if( $regexp instanceof \es\core\RegExp ){
+        return $regexp->matchAll( $target );
+    }else{
+        return (new \es\core\RegExp( $regexp ))->matchAll( $target );
+    }
+}
+
+/**
+ * @name search
+ * @bind target
+ */
+function es_string_search($target,$search){
+    if( $search instanceof \es\core\RegExp ){
+        return $search->search( $target );
+    }else{
+        return (new \es\core\RegExp( $search ))->search($target);
+    }
+}
+
+/**
+ * @name charAt
+ * @bind target
+ */
+function es_string_char_at($target,$index){
+    return mb_substr($target,$index,1);
+}
+
+/**
+ * @name charCodeAt
+ * @bind target
+ */
+function es_string_char_code_at($target,$index){
+    return mb_ord(mb_substr($target,$index,1),'UTF-8');
+}
+
+/**
+ * @name includes
+ * @bind target
+ */
+function es_string_includes($target,$value){
+    return strpos($target,$value) !== false;
+}
+
+/**
+ * @name localeCompare
+ * @bind target
+ */
+function es_string_locale_compare($target,$value){
+    return strcmp($target,$value);
+}
+
+/**
+ * @name concat
+ * @bind target
+ */
+function es_string_concat($target,...$args){
+    array_unshift($args, $target);
+    return implode("", $args);
+}

@@ -17,12 +17,28 @@ module.exports={
         let object = target.make(thisObject);
         switch( name ){
             case "charAt" :
+                if( getter ){
+                    target.addDepend("String");
+                    return this.getMethodName( this.getName('es_string_char_at') );
+                }
                 return `mb_substr(${object},${args[0]},1)`;
             case "charCodeAt" :
+                if( getter ){
+                    target.addDepend("String");
+                    return this.getMethodName( this.getName('es_string_char_code_at') );
+                }
                 return `mb_ord(mb_substr(${object},${args[0]},1),'UTF-8')`;
             case "concat" :
+                if( getter ){
+                    target.addDepend("String");
+                    return this.getMethodName( this.getName('es_string_concat') );
+                }
                 return `(${[object].concat(args).join(" . ")})`;
             case "includes" :
+                if( getter ){
+                    target.addDepend("String");
+                    return this.getMethodName( this.getName('es_string_includes') );
+                }
                 return `strpos(${[object].concat(args).join(",")}) !== false`;
             case "indexOf" :
                 target.addDepend("String");
@@ -33,10 +49,19 @@ module.exports={
                 if( getter )return this.getMethodName( this.getName('es_string_last_index_of') );
                 return `${this.getName('es_string_last_index_of')}(${[object].concat(args).join(",")})`;
             case "localeCompare" :
+                if( getter ){
+                    target.addDepend("String");
+                    return this.getMethodName( this.getName('es_string_locale_compare') );
+                }
                 return `strcmp(${[object].concat(args).join(",")})`;
             case "match" :
             case "matchAll" :
             case "search" :
+                if( getter ){
+                    target.addDepend("String");
+                    const map = {"match":'es_string_math',"matchAll":'es_string_math_all','search':'es_string_search'};
+                    return this.getMethodName( this.getName( map[name] ) );
+                }
                 target.addDepend("RegExp");
                 if( target.stack.arguments[0].type().toString().toLowerCase()==="regexp" ){
                     return `${args[0]}->${name}(${object})`;

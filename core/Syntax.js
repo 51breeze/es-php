@@ -19,6 +19,10 @@ class Syntax extends events.EventEmitter {
         this.module = stack.module; 
     }
 
+    getComment(){
+        return this.stack.comments;
+    }
+
     getModuleById( id ){
         return this.compilation.getModuleById(id);
     }
@@ -304,12 +308,13 @@ class Syntax extends events.EventEmitter {
 
     getOutputAbsolutePath(module){
         const options = this.getOptions();
+        if( !module )return options.output;
         const config = this.getConfig();
         const suffix = config.output.suffix||".php";
         if( module.isDeclaratorModule ){
             const isPolyfill = Polyfill.modules.has( module.id );
             const polyfillModule = isPolyfill ? Polyfill.modules.get( module.id ) : null;
-            const filename = (polyfillModule.export ? polyfillModule.export : module.id)+suffix;
+            const filename = (polyfillModule && polyfillModule.export ? polyfillModule.export : module.id)+suffix;
             if( polyfillModule ){
                 return PATH.join(options.output,polyfillModule.namespace.replace(/\./g,'/'),filename).replace(/\\/g,'/');
             }
@@ -428,11 +433,11 @@ class Syntax extends events.EventEmitter {
         return dependModules.get( module ) || [];
     }
 
-    isDependModule(depModule){
+    isDependModule(depModule, isRealClass=false){
         if( !depModule )return false;
         const isRequire = this.isUsed(depModule) && !depModule.file.includes("\\easescript\\lib") && !this.compiler.callUtils("checkDepend", this.module, depModule);
         const polyfillModule = depModule.isDeclaratorModule && Polyfill.modules.get(depModule.id);
-        if( isRequire || (polyfillModule && polyfillModule.export)){
+        if( isRequire || (polyfillModule && polyfillModule.export && (!isRealClass || polyfillModule.isClass))){
             return true;
         }
         return false;
@@ -478,10 +483,18 @@ class Syntax extends events.EventEmitter {
                         requires.unshift( `require_once('${paths.join("/")}.php');` );
                         if( !polyfillModule.isClass ){
                             paths = null;
+                        }else  if( !polyfillModule.namespace ){
+                            paths = null;
                         }
                     }
                 }else{
                     paths = depModule.namespace.getChain().concat(depModule.id);
+                    if( !depModule.isDeclaratorModule ){
+                        requires.unshift( `require_once('${paths.join("/")}.php');` );
+                    }
+                    if( !depModule.namespace.identifier ){
+                        paths = null;
+                    }
                 }
                 if( paths ){
                     refs.push( this.createImport('\\'+paths.join("\\"), alias) );
@@ -500,7 +513,7 @@ class Syntax extends events.EventEmitter {
 
     getImps(module){
         return module.implements.filter( module=>{
-            const result = !module.isDeclaratorModule && module.isInterface;
+            const result = module.isInterface;
             if( result ){
                 this.addDepend( module )
                 return true;
@@ -510,11 +523,51 @@ class Syntax extends events.EventEmitter {
 
     getInherit(module){
         const inherit = module.extends.filter( module=>module.isClass );
-        if( this.isDependModule(inherit[0]) ){
+        if( this.isDependModule(inherit[0], true) ){
             this.addDepend( inherit[0] );
             return inherit[0];
         }
         return null;
+    }
+
+    getAccessorName(desc,type,name){
+        if( !desc || !desc.module || !desc.isStack )return name;
+        if( desc.isAccessor ){
+            const origin = name;
+            name = type+this.firstToUpper( name );
+            const has =(name)=>{
+                const result = desc.static ? desc.module.getMethod(name) : desc.module.getMember(name);
+                if( result && desc.modifier && desc.modifier.value() ==="private" && desc.module !== result.module ){
+                    return false;
+                }
+                return !!result;
+            }
+            if( has(name) ){
+                const data = this.createDataByStack(desc.module);
+                if( !data.hasOwnProperty("methodAccessorNames") ){
+                    data.methodAccessorNames = {};
+                }
+                if( !data.methodAccessorNames.hasOwnProperty(type) ){
+                    data.methodAccessorNames[type]={};
+                }
+                if( !data.methodAccessorNames[type].hasOwnProperty(origin) ){
+                    let index=1;
+                    let key = name;
+                    while( has( key = name+(index++) ) );
+                    data.methodAccessorNames[type][origin]=key;
+                }
+                return data.methodAccessorNames[type][origin];
+            }
+            return name;
+        }else{
+            this.error(`'${name}' is not ${type} acessor.`);
+        }
+    }
+
+    getAccessorNamesByModule( module ){
+        const data = createdStackData.get(module);
+        if( !data || !data.methodAccessorNames)return null;
+        return data.methodAccessorNames;
     }
 
     emitter(){}

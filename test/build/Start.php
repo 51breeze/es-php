@@ -1,4 +1,5 @@
 <?php
+require_once('Types.php');
 require_once('es/core/Number.php');
 require_once('es/core/Object.php');
 require_once('es/core/RegExp.php');
@@ -11,11 +12,27 @@ use \es\core\System;
 use \es\core\Reflect;
 use \es\core\RegExp;
 class Start extends TestCase{
+
+	/**
+	* @constructor Start
+	*/
 	public function __construct(){
 		parent::__construct();
 	}
+
+	/**
+	* @property items
+	*/
 	private $items = [];
+
+	/**
+	* @property list
+	*/
 	private $list = [];
+
+	/**
+	* @method testArray
+	*/
 	public function testArray(){
 		$_ARV = 0;
 		$items = $_RD = &$this->items;
@@ -156,17 +173,37 @@ class Start extends TestCase{
 		$this->assertEquals(6,array_pop($s));
 		$this->assertEquals(3,array_pop($s,));
 	}
+
+	/**
+	* @method addArray
+	*/
 	public function addArray(array &$a,$b){
 		array_push($a,$b);
 	}
+
+	/**
+	* @property arrItems
+	*/
 	private $arrItems = [];
+
+	/**
+	* @method ccArray
+	*/
 	public function &ccArray():array{
 		$b = &$this->arrItems;
 		return $b;
 	}
+
+	/**
+	* @method pushArray
+	*/
 	public function pushArray(array &$a,$b){
 		array_push($a,$b);
 	}
+
+	/**
+	* @method testString
+	*/
 	public function testString(){
 		$str = 'aab';
 		$this->assertEquals(\es\core\es_string_replace($str,'a','A'),"Aab");
@@ -208,9 +245,13 @@ class Start extends TestCase{
 		$regex = new RegExp('[^\w\s]','g');
 		$this->assertEquals(43,$regex->search($paragraph));
 		$this->assertEquals('.',Reflect::get('\Start',$paragraph,$regex->search($paragraph)));
-		$this->setNames("Ye Jun");
-		$this->assertEquals('Ye Jun',$this->getNames());
+		$this->setNames1("Ye Jun");
+		$this->assertEquals('Ye Jun',$this->getNames1());
 	}
+
+	/**
+	* @method testObject
+	*/
 	public function testObject(){
 		$name = "Jun Ye";
 		$o = (object)['name'=>$name];
@@ -220,9 +261,17 @@ class Start extends TestCase{
 		$fn = Reflect::get('\Start',$this,'getObject');
 		$this->assertEquals($this,$fn());
 	}
+
+	/**
+	* @method getObject
+	*/
 	public function getObject($name=null){
 		return $this;
 	}
+
+	/**
+	* @method testNumber
+	*/
 	public function testNumber(){
 		$num = 5.123456;
 		$this->assertEquals(5,\es\core\es_number_to_precision($num,1));
@@ -235,14 +284,70 @@ class Start extends TestCase{
 		$bfs = System::bind('\es\core\es_number_to_exponential',$df);
 		$this->assertEquals(1.237000e+0,$bfs(6));
 	}
+
+	/**
+	* @method testEnum
+	*/
+	public function testEnum(){
+		$this->assertEquals(0,Types::ADDRESS);
+		$this->assertEquals(1,Types::NAME);
+		$Type=new \ArrayObject([], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
+		$Type[$Type->address=5]='address';
+		$Type[$Type->name=6]='name';
+		$this->assertEquals(5,$Type->address);
+		$this->assertEquals(6,$Type->name);
+	}
+
+	/**
+	* @method call
+	*/
 	public function call():Start{
 		return $this;
 	}
-	public function getNames():string{
+
+	/**
+	* @getter names
+	*/
+	public function getNames1():string{
 		return $this->_names;
 	}
-	public function setNames(string $val){
+
+	/**
+	* @setter names
+	*/
+	public function setNames1(string $val){
 		$this->_names = $val;
 	}
+
+	/**
+	* @property _names
+	*/
 	private $_names = 'test';
+
+	/**
+	* @method getNames
+	* the is getNames method
+	*/
+	public function getNames(){
+	
+	}
+
+	/**
+	* @method setNames
+	*/
+	public function setNames(){
+	
+	}
+
+	public function __get( $name ){
+		switch($name){
+			case 'names' : return $this->getNames1();
+		}
+	}
+
+	public function __set( $name, $value ){
+		switch($name){
+			case 'names' : $this->setNames1( $value ); break;
+		}
+	}
 }

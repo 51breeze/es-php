@@ -8,14 +8,16 @@ class CallExpression extends Syntax{
             const property = this.stack.callee.property.value();
             const type = this.compiler.callUtils("getOriginType",this.stack.callee.object.type());
             if( type && this.compiler.callUtils("isTypeModule",type) ){
-                const name = type.id.toString();
-                const polyModule = Polyfill.modules.get(name);
-                if( polyModule && polyModule.method ){
-                    const result = polyModule.method(this, this.stack.callee.object, property, args, desc, this.compiler.callUtils("isTypeModule",desc) );
-                    if( result ){
-                        return result;
+                const typeName = type.id.toString();
+                for(var name of [typeName,'Object']){
+                    let polyModule = Polyfill.modules.get(name);
+                    if( polyModule && polyModule.method ){
+                        const result = polyModule.method(this, this.stack.callee.object, property, args, desc, this.compiler.callUtils("isTypeModule",desc) );
+                        if( result ){
+                            return result;
+                        }
                     }
-                }
+                };
             }
         }
         return null;

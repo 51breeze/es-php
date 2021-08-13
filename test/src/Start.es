@@ -1,6 +1,7 @@
 package;
 
 import PHPUnit.Framework.TestCase;
+import Types;
 
 public class Start extends TestCase
 {
@@ -226,6 +227,19 @@ public class Start extends TestCase
     }
 
 
+    testEnum(){
+        this.assertEquals(0, Types.ADDRESS );
+        this.assertEquals(1, Types.NAME );
+
+        enum Type {
+            address=5,
+            name
+        };
+        this.assertEquals(5, Type.address );
+        this.assertEquals(6, Type.name );
+      
+    }
+
     call(){
         return this;
     }
@@ -238,6 +252,18 @@ public class Start extends TestCase
     
     set names( val:string){
         this._names = val;
+    }
+
+
+    /**
+    * the is getNames method
+    */
+    getNames(){
+
+    }
+
+    setNames(){
+
     }
 
 }

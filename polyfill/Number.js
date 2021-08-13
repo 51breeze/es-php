@@ -62,7 +62,7 @@ module.exports={
                     target.addDepend("Number");
                     return this.getMethodName( this.getName(`es_number_to_fixed`) );
                 }
-                return `floatval(number_format(${[object].concat(args,'.','').join(",")}))`
+                return `floatval(number_format(${[object].concat(args,"'.'","''").join(",")}))`
             case "toExponential" :
                 if( getter ){
                     target.addDepend("Number");
