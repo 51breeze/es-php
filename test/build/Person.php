@@ -69,7 +69,7 @@ class Person extends TestCase implements TestInterface{
 	/**
 	* @method avg
 	*/
-	public function avg(){
+	public function avg($a){
 	
 	}
 

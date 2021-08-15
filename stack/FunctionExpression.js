@@ -25,7 +25,7 @@ class FunctionExpression extends Syntax{
                     typeName = t+' ';
                 }
             }
-            if( originType.id === "Array" ){
+            if( !item.isRestElement && originType.id === "Array" ){
                 const desc = item.description();
                 const has = item.isAssignmentPattern ? desc.assignItems.size > 1 : desc.assignItems.size > 0;
                 if( has ){

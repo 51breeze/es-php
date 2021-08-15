@@ -228,6 +228,17 @@ final class Reflect{
                        
                     }
                     return null;
+                },
+                "number"=>function (&$target, &$name, $args=null){
+                    $callback = function($val){return $val;};
+                    switch ( $name ){
+                        case "toFixed" :
+                            return ['es\core\es_number_to_fixed', [$target, $args[0]]];
+                        case "toExponential" :
+                            return ['es\core\es_number_to_exponential', [$target, $args[0]]];
+                       
+                    }
+                    return null;
                 }
             ];
         }
@@ -349,13 +360,17 @@ final class Reflect{
                 $type_name = 'math';
             }
         }
+        if($type_name ==="integer" || $type_name ==="double"){
+            $type_name = 'number';
+        }
         switch ($type_name) {
             case 'string' :
             case 'array' :
             case 'math' :
+            case 'number' :
                 $object = self::method( $type_name );
                 if( $object ){
-                    $method_array = $object($target,$name, []);
+                    $method_array = $object($target, $name, $args);
                     if( $method_array ){
                         list($method,$args,$type) = $method_array;
                         if( $type !== 2 ){
@@ -406,6 +421,9 @@ final class Reflect{
             }else if( $target ==='Math' ){
                 $type_name = 'math';
             }
+        }
+        if($type_name ==="integer" || $type_name ==="double"){
+            $type_name = 'number';
         }
         switch ($type_name) {
             case 'string' :

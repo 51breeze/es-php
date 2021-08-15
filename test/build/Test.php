@@ -1,6 +1,6 @@
 <?php
-require_once('Types.php');
 require_once('es/core/System.php');
+require_once('Types.php');
 require_once('es/core/Reflect.php');
 require_once('es/core/RegExp.php');
 require_once('com/TestInterface.php');
@@ -139,24 +139,6 @@ class Test extends Person{
 	}
 
 	/**
-	* @method testLabel
-	*/
-	public function testLabel(){
-		$num = 0;
-		$i = 0;
-		start:for(;$i < 5;$i++){
-			for($j = 0;$j < 5;$j++){
-				if($i == 3 && $j == 3){
-					goto start;
-				}
-				$num++;
-			}
-		}
-		System::print('testLabel start',$num);
-		$this->assertEquals(18,$num);
-	}
-
-	/**
 	* @method testEnum
 	*/
 	public function testEnum(){
@@ -169,6 +151,80 @@ class Test extends Person{
 		$this->assertEquals(6,$Type->name);
 		$this->assertEquals(0,$b);
 		$this->assertEquals(1,Types::NAME);
+	}
+
+	/**
+	* @method testGenerics
+	*/
+	public function testGenerics(){
+		$ddee = $this->map();
+		$dd = $ddee;
+		$ccc = call_user_func($ddee->name,(object)['name'=>1,'age'=>1],"123");
+		$cccww = call_user_func($dd->name,(object)['name'=>1,'age'=>30],666);
+		$types = '333';
+		$_c2=(object)[];
+		$_c2->name=123;
+		$_c2->$types=1;
+		$bds = $_c2;
+		$this->assertEquals(123,$bds->name);
+		$this->assertEquals(1,Reflect::get('Test',$bds,$types));
+		Reflect::set('Test',$bds,$types,99);
+		$this->assertEquals('string',System::typeof($this->avg("test")));
+		$this->assertEquals("1.00",floatval(number_format($ccc->name,2,'.','')));
+		$this->assertEquals(30,$cccww->age);
+		$this->assertEquals(99,Reflect::get('Test',$bds,$types));
+		$obj = $this->getTestObject(true);
+		$bs = $obj->getNamess(1);
+		$this->assertEquals("1.00",Reflect::call('Test',$bs,'toFixed',[2]));
+		$bsstring = $this->getTestGenerics("ssss",'age');
+		$this->assertEquals('age',$bsstring);
+		$obj = $this->getTestObject(true);
+		$sss = &$obj->getClassTestGenerics(1,1);
+		$this->assertEquals([1,1],$sss);
+	}
+
+	/**
+	* @method getClassTestGenerics
+	*/
+	private function getClassTestGenerics($name,$age=null):array{
+		$a = [$age,$name];
+		return $a;
+	}
+
+	/**
+	* @method getTestGenerics
+	*/
+	private function getTestGenerics($name,$age=null){
+		return $age;
+	}
+
+	/**
+	* @method getTestObject
+	*/
+	private function getTestObject(bool $flag=null){
+		$factor = function(){
+			$o = (object)[];
+			$o->test = new Test();
+			$o->name = "test";
+			return $o->test;
+		};
+		$o = $factor();
+		return $o;
+	}
+
+	/**
+	* @method getNamess
+	*/
+	public function getNamess($s){
+		return $s;
+	}
+
+	/**
+	* @method testTuple
+	*/
+	public function testTuple(){
+		$data = $this->method("end",9);
+		$this->assertEquals([['a','b'],[1],[1,1,'one'],['one',['one',1],'three','four',['end',9]]],$data);
 	}
 
 	/**
@@ -190,5 +246,91 @@ class Test extends Person{
 		}
 		$d = (object)['value'=>$this->currentIndex++,'done'=>false];
 		return $d;
+	}
+
+	/**
+	* @method restFun
+	*/
+	public function restFun(array ...$types):array{
+		return $types;
+	}
+
+	/**
+	* @method tetObject
+	*/
+	public function tetObject(){
+		$b = $t;
+		$ii = (object)['bb'=>$b];
+		return $ii->bb;
+	}
+
+	/**
+	* @getter iuuu
+	*/
+	public function getIuuu(){
+		$ii = $this->getPersonName();
+		if(6){
+			$ii = [];
+		}
+		$ii = true;
+		return $ii;
+	}
+
+	/**
+	* @method method
+	*/
+	public function method(string $name,int $age){
+		parent::method($name,$age);
+		$str = ["a","b"];
+		$b = ["one",["one",1]];
+		$cc = [1];
+		$x = [1,1,'one'];
+		array_push($b,'three');
+		array_push($b,'four');
+		$_V = [$name,$age];
+		array_push($b,$_V);
+		return [$str,$cc,$x,$b];
+	}
+
+	/**
+	* @getter personName
+	*/
+	public function getPersonName():string{
+		return parent::getPersonName();
+	}
+
+	/**
+	* @setter personName
+	*/
+	public function setPersonName(string $value){
+		parent::setPersonName($value);
+	}
+
+	/**
+	* @method avg
+	*/
+	public function avg($yy){
+		function name($i){
+			$b = $i;
+			$i->avg(1);
+			$i->method('',1);
+			return $b;
+		}
+		$person = new Person();
+		name($person);
+		name($person);
+		$dd = [1,1,"2222","66666","8888"];
+		array_push($dd,1);
+		return $yy;
+	}
+
+	/**
+	* @method map
+	*/
+	public function map(){
+		$ddss = (object)['name'=>function($c,$b){
+			return $c;
+		}];
+		return $ddss;
 	}
 }

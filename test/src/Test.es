@@ -160,23 +160,23 @@ public class Test<U,B=string> extends Person<string> {
         this.assertTrue( o["uuu"][bname] );
     }
 
-    testLabel(){
-        var num = 0;
-        var i=0;
-        start:for(;i<5;i++){
-                for (var j = 0;j<5;j++){
-                    if(i == 3 && j == 3){
-                        break start;
-                    }
-                    num++;
-                }
-        };
+    // testLabel(){
+    //     var num = 0;
+    //     var i=0;
+    //     start:for(;i<5;i++){
+    //             for (var j = 0;j<5;j++){
+    //                 if(i == 3 && j == 3){
+    //                     break start;
+    //                 }
+    //                 num++;
+    //             }
+    //     };
 
-         console.log( 'testLabel start',  num );
+    //      console.log( 'testLabel start',  num );
         
-        this.assertEquals( 18, num );
+    //     this.assertEquals( 18, num );
         
-    }
+    // }
 
     testEnum(){
         enum Type {
@@ -206,69 +206,69 @@ public class Test<U,B=string> extends Person<string> {
     //     }
     // }
 
-    // private testGenerics(){
+    testGenerics(){
 
-    //     const ddee = this.map();
-    //     const dd = ddee;
-    //     var ccc = ddee.name({name:1,age:1},"123");
-    //     var cccww = dd.name({name:1,age:30},666);
+        const ddee = this.map();
+        const dd = ddee;
+        var ccc = ddee.name({name:1,age:1},"123");
+        var cccww = dd.name({name:1,age:30},666);
 
-    //     var types = '333';
-    //     var bds={
-    //         name:123,
-    //         [types]:1
-    //     };
+        var types = '333';
+        var bds={
+            name:123,
+            [types]:1
+        };
 
-    //     this.assertEquals(123,  bds.name );
-    //     this.assertEquals(1,  bds[ types ] );
+        this.assertEquals(123,  bds.name );
+        this.assertEquals(1,  bds[ types ] );
 
-    //     bds[ types ] = 99;
-    //     this.assertEquals('string',  typeof this.avg("test") )
-    //     this.assertEquals("1.00",  ccc.name.toFixed(2) )
-    //     this.assertEquals(30,  cccww.age );
-    //     this.assertEquals(99,  bds[ types ] );
+        bds[ types ] = 99;
+        this.assertEquals('string',  typeof this.avg("test") )
+        this.assertEquals("1.00",  ccc.name.toFixed(2) )
+        this.assertEquals(30,  cccww.age );
+        this.assertEquals(99,  bds[ types ] );
 
-    //     let obj = this.getTestObject(true)
-    //     var bd:Test<int,string> = obj;
-    //     var bs = obj.getNamess(1);
-    //     this.assertEquals("1.00",  bs.toFixed(2) );
+        let obj = this.getTestObject(true)
+        var bd:Test<int,string> = obj;
+        var bs = obj.getNamess(1);
+        this.assertEquals("1.00",  bs.toFixed(2) );
 
-    //     var bsint = this.getTestGenerics('sssss');
-    //     var bsstring = this.getTestGenerics<string, string>("ssss", 'age');
-    //     var bdss:string | int = bsstring;
-    //     this.assertEquals( 'age', bdss )
+        var bsint = this.getTestGenerics('sssss');
+        var bsstring = this.getTestGenerics<string, string>("ssss", 'age');
+        var bdss:string | int = bsstring;
+        this.assertEquals( 'age', bsstring )
 
-    //     obj = this.getTestObject(true)
-    //     var sss:(int|string)[] = obj.getClassTestGenerics(1, 1)
-    //     this.assertEquals( [1,1], sss )
+        obj = this.getTestObject(true)
+        var sss:(int|string)[] = obj.getClassTestGenerics(1, 1)
+        this.assertEquals( [1,1], sss )
 
-    // }
+    }
 
 
-    //  private getClassTestGenerics<T1>( name:T1, age?:U ):(U | T1)[]{
-    //          var a = [age, name];
-    //         return a;
-    // }
+     private getClassTestGenerics<T1>( name:T1, age?:U ):(U | T1)[]{
+             var a = [age, name];
+            return a;
+    }
 
-    // private getTestGenerics<T,B2 extends string>( name:T, age?:B2 ):B2{
-    //          var t =  new Test();
-    //         return age;
-    // }
+    private getTestGenerics<T,B2 extends string>( name:T, age?:B2 ):B2{
+             var t =  new Test();
+            return age;
+    }
 
-    // private getTestObject( flag?:boolean ){
-    //     const factor=()=>{
-    //         const o = {};
-    //         o.test = new Test();
-    //         o.name = "test";
-    //         return o.test;
-    //     };
-    //     var o = factor();
-    //     return o;
-    // }
+    private getTestObject( flag?:boolean ){
+        const factor=()=>{
+            const o = {};
+            o.test = new Test();
+            o.name = "test";
+            return o.test;
+        };
+        var o = factor();
+        return o;
+    }
 
-    // public getNamess(s:U):U{
-    //     return s;
-    // }
+    public getNamess(s:U):U{
+        return s;
+    }
 
     // private testAwait(){
          
@@ -316,15 +316,15 @@ public class Test<U,B=string> extends Person<string> {
     //    }
     // }
 
-    // testTuple(){
-    //     const data = this.method("end",9);
-    //     this.assertEquals([
-    //         [ 'a', 'b' ],
-    //         [ 1 ],
-    //         [ 1, 1, 'one' ],
-    //         [ 'one', [ 'one', 1 ], 'three', 'four', [ 'end', 9 ] ]
-    //     ],data);
-    // }
+    testTuple(){
+        const data = this.method("end",9);
+        this.assertEquals([
+            [ 'a', 'b' ],
+            [ 1 ],
+            [ 1, 1, 'one' ],
+            [ 'one', [ 'one', 1 ], 'three', 'four', [ 'end', 9 ] ]
+        ],data);
+    }
 
     
 
@@ -343,27 +343,27 @@ public class Test<U,B=string> extends Person<string> {
 
     
 
-    // public restFun(...types:[int,...string]){
-    //     return types;
-    // }
+    public restFun(...types:[int,...string]){
+        return types;
+    }
 
-    // tetObject(){
-    //     var t = new Test();
-    //     var b = t;
-    //     var ii={
-    //         bb:b
-    //     };
-    //     return ii.bb;
-    // }
+    tetObject(){
+        var t = new Test();
+        var b = t;
+        var ii={
+            bb:b
+        };
+        return ii.bb;
+    }
 
-    // get iuuu(){
-    //     var ii:any = this.personName;
-    //     if( 6 ){
-    //         ii =[]
-    //     }
-    //     ii = true;
-    //     return ii;
-    // }
+    get iuuu(){
+        var ii:any = this.personName;
+        if( 6 ){
+            ii =[]
+        }
+        ii = true;
+        return ii;
+    }
 
     // get data(){
     //     var b:any = [];
@@ -427,76 +427,76 @@ public class Test<U,B=string> extends Person<string> {
     //     }
     // }
 
-    // @override
-    // public method( name:string, age:int):any
-    // {
-    //     super.method(name, age );
-    //     var str:string[] = ["a","b"];
-    //     var b:[string, [string,int] ] = ["one", ["one",1] ];
-    //     var cc:[number] = [1];
-    //     var x:[number,int,string] = [1,1,'one'];
-    //     b.push( 'three' )
-    //     b.push( 'four' )
-    //     b.push( [name,age] )
+    @override
+    public method( name:string, age:int):any
+    {
+        super.method(name, age );
+        var str:string[] = ["a","b"];
+        var b:[string, [string,int] ] = ["one", ["one",1] ];
+        var cc:[number] = [1];
+        var x:[number,int,string] = [1,1,'one'];
+        b.push( 'three' )
+        b.push( 'four' )
+        b.push( [name,age] )
 
 
-    //     //var bd:number = cc.pop();
-    //     //var tt:(number | int | string)[] = x.splice(0,5);
-    //     //str = tt;
-    //     return [str, cc, x, b];
-    // }
+        //var bd:number = cc.pop();
+        //var tt:(number | int | string)[] = x.splice(0,5);
+        //str = tt;
+        return [str, cc, x, b];
+    }
 
-    // @override
-    // public get personName():string{
-    //     return super.personName;
-    // }
+    @override
+    public get personName():string{
+        return super.personName;
+    }
 
-    // // @override
-    // public set personName( value:string ){
-    //     super.personName = value;
-    // }
+    @override
+    public set personName( value:string ){
+        super.personName = value;
+    }
 
-    // @override
-    // avg<T extends string, B>(yy:T, bbc?:B):T{
+    @override
+    avg<T extends string, B>(yy:T):T{
 
-    //     var ii = ()=>1;
-    //     var bb:[string] = ['1'];
+        var ii = ()=>1;
+        var bb:[string] = ['1'];
 
-    //     function name<T extends TestInterface>( i:T ):T{
-    //         var b:T = i;
-    //         i.avg();
-    //         i.method('',1);
-    //         return b;
-    //     }
+        function name<T extends TestInterface>( i:T ):T{
+            var b:T = i;
+            i.avg(1);
+            i.method('',1);
+            return b;
+        }
 
-    //     const person = new Person<number>();
+        const person = new Person<number>();
 
-    //     name<TestInterface>( person ); 
-    //     const bbb:TestInterface = name( person ); 
+         name<TestInterface>( person ); 
+         const bbb:TestInterface = name( person ); 
 
-    //     name<Person>( person ); 
+         name<Person>( person ); 
 
-    //     var dd:[int, uint, ...string ] = [1,1,"2222","66666","8888"];
+        var dd:[int, uint, ...string ] = [1,1,"2222","66666","8888"];
 
-    //     bb.push()
+        //bb.push()
 
-    //     //T[]   (int | string)[]
+        //T[]   (int | string)[]
 
-    //     dd.push(1)
+        dd.push(1)
 
-    //     return yy;
+        return yy;
 
-    // }
+    }
 
-    // map(){
-    //     const ddss={
-    //         name<T extends {name:int,age:int},B>(c:T, b:B ){
-    //             var id:B = b;
-    //             return c;
-    //         }
-    //     }
-    //     return ddss;
-    // }
+    map(){
+        const ddss={
+            name<T extends {name:int,age:int},B>(c:T, b:B ){
+                var id:B = b;
+                return c;
+            }
+        }
+        return ddss;
+    }
 
     // private address():int[]{
     //     const dd:int[] = [];
