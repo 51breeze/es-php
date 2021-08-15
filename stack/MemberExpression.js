@@ -23,7 +23,8 @@ class MemberExpression extends Syntax{
    emitter(){
       const module = this.module;
       const property = this.stack.property.isIdentifier && !this.stack.computed ? this.stack.property.value() : this.make(this.stack.property);
-      const result = this.intercept(this.stack.object.description(),this.stack.object,property);
+      const baseDescription = this.stack.object.description();
+      const result = this.intercept(baseDescription,this.stack.object,property);
       if( result ){
           return result;
       }
@@ -48,8 +49,20 @@ class MemberExpression extends Syntax{
       if( description && description.isModule && this.compiler.callUtils("isTypeModule",description) ){
          this.addDepend( description );
          return this.getReferenceNameByModule( description );
-      }else if( this.compiler.callUtils("isTypeModule",this.stack.object.description()) ){
+      }else if( this.compiler.callUtils("isTypeModule",baseDescription) ){
          this.addDepend( this.stack.object.description() );
+         sep = "::";
+      }else if( this.stack.object.type().isClassType ){
+         const classType = this.stack.object.type();
+         if( classType.isClassGenericType ){
+            (classType.types||[]).forEach( item=>{
+               const type = item.type();
+               const items = type.isUnionType ||  type.isTupleType ? item.elements : [type];
+               items.forEach( type=>{
+                  this.addDepend( type );
+               });
+            });
+         }
          sep = "::";
       }
 

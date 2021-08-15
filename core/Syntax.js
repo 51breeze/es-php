@@ -193,28 +193,33 @@ class Syntax extends events.EventEmitter {
                     return 'array';
             }
             type = this.compiler.callUtils("getOriginType", type);
-            if( this.isDependModule( type ) ){
+            if( this.isDependModule( type, true ) ){
                 return type.id;
             }
         }
         return null;
     }
 
-    getReferenceNameByModule(module){
-        if( this.module ){
-            const imports = this.module.imports;
-            if( imports && imports.has( module.id ) ){
-                return module.id;
+    getReferenceNameByModule(module, flag=false){
+        if( !flag ){
+            if( this.module ){
+                const imports = this.module.imports;
+                if( imports && imports.has( module.id ) ){
+                    return module.id;
+                }
+                if( this.module.importAlias && this.module.importAlias.has(module) ){
+                    return this.module.importAlias.get(module);
+                }
             }
-            if( this.module.importAlias && this.module.importAlias.has(module) ){
-                return this.module.importAlias.get(module);
+            if( module === this.module ){
+                return module.id;
             }
         }
         return '\\'+module.namespace.getChain().concat(module.id).join("\\");
     }
 
-    getClassStringName( module ){
-        const name = this.getReferenceNameByModule(module);
+    getClassStringName( module, flag=false ){
+        const name = this.getReferenceNameByModule(module, flag);
         return `'${name}'`;
     }
 

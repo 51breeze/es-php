@@ -97,6 +97,9 @@ function es_object_to_string($target){
             return 'function {[local code]}';
         }
     }else if( is_object($target) ){
+        if( is_object($target) && method_exists($target,'toString') ){
+            return $target->toString();
+        }
         return sprintf('[object %s]', get_class($target));
     }else if( is_array($target) ){
         return implode(', ', $target);

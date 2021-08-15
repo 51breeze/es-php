@@ -459,7 +459,7 @@ final class Reflect{
                 return $target[ $name ]=$value;
             case 'object' :
                 if( $target instanceof \stdClass){
-                    return $target[ $name ]=$value;    
+                    return $target->$name=$value;
                 }
         }
 

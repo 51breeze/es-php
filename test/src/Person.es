@@ -1,7 +1,8 @@
 package;
 
+import PHPUnit.Framework.TestCase;
 import com.TestInterface;
-public class Person<T> extends Object implements TestInterface
+public class Person<T> extends TestCase implements TestInterface
 {
 
     public var addressName:string = `the Person properyt "addressName"`;
@@ -10,9 +11,8 @@ public class Person<T> extends Object implements TestInterface
 
     private var _type:T = null;
 
-    constructor( name:string ){
+    constructor(){
         super();
-        this._name = name;
     }
 
     get target(){
@@ -44,11 +44,11 @@ public class Person<T> extends Object implements TestInterface
     }
 
 
-    public get name():string{
+    public get personName():string{
         return this._name;
     }
 
-    public set name(val:string){
+    public set personName(val:string){
         this._name = val;
     }
 

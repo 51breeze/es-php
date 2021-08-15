@@ -1,42 +1,35 @@
 <?php
-require_once('Start.php');
-require_once('es/core/Promise.php');
-require_once('es/core/System.php');
 require_once('Types.php');
-require_once('es/core/Array.php');
-require_once('es/core/RegExp.php');
+require_once('es/core/System.php');
 require_once('es/core/Reflect.php');
+require_once('es/core/RegExp.php');
 require_once('com/TestInterface.php');
 require_once('Person.php');
 use \com\TestInterface;
-use \es\core\Reflect;
 use \es\core\RegExp;
+use \es\core\Reflect;
 use \es\core\System;
-use \es\core\Promise;
-class Test extends Person implements \Iterator{
+class Test extends Person{
 
 	/**
 	* @constructor Test
 	* a constructor method
 	*/
-	public function __construct(string $name,$age=null){
-		parent::__construct($name);
-		parent::setType('1');
-		$this->getTarget();
-		new Start();
+	public function __construct(){
+		parent::__construct();
 	}
 
 	/**
 	* @method getClass
 	* 返回一个类的引用
 	*/
-	static public function getClass():Object{
-		$a = Test;
+	static public function getClass(){
+		$a = '\Test';
 		$buname = (object)['a'=>1];
 		$buname->test = $a;
-		$buname->person = Person;
+		$buname->person = '\Person';
 		$test=$buname->test;
-		$test->getClassObject();
+		$test::getClassObject();
 		return $buname;
 	}
 
@@ -44,9 +37,9 @@ class Test extends Person implements \Iterator{
 	* @method getClassObject
 	*/
 	static public function getClassObject(){
-		$a = Test;
+		$a = '\Test';
 		$b = (object)['test'=>$a];
-		$b->person = Person;
+		$b->person = '\Person';
 		return $b->test;
 	}
 
@@ -54,7 +47,7 @@ class Test extends Person implements \Iterator{
 	* @method getObject
 	*/
 	static public function getObject(){
-		return new Test('1','2');
+		return new Test();
 	}
 
 	/**
@@ -71,7 +64,7 @@ class Test extends Person implements \Iterator{
 	* @private
 	* the is class type.
 	*/
-	static private $iiu = Test;
+	static private $iiu = '\Test';
 
 	/**
 	* @property bbss
@@ -87,110 +80,49 @@ class Test extends Person implements \Iterator{
 	private $age = 40;
 
 	/**
-	* @method start
+	* @method testBase
 	*/
-	public function start(){
-		it('static get uuName accessor',function(){
-			expect(Test::getClassObject()->getUuName())->toBe("uuName");
-		});
-		it('\'this.age\' should is true',function(){
-			expect($this->age)->toBe(40);
-		});
-		it('\'this instanceof Person\' should is true',function(){
-			expect($this instanceof Person)->toBeTrue();
-		});
-		it('"this is Person" should is true',function(){
-			expect(is_a($this,'Person'))->toBeTrue();
-		});
-		it('\'this instanceof TestInterface\' should is false',function(){
-			expect($this instanceof TestInterface)->toBeFalse();
-		});
-		it('\'this is TestInterface\' should is true',function(){
-			expect(is_a($this,'TestInterface'))->toBeFalse();
-		});
-		it('\'Test.getClass().test\' should is Test',function(){
-			expect(Test::getClass()->test)->toBe(Test);
-		});
-		it('\'Test.getClass().person\' should is Person',function(){
-			expect(Test::getClass()->person)->toBe(Person);
-		});
-		it('\'new (Test.getClass().person)(\'\')\' should is true',function(){
-			$_refClass = Test::getClass()->person;
-			$o = new $_refClass('name');
-			expect($o instanceof Person)->toBeTrue();
-		});
-		it('\'this.bbss="666666"\' should is \'666666\' ',function(){
-			expect($this->bbss)->toBe('bbss');
-			$this->bbss = "666666";
-			expect($this->bbss)->toBe('666666');
-		});
-		it('test name accessor ',function(){
-			expect($this->getName())->toBe('Test');
-			$this->setName("test name");
-			expect($this->getName())->toBe('test name');
-		});
-		it('\'var bsp = ()=>{}\' should is \'()=>this\' ',function(){
-			$bsp = function(){
+	public function testBase(){
+		$this->assertEquals("uuName",Test::getClassObject()::getUuName());
+		$this->assertEquals(40,$this->age);
+		$this->assertTrue($this instanceof \Person);
+		$this->assertTrue(is_a($this,'\Person'));
+		$this->assertTrue($this instanceof \com\TestInterface);
+		$this->assertTrue(is_a($this,'\com\TestInterface'));
+		$this->assertEquals('\Test',Test::getClass()->test);
+		$this->assertEquals('\Person',Test::getClass()->person);
+		$_refClass = Test::getClass()->person;
+		$o = new $_refClass();
+		$this->assertTrue($o instanceof \Person);
+		$this->assertEquals('bbss',$this->bbss);
+		$this->bbss = "666666";
+		$this->assertEquals('666666',$this->bbss);
+		$this->setPersonName("test name");
+		$this->assertEquals('test name',$this->getPersonName());
+		$bsp = function($flag=null){
+			return $this;
+		};
+		$this->assertEquals($this,$bsp(1));
+		$obj = (object)[];
+		$bsp = function($flag=null)use(&$obj){
+			if($flag){
+				return $obj;
+			}else{
 				return $this;
-			};
-			expect($bsp())->toBe($this);
-		});
-		it('once.two.three should is this or object ',function(){
-			$bsp = function(){
-				return $this;
-			};
-			$obj = (object)[];
-			$bsp = function($flag)use(&$obj){
-				if($flag){
-					return $obj;
-				}else{
-					return $this;
-				}
-			};
-			$obds = 1;
-			$three = $bsp(false);
-			$once = (object)['two'=>(object)['three'=>$three,'four'=>$bsp]];
-			expect(Reflect::get('\Test',$once->two,'three'))->toBe($this);
-			expect($once->two->four(true))->toBe($obj);
-			Reflect::get('\Test',$once,$obds);
-		});
-		it('/d+/.test( "123" ) should is true ',function(){
-			expect((new RegExp('\d+'))->test("123"))->toBe(true);
-			expect((new RegExp('^\d+'))->test(" 123"))->toBe(false);
-			expect((new RegExp('^\d+'))->exec("123"))->toBe(false);
-		});
-		it("test rest params",function(){
-			$res = &$this->restFun(1,"s","test");
-			expect($res)->toEqual([1,"s","test"]);
-		});
-		$this->testEnumerableProperty();
-		$this->testComputeProperty();
-		$this->testLabel();
-		$this->testEnum();
-		$this->testIterator();
-		$this->testGenerics();
-		$this->testAwait();
-		$this->testTuple();
-		$this->next();
-	}
-
-	/**
-	* @method testEnumerableProperty
-	*/
-	private function testEnumerableProperty(){
-		it('for( var name in this) should is this or object ',function(){
-			$labels = ["name","data","target","addressName","iuuu"];
-			foreach($this as $key=>$_item){
-				expect($key)->toBe(Reflect::get('\Test',$labels,\es\core\es_array_search_index($labels,$key)));
-				expect(Reflect::get('\Test',$this,$key))->toBe(Reflect::get('\Test',$this,$key));
 			}
-		});
+		};
+		$three = $bsp(false);
+		$once = (object)['two'=>(object)['three'=>$three,'four'=>$bsp]];
+		$this->assertEquals($this,$once->two->three);
+		$this->assertTrue((new RegExp('\d+'))->test("123"));
+		$this->assertFalse((new RegExp('^\d+'))->test(" 123"));
+		$this->assertTrue(!!(new RegExp('^\d+'))->exec("123"));
 	}
 
 	/**
 	* @method testComputeProperty
 	*/
-	private function testComputeProperty(){
+	public function testComputeProperty(){
 		$bname = "123";
 		$_c1=(object)[];
 		$_c1->$bname=3;
@@ -199,21 +131,20 @@ class Test extends Person implements \Iterator{
 		$_c->sssss=2;
 		$_c->uuu=$_c1;
 		$o = $_c;
-		it('compute property should is true ',function()use(&$bname, &$o){
-			expect(Reflect::get('\Test',$o,$bname))->toBe(1);
-			expect(Reflect::get('\Test',$o->uuu,$bname))->toBe(3);
-			expect(Reflect::get('\Test',$o->uuu,"123"))->toBe(3);
-			Reflect::set('\Test',Reflect::get('\Test',$o,"uuu"),$bname,true);
-			expect(Reflect::get('\Test',Reflect::get('\Test',$o,"uuu"),$bname))->toBe(true);
-		});
+		$this->assertEquals(1,Reflect::get('Test',$o,$bname));
+		$this->assertEquals(3,Reflect::get('Test',$o->uuu,$bname));
+		$this->assertEquals(3,Reflect::get('Test',$o->uuu,"123"));
+		Reflect::set('Test',Reflect::get('Test',$o,"uuu"),$bname,true);
+		$this->assertTrue(Reflect::get('Test',Reflect::get('Test',$o,"uuu"),$bname));
 	}
 
 	/**
 	* @method testLabel
 	*/
-	private function testLabel(){
+	public function testLabel(){
 		$num = 0;
-		start:for($i = 0;$i < 5;$i++){
+		$i = 0;
+		start:for(;$i < 5;$i++){
 			for($j = 0;$j < 5;$j++){
 				if($i == 3 && $j == 3){
 					goto start;
@@ -221,165 +152,23 @@ class Test extends Person implements \Iterator{
 				$num++;
 			}
 		}
-		it('label for should is loop 18',function()use(&$num){
-			expect($num)->toBe(18);
-		});
+		System::print('testLabel start',$num);
+		$this->assertEquals(18,$num);
 	}
 
 	/**
 	* @method testEnum
 	*/
-	private function testEnum(){
+	public function testEnum(){
 		$Type=new \ArrayObject([], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
 		$Type[$Type->address=5]='address';
 		$Type[$Type->name=6]='name';
 		$t = $Type->address;
 		$b = Types::ADDRESS;
-		it('Type local enum should is true',function()use(&$t, &$Type){
-			expect($t)->toBe(5);
-			expect($Type->name)->toBe(6);
-		});
-		it('Type local enum should is true',function()use(&$b){
-			expect($b)->toBe(0);
-			expect(Types::NAME)->toBe(1);
-		});
-	}
-
-	/**
-	* @method testIterator
-	*/
-	private function testIterator(){
-		$array = [];
-		foreach($this as $val){
-			array_push($array,$val);
-		}
-		it('impls iterator should is [0,1,2,3,4]',function()use(&$array){
-			expect(5)->toBe(count($array));
-			for($i = 0;$i < 5;$i++){
-				expect($i)->toBe(Reflect::get('\Test',$array,$i));
-			}
-		});
-	}
-
-	/**
-	* @method testGenerics
-	*/
-	private function testGenerics(){
-		$ddee = $this->map();
-		$dd = $ddee;
-		$ccc = $ddee->name((object)['name'=>1,'age'=>1],"123");
-		$cccww = $dd->name((object)['name'=>1,'age'=>30],666);
-		$types = '333';
-		$_c2=(object)[];
-		$_c2->name=123;
-		$_c2->$types=1;
-		$bds = $_c2;
-		Reflect::set('\Test',$bds,$types,99);
-		it('Generics should is true',function()use(&$ccc, &$cccww){
-			expect(System::typeof($this->avg("test")))->toBe('string');
-			expect(floatval(number_format($ccc->name,2,'.','')))->toBe("1.00");
-			expect($cccww->age)->toBe(30);
-		});
-		it('class Generics',function(){
-			$obj = $this->getTestObject(true);
-			$bs = $obj->getNamess(1);
-			expect(floatval(number_format($bs,2,'.','')))->toBe("1.00");
-		});
-		$obj = $this->getTestObject(true);
-	}
-
-	/**
-	* @method getClassTestGenerics
-	*/
-	private function getClassTestGenerics($name,$age=null):array{
-		$a = [$age,$name];
-		return $a;
-	}
-
-	/**
-	* @method getTestGenerics
-	*/
-	private function getTestGenerics($name,$age=null){
-		return $age;
-	}
-
-	/**
-	* @method getTestObject
-	*/
-	private function getTestObject(bool $flag=null){
-		$factor = function(){
-			$o = (object)[];
-			$o->test = new Test('name',1);
-			$o->name = "test";
-			return $o->test;
-		};
-		$o = $factor();
-		return $o;
-	}
-
-	/**
-	* @method getNamess
-	*/
-	public function getNamess($s){
-		return $s;
-	}
-
-	/**
-	* @method testAwait
-	*/
-	private function testAwait(){
-		it('test Await',function($done){
-			$res = $this->loadRemoteData(1);
-			$res->then(function(&$data)use(&$done){
-				expect(Reflect::get('\Test',$data,0))->toEqual(['one',1]);
-				expect(Reflect::get('\Test',$data,1))->toEqual((object)['bss'=>['two',2],'cc'=>['three',3]]);
-				expect(Reflect::get('\Test',$data,2))->toEqual(['three',3]);
-				$done();
-			});
-		});
-		it('test for Await',function($done){
-			$res = $this->loadRemoteData(2);
-			$res->then(function(&$data)use(&$done){
-				expect(Reflect::get('\Test',$data,0))->toEqual(['0',0]);
-				expect(Reflect::get('\Test',$data,1))->toEqual(['1',1]);
-				expect(Reflect::get('\Test',$data,2))->toEqual(['2',2]);
-				expect(Reflect::get('\Test',$data,3))->toEqual(['3',3]);
-				expect(Reflect::get('\Test',$data,4))->toEqual(['4',4]);
-				$done();
-			});
-		});
-		it('test switch Await',function($done){
-			$res = $this->loadRemoteData(3);
-			$res->then(function(&$data)use(&$done){
-				expect($data)->toEqual(['four',4]);
-				$done();
-			});
-		});
-		it('test switch and for Await',function($done){
-			$res = $this->loadRemoteData(4);
-			$res->then(function(&$data)use(&$done){
-				expect($data)->toEqual([['five',5],['0',0],['1',1],['2',2],['3',3],['4',4]]);
-				$done();
-			});
-		});
-		Reflect::get('\Test',$this->getJson(),'name');
-	}
-
-	/**
-	* @method getJson
-	*/
-	public function getJson(){
-		return (object)['name'=>123];
-	}
-
-	/**
-	* @method testTuple
-	*/
-	public function testTuple(){
-		$data = $this->method("end",9);
-		it('test tuple',function()use(&$data){
-			expect($data)->toEqual([['a','b'],[1],[1,1,'one'],['one',['one',1],'three','four',['end',9]]]);
-		});
+		$this->assertEquals(5,$t);
+		$this->assertEquals(6,$Type->name);
+		$this->assertEquals(0,$b);
+		$this->assertEquals(1,Types::NAME);
 	}
 
 	/**
@@ -395,230 +184,11 @@ class Test extends Person implements \Iterator{
 	/**
 	* @method next
 	*/
-	public function next():Object{
+	public function next(){
 		if(!($this->currentIndex < $this->len)){
 			return (object)['value'=>null,'done'=>true];
 		}
 		$d = (object)['value'=>$this->currentIndex++,'done'=>false];
 		return $d;
 	}
-
-	/**
-	* @method restFun
-	*/
-	public function restFun(array &...$types):array{
-		return $types;
-	}
-
-	/**
-	* @method tetObject
-	*/
-	public function tetObject(){
-		$b = $t;
-		$ii = (object)['bb'=>$b];
-		return $ii->bb;
-	}
-
-	/**
-	* @getter iuuu
-	*/
-	public function getIuuu(){
-		$ii = $this->getName();
-		if(6){
-			$ii = [];
-		}
-		$ii = true;
-		return $ii;
-	}
-
-	/**
-	* @getter data
-	*/
-	public function getData(){
-		$b = [];
-		if(4){
-			$b = Reflect::get('\Test',$this,'avg');
-		}
-		$b = Reflect::get('\Test',$this,'avg');
-		return $b;
-	}
-
-	/**
-	* @method fetchApi
-	*/
-	public function fetchApi(string $name,int $data,int $delay):Promise{
-		return new Promise(function($resolve,$reject)use(&$delay){
-			setTimeout(function()use(&$name, &$data, &$resolve){
-				$_V = [$name,$data];
-				$resolve($_V);
-			},$delay);
-		});
-	}
-
-	/**
-	* @method loadRemoteData2
-	*/
-	public function loadRemoteData2():Promise{
-		return $this->fetchApi("one",1,800);
-	}
-
-	/**
-	* @method loadRemoteData
-	*/
-	public function loadRemoteData($type){
-		if($type === 1){
-			$a = $this->fetchApi("one",1,800);
-			$bs = (object)['bss'=>$this->fetchApi("two",2,500)];
-			$c = $this->fetchApi("three",3,900);
-			$bs->cc = $c;
-			return [$a,$bs,$c];
-		}else{
-			$list = [];
-			switch($type){
-				case 3 :
-					$b = $this->fetchApi("four",4,300);
-					return $b;
-				case 4 :
-					$bb = $this->fetchApi("five",5,1200);
-					array_push($list,$bb);
-			}
-			for($i = 0;$i < 5;$i++){
-				array_push($list,$this->fetchApi($i . '',$i,100));
-			}
-			array_values($list);
-			return $list;
-		}
-	}
-
-	/**
-	* @method method
-	*/
-	public function method(string $name,int $age){
-		parent::method($name,$age);
-		$str = ["a","b"];
-		$b = ["one",["one",1]];
-		$cc = [1];
-		$x = [1,1,'one'];
-		array_push($b,'three');
-		array_push($b,'four');
-		$_V1 = [$name,$age];
-		array_push($b,$_V1);
-		return [$str,$cc,$x,$b];
-	}
-
-	/**
-	* @getter name
-	*/
-	public function getName():string{
-		return parent::getName();
-	}
-
-	/**
-	* @setter name
-	*/
-	public function setName(string $value){
-		parent::setName($value);
-	}
-
-	/**
-	* @method avg
-	*/
-	public function avg($yy,$bbc=null){
-		$bb = ['1'];
-		function name($i){
-			$b = $i;
-			$i->avg();
-			$i->method('',1);
-			return $b;
-		}
-		$person = new Person('');
-		name($person);
-		name($person);
-		$dd = [1,1,"2222","66666","8888"];
-		array_push($bb,);
-		array_push($dd,1);
-		return $yy;
-	}
-
-	/**
-	* @method map
-	*/
-	public function map():Object{
-		$ddss = (object)['name'=>function($c,$b){
-			return $c;
-		}];
-		return $ddss;
-	}
-
-	/**
-	* @method address
-	*/
-	private function address():array{
-		$dd = [];
-		$bb = (object)['global'=>1,'private'=>1,'items'=>[]];
-		array_push($dd,1);
-		System::print(\es\core\es_array_filter($dd,function($value,$key,&$array){
-			return true;
-		},$this),(new RegExp('==='))->match("============"));
-		$bds = es_array_new($bb->global);
-		count($bds);
-		System::toArray($dd);
-		$_ARV = 0;
-		$items = $_RD = &$bb->items;
-		if($bb->global === 1){
-			$_ARV = 1;
-			$items = $_RD1 = &$dd;
-		}
-		/*References $items memory address*/
-		$_REF = function &()use(&$items,&$_ARV,&$_RD,&$_RD1){
-			if($_ARV===null)return $items;
-			switch($_ARV){
-				case 0 : return $_RD;
-				case 1 : return $_RD1;
-				default: return $items;
-			}
-		};
-		array_push($_REF(),0);
-		$_V2 = array_push($_REF(),1,9,6);
-		$_ARV = 2;
-		System::print($_V2,$items = [],array_push($_REF(),9999));
-		System::print(array_pop($_REF(),));
-		System::print(array_splice($_REF(),0,5,''));
-		System::print(array_shift($_REF(),));
-		System::print(array_unshift($_REF(),0,5,''));
-		System::typeof($dd);
-		array_push($this->getArrItems(),999);
-		$da = $_RD2 = &$this->getArrItems();
-		array_push($_RD2,9999666);
-		$da = ["hhhhhhhhhh"];
-		System::print($da);
-		System::print(array_pop($da,));
-		$ui = ("==" . 'da' . 'bs') . "=========";
-		$n = 8 + 6;
-		System::print($ui,$n);
-		return $dd;
-	}
-
-	/**
-	* @method getArrItems
-	*/
-	private function &getArrItems():array{
-		$_ARV1 = 0;
-		$b = $_RD3 = &$this->items;
-		if($b){
-			$_ARV1 = 1;
-			$b = $_RD3 = &$this->items;
-		}
-		$_ARV1 = 2;
-		$b = [];
-		return $b;
-	}
-
-	/**
-	* @property items
-	*/
-	private $items = [];
 }
-/*externals code*/;
-$test = new Test('Test');
-$test->start();

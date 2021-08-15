@@ -1,10 +1,10 @@
 const Syntax = require("../core/Syntax");
 class ForStatement extends Syntax{
     emitter(){
-        const condition = this.make(this.stack.condition);
-        const update = this.make(this.stack.update);
+        const condition = this.stack.condition ? this.make(this.stack.condition) : '';
+        const update = this.stack.update ? this.make(this.stack.update) : '';
         const indent = this.getIndent();
-        const init = this.make(this.stack.init);
+        const init = this.stack.init ? this.make(this.stack.init) : '';
         const body = this.stack.body && this.make(this.stack.body);
         if( !this.stack.body ){
             return this.semicolon(`${indent}for(${init};${condition};${update})`);

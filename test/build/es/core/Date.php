@@ -6,9 +6,7 @@
  * @author Jun Ye <664371281@qq.com>
  * @require System,ReferenceError,TypeError
  */
-////[namespace]
-////[require]
-////[reference]
+namespace es\core;
 
 class Date{
     private $dateString=null;

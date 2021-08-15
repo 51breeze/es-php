@@ -1,14 +1,14 @@
 <?php
 require_once('com/TestInterface.php');
 use \com\TestInterface;
-class Person implements TestInterface{
+use \PHPUnit\Framework\TestCase;
+class Person extends TestCase implements TestInterface{
 
 	/**
 	* @constructor Person
 	*/
-	public function __construct(string $name){
+	public function __construct(){
 		parent::__construct();
-		$this->_name = $name;
 	}
 
 	/**
@@ -53,16 +53,16 @@ class Person implements TestInterface{
 	}
 
 	/**
-	* @getter name
+	* @getter personName
 	*/
-	public function getName():string{
+	public function getPersonName():string{
 		return $this->_name;
 	}
 
 	/**
-	* @setter name
+	* @setter personName
 	*/
-	public function setName(string $val){
+	public function setPersonName(string $val){
 		$this->_name = $val;
 	}
 

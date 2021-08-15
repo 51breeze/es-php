@@ -16,6 +16,13 @@ class Identifier extends Syntax{
               this.addVariableRefs( desc );
               return `\$${this.stack.value()}`;
           }
+          if( desc.isModule && !(this.stack.parentStack.isNewExpression || this.stack.parentStack.isMemberExpression) && this.compiler.callUtils("isTypeModule",desc) ){
+               this.addDepend( desc );
+               if( this.stack.parentStack.isBinaryExpression ){
+                    return this.getReferenceNameByModule(desc, true);
+               }
+               return this.getClassStringName( desc, true);
+          }
           return this.stack.value();
      }
 }

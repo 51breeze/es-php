@@ -1,9 +1,9 @@
 package;
 
-import PHPUnit.Framework.TestCase;
 import Types;
+import Base;
 
-public class Start extends TestCase
+public class Start extends Base
 {
     private var items = [];
     private var list  = [];
@@ -238,6 +238,19 @@ public class Start extends TestCase
         this.assertEquals(5, Type.address );
         this.assertEquals(6, Type.name );
       
+    }
+
+    testNewObject(){
+        var date = new Date('2021/8/14 14:59:59');
+        this.assertEquals(2021, date.getFullYear());
+        this.assertEquals(7, date.getMonth());
+        this.assertEquals(14, date.getDate());
+        this.assertEquals(6, date.getDay());
+        this.assertEquals(14, date.getHours());
+        this.assertEquals(59, date.getMinutes());
+        this.assertEquals(59, date.getSeconds());
+        this.assertEquals(1628924399000,  date.getTime() );
+        this.assertEquals("Sat Aug 14 2021 14:59:59 PRC+0800", date.toString() );
     }
 
     call(){

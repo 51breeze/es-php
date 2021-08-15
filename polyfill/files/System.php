@@ -36,6 +36,9 @@ final class System
                     return 'function {[local code]}';
                 }
             }
+            if( is_object($item) && method_exists($item,'toString') ){
+                return $item->toString();
+            }
             return json_encode( $item, JSON_UNESCAPED_UNICODE);
         },$args);
         echo PHP_EOL,implode(" ", $items);

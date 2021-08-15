@@ -1,4 +1,5 @@
 <?php
+require_once('es/core/Date.php');
 require_once('Types.php');
 require_once('es/core/Number.php');
 require_once('es/core/Object.php');
@@ -7,11 +8,12 @@ require_once('es/core/String.php');
 require_once('es/core/Reflect.php');
 require_once('es/core/System.php');
 require_once('es/core/Array.php');
-use \PHPUnit\Framework\TestCase;
+require_once('Base.php');
 use \es\core\System;
 use \es\core\Reflect;
 use \es\core\RegExp;
-class Start extends TestCase{
+use \es\core\Date;
+class Start extends Base{
 
 	/**
 	* @constructor Start
@@ -296,6 +298,22 @@ class Start extends TestCase{
 		$Type[$Type->name=6]='name';
 		$this->assertEquals(5,$Type->address);
 		$this->assertEquals(6,$Type->name);
+	}
+
+	/**
+	* @method testNewObject
+	*/
+	public function testNewObject(){
+		$date = new Date('2021/8/14 14:59:59');
+		$this->assertEquals(2021,$date->getFullYear());
+		$this->assertEquals(7,$date->getMonth());
+		$this->assertEquals(14,$date->getDate());
+		$this->assertEquals(6,$date->getDay());
+		$this->assertEquals(14,$date->getHours());
+		$this->assertEquals(59,$date->getMinutes());
+		$this->assertEquals(59,$date->getSeconds());
+		$this->assertEquals(1628924399000,$date->getTime());
+		$this->assertEquals("Sat Aug 14 2021 14:59:59 PRC+0800",\es\core\es_object_to_string($date));
 	}
 
 	/**

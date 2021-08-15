@@ -13,7 +13,7 @@ import Start;
 /**
 * Test a class
 */
-public class Test<U,B=string> extends Person<string> implements Iterator{
+public class Test<U,B=string> extends Person<string> {
 
     /**
     *  返回一个类的引用
@@ -38,7 +38,7 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
     }
 
     static getObject(){
-        return new Test<string,number>('1','2')
+        return new Test()
     }
 
     /**
@@ -70,140 +70,81 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
     /**
     * a constructor method
     */
-    constructor( name:string, age?:U){
-        super(name);
-        super.setType('1');
-        this.target;
-
-        new Start();
+    constructor(){
+        super();
+        // super.setType('1');
+        // this.target;
+        // new Start();
     }
 
-    
+    testBase(){
+       
+        this.assertEquals("uuName",Test.getClassObject().uuName );
+        this.assertEquals(40,this.age );
+        this.assertTrue(this instanceof Person);
+        this.assertTrue(this is Person);
+        this.assertTrue(this instanceof TestInterface);
+        this.assertTrue(this is TestInterface);
+        this.assertEquals(Test, Test.getClass().test);
+        this.assertEquals(Person, Test.getClass().person);
 
-    start(){
-        it(`static get uuName accessor`, ()=>{
-        
-            expect( Test.getClassObject().uuName ).toBe( "uuName" );
-        })
+        const o = new (Test.getClass().person)();
+        this.assertTrue( o instanceof Person );
+        this.assertEquals('bbss', this.bbss);
 
-        it(`'this.age' should is true`, ()=>{
-            expect(this.age).toBe( 40 );
-        })
-
-        it(`'this instanceof Person' should is true`, ()=>{
-            expect(this instanceof Person).toBeTrue();
-        })
-
-        it(`"this is Person" should is true`, ()=>{
-            expect(this is Person).toBeTrue();
-        })
-
-        it(`'this instanceof TestInterface' should is false`, ()=>{
-            expect(this instanceof TestInterface).toBeFalse();
-        })
-
-        it(`'this is TestInterface' should is true`, ()=>{
-            expect(this is TestInterface).toBeFalse();
-        })
-
-        it(`'Test.getClass().test' should is Test`, ()=>{
-            expect( Test.getClass().test ).toBe( Test );
-        })
-
-        it(`'Test.getClass().person' should is Person`, ()=>{
-            expect( Test.getClass().person ).toBe( Person );
-        })
-
-        it(`'new (Test.getClass().person)(\'\')' should is true`, ()=>{
-            const o = new (Test.getClass().person)('name');
-            expect( o instanceof Person ).toBeTrue();
-        })
-
-        it(`'this.bbss="666666"' should is '666666' `, ()=>{
-            expect( this.bbss ).toBe( 'bbss' );
-            this.bbss = "666666";
-            expect( this.bbss ).toBe( '666666' );
-        })
-
-        it(`test name accessor `, ()=>{
-            expect( this.name ).toBe( 'Test' );
-            this.name = "test name";
-            expect( this.name ).toBe( 'test name' );
-        })
+        this.bbss = "666666";
+        this.assertEquals('666666', this.bbss);
+        //this.assertEquals( 'Test', this.personName );
+        this.personName = "test name";
+        this.assertEquals( 'test name', this.personName );
 
 
-        it(`'var bsp = ()=>{}' should is '()=>this' `, ()=>{
-            var bsp = ()=>{
+        var bsp = (flag?:any )=>{
+            return this;
+        };
+        this.assertEquals( this, bsp(1) );
+
+        var obj = {};
+        bsp = ( flag?:any ):any=>{
+            if( flag ){
+                return obj;
+            }else{
                 return this;
-            };
-            expect( bsp() ).toBe( this );
-        })
-
-        it(`once.two.three should is this or object `, ()=>{
-            var bsp = ()=>{
-                return this;
-            };
-            var obj = {};
-            bsp = ( flag ):any=>{
-                if( flag ){
-                    return obj;
-                }else{
-                    return this;
-                }
-            };
-            
-            
-
-            var obds = 1;
-            
-
-            const three = bsp( false );
-            var once={
-                two:{
-                    three,
-                    four:bsp
-                }
-            };
-            
-            expect( once.two.three ).toBe( this );
-            expect( once.two.four(true) ).toBe( obj );
-            once[ obds ]
-
-        })
-
-        it(`/\d+/.test( "123" ) should is true `, ()=>{
-            expect( /\d+/.test( "123" ) ).toBe( true );
-            expect( /^\d+/.test( " 123" ) ).toBe( false );
-            expect( /^\d+/.exec( "123" ) ).toBe( false );
-        });
-
-        it("test rest params",()=>{
-            const res = this.restFun(1,"s","test");
-            expect(res).toEqual([1,"s","test"]);
-        })
-
-        this.testEnumerableProperty();
-       this.testComputeProperty();
-        this.testLabel();
-        this.testEnum();
-       this.testIterator();
-       this.testGenerics();
-       this.testAwait();
-       this.testTuple();
-       this.next();
-    }
-
-    private testEnumerableProperty(){
-        it(`for( var name in this) should is this or object `, ()=>{
-            var labels:string[] = ["name","data","target","addressName","iuuu"];
-            for( var key in this){
-                expect( key ).toBe( labels[ labels.indexOf( key ) ] );
-                expect( this[key] ).toBe( this[ key ] );
             }
-        })
+        };
+    
+        var obds = 1;
+        const three = bsp( false );
+        var once={
+            two:{
+                three,
+                four:bsp
+            }
+        };
+        this.assertEquals( this, once.two.three );
+        //this.assertEquals( obj, once.two.four(true) );
+           
+        this.assertTrue( /\d+/.test( "123" ) );
+        this.assertFalse( /^\d+/.test( " 123" ) );
+        this.assertTrue( !!/^\d+/.exec( "123" ) );
+        //this.assertEquals( [1,"s","test"], this.restFun(1,"s","test"));
+        
+
+       
     }
 
-    private testComputeProperty(){
+   
+    // private testEnumerableProperty(){
+        
+    //     var labels:string[] = ["name","data","target","addressName","iuuu"];
+    //     for( var key in this){
+    //         this.assertEquals(key, labels[ labels.indexOf( key ) ]);
+    //         this.assertEquals(this[key], this[ key ]);
+    //     }
+        
+    // }
+
+    testComputeProperty(){
         var bname = "123";
         var o = {
             [bname]:1,
@@ -212,33 +153,32 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
                 [bname]:3
             }
         };
-        
-        
-        it(`compute property should is true `, ()=>{
-            expect( o[bname] ).toBe( 1 );
-            expect( o.uuu[bname] ).toBe( 3 );
-            expect( o.uuu["123"] ).toBe( 3 );
-            o["uuu"][bname] = true;
-             expect( o["uuu"][bname] ).toBe( true );
-        });
+        this.assertEquals( 1, o[bname] );
+        this.assertEquals( 3, o.uuu[bname] );
+        this.assertEquals( 3, o.uuu["123"] );
+        o["uuu"][bname] = true;
+        this.assertTrue( o["uuu"][bname] );
     }
 
-    private testLabel(){
+    testLabel(){
         var num = 0;
-        start:for(var i=0;i<5;i++){
-                for (var j = 0; j< 5;j++){
+        var i=0;
+        start:for(;i<5;i++){
+                for (var j = 0;j<5;j++){
                     if(i == 3 && j == 3){
                         break start;
                     }
                     num++;
                 }
         };
-        it(`label for should is loop 18`,()=>{
-            expect( num ).toBe( 18 );
-        });
+
+         console.log( 'testLabel start',  num );
+        
+        this.assertEquals( 18, num );
+        
     }
 
-    private testEnum(){
+    testEnum(){
         enum Type {
             address=5,
             name
@@ -248,159 +188,145 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
         const t:Type  = Type.address;
         const b:Types = Types.ADDRESS;
 
-        it(`Type local enum should is true`,()=>{
-            expect( t ).toBe( 5 );
-            expect( Type.name ).toBe( 6 );
-        })
-
-        it(`Type local enum should is true`,()=>{
-            expect( b ).toBe( 0 );
-            expect( Types.NAME ).toBe( 1 );
-        })
-    }
-
-    private testIterator(){
-        var array = [];
-        for( var val of this){
-            array.push( val );
-        }
-        it(`impls iterator should is [0,1,2,3,4]`,()=>{
-            expect(5).toBe( array.length );
-            for(var i=0; i<5 ;i++){
-                expect(i).toBe( array[i] );
-            }
-        })
+        this.assertEquals(5, t );
+        this.assertEquals(6, Type.name );
+        this.assertEquals( 0,b );
+        this.assertEquals( 1,Types.NAME );
         
     }
 
-    private testGenerics(){
+    // private testIterator(){
+    //     var array = [];
+    //     for( var val of this){
+    //         array.push( val );
+    //     }
+    //     this.assertEquals( 5, array.length);
+    //     for(var i=0; i<5 ;i++){
+    //         this.assertEquals( i, array[i]);
+    //     }
+    // }
 
-        const ddee = this.map();
-        const dd = ddee;
-        var ccc = ddee.name({name:1,age:1},"123");
-        var cccww = dd.name({name:1,age:30},666);
+    // private testGenerics(){
 
-        var types = '333';
-        var bds={
-            name:123,
-            [types]:1
-        };
+    //     const ddee = this.map();
+    //     const dd = ddee;
+    //     var ccc = ddee.name({name:1,age:1},"123");
+    //     var cccww = dd.name({name:1,age:30},666);
 
-        bds[ types ] = 99;
+    //     var types = '333';
+    //     var bds={
+    //         name:123,
+    //         [types]:1
+    //     };
 
+    //     this.assertEquals(123,  bds.name );
+    //     this.assertEquals(1,  bds[ types ] );
+
+    //     bds[ types ] = 99;
+    //     this.assertEquals('string',  typeof this.avg("test") )
+    //     this.assertEquals("1.00",  ccc.name.toFixed(2) )
+    //     this.assertEquals(30,  cccww.age );
+    //     this.assertEquals(99,  bds[ types ] );
+
+    //     let obj = this.getTestObject(true)
+    //     var bd:Test<int,string> = obj;
+    //     var bs = obj.getNamess(1);
+    //     this.assertEquals("1.00",  bs.toFixed(2) );
+
+    //     var bsint = this.getTestGenerics('sssss');
+    //     var bsstring = this.getTestGenerics<string, string>("ssss", 'age');
+    //     var bdss:string | int = bsstring;
+    //     this.assertEquals( 'age', bdss )
+
+    //     obj = this.getTestObject(true)
+    //     var sss:(int|string)[] = obj.getClassTestGenerics(1, 1)
+    //     this.assertEquals( [1,1], sss )
+
+    // }
+
+
+    //  private getClassTestGenerics<T1>( name:T1, age?:U ):(U | T1)[]{
+    //          var a = [age, name];
+    //         return a;
+    // }
+
+    // private getTestGenerics<T,B2 extends string>( name:T, age?:B2 ):B2{
+    //          var t =  new Test();
+    //         return age;
+    // }
+
+    // private getTestObject( flag?:boolean ){
+    //     const factor=()=>{
+    //         const o = {};
+    //         o.test = new Test();
+    //         o.name = "test";
+    //         return o.test;
+    //     };
+    //     var o = factor();
+    //     return o;
+    // }
+
+    // public getNamess(s:U):U{
+    //     return s;
+    // }
+
+    // private testAwait(){
+         
+    //      (()=>{
+    //         const res = this.loadRemoteData(1);
+    //         res.then((data)=>{
+    //             this.assertEquals(['one',1], data[0]);
+    //             this.assertEquals({ bss: [ 'two', 2 ], cc: [ 'three', 3 ] }, data[1]);
+    //             this.assertEquals(['three', 3 ], data[2]);
+    //         });
+    //     })();
+
+    //     (()=>{
+    //         const res = this.loadRemoteData(2)
+    //         res.then((data)=>{
+    //             this.assertEquals([ '0', 0 ], data[0] );
+    //             this.assertEquals([ '1', 1 ], data[1] );
+    //             this.assertEquals([ '2', 2 ], data[2] );
+    //             this.assertEquals([ '3', 3 ], data[3] );
+    //             this.assertEquals([ '4', 4 ], data[4] );
+    //         });
+    //     })()
+
+       
+    //     const res = this.loadRemoteData(3);
+    //     res.then((data)=>{
+    //         this.assertEquals([ 'four', 4 ], data);
+    //     });
         
 
-        it(`Generics should is true`,()=>{
-           expect( typeof this.avg("test") ).toBe('string');
-           expect( ccc.name.toFixed(2) ).toBe( "1.00" );
-           expect( cccww.age ).toBe( 30 );
-        })
+    //     (()=>{
+    //         const res = this.loadRemoteData(4);
+    //         res.then((data)=>{
+    //             this.assertEquals([ [ 'five', 5 ], [ '0', 0 ], [ '1', 1 ], [ '2', 2 ], [ '3', 3 ], [ '4', 4 ] ], data )
+    //         });
+    //     })()
 
+    //     this.assertEquals(123,this.getJson().name);
 
+    // }
 
-        it(`class Generics`,()=>{
-            let obj = this.getTestObject(true)
-            var bd:Test<int,string> = obj;
-            var bs = obj.getNamess(1);
-            expect( bs.toFixed(2) ).toBe( "1.00" );
-        })
+    // getJson():any{
+    //    return {
+    //        name:123
+    //    }
+    // }
 
-        var bsint = this.getTestGenerics('sssss');
-        var bsstring = this.getTestGenerics<string, string>("ssss", 'age');
-        var bd:string | int = bsstring;
+    // testTuple(){
+    //     const data = this.method("end",9);
+    //     this.assertEquals([
+    //         [ 'a', 'b' ],
+    //         [ 1 ],
+    //         [ 1, 1, 'one' ],
+    //         [ 'one', [ 'one', 1 ], 'three', 'four', [ 'end', 9 ] ]
+    //     ],data);
+    // }
 
-        let obj = this.getTestObject(true)
-        var bsddd = obj.getNamess(1);
-        var sss:(int|string)[] = obj.getClassTestGenerics(1, 1)
-
-    }
-
-
-     private getClassTestGenerics<T1>( name:T1, age?:U ):(U | T1)[]{
-             var a = [age, name];
-            return a;
-    }
-
-    private getTestGenerics<T,B2 extends string>( name:T, age?:B2 ):B2{
-             var t =  new Test<T,B2>('name', name );
-            return age;
-    }
-
-    private getTestObject( flag?:boolean ){
-        const factor=()=>{
-            const o = {};
-            o.test = new Test('name',1);
-            o.name = "test";
-            return o.test;
-        };
-        var o = factor();
-        return o;
-    }
-
-    public getNamess(s:U):U{
-        return s;
-    }
-
-    private testAwait(){
-         //jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
-         it(`test Await`,(done)=>{
-            const res = this.loadRemoteData(1);
-            res.then((data)=>{
-                expect( data[0] ).toEqual( ['one',1] );
-                expect( data[1] ).toEqual( { bss: [ 'two', 2 ], cc: [ 'three', 3 ] } );
-                expect( data[2] ).toEqual( ['three', 3 ] );
-                done();
-            });
-        })
-        it(`test for Await`,(done)=>{
-            const res = this.loadRemoteData(2)
-            res.then((data)=>{
-                expect( data[0] ).toEqual([ '0', 0 ]);
-                expect( data[1] ).toEqual([ '1', 1 ]);
-                expect( data[2] ).toEqual([ '2', 2 ]);
-                expect( data[3] ).toEqual([ '3', 3 ]);
-                expect( data[4] ).toEqual([ '4', 4 ]);
-                done();
-            });
-        })
-
-        it(`test switch Await`,(done)=>{
-            const res = this.loadRemoteData(3);
-            res.then((data)=>{
-                expect( data ).toEqual([ 'four', 4 ]);
-                done();
-            });
-        })
-
-        it(`test switch and for Await`,(done)=>{
-            const res = this.loadRemoteData(4);
-            res.then((data)=>{
-                expect( data ).toEqual([ [ 'five', 5 ], [ '0', 0 ], [ '1', 1 ], [ '2', 2 ], [ '3', 3 ], [ '4', 4 ] ]);
-                done();
-            });
-        })
-
-        this.getJson().name;
-
-    }
-
-    getJson():any{
-       return {
-           name:123
-       }
-    }
-
-    testTuple(){
-        const data = this.method("end",9);
-        it(`test tuple`,()=>{
-            expect( data ).toEqual([
-                [ 'a', 'b' ],
-                [ 1 ],
-                [ 1, 1, 'one' ],
-                [ 'one', [ 'one', 1 ], 'three', 'four', [ 'end', 9 ] ]
-            ]);
-        });
-    }
+    
 
     private const len:int = 5;
     private var currentIndex:int = 0;
@@ -415,273 +341,244 @@ public class Test<U,B=string> extends Person<string> implements Iterator{
         return d;
     }
 
-    public restFun(...types:[int,...string]){
-        return types;
-    }
+    
 
-    tetObject(){
-        var t = new Test('1',1);
-        var b = t;
-        var ii={
-            bb:b
-        };
-        return ii.bb;
-    }
+    // public restFun(...types:[int,...string]){
+    //     return types;
+    // }
 
-    get iuuu(){
-        var ii:any = this.name;
-        if( 6 ){
-            ii =[]
-        }
-        ii = true;
-        return ii;
-    }
+    // tetObject(){
+    //     var t = new Test();
+    //     var b = t;
+    //     var ii={
+    //         bb:b
+    //     };
+    //     return ii.bb;
+    // }
 
-    get data(){
-        var b:any = [];
+    // get iuuu(){
+    //     var ii:any = this.personName;
+    //     if( 6 ){
+    //         ii =[]
+    //     }
+    //     ii = true;
+    //     return ii;
+    // }
 
-        if( 4 ){
-            b = this.avg;
-        }
+    // get data(){
+    //     var b:any = [];
+
+    //     if( 4 ){
+    //         b = this.avg;
+    //     }
         
-        b = this.avg
+    //     b = this.avg
 
-        const dd = ()=>{
-            var bs = new Promise((resolve,reject)=>{
-                setTimeout(()=>{
-                    resolve([])
-                },100)
-            });
-            return bs;
-        }
-        return b;
-    }
+    //     const dd = ()=>{
+    //         var bs = new Promise((resolve,reject)=>{
+    //             setTimeout(()=>{
+    //                 resolve([])
+    //             },100)
+    //         });
+    //         return bs;
+    //     }
+    //     return b;
+    // }
 
-    fetchApi(name:string, data:int, delay:int){
-        return new Promise<(string | int)[]>((resolve,reject)=>{
-            setTimeout(()=>{
-                resolve([name,data]);
-            },delay);
-        });
-    }
+    // fetchApi(name:string, data:int, delay:int){
+    //     return new Promise<(string | int)[]>((resolve,reject)=>{
+    //         setTimeout(()=>{
+    //             resolve([name,data]);
+    //         },delay);
+    //     });
+    // }
 
-     public async loadRemoteData2(){
+    // public async loadRemoteData2(){
+    //       return await this.fetchApi("one", 1, 800)
+    // }
 
-          return await this.fetchApi("one", 1, 800)
+    // public async loadRemoteData( type ):Promise<[string,int]>{
 
-     }
+    //     if( type === 1 ){
+    //         var a = await this.fetchApi("one", 1, 800);
+    //         var bs = {
+    //             bss: await this.fetchApi("two", 2, 500),
+    //         }
+    //         var c = await this.fetchApi("three", 3, 900);
+    //         bs.cc = c;
+    //         return [a,bs,c];
+    //     }else{
 
-    public async loadRemoteData( type ):Promise<[string,int]>{
+    //         var list = [];
+    //         switch( type ){
+    //             case 3 :
+    //                const b = await this.fetchApi("four", 4, 300);
+    //                return b;
+    //             case 4 :   
+    //                const bb = await this.fetchApi("five", 5, 1200);
+    //                list.push( bb );
+    //         }
 
-        if( type === 1 ){
-            var a = await this.fetchApi("one", 1, 800);
-            var bs = {
-                bss: await this.fetchApi("two", 2, 500),
-            }
-            var c = await this.fetchApi("three", 3, 900);
-            bs.cc = c;
-            return [a,bs,c];
-        }else{
-
-            var list = [];
-            switch( type ){
-                case 3 :
-                   const b = await this.fetchApi("four", 4, 300);
-                   return b;
-                case 4 :   
-                   const bb = await this.fetchApi("five", 5, 1200);
-                   list.push( bb );
-            }
-
-            for( var i=0;i<5;i++ ){
-                list.push( await this.fetchApi(i+'',i,100) );
-            }
-            list.entries()
-            return list;
-        }
-    }
-
-    @override
-    public method( name:string, age:int):any
-    {
-        super.method(name, age );
-        var str:string[] = ["a","b"];
-        var b:[string, [string,int] ] = ["one", ["one",1] ];
-        var cc:[number] = [1];
-        var x:[number,int,string] = [1,1,'one'];
-        b.push( 'three' )
-        b.push( 'four' )
-        b.push( [name,age] )
-
-
-        //var bd:number = cc.pop();
-        //var tt:(number | int | string)[] = x.splice(0,5);
-        //str = tt;
-        return [str, cc, x, b];
-    }
-
-    @override
-    public get name():string{
-        return super.name;
-    }
+    //         for( var i=0;i<5;i++ ){
+    //             list.push( await this.fetchApi(i+'',i,100) );
+    //         }
+    //         list.entries()
+    //         return list;
+    //     }
+    // }
 
     // @override
-    public set name( value:string ){
-        super.name = value;
-    }
-
-    @override
-    avg<T extends string, B>(yy:T, bbc?:B):T{
-
-        var ii = ()=>1;
-        var bb:[string] = ['1'];
-
-        function name<T extends TestInterface>( i:T ):T{
-            var b:T = i;
-            i.avg();
-            i.method('',1);
-            return b;
-        }
-
-        const person = new Person<number>('');
-
-        name<TestInterface>( person ); 
-        const bbb:TestInterface = name( person ); 
-
-        name<Person>( person ); 
-
-        var dd:[int, uint, ...string ] = [1,1,"2222","66666","8888"];
-
-        bb.push()
-
-        //T[]   (int | string)[]
-
-        dd.push(1)
-
-        return yy;
-
-    }
-
-    map(){
-        const ddss={
-            name<T extends {name:int,age:int},B>(c:T, b:B ){
-                var id:B = b;
-                return c;
-            }
-        }
-        return ddss;
-    }
-
-    private address():int[]{
-        const dd:int[] = [];
-        const bb = {global:1,private:1,items:[]};
-        dd.push( 1 );
-        console.log( dd.filter((value,key,array)=>{
-               return true;
-        }, this), "============".match('===') );
-
-        var bds = new Array( bb.global );
-
-        bds.length;
-        Array.from(dd);
-
-        var items = bb.items;
-
-         /**
-           $ref1 = &$bb->items;
-           $items = $ref1;
-         */
+    // public method( name:string, age:int):any
+    // {
+    //     super.method(name, age );
+    //     var str:string[] = ["a","b"];
+    //     var b:[string, [string,int] ] = ["one", ["one",1] ];
+    //     var cc:[number] = [1];
+    //     var x:[number,int,string] = [1,1,'one'];
+    //     b.push( 'three' )
+    //     b.push( 'four' )
+    //     b.push( [name,age] )
 
 
-        if( bb.global === 1 ){
-            items = dd;
-            /**
-                $ref2 = &$dd;
-                $items = $ref2;
-            */
-        }
+    //     //var bd:number = cc.pop();
+    //     //var tt:(number | int | string)[] = x.splice(0,5);
+    //     //str = tt;
+    //     return [str, cc, x, b];
+    // }
 
-        items.push(0);
+    // @override
+    // public get personName():string{
+    //     return super.personName;
+    // }
 
-        var bsdd = items;
+    // // @override
+    // public set personName( value:string ){
+    //     super.personName = value;
+    // }
+
+    // @override
+    // avg<T extends string, B>(yy:T, bbc?:B):T{
+
+    //     var ii = ()=>1;
+    //     var bb:[string] = ['1'];
+
+    //     function name<T extends TestInterface>( i:T ):T{
+    //         var b:T = i;
+    //         i.avg();
+    //         i.method('',1);
+    //         return b;
+    //     }
+
+    //     const person = new Person<number>();
+
+    //     name<TestInterface>( person ); 
+    //     const bbb:TestInterface = name( person ); 
+
+    //     name<Person>( person ); 
+
+    //     var dd:[int, uint, ...string ] = [1,1,"2222","66666","8888"];
+
+    //     bb.push()
+
+    //     //T[]   (int | string)[]
+
+    //     dd.push(1)
+
+    //     return yy;
+
+    // }
+
+    // map(){
+    //     const ddss={
+    //         name<T extends {name:int,age:int},B>(c:T, b:B ){
+    //             var id:B = b;
+    //             return c;
+    //         }
+    //     }
+    //     return ddss;
+    // }
+
+    // private address():int[]{
+    //     const dd:int[] = [];
+    //     const bb = {global:1,private:1,items:[]};
+    //     dd.push( 1 );
+    //     console.log( dd.filter((value,key,array)=>{
+    //            return true;
+    //     }, this), "============".match('===') );
+
+    //     var bds = new Array( bb.global );
+
+    //     bds.length;
+    //     Array.from(dd);
+
+    //     var items = bb.items;
 
 
-        console.log( items.push(1,9,6), items=[],  items.push(9999) );
+    //     if( bb.global === 1 ){
+    //         items = dd;
+    //     }
+
+    //     items.push(0);
+
+    //     var bsdd = items;
 
 
-        console.log( items.pop() )
-
-        console.log( items.splice(0,5, '') );
-
-        console.log( items.shift() );
-        console.log( items.unshift(0,5, '') );
+    //     console.log( items.push(1,9,6), items=[],  items.push(9999) );
 
 
+    //     console.log( items.pop() )
+
+    //     console.log( items.splice(0,5, '') );
+
+    //     console.log( items.shift() );
+    //     console.log( items.unshift(0,5, '') );
+
+    //     var bs = null ;
+    //     bs = this.items;
+    //     bs = dd;
+    //     //bs.push(99988);
+
+    //     typeof  dd;
+
+    //     this.getArrItems().push( 999 );
+
+    //     var da = this.getArrItems();
+    //     da.push(9999666);
+
+    //     da = ["hhhhhhhhhh"];
+
+    //     var bdsu = da;
+
+    //     console.log( da );
+
+    //     console.log( da.pop() );
 
 
-        /**
-            switch( items ){
-                 case $ref1 :
-                   array_push($ref1,1);
-                   items = $ref1;
-                   break;
-                case $ref2 :
-                   array_push($ref2,1);
-                   items = $ref2;
-                   break;
-            }
-        */
+    //      var ui =  "==".concat( 'da' ,  'bs' ) + "=========";
+    //      var n = 8 + 6;
+
+    //     console.log( ui, n  );
+
+    //     return dd;
+    // }
 
 
-        var bs = null ;
-        bs = this.items;
-        bs = dd;
-        //bs.push(99988);
-
-        typeof  dd;
-
-        this.getArrItems().push( 999 );
-
-        var da = this.getArrItems();
-        da.push(9999666);
-
-        da = ["hhhhhhhhhh"];
-
-        var bdsu = da;
-
-        console.log( da );
-
-        console.log( da.pop() );
-
-
-         var ui =  "==".concat( 'da' ,  'bs' ) + "=========";
-         var n = 8 + 6;
-
-        console.log( ui, n  );
-
-        return dd;
-    }
-
-
-    private getArrItems(){
-        var b =  this.items;
-        var c = [];
-        if( b ){
-            b = this.items;
-        }
-        b = [];
-        return b;
-    }
+    // private getArrItems(){
+    //     var b =  this.items;
+    //     var c = [];
+    //     if( b ){
+    //         b = this.items;
+    //     }
+    //     b = [];
+    //     return b;
+    // }
 
 
 
-    private var items = [];
+    // private var items = [];
+    
 
 }
-  
-import Test;
-const test = new Test('Test');
-test.start();
 
 
 

@@ -29,7 +29,7 @@ class RegExp {
     }
 
     public function test( $value ){
-       return !!preg_match( $this->pattern, $value );
+       return !!preg_match( $this->getPattern(), $value );
     }
 
     public function exec( $value ){
@@ -40,8 +40,8 @@ class RegExp {
             if( $this->global ){
                 $this->lastIndex = isset($matches[0][0]) ? mb_strlen($matches[0][0] ) : 0;
             }
-            $index = $matches[1][1] ?? 0;
-            $result = new ArrayObject( array_map(function($item){
+            $index = $matches[0][1] ?? 0;
+            $result = new \ArrayObject( array_map(function($item){
                 return  $item[0];
             },$matches) );
             $result->index = $index;
