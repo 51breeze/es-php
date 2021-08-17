@@ -473,6 +473,10 @@ class Syntax extends events.EventEmitter {
         return false;
     }
 
+    isIteratorInterface(module){
+        return module && module.isInterface && module.isDeclaratorModule && module.id === 'Iterator' && module.file.includes("\\easescript\\lib");
+    }
+
     createDependencies(module, refs, requires){
         refs = refs || [];
         requires = requires || refs;
@@ -519,7 +523,7 @@ class Syntax extends events.EventEmitter {
     getImps(module){
         return module.implements.filter( module=>{
             const result = module.isInterface;
-            if( result ){
+            if( result && !this.isIteratorInterface(module) ){
                 this.addDepend( module )
                 return true;
             }

@@ -9,7 +9,13 @@ use \com\TestInterface;
 use \es\core\RegExp;
 use \es\core\Reflect;
 use \es\core\System;
-class Test extends Person{
+/**
+* @class Test
+* @implements \Iterator
+* @inherit \Person
+* Test a class
+*/
+ class Test extends Person{
 
 	/**
 	* @constructor Test
@@ -139,6 +145,22 @@ class Test extends Person{
 	}
 
 	/**
+	* @method testLabel
+	*/
+	public function testLabel(){
+		$num = 0;
+		for($i = 0;$i < 5;$i++){
+			for($j = 0;$j < 5;$j++){
+				if($i == 3 && $j == 3){
+					break 2;
+				}
+				$num++;
+			}
+		}
+		$this->assertEquals(18,$num);
+	}
+
+	/**
 	* @method testEnum
 	*/
 	public function testEnum(){
@@ -151,6 +173,33 @@ class Test extends Person{
 		$this->assertEquals(6,$Type->name);
 		$this->assertEquals(0,$b);
 		$this->assertEquals(1,Types::NAME);
+	}
+
+	/**
+	* @method testIterator
+	*/
+	public function testIterator(){
+		$array = [];
+		for($this->rewind();($IRV = $this->next()) && !$IRV->done;){
+			$val=$IRV->value;
+			array_push($array,$val);
+		}
+		$this->assertEquals(5,count($array));
+		$this->assertEquals([0,1,2,3,4],$array);
+		for($i = 0;$i < 5;$i++){
+			$this->assertEquals($i,Reflect::get('Test',$array,$i));
+		}
+		for($this->rewind();($IRV1 = $this->next()) && !$IRV1->done;){
+			$b=$IRV1->value;
+			array_push($array,$b);
+		}
+		$this->assertEquals([0,1,2,3,4,0,1,2,3,4],$array);
+		$o = $this;
+		$ITO = System::getIterator($o);
+		for(call_user_func([$ITO,'rewind']);($IRV2 = call_user_func([$ITO,'next'])) && !$IRV2->done;){
+			$c=$IRV2->value;
+			array_push($array,$b);
+		}
 	}
 
 	/**
@@ -246,6 +295,13 @@ class Test extends Person{
 		}
 		$d = (object)['value'=>$this->currentIndex++,'done'=>false];
 		return $d;
+	}
+
+	/**
+	* @method rewind
+	*/
+	public function rewind(){
+		$this->currentIndex = 0;
 	}
 
 	/**

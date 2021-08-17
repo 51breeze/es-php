@@ -2,7 +2,12 @@
 require_once('com/TestInterface.php');
 use \com\TestInterface;
 use \PHPUnit\Framework\TestCase;
-class Person extends TestCase implements TestInterface{
+/**
+* @class Person
+* @implements \com\TestInterface
+* @inherit \PHPUnit\Framework\TestCase
+*/
+ class Person extends TestCase implements TestInterface{
 
 	/**
 	* @constructor Person

@@ -220,6 +220,10 @@ final class System
         return $target;
     }
 
+    static function getIterator( $target ){
+
+    }
+
     static function getDefinitionByName( $name ){
         $name = str_replace(".",'\\',$name);
         if( !class_exists( $name, true ) ){

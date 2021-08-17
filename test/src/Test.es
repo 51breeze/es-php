@@ -8,12 +8,13 @@ import com.TestInterface;
 import Person;
 import Types;
 import Start;
+import Iterator;
 
 
 /**
 * Test a class
 */
-public class Test<U,B=string> extends Person<string> {
+public class Test<U,B=string> extends Person<string> implements Iterator {
 
     /**
     *  返回一个类的引用
@@ -160,23 +161,18 @@ public class Test<U,B=string> extends Person<string> {
         this.assertTrue( o["uuu"][bname] );
     }
 
-    // testLabel(){
-    //     var num = 0;
-    //     var i=0;
-    //     start:for(;i<5;i++){
-    //             for (var j = 0;j<5;j++){
-    //                 if(i == 3 && j == 3){
-    //                     break start;
-    //                 }
-    //                 num++;
-    //             }
-    //     };
-
-    //      console.log( 'testLabel start',  num );
-        
-    //     this.assertEquals( 18, num );
-        
-    // }
+    testLabel(){
+        var num = 0;
+        start:for(var i=0;i<5;i++){
+                for (var j = 0;j<5;j++){
+                    if(i == 3 && j == 3){
+                        break start;
+                    }
+                    num++;
+                }
+        };
+        this.assertEquals( 18, num );
+    }
 
     testEnum(){
         enum Type {
@@ -195,16 +191,28 @@ public class Test<U,B=string> extends Person<string> {
         
     }
 
-    // private testIterator(){
-    //     var array = [];
-    //     for( var val of this){
-    //         array.push( val );
-    //     }
-    //     this.assertEquals( 5, array.length);
-    //     for(var i=0; i<5 ;i++){
-    //         this.assertEquals( i, array[i]);
-    //     }
-    // }
+    testIterator(){
+        var array = [];
+        for( var val of this){
+            array.push( val );
+        }
+        this.assertEquals( 5, array.length);
+        this.assertEquals( [0,1,2,3,4], array);
+        for(var i=0; i<5 ;i++){
+            this.assertEquals( i, array[i]);
+        }
+
+        for( let b of this){
+            array.push( b );
+        }
+        this.assertEquals( [0,1,2,3,4, 0,1,2,3,4], array );
+
+        var o:any = this;
+        for( let c of o){
+            array.push( b );
+        }
+
+    }
 
     testGenerics(){
 
@@ -341,7 +349,10 @@ public class Test<U,B=string> extends Person<string> {
         return d;
     }
 
-    
+    public rewind(){
+        this.currentIndex = 0;
+    }
+
 
     public restFun(...types:[int,...string]){
         return types;

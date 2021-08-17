@@ -13,6 +13,42 @@
 define('NaN','NaN');
 define('Infinity','Infinity');
 
+final class IterableIterator{
+    private $target = null;
+    private $index  = 0;
+    private $length = 0;
+    private $isIterator = false;
+    public function __construct( $target ){
+        $this->target = $target;
+        $this->isIterator = System::isIterator($this->target);
+    }
+    public function next(){
+        if( $this->isIterator ){
+            return $this->target->next();
+        }
+        $done  = $length >= $this->index;
+        $value = null;
+        $key   = null;
+        if( !$done ){
+            $value = $this->target[$key];
+            $key   = $this->index++;
+        }
+        $item  = (object)['value'=>$value, 'key'=>$key, 'done'=>$done];
+        return $item;
+    }
+    public function rewind(){
+        if( $this->isIterator ){
+            $this->target->rewind();
+        }else if( is_array($this->target) ){
+            $this->length = count($this->target);
+        }else if( is_string($this->target) ){
+            $this->length = mb_strlen($this->target);
+        }else if( property_exists($this->target,'length') ){
+            $this->length = $this->target->length;
+        }
+    }
+}
+
 final class System
 {
     public static function typeof( $obj ){
@@ -201,6 +237,13 @@ final class System
         return is_object($target) || is_array($target);
     }
 
+    static function isIterator($target){
+        if( method_exists($target,"rewind") && method_exists($target,"next") ){
+            return true;
+        }
+        return false;
+    }
+
     static function merge(&$target,...$args){
         $isObj = is_object($target);
         if( !($isObj || is_array($target)) ) {
@@ -220,6 +263,12 @@ final class System
             }
         }
         return $target;
+    }
+
+    static function getIterator( $target ){
+
+        
+
     }
 
     static function getDefinitionByName( $name ){

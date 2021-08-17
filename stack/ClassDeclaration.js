@@ -142,12 +142,30 @@ class ClassDeclaration extends Syntax{
         this.createDependencies(module,refs);
 
         if( construct ){
-            push(content,construct,this.createComment([
+            const comment = module.methodConstructor ? module.methodConstructor.comments : null;
+            const commentItems = [
                 {action:"constructor",name:module.id},
-            ], module.methodConstructor ? module.methodConstructor.comments : null), true);
+            ];
+            push(content,construct,this.createComment(commentItems, comment), true);
         }
 
-        const body = [];
+        const classCommentItems = [
+            {action:"class",name:module.id}
+        ];
+        if(module.implements && module.implements.length > 0){
+            classCommentItems.push({
+                action:"implements",
+                name:module.implements.map( item=>this.getReferenceNameByModule(item,true) ).join(",")
+            });
+        }
+        if(module.extends && module.extends.length > 0){
+            classCommentItems.push({
+                action:"inherit",
+                name:module.extends.map( item=>this.getReferenceNameByModule(item,true) ).join(",")
+            });
+        }
+
+        const body = [ this.createComment(classCommentItems, this.stack.comments,'')+'\r\n' ];
         if( module.namespace.identifier){
             body.push(`namespace ${module.namespace.getChain().join("\\\\")};`);
         }
