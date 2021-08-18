@@ -7,9 +7,53 @@
  * @author Jun Ye <664371281@qq.com>
  */
 namespace es\core;
+require_once('es/core/IIterator.php');
+use \es\core\IIterator;
 
 define('NaN','NaN');
 define('Infinity','Infinity');
+
+final class IterableIterator implements IIterator{
+    private $target = null;
+    private $index  = 0;
+    private $length = 0;
+    private $isIterator = false;
+    private $isObject = false;
+    public function __construct( $target ){
+        $this->target = $target;
+        $this->isObject = is_object($target);
+        $this->isIterator = System::isIterator($this->target);
+    }
+    public function next(){
+        if( $this->isIterator ){
+            return $this->target->next();
+        }
+        $done  = !($this->length > $this->index);
+        $value = null;
+        $key   = null;
+        if( !$done ){
+            $key   = $this->index++;
+            $value = $this->isObject ? $this->target->$key : $this->target[$key];
+        }
+        $item  = (object)['value'=>$value, 'key'=>$key, 'done'=>$done];
+        return $item;
+    }
+    public function rewind(){
+        if( $this->isIterator ){
+            $this->target->rewind();
+        }else if( $this->isObject ){
+            if( is_a($this->target,'\Countable') ){
+                $this->length = count( $this->target );
+            }else if( property_exists($this->target,'length') ){
+                $this->length = $this->target->length;
+            }
+        }else if( is_array($this->target) ){
+            $this->length = count($this->target);
+        }else if( is_string($this->target) ){
+            $this->length = mb_strlen($this->target);
+        }
+    }
+}
 
 final class System
 {
@@ -199,6 +243,10 @@ final class System
         return is_object($target) || is_array($target);
     }
 
+    static function isIterator($target){
+        return is_a($target, '\es\core\IIterator');
+    }
+
     static function merge(&$target,...$args){
         $isObj = is_object($target);
         if( !($isObj || is_array($target)) ) {
@@ -221,7 +269,7 @@ final class System
     }
 
     static function getIterator( $target ){
-
+        return System::isIterator($target) ? $target : new IterableIterator($target);
     }
 
     static function getDefinitionByName( $name ){

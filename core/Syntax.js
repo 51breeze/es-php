@@ -201,6 +201,12 @@ class Syntax extends events.EventEmitter {
     }
 
     getReferenceNameByModule(module, flag=false){
+        const polyfillModule = module.isDeclaratorModule && Polyfill.modules.get(module.id);
+        if( polyfillModule && polyfillModule.export && polyfillModule.isClass ){
+            const paths = polyfillModule.namespace.split('.').concat(polyfillModule.export);
+            return '\\'+paths.join("\\");
+        }
+
         if( !flag ){
             if( this.module ){
                 const imports = this.module.imports;
@@ -451,7 +457,7 @@ class Syntax extends events.EventEmitter {
     isBaseType( type ){
         if( !type )return false;
         switch( true ){
-            case type.LiteralObjectType :
+            case type.isLiteralObjectType :
             case type.isLiteralArrayType :
                 return true;
         }
@@ -523,7 +529,7 @@ class Syntax extends events.EventEmitter {
     getImps(module){
         return module.implements.filter( module=>{
             const result = module.isInterface;
-            if( result && !this.isIteratorInterface(module) ){
+            if( result ){
                 this.addDepend( module )
                 return true;
             }

@@ -256,7 +256,6 @@ final class Reflect{
 
         $type = 0;
         $method = null;
-
         //在实例对象中查找
         if( $reflect->hasProperty($name) ){
             $type = 1;
@@ -464,7 +463,7 @@ final class Reflect{
                 return $method->getValue($target);
             }
         }
-        throw new \Error( $name." is not exists.");
+        return null;
     }
 
     /**

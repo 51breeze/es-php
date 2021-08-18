@@ -208,9 +208,51 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
         this.assertEquals( [0,1,2,3,4, 0,1,2,3,4], array );
 
         var o:any = this;
+        var array1 = [];
         for( let c of o){
-            array.push( b );
+            array1.push( c );
         }
+        this.assertEquals( [0,1,2,3,4], array1);
+
+
+        var o1 = [1,2,3];
+        var array2 = [];
+        for( let d of o1){
+            array2.push( d );
+        }
+        this.assertEquals( o1, array2);
+
+        var o3:any = {length:3,0:1,1:2,2:3};
+        var array3 = [];
+        for( let e of o3){
+            array3.push( e );
+        }
+        this.assertEquals( [1,2,3], array3);
+
+        var o4 = 'abcdefg';
+        var array4 = [];
+        for( let f of o4){
+            array4.push( f );
+        }
+        this.assertEquals( o4, array4.join("") );
+
+    }
+
+    testFor(){
+
+        let o = {name:'testFor',age:30,1:100};
+        let t = {};
+        for(var name in o){
+            t[name] = o[name];
+        }
+        this.assertEquals( o, t);
+
+        var s = 'abcd';
+        var items =[];
+        for(var n in s){
+            items.push( s[n] );
+        }
+        this.assertEquals(['a','b','c','d'], items);
 
     }
 

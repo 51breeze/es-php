@@ -35,6 +35,9 @@ function es_object_assign($target, ...$args){
  * @name Object.keys
  */
 function es_object_keys($target){
+    if( is_string($target) ){
+        return range(0, mb_strlen($target)-1);
+    }
     return array_keys( (array)$target );
 }
 
@@ -42,6 +45,14 @@ function es_object_keys($target){
  * @name Object.values
  */
 function es_object_values($target){
+    if( is_string($target) ){
+        $len = mb_strlen($target);
+        $array = [];
+        for($i=0;$i<$len;$i++){
+            $array[] = mb_substr($target,$i,1);
+        }
+        return $array;
+    }
     return array_values( (array)$target );
 }
 

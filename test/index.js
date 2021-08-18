@@ -9,7 +9,12 @@ describe('compile file', function() {
     const creator = new compiler.Creator();
     creator.startByFile("./Test.es").then( compilation=>{
         it('should compile success and build', function() {
-            const errors = compilation.compiler.errors;
+            const errors = compilation.compiler.errors.filter( error=>error.code < 1 );
+            compilation.compiler.errors.forEach( error=>{
+                if( error.code > 0 ){
+                   console.log(  error.toString() );
+                }
+            });
             expect('Expected 0 errors').toContain( errors.length );
             if( errors.length===0 ){
                 creator.build( compilation );

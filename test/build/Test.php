@@ -1,21 +1,24 @@
 <?php
+require_once('es/core/Object.php');
 require_once('es/core/System.php');
 require_once('Types.php');
 require_once('es/core/Reflect.php');
 require_once('es/core/RegExp.php');
 require_once('com/TestInterface.php');
 require_once('Person.php');
+require_once('es/core/IIterator.php');
+use \es\core\IIterator;
 use \com\TestInterface;
 use \es\core\RegExp;
 use \es\core\Reflect;
 use \es\core\System;
 /**
 * @class Test
-* @implements \Iterator
+* @implements \es\core\IIterator
 * @inherit \Person
 * Test a class
 */
- class Test extends Person{
+ class Test extends Person implements \es\core\IIterator{
 
 	/**
 	* @constructor Test
@@ -137,11 +140,11 @@ use \es\core\System;
 		$_c->sssss=2;
 		$_c->uuu=$_c1;
 		$o = $_c;
-		$this->assertEquals(1,Reflect::get('Test',$o,$bname));
-		$this->assertEquals(3,Reflect::get('Test',$o->uuu,$bname));
-		$this->assertEquals(3,Reflect::get('Test',$o->uuu,"123"));
-		Reflect::set('Test',Reflect::get('Test',$o,"uuu"),$bname,true);
-		$this->assertTrue(Reflect::get('Test',Reflect::get('Test',$o,"uuu"),$bname));
+		$this->assertEquals(1,$o->$bname);
+		$this->assertEquals(3,$o->uuu->$bname);
+		$this->assertEquals(3,$o->uuu->{"123"});
+		Reflect::set('Test',$o->{"uuu"},$bname,true);
+		$this->assertTrue(Reflect::get('Test',$o->{"uuu"},$bname));
 	}
 
 	/**
@@ -187,7 +190,7 @@ use \es\core\System;
 		$this->assertEquals(5,count($array));
 		$this->assertEquals([0,1,2,3,4],$array);
 		for($i = 0;$i < 5;$i++){
-			$this->assertEquals($i,Reflect::get('Test',$array,$i));
+			$this->assertEquals($i,$array[$i]);
 		}
 		for($this->rewind();($IRV1 = $this->next()) && !$IRV1->done;){
 			$b=$IRV1->value;
@@ -195,11 +198,53 @@ use \es\core\System;
 		}
 		$this->assertEquals([0,1,2,3,4,0,1,2,3,4],$array);
 		$o = $this;
+		$array1 = [];
 		$ITO = System::getIterator($o);
-		for(call_user_func([$ITO,'rewind']);($IRV2 = call_user_func([$ITO,'next'])) && !$IRV2->done;){
+		for($ITO->rewind();($IRV2 = $ITO->next()) && !$IRV2->done;){
 			$c=$IRV2->value;
-			array_push($array,$b);
+			array_push($array1,$c);
 		}
+		$this->assertEquals([0,1,2,3,4],$array1);
+		$o1 = [1,2,3];
+		$array2 = [];
+		foreach($o1 as $d){
+			array_push($array2,$d);
+		}
+		$this->assertEquals($o1,$array2);
+		$o3 = (object)['length'=>3,'0'=>1,'1'=>2,'2'=>3];
+		$array3 = [];
+		$ITO1 = System::getIterator($o3);
+		for($ITO1->rewind();($IRV3 = $ITO1->next()) && !$IRV3->done;){
+			$e=$IRV3->value;
+			array_push($array3,$e);
+		}
+		$this->assertEquals([1,2,3],$array3);
+		$o4 = 'abcdefg';
+		$array4 = [];
+		$ITO2 = System::getIterator($o4);
+		for($ITO2->rewind();($IRV4 = $ITO2->next()) && !$IRV4->done;){
+			$f=$IRV4->value;
+			array_push($array4,$f);
+		}
+		$this->assertEquals($o4,implode("", $array4));
+	}
+
+	/**
+	* @method testFor
+	*/
+	public function testFor(){
+		$o = (object)['name'=>'testFor','age'=>30,'1'=>100];
+		$t = (object)[];
+		foreach(\es\core\es_object_keys($o) as $name){
+			$t->$name = $o->$name;
+		}
+		$this->assertEquals($o,$t);
+		$s = 'abcd';
+		$items = [];
+		foreach(\es\core\es_object_keys($s) as $n){
+			array_push($items,$s[$n]);
+		}
+		$this->assertEquals(['a','b','c','d'],$items);
 	}
 
 	/**
@@ -216,12 +261,12 @@ use \es\core\System;
 		$_c2->$types=1;
 		$bds = $_c2;
 		$this->assertEquals(123,$bds->name);
-		$this->assertEquals(1,Reflect::get('Test',$bds,$types));
-		Reflect::set('Test',$bds,$types,99);
+		$this->assertEquals(1,$bds->$types);
+		$bds->$types = 99;
 		$this->assertEquals('string',System::typeof($this->avg("test")));
 		$this->assertEquals("1.00",floatval(number_format($ccc->name,2,'.','')));
 		$this->assertEquals(30,$cccww->age);
-		$this->assertEquals(99,Reflect::get('Test',$bds,$types));
+		$this->assertEquals(99,$bds->$types);
 		$obj = $this->getTestObject(true);
 		$bs = $obj->getNamess(1);
 		$this->assertEquals("1.00",Reflect::call('Test',$bs,'toFixed',[2]));

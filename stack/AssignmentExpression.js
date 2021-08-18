@@ -28,18 +28,15 @@ class AssignmentExpression extends Syntax{
         }
 
         const right= this.make(this.stack.right);
-        if( this.stack.left.isMemberExpression ){
-            if( this.stack.left.computed ){
-                //if( this.stack.left.computed ){
-                    //const objectDesc = this.stack.left.object.description();
-                    //if( !this.isBaseType( objectDesc.type() ) || (objectDesc.assignItems && objectDesc.assignItems.size > 1) ){
-                        const left = this.make(this.stack.left.object);
-                        const property = this.make(this.stack.left.property);
-                        const reflect = this.checkRefsName("Reflect");
-                        this.addDepend("Reflect");
-                        return `${reflect}::set(${this.getClassStringName(this.module)},${left},${property},${right})`;
-                    //}
-                //}
+        if( this.stack.left.isMemberExpression && this.stack.left.computed ){
+            const objectDesc = this.stack.left.object.description();
+            const objectType = this.stack.left.object.type();
+            if( !objectType || objectType.isAnyType || !(objectDesc && objectDesc.assignItems && objectDesc.assignItems.size < 2) ){
+                const left = this.make(this.stack.left.object);
+                const property = this.make(this.stack.left.property);
+                const reflect = this.checkRefsName("Reflect");
+                this.addDepend("Reflect");
+                return `${reflect}::set(${this.getClassStringName(this.module)},${left},${property},${right})`;
             }
         }
 

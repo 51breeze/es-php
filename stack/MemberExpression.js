@@ -37,11 +37,6 @@ class MemberExpression extends Syntax{
             this.addDepend( "Reflect" );
             const propName = this.stack.property.isIdentifier && !this.stack.computed ? `'${property}'` : property;
             return `${this.checkRefsName("Reflect")}::get(${this.getClassStringName(module)},${object},${propName})`;
-            // if( this.stack.computed ){
-            //    return `[${this.make(this.stack.object)},${property}]`;
-            // }else{
-            //    return `[${this.make(this.stack.object)},'${property}']`;
-            // }
          }
       }
 
@@ -66,22 +61,20 @@ class MemberExpression extends Syntax{
          sep = "::";
       }
 
-      // if(this.stack.computed){
-      //    const objectDesc = this.stack.object.description();
-      //    const objectType = this.stack.object.type();
-      //    if( !this.isBaseType( objectType ) || (objectDesc.assignItems && objectDesc.assignItems.size > 1) ){
-      //       this.addDepend("Reflect");
-      //       return `${this.checkRefsName("Reflect")}::get(${this.getClassStringName(module)},${object},${property})`;
-      //    }
-      //    const tName = this.getAvailableTypeName( objectType );
-      //    if( tName === "array" || tName ==="string" ){
-      //       return `${object}[${property}]`;
-      //    }
-      //    if( this.stack.property.isLiteral ){
-      //       return `${object}${sep}{${property}}`;
-      //    }
-      //    return `${object}${sep}${property}`;
-      // }
+      if(this.stack.computed){
+         const objectDesc = this.stack.object.description();
+         const objectType = this.stack.object.type();
+         if( objectType && !objectType.isAnyType && objectDesc && objectDesc.assignItems && objectDesc.assignItems.size < 2 ){
+            const tName = this.getAvailableTypeName( objectType );
+            if( tName === "array" || tName ==="string" ){
+               return `${object}[${property}]`;
+            }
+            if( this.stack.property.isLiteral ){
+               return `${object}${sep}{${property}}`;
+            }
+            return `${object}${sep}${property}`;
+         }
+      }
       
       if( type && type.isType && type.isAnyType ){
          this.addDepend( "Reflect" );
