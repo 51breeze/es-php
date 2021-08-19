@@ -1,4 +1,5 @@
 <?php
+require_once('es/core/Promise.php');
 require_once('es/core/Object.php');
 require_once('es/core/System.php');
 require_once('Types.php');
@@ -12,6 +13,7 @@ use \com\TestInterface;
 use \es\core\RegExp;
 use \es\core\Reflect;
 use \es\core\System;
+use \es\core\Promise;
 /**
 * @class Test
 * @implements \es\core\IIterator
@@ -123,9 +125,11 @@ use \es\core\System;
 		$three = $bsp(false);
 		$once = (object)['two'=>(object)['three'=>$three,'four'=>$bsp]];
 		$this->assertEquals($this,$once->two->three);
+		$this->assertEquals($obj,call_user_func($once->two->four,true));
 		$this->assertTrue((new RegExp('\d+'))->test("123"));
 		$this->assertFalse((new RegExp('^\d+'))->test(" 123"));
 		$this->assertTrue(!!(new RegExp('^\d+'))->exec("123"));
+		$this->assertEquals([1,"s","test"],$this->restFun(1,"s","test"));
 	}
 
 	/**
@@ -219,6 +223,10 @@ use \es\core\System;
 			array_push($array3,$e);
 		}
 		$this->assertEquals([1,2,3],$array3);
+		$o5 = (array)$o3;
+		$ot = [1,2,3];
+		$ot["length"] = 3;
+		$this->assertEquals($ot,$o5);
 		$o4 = 'abcdefg';
 		$array4 = [];
 		$ITO2 = System::getIterator($o4);
@@ -314,6 +322,48 @@ use \es\core\System;
 	}
 
 	/**
+	* @method testAwait
+	*/
+	public function testAwait(){
+		(function(){
+			$res = $this->loadRemoteData(1);
+			$res->then(function(&$data){
+				$this->assertEquals(['one',1],$data->{0});
+				$this->assertEquals((object)['bss'=>['two',2],'cc'=>['three',3]],$data->{1});
+				$this->assertEquals(['three',3],$data->{2});
+			});
+		})();
+		(function(){
+			$res = $this->loadRemoteData(2);
+			$res->then(function(&$data){
+				$this->assertEquals(['0',0],$data->{0});
+				$this->assertEquals(['1',1],$data->{1});
+				$this->assertEquals(['2',2],$data->{2});
+				$this->assertEquals(['3',3],$data->{3});
+				$this->assertEquals(['4',4],$data->{4});
+			});
+		})();
+		$res = $this->loadRemoteData(3);
+		$res->then(function(&$data){
+			$this->assertEquals(['four',4],$data);
+		});
+		(function(){
+			$res = $this->loadRemoteData(4);
+			$res->then(function(&$data){
+				$this->assertEquals([['five',5],['0',0],['1',1],['2',2],['3',3],['4',4]],$data);
+			});
+		})();
+		$this->assertEquals(123,Reflect::get('Test',$this->getJson(),'name'));
+	}
+
+	/**
+	* @method getJson
+	*/
+	public function getJson(){
+		return (object)['name'=>123];
+	}
+
+	/**
 	* @method testTuple
 	*/
 	public function testTuple(){
@@ -352,7 +402,7 @@ use \es\core\System;
 	/**
 	* @method restFun
 	*/
-	public function restFun(array ...$types):array{
+	public function restFun(...$types):array{
 		return $types;
 	}
 
@@ -378,6 +428,65 @@ use \es\core\System;
 	}
 
 	/**
+	* @getter data
+	*/
+	public function getData(){
+		$b = [];
+		if(4){
+			$b = Reflect::get('Test',$this,'avg');
+		}
+		$b = Reflect::get('Test',$this,'avg');
+		return $b;
+	}
+
+	/**
+	* @method fetchApi
+	*/
+	public function fetchApi(string $name,int $data,int $delay):Promise{
+		return new Promise(function($resolve,$reject)use(&$delay){
+			setTimeout(function()use(&$name, &$data, &$resolve){
+				$_V = [$name,$data];
+				$resolve($_V);
+			},$delay);
+		});
+	}
+
+	/**
+	* @method loadRemoteData2
+	*/
+	public function loadRemoteData2():Promise{
+		return $this->fetchApi("one",1,800);
+	}
+
+	/**
+	* @method loadRemoteData
+	*/
+	public function loadRemoteData($type){
+		if($type === 1){
+			$a = $this->fetchApi("one",1,800);
+			$bs = (object)['bss'=>$this->fetchApi("two",2,500)];
+			$c = $this->fetchApi("three",3,900);
+			$bs->cc = $c;
+			return [$a,$bs,$c];
+		}else{
+			$list = [];
+			switch($type){
+				case 3 :
+					$b = $this->fetchApi("four",4,300);
+					return $b;
+				case 4 :
+					$bb = $this->fetchApi("five",5,1200);
+					array_push($list,$bb);
+			}
+			for($i = 0;$i < 5;$i++){
+				array_push($list,$this->fetchApi($i . '',$i,100));
+			}
+			array_values($list);
+			return $list;
+		}
+	}
+
+	/**
 	* @method method
 	*/
 	public function method(string $name,int $age){
@@ -388,8 +497,8 @@ use \es\core\System;
 		$x = [1,1,'one'];
 		array_push($b,'three');
 		array_push($b,'four');
-		$_V = [$name,$age];
-		array_push($b,$_V);
+		$_V1 = [$name,$age];
+		array_push($b,$_V1);
 		return [$str,$cc,$x,$b];
 	}
 

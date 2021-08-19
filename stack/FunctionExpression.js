@@ -19,7 +19,7 @@ class FunctionExpression extends Syntax{
             if( !item.isAssignmentPattern && item.question ){
                 defaultValue = '=null';
             }
-            if(item.acceptType && item.isParamDeclarator ){
+            if(item.acceptType && item.isParamDeclarator && !item.isRestElement ){
                 const t = this.getAvailableTypeName( item.acceptType.type() );
                 if( t ){
                     typeName = t+' ';

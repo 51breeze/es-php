@@ -95,7 +95,7 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
 
         this.bbss = "666666";
         this.assertEquals('666666', this.bbss);
-        //this.assertEquals( 'Test', this.personName );
+       // this.assertEquals( 'Test', this.personName );
         this.personName = "test name";
         this.assertEquals( 'test name', this.personName );
 
@@ -123,14 +123,12 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
             }
         };
         this.assertEquals( this, once.two.three );
-        //this.assertEquals( obj, once.two.four(true) );
+        this.assertEquals( obj, once.two.four(true) );
            
         this.assertTrue( /\d+/.test( "123" ) );
         this.assertFalse( /^\d+/.test( " 123" ) );
         this.assertTrue( !!/^\d+/.exec( "123" ) );
-        //this.assertEquals( [1,"s","test"], this.restFun(1,"s","test"));
-        
-
+        this.assertEquals( [1,"s","test"], this.restFun(1,"s","test"));
        
     }
 
@@ -229,6 +227,11 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
         }
         this.assertEquals( [1,2,3], array3);
 
+        var o5 = (array)o3;
+        var ot = [1,2,3];
+        ot["length"] = 3;
+        this.assertEquals( ot, o5);
+
         var o4 = 'abcdefg';
         var array4 = [];
         for( let f of o4){
@@ -320,51 +323,51 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
         return s;
     }
 
-    // private testAwait(){
+    testAwait(){
          
-    //      (()=>{
-    //         const res = this.loadRemoteData(1);
-    //         res.then((data)=>{
-    //             this.assertEquals(['one',1], data[0]);
-    //             this.assertEquals({ bss: [ 'two', 2 ], cc: [ 'three', 3 ] }, data[1]);
-    //             this.assertEquals(['three', 3 ], data[2]);
-    //         });
-    //     })();
+         (()=>{
+            const res = this.loadRemoteData(1);
+            res.then((data)=>{
+                this.assertEquals(['one',1], data[0]);
+                this.assertEquals({ bss: [ 'two', 2 ], cc: [ 'three', 3 ] }, data[1]);
+                this.assertEquals(['three', 3 ], data[2]);
+            });
+        })();
 
-    //     (()=>{
-    //         const res = this.loadRemoteData(2)
-    //         res.then((data)=>{
-    //             this.assertEquals([ '0', 0 ], data[0] );
-    //             this.assertEquals([ '1', 1 ], data[1] );
-    //             this.assertEquals([ '2', 2 ], data[2] );
-    //             this.assertEquals([ '3', 3 ], data[3] );
-    //             this.assertEquals([ '4', 4 ], data[4] );
-    //         });
-    //     })()
+        (()=>{
+            const res = this.loadRemoteData(2)
+            res.then((data)=>{
+                this.assertEquals([ '0', 0 ], data[0] );
+                this.assertEquals([ '1', 1 ], data[1] );
+                this.assertEquals([ '2', 2 ], data[2] );
+                this.assertEquals([ '3', 3 ], data[3] );
+                this.assertEquals([ '4', 4 ], data[4] );
+            });
+        })()
 
        
-    //     const res = this.loadRemoteData(3);
-    //     res.then((data)=>{
-    //         this.assertEquals([ 'four', 4 ], data);
-    //     });
+        const res = this.loadRemoteData(3);
+        res.then((data)=>{
+            this.assertEquals([ 'four', 4 ], data);
+        });
         
 
-    //     (()=>{
-    //         const res = this.loadRemoteData(4);
-    //         res.then((data)=>{
-    //             this.assertEquals([ [ 'five', 5 ], [ '0', 0 ], [ '1', 1 ], [ '2', 2 ], [ '3', 3 ], [ '4', 4 ] ], data )
-    //         });
-    //     })()
+        (()=>{
+            const res = this.loadRemoteData(4);
+            res.then((data)=>{
+                this.assertEquals([ [ 'five', 5 ], [ '0', 0 ], [ '1', 1 ], [ '2', 2 ], [ '3', 3 ], [ '4', 4 ] ], data )
+            });
+        })()
 
-    //     this.assertEquals(123,this.getJson().name);
+        this.assertEquals(123,this.getJson().name);
 
-    // }
+    }
 
-    // getJson():any{
-    //    return {
-    //        name:123
-    //    }
-    // }
+    getJson():any{
+       return {
+           name:123
+       }
+    }
 
     testTuple(){
         const data = this.method("end",9);
@@ -418,67 +421,67 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
         return ii;
     }
 
-    // get data(){
-    //     var b:any = [];
+    get data(){
+        var b:any = [];
 
-    //     if( 4 ){
-    //         b = this.avg;
-    //     }
+        if( 4 ){
+            b = this.avg;
+        }
         
-    //     b = this.avg
+        b = this.avg
 
-    //     const dd = ()=>{
-    //         var bs = new Promise((resolve,reject)=>{
-    //             setTimeout(()=>{
-    //                 resolve([])
-    //             },100)
-    //         });
-    //         return bs;
-    //     }
-    //     return b;
-    // }
+        const dd = ()=>{
+            var bs = new Promise((resolve,reject)=>{
+                setTimeout(()=>{
+                    resolve([])
+                },100)
+            });
+            return bs;
+        }
+        return b;
+    }
 
-    // fetchApi(name:string, data:int, delay:int){
-    //     return new Promise<(string | int)[]>((resolve,reject)=>{
-    //         setTimeout(()=>{
-    //             resolve([name,data]);
-    //         },delay);
-    //     });
-    // }
+    fetchApi(name:string, data:int, delay:int){
+        return new Promise<(string | int)[]>((resolve,reject)=>{
+            setTimeout(()=>{
+                resolve([name,data]);
+            },delay);
+        });
+    }
 
-    // public async loadRemoteData2(){
-    //       return await this.fetchApi("one", 1, 800)
-    // }
+    public async loadRemoteData2(){
+          return await this.fetchApi("one", 1, 800)
+    }
 
-    // public async loadRemoteData( type ):Promise<[string,int]>{
+    public async loadRemoteData( type ):Promise<[string,int]>{
 
-    //     if( type === 1 ){
-    //         var a = await this.fetchApi("one", 1, 800);
-    //         var bs = {
-    //             bss: await this.fetchApi("two", 2, 500),
-    //         }
-    //         var c = await this.fetchApi("three", 3, 900);
-    //         bs.cc = c;
-    //         return [a,bs,c];
-    //     }else{
+        if( type === 1 ){
+            var a = await this.fetchApi("one", 1, 800);
+            var bs = {
+                bss: await this.fetchApi("two", 2, 500),
+            }
+            var c = await this.fetchApi("three", 3, 900);
+            bs.cc = c;
+            return [a,bs,c];
+        }else{
 
-    //         var list = [];
-    //         switch( type ){
-    //             case 3 :
-    //                const b = await this.fetchApi("four", 4, 300);
-    //                return b;
-    //             case 4 :   
-    //                const bb = await this.fetchApi("five", 5, 1200);
-    //                list.push( bb );
-    //         }
+            var list = [];
+            switch( type ){
+                case 3 :
+                   const b = await this.fetchApi("four", 4, 300);
+                   return b;
+                case 4 :   
+                   const bb = await this.fetchApi("five", 5, 1200);
+                   list.push( bb );
+            }
 
-    //         for( var i=0;i<5;i++ ){
-    //             list.push( await this.fetchApi(i+'',i,100) );
-    //         }
-    //         list.entries()
-    //         return list;
-    //     }
-    // }
+            for( var i=0;i<5;i++ ){
+                list.push( await this.fetchApi(i+'',i,100) );
+            }
+            list.entries()
+            return list;
+        }
+    }
 
     @override
     public method( name:string, age:int):any

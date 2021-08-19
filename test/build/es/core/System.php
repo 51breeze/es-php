@@ -69,9 +69,9 @@ final class System
     }
 
     public static function print(...$args){
-        $items = array_map(function($item){
+        $to_string = function($item)use(&$to_string){
             if( is_callable($item) || $item instanceof \Closure ){
-                $reflect = new \ReflectionFunction($callback);
+                $reflect = new \ReflectionFunction($item);
                 if( !$reflect->isClosure() ){
                     return sprintf('function %s(){[local code]}', $reflect->getName());
                 }else{
@@ -80,10 +80,29 @@ final class System
             }
             if( is_object($item) && method_exists($item,'toString') ){
                 return $item->toString();
+            }else if( is_array($item) ){
+                $to_item_string=function($item)use(&$to_item_string,&$to_string){
+                    if( is_array($item) ){
+                        $a = [];
+                        $p = [];
+                        foreach($item as $key=>$value){
+                            $value = $to_item_string($value);
+                            if( is_numeric($key) ){
+                                $a[] = $value;
+                            }else{
+                                $p[] = $key.': '.$value;
+                            }
+                        }
+                        return '[ '.implode(', ',array_merge($a,$p)).' ]';
+                    }else{
+                        return $to_string($item);
+                    }
+                };
+                return $to_item_string($item);
             }
             return json_encode( $item, JSON_UNESCAPED_UNICODE);
-        },$args);
-        echo PHP_EOL,implode(" ", $items);
+        };
+        echo PHP_EOL,implode(" ", array_map($to_string,$args));
     }
 
     public static function addition($left,$right){

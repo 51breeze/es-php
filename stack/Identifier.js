@@ -2,6 +2,9 @@ const Syntax = require("../core/Syntax");
 class Identifier extends Syntax{
      emitter(){
           let desc = this.stack.description();
+          if( this.parentStack && this.parentStack.isTypeTransformExpression && this.parentStack.typeExpression === this.stack ){
+               return this.stack.value();
+          }
           if( desc && desc.parentStack && desc.parentStack.isDeclaratorVariable ){
                if( this.compiler.callUtils("isTypeModule",desc.type() ) ){
                     this.addDepend( desc.type() );

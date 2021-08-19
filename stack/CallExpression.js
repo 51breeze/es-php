@@ -62,7 +62,7 @@ class CallExpression extends Syntax{
                     return `${this.checkRefsName("Reflect")}::call(${this.getClassStringName(this.module)},${this.make(this.stack.callee.object)},${property})`;
                 }
             }
-            if( desc && !desc.isMethodDefinition && desc.isFunctionExpression ){
+            if( desc && !desc.isMethodDefinition && (desc.isFunctionExpression || desc.isFunctionType) ){
                 if( args.length > 0 ){
                     return `call_user_func(${this.make(this.stack.callee)},${args.join(",")})`;
                 }else{
