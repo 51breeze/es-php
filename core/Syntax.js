@@ -93,23 +93,26 @@ class Syntax extends events.EventEmitter {
 
     addVariableRefs( stack ){
         const name = stack.value();
-        const funScope = this.scope.getScopeByType("function");
-        const check = ( scope )=>{
-            if( !scope )return;
-            if( !scope.declarations.has( name ) ){
-                return scope.children.some( child=>{
-                    return check(child);
-                });
+        let funScope = this.scope;
+        while( funScope && (funScope = funScope.getScopeByType("function")) && !funScope.isMethod && funScope.type('function') ){
+            const check = ( scope )=>{
+                if( !scope )return;
+                if( !scope.declarations.has( name ) ){
+                    return scope.children.some( child=>{
+                        return check(child);
+                    });
+                }
+                return true;
             }
-            return true;
-        }
-        if( !check( funScope ) ){
-            let dataset = refsParentVariable.get(funScope);
-            if(!dataset){
-                dataset=new Set();
-                refsParentVariable.set(funScope,dataset);
+            if( !check( funScope ) ){
+                let dataset = refsParentVariable.get(funScope);
+                if(!dataset){
+                    dataset=new Set();
+                    refsParentVariable.set(funScope,dataset);
+                }
+                dataset.add(stack);
             }
-            dataset.add(stack);
+            funScope = funScope.parent;
         }
     }
 
@@ -169,7 +172,10 @@ class Syntax extends events.EventEmitter {
 
     getAvailableTypeName( type ){
         if( type ){
-            if(type.isGenericValueType || type.isGenericType || type.isClassGenericType){
+            while( type.isGenericValueType && type.value ){
+                type = type.value;
+            }
+            if(type.isGenericType || type.isClassGenericType){
                 return null;
             }
             if( type.isTupleType || type.isLiteralArrayType ){

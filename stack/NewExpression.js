@@ -1,4 +1,5 @@
 const Syntax = require("../core/Syntax");
+const Polyfill = require("../core/Polyfill");
 class NewExpression extends Syntax{
     emitter(){
         const callee= this.make(this.stack.callee);
@@ -26,15 +27,15 @@ class NewExpression extends Syntax{
                 return this.createArrayRefs(item.description(), value);
             }
             return value;
-        }).join(",");
+        });
 
         if( desc === this.stack.getModuleById("Array") ){
             if( this.stack.arguments.length >0  ){
                 if( this.stack.arguments.length === 1 ){
-                    this.addDepend("Array");
-                    return `es_array_new(${args})`;
+                    const polyModule = Polyfill.modules.get('Array');
+                    return polyModule.method(this, null, 'of', args, null, true ); 
                 }
-                return `[${args}]`;
+                return `[${args.join(",")}]`;
             }
             return `[]`;
         }
@@ -45,7 +46,7 @@ class NewExpression extends Syntax{
             });
         }
         
-        return `new ${refs}(${args})`;
+        return `new ${refs}(${args.join(",")})`;
     }
 }
 

@@ -5,7 +5,16 @@ class ReturnStatement extends Syntax{
         if( !argument ){
             return this.semicolon(`return`);
         }
-        return this.semicolon(`return ${this.make( argument)}`);
+        let value = this.make(argument);
+        if( argument.isIdentifier ){
+            value = this.createArrayRefs(argument.description(), value);
+        }
+        const stack = this.stack.getParentStack( stack=>!!stack.isFunctionExpression );
+        if( stack && stack.async ){
+            this.addDepend("Promise");
+            return this.semicolon(`return Promise::getInstance(${value})`);
+        }
+        return this.semicolon(`return ${value}`);
     }
 }
 

@@ -1,4 +1,5 @@
 <?php
+require_once('es/core/Array.php');
 require_once('es/core/Promise.php');
 require_once('es/core/Object.php');
 require_once('es/core/System.php');
@@ -15,15 +16,15 @@ use \es\core\Reflect;
 use \es\core\System;
 use \es\core\Promise;
 /**
-* @class Test
+* @class IndexTest
 * @implements \es\core\IIterator
 * @inherit \Person
 * Test a class
 */
- class Test extends Person implements \es\core\IIterator{
+ class IndexTest extends Person implements \es\core\IIterator{
 
 	/**
-	* @constructor Test
+	* @constructor IndexTest
 	* a constructor method
 	*/
 	public function __construct(){
@@ -35,7 +36,7 @@ use \es\core\Promise;
 	* 返回一个类的引用
 	*/
 	static public function getClass(){
-		$a = '\Test';
+		$a = '\IndexTest';
 		$buname = (object)['a'=>1];
 		$buname->test = $a;
 		$buname->person = '\Person';
@@ -48,7 +49,7 @@ use \es\core\Promise;
 	* @method getClassObject
 	*/
 	static public function getClassObject(){
-		$a = '\Test';
+		$a = '\IndexTest';
 		$b = (object)['test'=>$a];
 		$b->person = '\Person';
 		return $b->test;
@@ -58,7 +59,7 @@ use \es\core\Promise;
 	* @method getObject
 	*/
 	static public function getObject(){
-		return new Test();
+		return new IndexTest();
 	}
 
 	/**
@@ -75,7 +76,7 @@ use \es\core\Promise;
 	* @private
 	* the is class type.
 	*/
-	static private $iiu = '\Test';
+	static private $iiu = '\IndexTest';
 
 	/**
 	* @property bbss
@@ -94,15 +95,15 @@ use \es\core\Promise;
 	* @method testBase
 	*/
 	public function testBase(){
-		$this->assertEquals("uuName",Test::getClassObject()::getUuName());
+		$this->assertEquals("uuName",IndexTest::getClassObject()::getUuName());
 		$this->assertEquals(40,$this->age);
 		$this->assertTrue($this instanceof \Person);
 		$this->assertTrue(is_a($this,'\Person'));
 		$this->assertTrue($this instanceof \com\TestInterface);
 		$this->assertTrue(is_a($this,'\com\TestInterface'));
-		$this->assertEquals('\Test',Test::getClass()->test);
-		$this->assertEquals('\Person',Test::getClass()->person);
-		$_refClass = Test::getClass()->person;
+		$this->assertEquals('\IndexTest',IndexTest::getClass()->test);
+		$this->assertEquals('\Person',IndexTest::getClass()->person);
+		$_refClass = IndexTest::getClass()->person;
 		$o = new $_refClass();
 		$this->assertTrue($o instanceof \Person);
 		$this->assertEquals('bbss',$this->bbss);
@@ -147,8 +148,8 @@ use \es\core\Promise;
 		$this->assertEquals(1,$o->$bname);
 		$this->assertEquals(3,$o->uuu->$bname);
 		$this->assertEquals(3,$o->uuu->{"123"});
-		Reflect::set('Test',$o->{"uuu"},$bname,true);
-		$this->assertTrue(Reflect::get('Test',$o->{"uuu"},$bname));
+		Reflect::set('IndexTest',$o->{"uuu"},$bname,true);
+		$this->assertTrue(Reflect::get('IndexTest',$o->{"uuu"},$bname));
 	}
 
 	/**
@@ -277,7 +278,7 @@ use \es\core\Promise;
 		$this->assertEquals(99,$bds->$types);
 		$obj = $this->getTestObject(true);
 		$bs = $obj->getNamess(1);
-		$this->assertEquals("1.00",Reflect::call('Test',$bs,'toFixed',[2]));
+		$this->assertEquals("1.00",Reflect::call('IndexTest',$bs,'toFixed',[2]));
 		$bsstring = $this->getTestGenerics("ssss",'age');
 		$this->assertEquals('age',$bsstring);
 		$obj = $this->getTestObject(true);
@@ -306,7 +307,7 @@ use \es\core\Promise;
 	private function getTestObject(bool $flag=null){
 		$factor = function(){
 			$o = (object)[];
-			$o->test = new Test();
+			$o->test = new IndexTest();
 			$o->name = "test";
 			return $o->test;
 		};
@@ -328,19 +329,19 @@ use \es\core\Promise;
 		(function(){
 			$res = $this->loadRemoteData(1);
 			$res->then(function(&$data){
-				$this->assertEquals(['one',1],$data->{0});
-				$this->assertEquals((object)['bss'=>['two',2],'cc'=>['three',3]],$data->{1});
-				$this->assertEquals(['three',3],$data->{2});
+				$this->assertEquals(['one',1],$data[0]);
+				$this->assertEquals((object)['bss'=>['two',2],'cc'=>['three',3]],$data[1]);
+				$this->assertEquals(['three',3],$data[2]);
 			});
 		})();
 		(function(){
 			$res = $this->loadRemoteData(2);
 			$res->then(function(&$data){
-				$this->assertEquals(['0',0],$data->{0});
-				$this->assertEquals(['1',1],$data->{1});
-				$this->assertEquals(['2',2],$data->{2});
-				$this->assertEquals(['3',3],$data->{3});
-				$this->assertEquals(['4',4],$data->{4});
+				$this->assertEquals(['0',0],$data[0]);
+				$this->assertEquals(['1',1],$data[1]);
+				$this->assertEquals(['2',2],$data[2]);
+				$this->assertEquals(['3',3],$data[3]);
+				$this->assertEquals(['4',4],$data[4]);
 			});
 		})();
 		$res = $this->loadRemoteData(3);
@@ -353,7 +354,7 @@ use \es\core\Promise;
 				$this->assertEquals([['five',5],['0',0],['1',1],['2',2],['3',3],['4',4]],$data);
 			});
 		})();
-		$this->assertEquals(123,Reflect::get('Test',$this->getJson(),'name'));
+		$this->assertEquals(123,$this->getJson()->name);
 	}
 
 	/**
@@ -433,9 +434,9 @@ use \es\core\Promise;
 	public function getData(){
 		$b = [];
 		if(4){
-			$b = Reflect::get('Test',$this,'avg');
+			$b = Reflect::get('IndexTest',$this,'avg');
 		}
-		$b = Reflect::get('Test',$this,'avg');
+		$b = Reflect::get('IndexTest',$this,'avg');
 		return $b;
 	}
 
@@ -443,11 +444,11 @@ use \es\core\Promise;
 	* @method fetchApi
 	*/
 	public function fetchApi(string $name,int $data,int $delay):Promise{
-		return new Promise(function($resolve,$reject)use(&$delay){
-			setTimeout(function()use(&$name, &$data, &$resolve){
+		return new Promise(function($resolve,$reject)use(&$name, &$data, &$delay){
+			call_user_func(function()use(&$name, &$data, &$resolve){
 				$_V = [$name,$data];
 				$resolve($_V);
-			},$delay);
+			});
 		});
 	}
 
@@ -455,7 +456,7 @@ use \es\core\Promise;
 	* @method loadRemoteData2
 	*/
 	public function loadRemoteData2():Promise{
-		return $this->fetchApi("one",1,800);
+		return Promise::getInstance(Promise::sent($this->fetchApi("one",1,800)));
 	}
 
 	/**
@@ -463,26 +464,26 @@ use \es\core\Promise;
 	*/
 	public function loadRemoteData($type){
 		if($type === 1){
-			$a = $this->fetchApi("one",1,800);
-			$bs = (object)['bss'=>$this->fetchApi("two",2,500)];
-			$c = $this->fetchApi("three",3,900);
+			$a = Promise::sent($this->fetchApi("one",1,800));
+			$bs = (object)['bss'=>Promise::sent($this->fetchApi("two",2,500))];
+			$c = Promise::sent($this->fetchApi("three",3,900));
 			$bs->cc = $c;
-			return [$a,$bs,$c];
+			return Promise::getInstance([$a,$bs,$c]);
 		}else{
 			$list = [];
 			switch($type){
 				case 3 :
-					$b = $this->fetchApi("four",4,300);
-					return $b;
+					$b = Promise::sent($this->fetchApi("four",4,300));
+					return Promise::getInstance($b);
 				case 4 :
-					$bb = $this->fetchApi("five",5,1200);
+					$bb = Promise::sent($this->fetchApi("five",5,1200));
 					array_push($list,$bb);
 			}
 			for($i = 0;$i < 5;$i++){
-				array_push($list,$this->fetchApi($i . '',$i,100));
+				array_push($list,Promise::sent($this->fetchApi($i . '',$i,100)));
 			}
 			array_values($list);
-			return $list;
+			return Promise::getInstance($list);
 		}
 	}
 
@@ -543,4 +544,103 @@ use \es\core\Promise;
 		}];
 		return $ddss;
 	}
+
+	/**
+	* @method testArray
+	*/
+	public function testArray():array{
+		$dd = [];
+		$bb = (object)['global'=>1,'private'=>1,'items'=>[]];
+		array_push($dd,1);
+		$this->assertEquals([1],\es\core\es_array_filter($dd,function($value,$key,&$array){
+			return true;
+		},$this));
+		$this->assertEquals([],\es\core\es_array_filter($dd,function($value,$key,&$array){
+			return false;
+		},$this));
+		$tt = ["==="];
+		$tt['index'] = 0;
+		$tt['input'] = '============';
+		$this->assertEquals($tt,(new RegExp('==='))->match("============"));
+		$bds = \es\core\es_array_new($bb->global);
+		$this->assertEquals([null],$bds);
+		$this->assertEquals($bb->global,count($bds));
+		$this->assertEquals([1],System::toArray($dd));
+		$_ARV = 0;
+		$items = $_RD = &$bb->items;
+		if($bb->global === 1){
+			$_ARV = 1;
+			$items = $_RD1 = &$dd;
+		}
+		/*References $items memory address*/
+		$_REF = function &()use(&$items,&$_ARV,&$_RD,&$_RD1){
+			if($_ARV===null)return $items;
+			switch($_ARV){
+				case 0 : return $_RD;
+				case 1 : return $_RD1;
+				default: return $items;
+			}
+		};
+		array_push($_REF(),0);
+		array_push($_REF(),1,9,6);
+		$this->assertEquals([1,0,1,9,6],$_REF());
+		$_ARV = 2;
+		$this->assertEquals($items = [],$_REF());
+		array_push($_REF(),9999);
+		$this->assertEquals([9999],$_REF());
+		$this->assertEquals(9999,array_pop($_REF(),));
+		array_splice($_REF(),0,0,[1,2,3]);
+		$this->assertEquals([1,2,3],$_REF());
+		$this->assertEquals([1,2],array_splice($_REF(),0,2,9));
+		$this->assertEquals([9,3],$_REF());
+		$this->assertEquals(9,array_shift($_REF(),));
+		array_unshift($_REF(),0,5,6);
+		$this->assertEquals([0,5,6,3],$_REF());
+		$this->assertEquals('array',System::typeof($dd));
+		array_push($this->getArrItems(),999);
+		$this->assertEquals([999],$this->items);
+		$this->assertEquals([],$this->getArrItems());
+		$da = $_RD2 = &$this->getArrItems();
+		array_push($_RD2,9999666);
+		$this->assertEquals([9999666],$this->itemsB);
+		$da = ["hhhhhhhhhh"];
+		$this->assertEquals("hhhhhhhhhh",array_pop($da,));
+		$ui = ("==" . 'da' . 'bs') . "=========";
+		$this->assertEquals("==dabs=========",$ui);
+		$n = 8 + 6;
+		$this->assertEquals(14,$n);
+		return $dd;
+	}
+
+	/**
+	* @method getArrItems
+	*/
+	private function &getArrItems():array{
+		$_ARV1 = 0;
+		$b = $_RD3 = &$this->items;
+		if($b){
+			$_ARV1 = 1;
+			$b = $_RD4 = &$this->itemsB;
+		}
+		/*References $b memory address*/
+		$_REF = function &()use(&$b,&$_ARV1,&$_RD3,&$_RD4){
+			if($_ARV1===null)return $b;
+			switch($_ARV1){
+				case 0 : return $_RD3;
+				case 1 : return $_RD4;
+				default: return $b;
+			}
+		};
+		return $_REF();
+	}
+
+	/**
+	* @property items
+	*/
+	private $items = [];
+
+	/**
+	* @property itemsB
+	*/
+	private $itemsB = [];
 }

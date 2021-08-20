@@ -45,6 +45,7 @@ class FunctionExpression extends Syntax{
         });
 
         let key = this.stack.isConstructor ? '__construct' : (this.stack.key ? this.stack.key.value() : null);
+        const async = this.stack.async;
         const body = this.stack.body && this.make(this.stack.body);
         const method = !!this.stack.parentStack.isMethodDefinition;
         const endIndent = this.getIndent();

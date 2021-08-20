@@ -13,10 +13,14 @@ use \es\core\System;
 use \es\core\Reflect;
 use \es\core\RegExp;
 use \es\core\Date;
-class Start extends Base{
+/**
+* @class StartTest
+* @inherit \Base
+*/
+ class StartTest extends Base{
 
 	/**
-	* @constructor Start
+	* @constructor StartTest
 	*/
 	public function __construct(){
 		parent::__construct();
@@ -214,10 +218,10 @@ class Start extends Base{
 		$this->assertEquals(mb_ord(mb_substr($str,0,1),'UTF-8'),97);
 		$this->assertEquals(mb_ord(mb_substr($str,2,1),'UTF-8'),98);
 		$obj = ['b'];
-		Reflect::set('\Start',$obj,'index',2);
-		Reflect::set('\Start',$obj,'input','aab');
+		$obj['index'] = 2;
+		$obj['input'] = 'aab';
 		$this->assertEquals((new RegExp('b'))->match($str),$obj);
-		$this->assertEquals(Reflect::get('\Start',$obj,'index'),2);
+		$this->assertEquals($obj['index'],2);
 		$this->assertEquals(($str) . 'AAB',($str . 'AAB'));
 		$this->assertEquals(0,strcmp($str,'aab'));
 		$this->assertEquals(1,strcmp($str,'aaa'));
@@ -246,7 +250,7 @@ class Start extends Base{
 		$paragraph = 'The quick brown fox jumps over the lazy dog. If the dog barked, was it really lazy?';
 		$regex = new RegExp('[^\w\s]','g');
 		$this->assertEquals(43,$regex->search($paragraph));
-		$this->assertEquals('.',Reflect::get('\Start',$paragraph,$regex->search($paragraph)));
+		$this->assertEquals('.',$paragraph[$regex->search($paragraph)]);
 		$this->setNames1("Ye Jun");
 		$this->assertEquals('Ye Jun',$this->getNames1());
 	}
@@ -259,8 +263,8 @@ class Start extends Base{
 		$o = (object)['name'=>$name];
 		$this->assertEquals((object)['name'=>"Jun Ye"],$o);
 		$this->assertEquals((object)['name'=>"ssss",'age'=>30],\es\core\es_object_assign($o,(object)['age'=>30,'name'=>"ssss"]));
-		$this->assertEquals($this,Reflect::call('\Start',Reflect::call('\Start',$this,"call"),"getObject"));
-		$fn = Reflect::get('\Start',$this,'getObject');
+		$this->assertEquals($this,Reflect::call('StartTest',Reflect::call('StartTest',$this,"call"),"getObject"));
+		$fn = Reflect::get('StartTest',$this,'getObject');
 		$this->assertEquals($this,$fn());
 	}
 
@@ -319,7 +323,7 @@ class Start extends Base{
 	/**
 	* @method call
 	*/
-	public function call():Start{
+	public function call(){
 		return $this;
 	}
 

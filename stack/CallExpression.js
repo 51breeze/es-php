@@ -48,10 +48,28 @@ class CallExpression extends Syntax{
             }
             return value;
         });
+        
         const result = this.intercept(args);
         if( result ){
             return result === true ? null : result;
         }
+
+        if( desc && desc.isDeclaratorFunction ){
+            switch( desc ){
+                case this.getGlobalModuleById('setTimeout') :
+                case this.getGlobalModuleById('setInterval') :
+                    if( args.length > 2 ){
+                        return `call_user_func(${args[0]},${args.slice(3).join(',')})`;
+                    }else{
+                        return `call_user_func(${args[0]})`;
+                    }
+                case this.getGlobalModuleById('clearTimeout') :
+                case this.getGlobalModuleById('clearInterval') :
+                    return `null`;
+            }
+        }
+
+
         if( this.stack.callee.isMemberExpression ){
             if( desc && desc.isType && desc.isAnyType  ){
                 this.addDepend("Reflect");

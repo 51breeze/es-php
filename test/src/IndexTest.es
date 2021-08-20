@@ -7,20 +7,20 @@ package;
 import com.TestInterface;
 import Person;
 import Types;
-import Start;
+import StartTest;
 import Iterator;
 
 
 /**
 * Test a class
 */
-public class Test<U,B=string> extends Person<string> implements Iterator {
+public class IndexTest<U,B=string> extends Person<string> implements Iterator {
 
     /**
     *  返回一个类的引用
     */
     static getClass(){
-        var a = Test as class<Test>;
+        var a = IndexTest as class<IndexTest>;
         var buname = {a:1}
         buname.test = a;
         buname.person = Person;
@@ -29,8 +29,8 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
         return buname
     }
 
-    static getClassObject():class<Test>{
-        var a = Test;
+    static getClassObject():class<IndexTest>{
+        var a = IndexTest;
         var b = {
             test:a
         }
@@ -39,7 +39,7 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
     }
 
     static getObject(){
-        return new Test()
+        return new IndexTest()
     }
 
     /**
@@ -55,7 +55,7 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
     * @private
     * the is class type.
     */
-    private static var iiu:class<Test> = Test;
+    private static var iiu:class<IndexTest> = IndexTest;
 
     /**
     * @private
@@ -80,16 +80,16 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
 
     testBase(){
        
-        this.assertEquals("uuName",Test.getClassObject().uuName );
+        this.assertEquals("uuName",IndexTest.getClassObject().uuName );
         this.assertEquals(40,this.age );
         this.assertTrue(this instanceof Person);
         this.assertTrue(this is Person);
         this.assertTrue(this instanceof TestInterface);
         this.assertTrue(this is TestInterface);
-        this.assertEquals(Test, Test.getClass().test);
-        this.assertEquals(Person, Test.getClass().person);
+        this.assertEquals(IndexTest, IndexTest.getClass().test);
+        this.assertEquals(Person, IndexTest.getClass().person);
 
-        const o = new (Test.getClass().person)();
+        const o = new (IndexTest.getClass().person)();
         this.assertTrue( o instanceof Person );
         this.assertEquals('bbss', this.bbss);
 
@@ -282,7 +282,7 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
         this.assertEquals(99,  bds[ types ] );
 
         let obj = this.getTestObject(true)
-        var bd:Test<int,string> = obj;
+        var bd:IndexTest<int,string> = obj;
         var bs = obj.getNamess(1);
         this.assertEquals("1.00",  bs.toFixed(2) );
 
@@ -304,14 +304,14 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
     }
 
     private getTestGenerics<T,B2 extends string>( name:T, age?:B2 ):B2{
-             var t =  new Test();
+             var t =  new IndexTest();
             return age;
     }
 
     private getTestObject( flag?:boolean ){
         const factor=()=>{
             const o = {};
-            o.test = new Test();
+            o.test = new IndexTest();
             o.name = "test";
             return o.test;
         };
@@ -363,7 +363,7 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
 
     }
 
-    getJson():any{
+    getJson(){
        return {
            name:123
        }
@@ -404,7 +404,7 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
     }
 
     tetObject(){
-        var t = new Test();
+        var t = new IndexTest();
         var b = t;
         var ii={
             bb:b
@@ -494,11 +494,6 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
         b.push( 'three' )
         b.push( 'four' )
         b.push( [name,age] )
-
-
-        //var bd:number = cc.pop();
-        //var tt:(number | int | string)[] = x.splice(0,5);
-        //str = tt;
         return [str, cc, x, b];
     }
 
@@ -554,84 +549,89 @@ public class Test<U,B=string> extends Person<string> implements Iterator {
         return ddss;
     }
 
-    // private address():int[]{
-    //     const dd:int[] = [];
-    //     const bb = {global:1,private:1,items:[]};
-    //     dd.push( 1 );
-    //     console.log( dd.filter((value,key,array)=>{
-    //            return true;
-    //     }, this), "============".match('===') );
+    testArray():int[]{
+        const dd:int[] = [];
+        const bb = {global:1,private:1,items:[]};
+        dd.push( 1 );
 
-    //     var bds = new Array( bb.global );
+        this.assertEquals([1], dd.filter((value,key,array)=>{
+               return true;
+        }, this) )
 
-    //     bds.length;
-    //     Array.from(dd);
+        this.assertEquals([], dd.filter((value,key,array)=>{
+               return false;
+        }, this) )
 
-    //     var items = bb.items;
-
-
-    //     if( bb.global === 1 ){
-    //         items = dd;
-    //     }
-
-    //     items.push(0);
-
-    //     var bsdd = items;
+        const tt = ["==="]; 
+        tt['index'] = 0;
+        tt['input'] = '============';
+        this.assertEquals(tt, "============".match('===') )
 
 
-    //     console.log( items.push(1,9,6), items=[],  items.push(9999) );
+        var bds = new Array( bb.global );
+        this.assertEquals([null], bds );
+        this.assertEquals(bb.global, bds.length );
+
+        this.assertEquals([1], Array.from(dd) );
+
+        var items = bb.items;
+        if( bb.global === 1 ){
+            items = dd;
+        }
+
+        items.push(0);
+        var bsdd = items;
+        items.push(1,9,6) 
+        this.assertEquals([1,0,1,9,6], items );
+        this.assertEquals(items=[], items );
+
+        items.push(9999)
+        this.assertEquals([9999], items );
+        this.assertEquals(9999, items.pop() );
+        items.splice(0,0,1,2,3)
+        this.assertEquals([1,2,3], items );
+        this.assertEquals([1,2], items.splice(0,2,9) );
+        this.assertEquals([9,3], items);
+        this.assertEquals(9, items.shift());
+        items.unshift(0,5,6)
+        this.assertEquals([0,5,6,3], items);
+
+        var bs = null ;
+        bs = this.items;
+        bs = dd;
+
+        this.assertEquals('array',typeof  dd);
+        this.getArrItems().push( 999 );
+        this.assertEquals([999], this.items );
+        this.assertEquals([], this.getArrItems() );
+
+        var da = this.getArrItems();
+        da.push(9999666);
+        this.assertEquals([9999666], this.itemsB );
+
+        da = ["hhhhhhhhhh"];
+        var bdsu = da;
+        this.assertEquals("hhhhhhhhhh", da.pop() );
+
+        var ui =  "==".concat( 'da' ,  'bs' ) + "=========";
+        this.assertEquals("==dabs=========", ui );
+
+        var n = 8 + 6;
+        this.assertEquals(14, n );
+        return dd;
+    }
 
 
-    //     console.log( items.pop() )
+    private getArrItems(){
+        var b =  this.items;
+        if( b ){
+            b = this.itemsB;
+        }
+        return b;
+    }
 
-    //     console.log( items.splice(0,5, '') );
-
-    //     console.log( items.shift() );
-    //     console.log( items.unshift(0,5, '') );
-
-    //     var bs = null ;
-    //     bs = this.items;
-    //     bs = dd;
-    //     //bs.push(99988);
-
-    //     typeof  dd;
-
-    //     this.getArrItems().push( 999 );
-
-    //     var da = this.getArrItems();
-    //     da.push(9999666);
-
-    //     da = ["hhhhhhhhhh"];
-
-    //     var bdsu = da;
-
-    //     console.log( da );
-
-    //     console.log( da.pop() );
-
-
-    //      var ui =  "==".concat( 'da' ,  'bs' ) + "=========";
-    //      var n = 8 + 6;
-
-    //     console.log( ui, n  );
-
-    //     return dd;
-    // }
-
-
-    // private getArrItems(){
-    //     var b =  this.items;
-    //     var c = [];
-    //     if( b ){
-    //         b = this.items;
-    //     }
-    //     b = [];
-    //     return b;
-    // }
-
-
-
-    // private var items = [];
+     private var items = [];
+     private var itemsB = [];
     
 
 }

@@ -3,7 +3,7 @@ package;
 import Types;
 import Base;
 
-public class Start extends Base
+public class StartTest extends Base
 {
     private var items = [];
     private var list  = [];
@@ -127,7 +127,6 @@ public class Start extends Base
         this.assertEquals([3,6],s);
         this.assertEquals(6, [].pop.call(s) );
         this.assertEquals(3, s.pop() );
-
     }
 
     addArray( a:string[], b){
