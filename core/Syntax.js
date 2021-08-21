@@ -244,7 +244,8 @@ class Syntax extends events.EventEmitter {
     }
 
     isUsed(module){
-        return module.used || usedModules.has(module);
+        if( !module )return false;
+        return module.used || usedModules.has(module) || this.compiler.main.includes( module.compilation );
     }
 
     getUsedModules(){
