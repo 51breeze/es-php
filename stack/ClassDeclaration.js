@@ -165,7 +165,7 @@ class ClassDeclaration extends Syntax{
             });
         }
 
-        const body = [ this.createComment(classCommentItems, this.stack.comments,'')+'\r\n' ];
+        const body = [];
         if( module.namespace.identifier){
             body.push(`namespace ${module.namespace.getChain().join("\\\\")};`);
         }
@@ -175,7 +175,7 @@ class ClassDeclaration extends Syntax{
         body.push( module.id );
         inherit && body.push( `extends ${this.getReferenceNameByModule(inherit)}` );
         imps.length > 0 && body.push( `implements ${imps.map(impModule=>this.getReferenceNameByModule(impModule)).join(",")}` );
-        const parts = refs.concat(body.join(" ")+'{\r\n', content.join("\r\n\r\n"),'}');
+        const parts = refs.concat(this.createComment(classCommentItems, this.stack.comments,''),body.join(" ")+'{\r\n', content.join("\r\n\r\n"),'}');
         if( external ){
             parts.push( external );
         }
