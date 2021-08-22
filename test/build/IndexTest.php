@@ -21,7 +21,7 @@ use \es\core\Promise;
 * @inherit \Person
 * Test a class
 */
- class IndexTest extends Person implements \es\core\IIterator{
+class IndexTest extends Person implements \es\core\IIterator{
 
 	/**
 	* @constructor IndexTest

@@ -17,7 +17,7 @@ use \es\core\Date;
 * @class StartTest
 * @inherit \Base
 */
- class StartTest extends Base{
+class StartTest extends Base{
 
 	/**
 	* @constructor StartTest

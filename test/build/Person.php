@@ -7,7 +7,7 @@ use \PHPUnit\Framework\TestCase;
 * @implements \com\TestInterface
 * @inherit \PHPUnit\Framework\TestCase
 */
- class Person extends TestCase implements TestInterface{
+class Person extends TestCase implements TestInterface{
 
 	/**
 	* @constructor Person

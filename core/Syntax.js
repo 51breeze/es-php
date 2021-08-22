@@ -245,7 +245,7 @@ class Syntax extends events.EventEmitter {
 
     isUsed(module){
         if( !module )return false;
-        return module.used || usedModules.has(module) || this.compiler.main.includes( module.compilation );
+        return module.used || usedModules.has(module) || (module.compilation && module.compilation.isMain) ;
     }
 
     getUsedModules(){
@@ -357,13 +357,7 @@ class Syntax extends events.EventEmitter {
     }
     
     getConfig( name ){
-        const config = this.compiler.options.configuration[ this.name ] || {
-            build:Constant.BUILD_ALL_FILE,
-            target:7,
-            output:{
-                suffix:'.php',
-            },
-        };
+        const config = this.configuration || {};
         if( name ){
             if( name.lastIndexOf(".") > 0 ){
                 const keys = name.split('.');
