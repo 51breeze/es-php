@@ -23,8 +23,8 @@ class Syntax extends events.EventEmitter {
         return this.stack.comments;
     }
 
-    getModuleById( id ){
-        return this.compilation.getModuleById(id);
+    getModuleById( id, flag=false ){
+        return this.compilation.getModuleById(id, flag);
     }
 
     getGlobalModuleById( id ){
