@@ -1,6 +1,6 @@
 {
   "name": "es-php",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "test",
   "main": "index.js",
   "scripts": {
@@ -27,7 +27,7 @@
     "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "jasmine": "^3.7.0",
-    "easescript": "^0.x.x"
+    "easescript": "0.0.41",
+    "jasmine": "^3.7.0"
   }
 }

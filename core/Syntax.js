@@ -266,6 +266,11 @@ class Syntax extends events.EventEmitter {
         return name.toLowerCase() === this.name;
     }
 
+    isEnv( name ){
+        const options = this.getOptions();
+        return name === options.env;
+    }
+
     checkRefsName(name){
         if( this.scope.isDefine(name) ){
             const topStack = this.stack.getParentStack((stack)=>!!stack.isClassDeclaration);
