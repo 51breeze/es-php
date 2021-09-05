@@ -326,19 +326,20 @@ class Syntax extends events.EventEmitter {
 
     getOutputAbsolutePath(module){
         const options = this.getOptions();
-        if( !module )return options.output;
         const config = this.getConfig();
-        const suffix = config.output.suffix||".php";
-        if( module.isDeclaratorModule ){
+        const suffix = config.suffix||".php";
+        const output = config.output || options.output;
+        const workspace = config.workspace || options.workspace;
+        if(module && module.isDeclaratorModule ){
             const isPolyfill = Polyfill.modules.has( module.id );
             const polyfillModule = isPolyfill ? Polyfill.modules.get( module.id ) : null;
             const filename = (polyfillModule && polyfillModule.export ? polyfillModule.export : module.id)+suffix;
             if( polyfillModule ){
-                return PATH.join(options.output,polyfillModule.namespace.replace(/\./g,'/'),filename).replace(/\\/g,'/');
+                return PATH.join(output,polyfillModule.namespace.replace(/\./g,'/'),filename).replace(/\\/g,'/');
             }
-            return PATH.join(options.output,module.getName("/")+suffix).replace(/\\/g,'/');
+            return PATH.join(output,module.getName("/")+suffix).replace(/\\/g,'/');
         }
-        const filepath = PATH.resolve(options.output, PATH.relative( this.compiler.workspace, module.file ) );
+        const filepath = PATH.resolve(output, PATH.relative( workspace, module.file ) );
         const info = PATH.parse(filepath);
         if( info.ext !== suffix ){
            return PATH.join(info.dir,info.name+suffix).replace(/\\/g,'/');
