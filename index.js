@@ -13,9 +13,7 @@ const loadStack=()=>{
 const defaultConfig ={
     build:Constant.BUILD_ALL_FILE,
     target:7,
-    output:{
-        suffix:'.php',
-    },
+    suffix:'.php',
 }
 
 const plugin = {
@@ -43,16 +41,27 @@ for(var name in plugin){
 }
 
 plugin.config=function config(options){
-    Syntax.prototype.configuration = Object.assign({}, defaultConfig, Syntax.prototype.configuration||{},  options||{});
+    if(options){
+        Syntax.prototype.configuration = Object.assign({}, defaultConfig, Syntax.prototype.configuration||{},  options||{});
+    }
 }
 
 plugin.start=function start(compilation, done, options){
-    this.config(options);
+    if(options)this.config(options);
     if( modules.size === 0 ){
         loadStack();
     }
     const builder = new Builder( compilation.stack );
     builder.start(done);
+}
+
+plugin.build=function build(compilation, done, options){
+    if(options)this.config(options);
+    if( modules.size === 0 ){
+        loadStack();
+    }
+    const builder = new Builder( compilation.stack );
+    builder.build(done);
 }
 
 module.exports = plugin;

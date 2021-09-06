@@ -1,46 +1,75 @@
 const fs = require("fs");
 const path = require("path");
 const Syntax = require("./Syntax");
-const Constant = require("./Constant");
 const Polyfill = require("./Polyfill");
 class Builder extends Syntax{
 
     start( done ){
-
         const compilation = this.compilation;
         const buildModules = new Set();
-        const config      = this.getConfig();
-        const isNeedBuild=(module)=>{
-            const isDeclaratorModule = module.isDeclaratorModule;
-            const isPolyfill = isDeclaratorModule && Polyfill.modules.has( module.id );
-            return !isDeclaratorModule || isPolyfill;
-        }
+        const buildCompilations = new Set();
         const builder = ( module )=>{
-            if( !buildModules.has(module) ){
+            if( !buildModules.has(module) && this.isNeedBuild(module) ){
                 buildModules.add(module);
-                if( isNeedBuild(module) ){
+                if( !module.compilation.completed(this.name) ){
                     const stack = compilation.getStackByModule(module);
-                    const file = this.getOutputAbsolutePath(module);
-                    this.emitFile( file, this.make(stack) );
+                    if( stack ){
+                        const file = this.getOutputAbsolutePath(module);
+                        buildCompilations.add( module.compilation );
+                        this.emitFile(file, this.make(stack) );
+                    }else{
+                        done( new Error(`Not found stack by '${module.getName()}'`) );
+                    }
                 }
             }
         };
-        if( config.build === Constant.BUILD_ALL_FILE ){
-            const builderAll=(module)=>{
-                if( !buildModules.has(module) ){
-                    builder(module);
-                    this.getDependencies(module).forEach( depModule=>{
-                        builderAll(depModule);
-                    });
-                }
-            }
-            compilation.modules.forEach( module =>builderAll(module) )
-        }else if(config.build === Constant.BUILD_ORIGIN_FILE){
-            compilation.modules.forEach( module =>{
+        
+        const builderAll=(module)=>{
+            if( !buildModules.has(module) ){
                 builder(module);
-            });
+                this.getDependencies(module).forEach( depModule=>{
+                    builderAll(depModule);
+                });
+            }
         }
+
+        compilation.completed(this.name,false);
+        compilation.modules.forEach( module =>builderAll(module) );
+
+        buildCompilations.forEach( compilation=>{
+            compilation.completed(this.name,true);
+        });
+
         done();
+    }
+
+    build(done){
+        const compilation = this.compilation;
+        compilation.completed(this.name,false);
+        try{
+            compilation.modules.forEach( module =>{
+                if( this.isNeedBuild(module) ){
+                    const stack = compilation.getStackByModule(module);
+                    if( stack ){
+                        const file = this.getOutputAbsolutePath(module);
+                        this.emitFile(file, this.make(stack) );
+                    }else{
+                        done( new Error(`Not found stack by '${module.getName()}'`) );
+                    }
+                }
+            });
+        }catch(e){
+            done(e);
+        }
+        compilation.completed(this.name,true);
+        done();
+    }
+
+    isNeedBuild(module){
+        if(!module)return false;
+        const isDeclaratorModule = module.isDeclaratorModule;
+        const isPolyfill = isDeclaratorModule && Polyfill.modules.has( module.id );
+        return !isDeclaratorModule || isPolyfill;
     }
 
     bootstrap(mainId, modules){
