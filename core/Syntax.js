@@ -1,3 +1,4 @@
+const Constant = require("./Constant");
 const Polyfill = require("./Polyfill");
 const PATH = require("path");
 const events = require('events');
@@ -19,8 +20,8 @@ class Syntax extends events.EventEmitter {
         return this.stack.comments;
     }
 
-    getModuleById( id, flag=false ){
-        return this.compilation.getModuleById(id, flag);
+    getModuleById( id ){
+        return this.compilation.getModuleById(id);
     }
 
     getGlobalModuleById( id ){
@@ -254,11 +255,6 @@ class Syntax extends events.EventEmitter {
         return name.toLowerCase() === this.name;
     }
 
-    isEnv( name ){
-        const options = this.getOptions();
-        return name === options.env;
-    }
-
     checkRefsName(name){
         if( this.scope.isDefine(name) ){
             const topStack = this.stack.getParentStack((stack)=>!!stack.isClassDeclaration);
@@ -319,12 +315,11 @@ class Syntax extends events.EventEmitter {
 
     getOutputAbsolutePath(module){
         const options = this.getOptions();
-        if( !module )return options.output;
         const config = this.getConfig();
         const suffix = config.suffix||".php";
-        const output = config.output||options.output;
-        const workspace = config.workspace||options.workspace;
-        if( module.isDeclaratorModule ){
+        const output = config.output || options.output;
+        const workspace = config.workspace || options.workspace;
+        if(module && module.isDeclaratorModule ){
             const isPolyfill = Polyfill.modules.has( module.id );
             const polyfillModule = isPolyfill ? Polyfill.modules.get( module.id ) : null;
             const filename = (polyfillModule && polyfillModule.export ? polyfillModule.export : module.id)+suffix;

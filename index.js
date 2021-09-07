@@ -39,27 +39,33 @@ for(var name in plugin){
 }
 
 plugin.config=function config(options){
-    if(options){
-        Syntax.prototype.configuration = Object.assign({}, defaultConfig, Syntax.prototype.configuration||{},  options||{});
-    }
+    Syntax.prototype.configuration = Object.assign({}, defaultConfig, Syntax.prototype.configuration||{},  options||{});
 }
 
 plugin.start=function start(compilation, done, options){
-    if(options)this.config(options);
+    if( options )this.config(options);
     if( modules.size === 0 ){
         loadStack();
     }
-    const builder = new Builder( compilation.stack );
-    builder.start(done);
+    if( compilation.stack && compilation.stack.isStack ){
+        const builder = new Builder( compilation.stack );
+        builder.start(done);
+    }else{
+        done( new Error('Not found stack') );
+    }
 }
 
 plugin.build=function build(compilation, done, options){
-    if(options)this.config(options);
+    if( options )this.config(options);
     if( modules.size === 0 ){
         loadStack();
     }
-    const builder = new Builder( compilation.stack );
-    builder.build(done);
+    if(compilation.stack && compilation.stack.isStack){
+        const builder = new Builder(compilation.stack);
+        builder.build(done);
+    }else{
+        done( new Error('Not found stack') );
+    }
 }
 
 module.exports = plugin;

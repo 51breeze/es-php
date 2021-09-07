@@ -1,12 +1,18 @@
 const fs = require("fs");
 const path = require("path");
 const Syntax = require("./Syntax");
+<<<<<<< HEAD
+=======
+const Constant = require("./Constant");
+const Polyfill = require("./Polyfill");
+>>>>>>> d10e6fd81f283649151a061eaad902068bfb5e00
 class Builder extends Syntax{
 
-    start( done ){
+    start(done){
         const compilation = this.compilation;
+        const config      = this.getConfig();
         const buildModules = new Set();
-        const buildCompilations = new Set();
+        const buildedCompilations = new Set();
         const builder = ( module )=>{
             if( !buildModules.has(module) && this.isNeedBuild(module) ){
                 buildModules.add(module);
@@ -14,30 +20,42 @@ class Builder extends Syntax{
                     const stack = compilation.getStackByModule(module);
                     if( stack ){
                         const file = this.getOutputAbsolutePath(module);
-                        buildCompilations.add( module.compilation );
-                        this.emitFile(file, this.make(stack) );
+                        this.emitFile(file, this.make(stack));
                     }else{
                         done( new Error(`Not found stack by '${module.getName()}'`) );
                     }
+                    buildedCompilations.add( module.compilation );
                 }
             }
         };
-        
-        const builderAll=(module)=>{
-            if( !buildModules.has(module) ){
+        compilation.completed(this.name,false);
+        if(config.build === Constant.BUILD_ORIGIN_FILE){
+            compilation.modules.forEach( module =>{
                 builder(module);
-                this.getDependencies(module).forEach( depModule=>{
-                    builderAll(depModule);
-                });
+            });
+        }else{
+            const builderAll=(module)=>{
+                if( !buildModules.has(module) ){
+                    builder(module);
+                    this.getDependencies(module).forEach( depModule=>{
+                        builderAll(depModule);
+                    });
+                }
             }
+            compilation.modules.forEach( module =>{
+                builderAll(module)
+            });
         }
+<<<<<<< HEAD
 
         compilation.completed(this.name,false);
         compilation.modules.forEach( module =>builderAll(module) );
         buildCompilations.forEach( compilation=>{
+=======
+        buildedCompilations.forEach( compilation=>{
+>>>>>>> d10e6fd81f283649151a061eaad902068bfb5e00
             compilation.completed(this.name,true);
         });
-
         done();
     }
 
