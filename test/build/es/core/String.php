@@ -6,6 +6,12 @@
  * @author Jun Ye <664371281@qq.com>
  */
 namespace es\core;
+require_once('es/core/RegExp.php');
+require_once('es/core/Number.php');
+require_once('es/core/Number.php');
+require_once('es/core/IIterator.php');
+use \es\core\IIterator;
+use \es\core\RegExp;
 
 /**
  * @name indexOf

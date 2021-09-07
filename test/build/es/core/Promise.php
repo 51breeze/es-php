@@ -6,6 +6,8 @@
  * @author Jun Ye <664371281@qq.com>
  */
 namespace es\core;
+require_once('es/core/IIterator.php');
+use \es\core\IIterator;
 
 class Promise{
 

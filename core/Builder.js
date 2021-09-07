@@ -1,7 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const Syntax = require("./Syntax");
-const Polyfill = require("./Polyfill");
 class Builder extends Syntax{
 
     start( done ){
@@ -35,7 +34,6 @@ class Builder extends Syntax{
 
         compilation.completed(this.name,false);
         compilation.modules.forEach( module =>builderAll(module) );
-
         buildCompilations.forEach( compilation=>{
             compilation.completed(this.name,true);
         });
@@ -63,13 +61,6 @@ class Builder extends Syntax{
         }
         compilation.completed(this.name,true);
         done();
-    }
-
-    isNeedBuild(module){
-        if(!module)return false;
-        const isDeclaratorModule = module.isDeclaratorModule;
-        const isPolyfill = isDeclaratorModule && Polyfill.modules.has( module.id );
-        return !isDeclaratorModule || isPolyfill;
     }
 
     bootstrap(mainId, modules){

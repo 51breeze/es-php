@@ -1,20 +1,24 @@
 <?php
-require_once('es/core/Array.php');
-require_once('es/core/Promise.php');
-require_once('es/core/Object.php');
 require_once('es/core/System.php');
-require_once('Types.php');
 require_once('es/core/Reflect.php');
 require_once('es/core/RegExp.php');
+require_once('es/core/Array.php');
+require_once('es/core/Number.php');
+require_once('es/core/Promise.php');
+require_once('es/core/Number.php');
 require_once('com/TestInterface.php');
-require_once('Person.php');
+require_once('es/core/Object.php');
+require_once('Types.php');
+require_once('es/core/Number.php');
+require_once('es/core/String.php');
 require_once('es/core/IIterator.php');
+require_once('Person.php');
 use \es\core\IIterator;
 use \com\TestInterface;
+use \es\core\Promise;
 use \es\core\RegExp;
 use \es\core\Reflect;
 use \es\core\System;
-use \es\core\Promise;
 /**
 * @class IndexTest
 * @implements \es\core\IIterator

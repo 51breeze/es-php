@@ -167,7 +167,7 @@ class ClassDeclaration extends Syntax{
 
         const body = [];
         if( module.namespace.identifier){
-            body.push(`namespace ${module.namespace.getChain().join("\\\\")};`);
+            refs.unshift(`namespace ${module.namespace.getChain().join("\\\\")};`);
         }
         staticName && body.push( staticName );
         abstract && body.push( abstract );

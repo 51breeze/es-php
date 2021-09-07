@@ -40,11 +40,10 @@ class InterfaceDeclaration extends Syntax{
         
         emitter( members, content, false);
 
-        if( module.namespace.identifier){
-            push(refs, `namespace ${module.namespace.getChain().join("\\\\")};` );
-        }
-
         this.createDependencies(module,refs);
+        if( module.namespace.identifier){
+            refs.unshift(`namespace ${module.namespace.getChain().join("\\\\")};` );
+        }
 
         const body = [];
         push(body, 'interface');

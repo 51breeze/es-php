@@ -1,7 +1,12 @@
 <?php
+require_once('es/core/Number.php');
+require_once('es/core/Number.php');
+require_once('es/core/Number.php');
+require_once('es/core/Number.php');
+require_once('es/core/String.php');
 require_once('com/TestInterface.php');
-use \com\TestInterface;
 use \PHPUnit\Framework\TestCase;
+use \com\TestInterface;
 /**
 * @class Person
 * @implements \com\TestInterface

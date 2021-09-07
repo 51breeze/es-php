@@ -2,12 +2,9 @@ const Polyfill = require("./Polyfill");
 const PATH = require("path");
 const events = require('events');
 const AddressVariable = require("./AddressVariable");
-const usedModules = new Set();
-const dependModules = new Map();
 const createdStackData = new Map();
 const refsParentVariable = new Map();
 class Syntax extends events.EventEmitter {
-
     constructor(stack){
         super();
         this.stack = stack;
@@ -238,17 +235,9 @@ class Syntax extends events.EventEmitter {
         return `${this.name}.${name}`;
     }
 
-    used(module){
-        usedModules.add(module);
-    }
-
     isUsed(module){
         if( !module )return false;
-        return module.used || usedModules.has(module) || (module.compilation && module.compilation.isMain) ;
-    }
-
-    getUsedModules(){
-        return usedModules;
+        return module.used || (module.compilation && module.compilation.isMain) ;
     }
 
     isRuntime( name ){
@@ -439,16 +428,11 @@ class Syntax extends events.EventEmitter {
             depModule = this.getModuleById(depModule);
         }
         if( !depModule.isModule || depModule === this.module )return;
-        if( !dependModules.has( module ) ){
-            dependModules.set(module,new Set());
-        }
-        const target = dependModules.get(module);
-        this.used(depModule);
-        target.add(depModule);
+        this.compilation.addDependency(depModule,module);
     }
 
     getDependencies( module ){
-        return dependModules.get( module ) || [];
+        return this.compilation.getDependencies(module) || [];
     }
 
     isDependModule(depModule, isRealClass=false){
@@ -459,6 +443,13 @@ class Syntax extends events.EventEmitter {
             return true;
         }
         return false;
+    }
+
+    isNeedBuild(module){
+        if(!module)return false;
+        const isDeclaratorModule = module.isDeclaratorModule;
+        const isPolyfill = isDeclaratorModule && Polyfill.modules.has( module.id );
+        return !isDeclaratorModule || isPolyfill;
     }
 
     isBaseType( type ){
