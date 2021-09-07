@@ -66,7 +66,6 @@ class Builder extends Syntax{
     bootstrap(mainId, modules){
         const bootstrap = fs.readFileSync( path.join(__dirname,"../bootstrap.js") ).toString();
         return bootstrap.replace(/\[CODE\[([A-Z|_]+?)\]\]/g,function(a,name){
-                 console.log( name )
                 switch(name){
                     case "MAIN_IDENTIFIER" :
                         return mainId;

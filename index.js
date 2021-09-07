@@ -1,7 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const Builder = require("./core/Builder");
-const Constant = require("./core/Constant");
 const modules = new Map();
 const loadStack=()=>{
     const dirname = path.join(__dirname,"stack");
@@ -11,7 +10,6 @@ const loadStack=()=>{
     });
 }
 const defaultConfig ={
-    build:Constant.BUILD_ALL_FILE,
     target:7,
     suffix:'.php',
 }
