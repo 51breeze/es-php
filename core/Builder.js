@@ -1,18 +1,10 @@
 const fs = require("fs");
 const path = require("path");
 const Syntax = require("./Syntax");
-<<<<<<< HEAD
-=======
-const Constant = require("./Constant");
-const Polyfill = require("./Polyfill");
->>>>>>> d10e6fd81f283649151a061eaad902068bfb5e00
 class Builder extends Syntax{
-
     start(done){
         const compilation = this.compilation;
-        const config      = this.getConfig();
         const buildModules = new Set();
-        const buildedCompilations = new Set();
         const builder = ( module )=>{
             if( !buildModules.has(module) && this.isNeedBuild(module) ){
                 buildModules.add(module);
@@ -24,37 +16,21 @@ class Builder extends Syntax{
                     }else{
                         done( new Error(`Not found stack by '${module.getName()}'`) );
                     }
-                    buildedCompilations.add( module.compilation );
                 }
             }
         };
-        compilation.completed(this.name,false);
-        if(config.build === Constant.BUILD_ORIGIN_FILE){
-            compilation.modules.forEach( module =>{
+        const builderAll=(module)=>{
+            if( !buildModules.has(module) ){
                 builder(module);
-            });
-        }else{
-            const builderAll=(module)=>{
-                if( !buildModules.has(module) ){
-                    builder(module);
-                    this.getDependencies(module).forEach( depModule=>{
-                        builderAll(depModule);
-                    });
-                }
+                this.getDependencies(module).forEach( depModule=>{
+                    builderAll(depModule);
+                });
             }
-            compilation.modules.forEach( module =>{
-                builderAll(module)
-            });
         }
-<<<<<<< HEAD
-
         compilation.completed(this.name,false);
         compilation.modules.forEach( module =>builderAll(module) );
-        buildCompilations.forEach( compilation=>{
-=======
-        buildedCompilations.forEach( compilation=>{
->>>>>>> d10e6fd81f283649151a061eaad902068bfb5e00
-            compilation.completed(this.name,true);
+        buildModules.forEach( module=>{
+            module.compilation.completed(this.name,true);
         });
         done();
     }
