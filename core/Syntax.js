@@ -238,7 +238,7 @@ class Syntax extends events.EventEmitter {
 
     isUsed(module){
         if( !module )return false;
-        return module.used || module=== this.module || (module.compilation && module.compilation.isMain) ;
+        return module.used || module.compilation=== this.compilation || (module.compilation && module.compilation.isMain) ;
     }
 
     isRuntime( name ){
