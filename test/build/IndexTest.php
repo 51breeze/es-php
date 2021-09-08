@@ -62,7 +62,7 @@ class IndexTest extends Person implements \es\core\IIterator{
 	/**
 	* @method getObject
 	*/
-	static public function getObject(){
+	static public function getObject():IndexTest{
 		return new IndexTest();
 	}
 
@@ -308,7 +308,7 @@ class IndexTest extends Person implements \es\core\IIterator{
 	/**
 	* @method getTestObject
 	*/
-	private function getTestObject(bool $flag=null){
+	private function getTestObject(bool $flag=null):IndexTest{
 		$factor = function(){
 			$o = (object)[];
 			$o->test = new IndexTest();
@@ -414,7 +414,7 @@ class IndexTest extends Person implements \es\core\IIterator{
 	/**
 	* @method tetObject
 	*/
-	public function tetObject(){
+	public function tetObject():IndexTest{
 		$b = $t;
 		$ii = (object)['bb'=>$b];
 		return $ii->bb;

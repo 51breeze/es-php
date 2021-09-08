@@ -3,36 +3,38 @@ const path = require("path");
 const Syntax = require("./Syntax");
 class Builder extends Syntax{
     start(done){
-        const compilation = this.compilation;
-        const buildModules = new Set();
-        const builder = ( module )=>{
-            if( !buildModules.has(module) && this.isNeedBuild(module) ){
-                buildModules.add(module);
-                if( !module.compilation.completed(this.name) ){
+        try{
+            const compilation = this.compilation;
+            const buildModules = new Set();
+            const builder = ( module )=>{
+                if( this.isNeedBuild(module) && !module.compilation.completed(this.name) ){
                     const stack = compilation.getStackByModule(module);
                     if( stack ){
                         const file = this.getOutputAbsolutePath(module);
                         this.emitFile(file, this.make(stack));
                     }else{
-                        done( new Error(`Not found stack by '${module.getName()}'`) );
+                        throw new Error(`Not found stack by '${module.getName()}'`);
                     }
                 }
+            };
+            const builderAll=(module)=>{
+                if( !buildModules.has(module) ){
+                    buildModules.add(module);
+                    builder(module);
+                    this.getDependencies(module).forEach( depModule=>{
+                        builderAll(depModule);
+                    });
+                }
             }
-        };
-        const builderAll=(module)=>{
-            if( !buildModules.has(module) ){
-                builder(module);
-                this.getDependencies(module).forEach( depModule=>{
-                    builderAll(depModule);
-                });
-            }
+            compilation.completed(this.name,false);
+            compilation.modules.forEach( module =>builderAll(module) );
+            buildModules.forEach( module=>{
+                module.compilation.completed(this.name,true);
+            });
+            done();
+        }catch(e){
+            done(e);
         }
-        compilation.completed(this.name,false);
-        compilation.modules.forEach( module =>builderAll(module) );
-        buildModules.forEach( module=>{
-            module.compilation.completed(this.name,true);
-        });
-        done();
     }
 
     build(done){
@@ -46,15 +48,15 @@ class Builder extends Syntax{
                         const file = this.getOutputAbsolutePath(module);
                         this.emitFile(file, this.make(stack) );
                     }else{
-                        done( new Error(`Not found stack by '${module.getName()}'`) );
+                        throw new Error(`Not found stack by '${module.getName()}'`);
                     }
                 }
             });
+            compilation.completed(this.name,true);
+            done();
         }catch(e){
             done(e);
         }
-        compilation.completed(this.name,true);
-        done();
     }
 
     bootstrap(mainId, modules){

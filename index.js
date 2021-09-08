@@ -30,6 +30,8 @@ const plugin = {
 };
 
 const Syntax = require("./core/Syntax");
+Syntax.prototype.configuration = defaultConfig;
+
 for(var name in plugin){
     Object.defineProperty(Syntax.prototype, name, {
         value:plugin[name],

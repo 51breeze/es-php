@@ -323,7 +323,7 @@ class StartTest extends Base{
 	/**
 	* @method call
 	*/
-	public function call(){
+	public function call():StartTest{
 		return $this;
 	}
 
