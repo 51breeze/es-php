@@ -8,6 +8,8 @@
  */
 namespace es\core;
 require_once('es/core/IIterator.php');
+require_once('es/core/String.php');
+require_once('es/core/Object.php');
 use \es\core\IIterator;
 
 define('NaN','NaN');

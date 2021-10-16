@@ -1,6 +1,8 @@
 const fs = require("fs");
 const path = require("path");
+const Syntax = require("./core/Syntax");
 const Builder = require("./core/Builder");
+const {merge} = require("lodash");
 const modules = new Map();
 const loadStack=()=>{
     const dirname = path.join(__dirname,"stack");
@@ -9,65 +11,70 @@ const loadStack=()=>{
         modules.set(info.name, require( path.join(dirname,filename) ) );
     });
 }
+
 const defaultConfig ={
     target:7,
     suffix:'.php',
 }
 
-const plugin = {
+const profile={
     name:'php',
     platform:'server',
-    make(stack, flag=false){
+    configuration:defaultConfig,
+    make(stack){
         const stackModule = modules.get( stack.toString() );
         if( stackModule ){
-            if( flag ){
-                return new stackModule(stack);
-            }
             return (new stackModule(stack)).emitter();
         }
         throw new Error(`Stack '${stack.toString()}' is not found.`);
     }
+}
+
+const properties ={
+    name:profile.name,
+    platform:profile.platform,
+    version:require("./package.json").version,
+    config(options){
+        const target = Syntax.prototype.configuration;
+        if(options){
+            merge(target, options);
+        }
+        return target;
+    },
+    start(compilation, done, options){
+        if(options)this.config(options);
+        const builder = new Builder( compilation.stack );
+        builder.start(done);
+    },
+    build(compilation, done, options){
+        if(options)this.config(options);
+        const builder = new Builder( compilation.stack );
+        builder.build(done);
+    }
+}
+
+function plugin(complier){
+    if( modules.size === 0 ){
+        loadStack();
+    }
+    this.complier = complier;
+    //complier.loadTypes([require.resolve('./types/web.es')],true,this);
 };
 
-const Syntax = require("./core/Syntax");
-Syntax.prototype.configuration = defaultConfig;
-
-for(var name in plugin){
+for(var name in profile){
     Object.defineProperty(Syntax.prototype, name, {
-        value:plugin[name],
+        value:profile[name],
         enumerable:false,
         configurable:false
     });
 }
 
-plugin.config=function config(options){
-    Syntax.prototype.configuration = Object.assign({}, defaultConfig, Syntax.prototype.configuration||{},  options||{});
-}
-
-plugin.start=function start(compilation, done, options){
-    if( options )this.config(options);
-    if( modules.size === 0 ){
-        loadStack();
-    }
-    if( compilation.stack && compilation.stack.isStack ){
-        const builder = new Builder( compilation.stack );
-        builder.start(done);
-    }else{
-        done( new Error('Not found stack') );
-    }
-}
-
-plugin.build=function build(compilation, done, options){
-    if( options )this.config(options);
-    if( modules.size === 0 ){
-        loadStack();
-    }
-    if(compilation.stack && compilation.stack.isStack){
-        const builder = new Builder(compilation.stack);
-        builder.build(done);
-    }else{
-        done( new Error('Not found stack') );
-    }
+for(var name in properties){
+    Object.defineProperty(plugin.prototype,name,{
+        value:properties[name],
+        enumerable:false,
+        configurable:false
+    });
 }
 
 module.exports = plugin;
