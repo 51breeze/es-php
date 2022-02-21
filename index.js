@@ -21,10 +21,15 @@ const profile={
     name:'php',
     platform:'server',
     configuration:defaultConfig,
-    make(stack){
+    make(stack, ...args){
         const stackModule = modules.get( stack.toString() );
         if( stackModule ){
-            return (new stackModule(stack)).emitter();
+            const obj = new stackModule(stack);
+            if( args.length > 0 ){
+                return obj.emitter.apply(obj, args);
+            }else{
+                return obj.emitter();
+            }
         }
         throw new Error(`Stack '${stack.toString()}' is not found.`);
     }
@@ -61,6 +66,12 @@ function plugin(complier){
     //complier.loadTypes([require.resolve('./types/web.es')],true,this);
 };
 
+Object.defineProperty(plugin.prototype, 'constructor', {
+    value:plugin,
+    enumerable:false,
+    configurable:false
+});
+
 for(var name in profile){
     Object.defineProperty(Syntax.prototype, name, {
         value:profile[name],
@@ -75,6 +86,19 @@ for(var name in properties){
         enumerable:false,
         configurable:false
     });
+    if( ['name','platform','version'].includes( name ) ){
+        Object.defineProperty(plugin,name,{
+            value:properties[name],
+            enumerable:true,
+            configurable:false
+        });
+    }
 }
+
+Object.defineProperty(plugin,'modules',{
+    value:modules,
+    enumerable:true,
+    configurable:false
+});
 
 module.exports = plugin;

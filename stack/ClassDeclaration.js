@@ -131,13 +131,7 @@ class ClassDeclaration extends Syntax{
             }
         }
 
-        const defaultConstructor=[];
-        if( inherit ){
-            defaultConstructor.push(`public function __construct(){`);
-            defaultConstructor.push( this.semicolon(`\tparent::__construct()`) );
-            defaultConstructor.push('}');
-        }
-        const construct = module.methodConstructor ? this.emitStack(module.methodConstructor,false) : `${defaultConstructor.join("\r\n")}`;
+        const construct = module.methodConstructor ? this.emitStack(module.methodConstructor,false) : null;
         const external = this.buildExternal();
         this.createDependencies(module,refs);
 

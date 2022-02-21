@@ -1,6 +1,5 @@
 const Syntax = require("../core/Syntax");
 const Polyfill = require("../core/Polyfill");
-const { takeRightWhile } = require("lodash");
 class MemberExpression extends Syntax{
 
    intercept(desc,object,property){

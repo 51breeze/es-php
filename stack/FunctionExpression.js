@@ -52,7 +52,7 @@ class FunctionExpression extends Syntax{
         const startIndent = this.stack.parentStack.isBlockStatement ? endIndent : '';
         const variableRefs = !method ? this.getVariableRefs() : null;
         const useVariables = variableRefs ? 'use('+Array.from( variableRefs.values() ).map( stack=>`&\$${stack.value()}` ).join(", ")+')' : '';
-        const type = this.stack.type(true);
+        const type = this.stack.type(this.stack.getContext(null,null,true));
         if( this.stack.isArrowFunctionExpression && this.stack.scope.isExpression ){
             const content = before.concat(insertBefore.splice(0), this.semicolon(`${this.getIndent(1)}\treturn ${body}`) ).join("\r\n");
             return `${startIndent}function(${params.join(",")})${useVariables}{\r\n${content}\r\n${endIndent}}`;
@@ -96,6 +96,7 @@ class FunctionExpression extends Syntax{
                 if( this.module.isInterface ){
                     return `function ${key}(${params.join(",")})${typeName}`;
                 }
+                console.log( typeName, type.id )
                 return `function ${refsAddress}${key}(${params.join(",")})${typeName}{\r\n${content.join("\r\n")}\r\n${endIndent}}`;
             }else if( this.stack.isFunctionDeclaration ){
                 return `${startIndent}function ${key}(${params.join(",")})${useVariables}{\r\n${content.join("\r\n")}\r\n${endIndent}}`;

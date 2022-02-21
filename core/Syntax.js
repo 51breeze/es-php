@@ -169,14 +169,14 @@ class Syntax extends events.EventEmitter {
 
     getAvailableTypeName( type ){
         if( type ){
-            while( type.isGenericValueType && type.value ){
-                type = type.value;
-            }
-            if(type.isGenericType || type.isClassGenericType){
+            if(type.isGenericType || type.isClassGenericType || type.isFunctionType || type.isVoidType ){
                 return null;
             }
             if( type.isTupleType || type.isLiteralArrayType ){
                 return 'array';
+            }
+            if( type.isLiteralObjectType || type.toString() ==='Object' || type.toString() ==='object' ){
+                return null;
             }
             switch( type.toString().toLowerCase() ){
                 case "string" : 
