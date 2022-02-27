@@ -96,7 +96,6 @@ class FunctionExpression extends Syntax{
                 if( this.module.isInterface ){
                     return `function ${key}(${params.join(",")})${typeName}`;
                 }
-                console.log( typeName, type.id )
                 return `function ${refsAddress}${key}(${params.join(",")})${typeName}{\r\n${content.join("\r\n")}\r\n${endIndent}}`;
             }else if( this.stack.isFunctionDeclaration ){
                 return `${startIndent}function ${key}(${params.join(",")})${useVariables}{\r\n${content.join("\r\n")}\r\n${endIndent}}`;

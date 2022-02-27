@@ -313,28 +313,28 @@ class Syntax extends events.EventEmitter {
         block.dispatcher("insert",expression);
     }
 
-    getOutputAbsolutePath(module){
-        const options = this.getOptions();
-        const config = this.getConfig();
-        const suffix = config.suffix||".php";
-        const output = config.output || options.output;
-        const workspace = config.workspace || options.workspace;
-        if(module && module.isDeclaratorModule ){
-            const isPolyfill = Polyfill.modules.has( module.id );
-            const polyfillModule = isPolyfill ? Polyfill.modules.get( module.id ) : null;
-            const filename = (polyfillModule && polyfillModule.export ? polyfillModule.export : module.id)+suffix;
-            if( polyfillModule ){
-                return PATH.join(output,polyfillModule.namespace.replace(/\./g,'/'),filename).replace(/\\/g,'/');
-            }
-            return PATH.join(output,module.getName("/")+suffix).replace(/\\/g,'/');
-        }
-        const filepath = PATH.resolve(output, PATH.relative( workspace, module.file ) );
-        const info = PATH.parse(filepath);
-        if( info.ext !== suffix ){
-           return PATH.join(info.dir,info.name+suffix).replace(/\\/g,'/');
-        }
-        return filepath.replace(/\\/g,'/');
-    }
+    // getOutputAbsolutePath(module){
+    //     const options = this.getOptions();
+    //     const config = this.getConfig();
+    //     const suffix = config.suffix||".php";
+    //     const output = config.output || options.output;
+    //     const workspace = config.workspace || options.workspace;
+    //     if(module && module.isDeclaratorModule ){
+    //         const isPolyfill = Polyfill.modules.has( module.id );
+    //         const polyfillModule = isPolyfill ? Polyfill.modules.get( module.id ) : null;
+    //         const filename = (polyfillModule && polyfillModule.export ? polyfillModule.export : module.id)+suffix;
+    //         if( polyfillModule ){
+    //             return PATH.join(output,polyfillModule.namespace.replace(/\./g,'/'),filename).replace(/\\/g,'/');
+    //         }
+    //         return PATH.join(output,module.getName("/")+suffix).replace(/\\/g,'/');
+    //     }
+    //     const filepath = PATH.resolve(output, PATH.relative( workspace, module.file ) );
+    //     const info = PATH.parse(filepath);
+    //     if( info.ext !== suffix ){
+    //        return PATH.join(info.dir,info.name+suffix).replace(/\\/g,'/');
+    //     }
+    //     return filepath.replace(/\\/g,'/');
+    // }
 
     getOutputRelativePath(module,context){
         const contextPath = this.getOutputAbsolutePath(context);
@@ -342,12 +342,44 @@ class Syntax extends events.EventEmitter {
         return './'+PATH.relative( PATH.dirname(contextPath), modulePath ).replace(/\\/g,'/');
     }
 
+
+    getOutputAbsolutePath(module, flag){
+        const options = this.getOptions();
+        const config = this.getConfig();
+        const suffix = config.suffix||".php";
+        const workspace = config.workspace || this.compiler.workspace;
+        const output = config.output || options.output;
+        if( !flag && module && module.isModule ){
+            if( module.isDeclaratorModule ){
+                const polyfillModule = Polyfill.modules.get( module.getName() );
+                const filename = module.id+suffix;
+                if( polyfillModule ){
+                    return PATH.join(output,(polyfillModule.namespace||config.ns).replace(/\./g,'/'),filename).replace(/\\/g,'/');
+                }
+                return PATH.join(output,module.getName("/")+suffix).replace(/\\/g,'/');
+            }else if( module.compilation.isDescriptionType ){
+                return PATH.join(output,module.getName("/")+suffix).replace(/\\/g,'/');
+            }
+        }
+        let filepath = flag && typeof module === "string" ? module : 
+        module && module.isModule && this.compiler.normalizePath( module.file ).includes(workspace) ?
+        PATH.resolve(output, PATH.relative( workspace, module.file ) ) :
+        PATH.join(output,module.getName("/")+suffix).replace(/\\/g,'/') ;
+
+        const info = PATH.parse(filepath);
+        if( info.ext !== suffix ){
+           return PATH.join(info.dir,info.name+suffix).replace(/\\/g,'/');
+        }
+        return filepath.replace(/\\/g,'/');
+    }
+
+
     getOptions(){
         return this.compiler.options;
     }
-    
+
     getConfig( name ){
-        const config = this.configuration || {};
+        const config = this.compiler.getPlugin( this.name ).config();
         if( name ){
             if( name.lastIndexOf(".") > 0 ){
                 const keys = name.split('.');
@@ -373,7 +405,7 @@ class Syntax extends events.EventEmitter {
         return !!(stack && stack.isSwitchCase);
     }
 
-    getIndent(num=null){
+    getIndentNum( num=null ){
         let level = num === null ? this.scope.level : num;
         if( num === null ){
             const fnScope = this.scope.getScopeByType("function");
@@ -385,7 +417,11 @@ class Syntax extends events.EventEmitter {
                 level+=1;
             }
         }
-        level = this.getLevel(level);
+        return level;
+    }
+
+    getIndent(num=null){
+        var level = this.getLevel( this.getIndentNum(num) );
         return level > 0 ? "\t".repeat( level ) : '';
     }
 
@@ -474,6 +510,80 @@ class Syntax extends events.EventEmitter {
 
     isIteratorInterface(module){
         return module && module.isInterface && module.isDeclaratorModule && module.id === 'Iterator' && module.file.includes("\\easescript\\lib");
+    }
+
+    getModuleFile(module, uniKey, type){
+        return this.compiler.normalizeModuleFile(module, uniKey, type);
+    }
+
+    getModuleReferenceName(module,context){
+        context = context || this.module;
+        if( !module )return null;
+        if( module.required ){
+            return module.id;
+        }
+        if( context ){
+            if( context.compilation.isDescriptionType ){
+                return module.id;
+            }
+            return context.getReferenceNameByModule( module );
+        }
+        return module.namespace.getChain().concat(module.id).join("_");
+    }
+
+    createModuleAssets(module,refs){
+        refs = refs || [];
+        const push = (value)=>{
+            if( refs.indexOf(value) < 0 ){
+                refs.push( value );
+            }
+        }
+        const target = module || this.compilation;
+        const assets = target.assets;
+        const config = this.getConfig();
+        const isWebpack = config.webpack;
+        if( assets && assets.size > 0 && isWebpack ){
+            assets.forEach( asset=>{
+                if( asset.file ){
+                    if( asset.assign ){
+                        push( this.createImport( `${asset.assign}`, asset.file ) )
+                    }else{
+                        push( this.createImport( null, asset.file ) );
+                    } 
+                }else if( asset.type ==="style" && config.styleLoader && module ){
+                    const filename = config.styleLoader.concat( this.getModuleFile(module, asset.resolve, asset.type) ).join('!');
+                    push( this.createImport( null, filename ) );
+                }
+            });
+        }
+        return refs;
+    }
+
+    createModuleRequires(module,refs){
+        refs = refs || [];
+        const push = (value)=>{
+            if( refs.indexOf(value) < 0 ){
+                refs.push( value );
+            }
+        }
+        const target = module || this.compilation;
+        if( target.requires && target.requires.size > 0 ){
+            target.requires.forEach( item=>{
+                const file = this.compiler.normalizePath( item.from );
+                if( item.extract ){
+                    const key = item.key;
+                    const name = item.name;
+                    if( name !== key ){
+                        push( this.createImport( `{${key} as ${name}}`, file ) )
+                    }else{
+                        push( this.createImport( `{${name}}`, file ) )
+                    }
+                }else{
+                    push( this.createImport( `${item.key}`, file ) )
+                }
+            });
+        }
+        return refs;
     }
 
     createDependencies(module, refs, requires){
@@ -577,6 +687,62 @@ class Syntax extends events.EventEmitter {
         if( !data || !data.methodAccessorNames)return null;
         return data.methodAccessorNames;
     }
+
+    getJsxCreateElementHandle(){
+        return 'createElement';
+    }
+
+    getJsxCreateElementRefs(){
+        return 'this.createElement.bind(this)';
+    }
+
+    emitCreateElement(){
+        return this.semicolon(`var ${this.getJsxCreateElementHandle()} = ${this.getJsxCreateElementRefs()}`)
+    }
+
+    isInheritWebComponent(classModule){
+        if( webComponents.has(classModule) ){
+            return true;
+        }
+        while( classModule ){
+            const stack = this.compilation.getStackByModule( classModule );
+            if( stack && stack.annotations  && Array.isArray(stack.annotations) ){
+                if( stack.annotations.some( item=>item.name.toLowerCase() === 'webcomponent' ) ){
+                    webComponents.set(classModule, true);
+                    return true;
+                }
+            }
+            classModule=classModule.inherit;
+        }
+        webComponents.set(classModule, false);
+        return false;
+    }
+
+    make(stack, ...args){
+        const plugin = this.compiler.getPlugin( this.name );
+        const stackClass = plugin.getStack( stack.toString() );
+        if( stackClass ){
+            const obj = new stackClass( stack );
+            obj.name = this.name;
+            obj.platform = this.platform;
+            obj.version = this.version;
+            if( args.length > 0 ){
+                return obj.emitter.apply(obj, args);
+            }else{
+                return obj.emitter();
+            }
+        }
+        throw new Error(`Stack '${stack.toString()}' is not found.`);
+    }
+
+    factory(syntaxClass,stack){
+        const obj = new syntaxClass( stack );
+        obj.name = this.name;
+        obj.platform = this.platform;
+        obj.version = this.version;
+        return obj;
+    }
+
 
     emitter(){}
     error( message , stack=null){

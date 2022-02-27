@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
-const Syntax = require("./core/Syntax");
 const Builder = require("./core/Builder");
+const Polyfill = require("./core/Polyfill");
 const {merge} = require("lodash");
 const modules = new Map();
 const loadStack=()=>{
@@ -16,44 +16,39 @@ const defaultConfig ={
     target:7,
     suffix:'.php',
 }
-
-const profile={
-    name:'php',
-    platform:'server',
-    configuration:defaultConfig,
-    make(stack, ...args){
-        const stackModule = modules.get( stack.toString() );
-        if( stackModule ){
-            const obj = new stackModule(stack);
-            if( args.length > 0 ){
-                return obj.emitter.apply(obj, args);
-            }else{
-                return obj.emitter();
-            }
-        }
-        throw new Error(`Stack '${stack.toString()}' is not found.`);
-    }
-}
-
+const configData = Object.assign({}, defaultConfig);
+const package = require('./package.json');
 const properties ={
-    name:profile.name,
-    platform:profile.platform,
-    version:require("./package.json").version,
+    name:package.name,
+    version:package.version,
+    platform:'server',
     config(options){
-        const target = Syntax.prototype.configuration;
+        const target = configData;
         if(options){
             merge(target, options);
         }
         return target;
     },
+    getPolyfill(name){
+        return Polyfill.modules.get(name);
+    },
+    getStack(name){
+        return modules.get(name);
+    },
     start(compilation, done, options){
         if(options)this.config(options);
         const builder = new Builder( compilation.stack );
+        builder.name = this.name;
+        builder.platform = this.platform;
+        builder.version = this.version;
         builder.start(done);
     },
     build(compilation, done, options){
         if(options)this.config(options);
         const builder = new Builder( compilation.stack );
+        builder.name = this.name;
+        builder.platform = this.platform;
+        builder.version = this.version;
         builder.build(done);
     }
 }
@@ -63,6 +58,12 @@ function plugin(complier){
         loadStack();
     }
     this.complier = complier;
+    const defaultOptions = {};
+    const config = complier.options[this.name] || {};
+    if( complier.options.commandLineEntrance ){
+        defaultOptions.emitFile = true;
+    }
+    this.config( merge(defaultOptions,config) );
     //complier.loadTypes([require.resolve('./types/web.es')],true,this);
 };
 
@@ -71,14 +72,6 @@ Object.defineProperty(plugin.prototype, 'constructor', {
     enumerable:false,
     configurable:false
 });
-
-for(var name in profile){
-    Object.defineProperty(Syntax.prototype, name, {
-        value:profile[name],
-        enumerable:false,
-        configurable:false
-    });
-}
 
 for(var name in properties){
     Object.defineProperty(plugin.prototype,name,{

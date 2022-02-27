@@ -3,7 +3,7 @@ const Polyfill = require("../core/Polyfill");
 class MemberExpression extends Syntax{
 
    intercept(desc,object,property){
-      const type = this.compiler.callUtils("getOriginType", desc.type() );
+      const type = desc && desc.isStack ? this.compiler.callUtils("getOriginType", desc.type() ) : null;
       if( type && this.compiler.callUtils("isTypeModule",type) ){
          const typeName = type.id.toString();
          for(var name of [typeName,'Object']){
