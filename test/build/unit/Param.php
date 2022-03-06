@@ -34,8 +34,8 @@ class Param{
 		$id = $_s1[1] ?? 20;
 		System::print($name1000,$age,$index,$id);
 		$args = [$index,$id];
-		$this->call($args);
-		System::print($args);
+		$this->call(...$args);
+		System::print(...$args);
 		return $name1000;
 	}
 

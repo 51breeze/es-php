@@ -23,6 +23,10 @@ class CallExpression extends Syntax{
         return null;
     }
 
+    createCall(caller,){
+
+    }
+
     emitter(){
         const desc = this.stack.description();
         if( this.compiler.callUtils("isTypeModule", desc) ){
@@ -30,26 +34,32 @@ class CallExpression extends Syntax{
         }
         const hasAssignmentExpression = this.stack.arguments.some( item=>!!item.isAssignmentExpression );
         const declareParams = desc.params;
-        const args = this.stack.arguments.map( (item,index)=>{
+        let hasSpreadArgument = false;
+        let args = this.stack.arguments.map( (item,index)=>{
             let value = this.make( item );
-            if( declareParams && declareParams[index] && (hasAssignmentExpression || item.isArrayExpression) ){
-                const declareType = declareParams[index].type();
-                if( declareType ){
-                    const originType = this.compiler.callUtils("getOriginType", declareType );
-                    if( originType.id === "Array" ){
-                        const name = '$'+this.generatorVarName(item,"_V" );
-                        this.insertExpression( this.semicolon(`${name} = ${value}`) );
-                        return name;
+            if( item.isSpreadElement){
+                hasSpreadArgument = true;
+                return `...${value}`;
+            }else{
+                if( declareParams && declareParams[index] && (hasAssignmentExpression || item.isArrayExpression) ){
+                    const declareType = declareParams[index].type();
+                    if( declareType ){
+                        const originType = this.compiler.callUtils("getOriginType", declareType );
+                        if( originType.id === "Array" ){
+                            const name = '$'+this.generatorVarName(item,"_V" );
+                            this.insertExpression( this.semicolon(`${name} = ${value}`) );
+                            return name;
+                        }
                     }
                 }
-            }
-            if( item.isIdentifier ){
-                return this.createArrayRefs(item.description(), value);
+                if( item.isIdentifier ){
+                    return this.createArrayRefs(item.description(), value);
+                }
             }
             return value;
         });
         
-        const result = this.intercept(args);
+        const result = this.intercept(args, hasSpreadArgument);
         if( result ){
             return result === true ? null : result;
         }
@@ -59,7 +69,7 @@ class CallExpression extends Syntax{
                 case this.getGlobalModuleById('setTimeout') :
                 case this.getGlobalModuleById('setInterval') :
                     if( args.length > 2 ){
-                        return `call_user_func(${args[0]},${args.slice(3).join(',')})`;
+                        return `call_user_func(${args[0]},${args.slice(2).join(',')})`;
                     }else{
                         return `call_user_func(${args[0]})`;
                     }
@@ -92,7 +102,11 @@ class CallExpression extends Syntax{
             return null;
         }
         const callee= this.make(this.stack.callee);
-        return `${callee}(${args.join(",")})`;
+        if( hasSpreadArgument ){
+            return `${callee}(${args.join(",")})`;
+        }else{
+            return `${callee}(${args.join(",")})`;
+        }
     }
 }
 module.exports = CallExpression;
