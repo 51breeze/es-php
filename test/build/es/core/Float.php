@@ -6,7 +6,7 @@
  * @author Jun Ye <664371281@qq.com>
  */
 namespace es\core;
-require_once('es/core/String.php');
+require_once('es/core/Number.php');
 
 /**
  * @name toPrecision

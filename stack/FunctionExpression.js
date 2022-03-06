@@ -12,6 +12,34 @@ class FunctionExpression extends Syntax{
         const paramItems = this.stack.params;
         const before = [];
         const params = paramItems.map( item=>{
+            if( item.isObjectPattern ){
+                const sName = '$'+this.stack.scope.generateVarName('_s',true);
+                before.push( this.semicolon( `\t${sName} = ${sName} ?: new \\stdClass`) );
+                item.properties.forEach( property=>{
+                    const key = property.key.value();
+                    if( property.hasInit ){
+                        const initStack = property.init.isAssignmentPattern ? property.init.right : property.init;
+                        insertBefore.push( this.semicolon( `\t$${key} = ${sName}->${key} ?? ${this.make(initStack)}`) );
+                    }else{
+                        insertBefore.push( this.semicolon( `\t$${key} = ${sName}->${key}`) );
+                    }
+                });
+                return `object ${sName}`;
+            }else if( item.isArrayPattern ){
+                const sName = '$'+this.stack.scope.generateVarName('_s',true);
+                before.push( this.semicolon( `\t${sName} = ${sName} ?: []`) );
+                item.elements.forEach( (property,index)=>{
+                    if( property.isAssignmentPattern ){
+                        const key = property.left.value();
+                        insertBefore.push( this.semicolon( `\t$${key} = ${sName}[${index}] ?? ${this.make(property.right)}`) );
+                    }else{
+                        const key = property.value();
+                        insertBefore.push( this.semicolon( `\t$${key} = ${sName}[${index}]`) );
+                    }
+                });
+                return `array ${sName}`;
+            }
+
             const type = item.type();
             const originType = this.compiler.callUtils("getOriginType", type);
             let typeName = '';

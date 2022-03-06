@@ -9,6 +9,7 @@ import Person;
 import Types;
 import StartTest;
 import Iterator;
+import unit.Param;
 
 
 /**
@@ -129,6 +130,10 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator {
         this.assertFalse( /^\d+/.test( " 123" ) );
         this.assertTrue( !!/^\d+/.exec( "123" ) );
         this.assertEquals( [1,"s","test"], this.restFun(1,"s","test"));
+
+        var param = new Param();
+        param.start();
+        
        
     }
 

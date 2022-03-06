@@ -20,13 +20,6 @@ use \es\core\RegExp;
 class StartTest extends Base{
 
 	/**
-	* @constructor StartTest
-	*/
-	public function __construct(){
-		parent::__construct();
-	}
-
-	/**
 	* @property items
 	*/
 	private $items = [];
@@ -169,15 +162,15 @@ class StartTest extends Base{
 		$testObj = (object)['name'=>66];
 		$_splice2 = System::bind('array_splice',$testObj);
 		$_push = System::bind('array_push',$testObj);
-		$s = $_splice2(0,1,3,6,9);
+		$s = $_RD4 = &$_splice2(0,1,3,6,9);
 		$_push("Jun");
-		$this->assertEquals([],$s);
+		$this->assertEquals([],$_RD4);
 		$this->assertEquals((object)['0'=>3,'1'=>6,'2'=>9,'3'=>"Jun",'length'=>4,'name'=>66],$testObj);
-		$s = $_splice2(0,2);
+		$s = $_RD4 = &$_splice2(0,2);
 		$this->assertEquals((object)['0'=>9,'1'=>"Jun",'length'=>2,'name'=>66],$testObj);
-		$this->assertEquals([3,6],$s);
-		$this->assertEquals(6,array_pop($s));
-		$this->assertEquals(3,array_pop($s,));
+		$this->assertEquals([3,6],$_RD4);
+		$this->assertEquals(6,array_pop($_RD4));
+		$this->assertEquals(3,array_pop($_RD4,));
 	}
 
 	/**
@@ -248,7 +241,7 @@ class StartTest extends Base{
 		$this->assertEquals('中国人A民bc解De放军FFFdddd',\es\core\es_string_replace($mixed,'DD','dd'));
 		$this->assertEquals('民bc解',mb_substr($mixed,4,4));
 		$paragraph = 'The quick brown fox jumps over the lazy dog. If the dog barked, was it really lazy?';
-		$regex = new RegExp('[^\w\s]','g');
+		$regex = /[^\w\s]/g;
 		$this->assertEquals(43,$regex->search($paragraph));
 		$this->assertEquals('.',$paragraph[$regex->search($paragraph)]);
 		$this->setNames1("Ye Jun");
@@ -348,7 +341,6 @@ class StartTest extends Base{
 
 	/**
 	* @method getNames
-	* the is getNames method
 	*/
 	public function getNames(){
 	

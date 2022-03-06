@@ -103,7 +103,7 @@ function es_object_value_of($target){
  */
 function es_object_to_string($target){
     if( is_callable($target) ){
-        $reflect = new \ReflectionFunction($callback);
+        $reflect = new \ReflectionFunction($target);
         if( !$reflect->isClosure() ){
             return sprintf('function %s(){[local code]}', $reflect->getName());
         }else{

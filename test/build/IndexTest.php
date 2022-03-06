@@ -1,24 +1,26 @@
 <?php
+require_once('es/core/RegExp.php');
 require_once('es/core/System.php');
 require_once('es/core/Reflect.php');
-require_once('es/core/RegExp.php');
 require_once('es/core/Array.php');
 require_once('es/core/Number.php');
 require_once('es/core/Promise.php');
 require_once('es/core/Number.php');
-require_once('com/TestInterface.php');
 require_once('es/core/Object.php');
 require_once('Types.php');
+require_once('unit/Param.php');
+require_once('com/TestInterface.php');
 require_once('es/core/Number.php');
 require_once('es/core/String.php');
 require_once('es/core/IIterator.php');
 require_once('Person.php');
 use \es\core\IIterator;
 use \com\TestInterface;
+use \unit\Param;
 use \es\core\Promise;
-use \es\core\RegExp;
 use \es\core\Reflect;
 use \es\core\System;
+use \es\core\RegExp;
 /**
 * @class IndexTest
 * @implements \es\core\IIterator
@@ -68,8 +70,6 @@ class IndexTest extends Person implements \es\core\IIterator{
 
 	/**
 	* @getter uuName
-	* @public
-	* the is static getter
 	*/
 	static public function getUuName():string{
 		return 'uuName';
@@ -77,8 +77,6 @@ class IndexTest extends Person implements \es\core\IIterator{
 
 	/**
 	* @property iiu
-	* @private
-	* the is class type.
 	*/
 	static private $iiu = '\IndexTest';
 
@@ -131,10 +129,12 @@ class IndexTest extends Person implements \es\core\IIterator{
 		$once = (object)['two'=>(object)['three'=>$three,'four'=>$bsp]];
 		$this->assertEquals($this,$once->two->three);
 		$this->assertEquals($obj,call_user_func($once->two->four,true));
-		$this->assertTrue((new RegExp('\d+'))->test("123"));
-		$this->assertFalse((new RegExp('^\d+'))->test(" 123"));
-		$this->assertTrue(!!(new RegExp('^\d+'))->exec("123"));
+		$this->assertTrue(/\d+/->test("123"));
+		$this->assertFalse(/^\d+/->test(" 123"));
+		$this->assertTrue(!!/^\d+/->exec("123"));
 		$this->assertEquals([1,"s","test"],$this->restFun(1,"s","test"));
+		$param = new Param();
+		$param->start();
 	}
 
 	/**
@@ -192,8 +192,7 @@ class IndexTest extends Person implements \es\core\IIterator{
 	*/
 	public function testIterator(){
 		$array = [];
-		for($this->rewind();($IRV = $this->next()) && !$IRV->done;){
-			$val=$IRV->value;
+		foreach($this as $val){
 			array_push($array,$val);
 		}
 		$this->assertEquals(5,count($array));
@@ -201,16 +200,15 @@ class IndexTest extends Person implements \es\core\IIterator{
 		for($i = 0;$i < 5;$i++){
 			$this->assertEquals($i,$array[$i]);
 		}
-		for($this->rewind();($IRV1 = $this->next()) && !$IRV1->done;){
-			$b=$IRV1->value;
+		foreach($this as $b){
 			array_push($array,$b);
 		}
 		$this->assertEquals([0,1,2,3,4,0,1,2,3,4],$array);
 		$o = $this;
 		$array1 = [];
 		$ITO = System::getIterator($o);
-		for($ITO->rewind();($IRV2 = $ITO->next()) && !$IRV2->done;){
-			$c=$IRV2->value;
+		for($ITO->rewind();($IRV = $ITO->next()) && !$IRV->done;){
+			$c=$IRV->value;
 			array_push($array1,$c);
 		}
 		$this->assertEquals([0,1,2,3,4],$array1);
@@ -223,8 +221,8 @@ class IndexTest extends Person implements \es\core\IIterator{
 		$o3 = (object)['length'=>3,'0'=>1,'1'=>2,'2'=>3];
 		$array3 = [];
 		$ITO1 = System::getIterator($o3);
-		for($ITO1->rewind();($IRV3 = $ITO1->next()) && !$IRV3->done;){
-			$e=$IRV3->value;
+		for($ITO1->rewind();($IRV1 = $ITO1->next()) && !$IRV1->done;){
+			$e=$IRV1->value;
 			array_push($array3,$e);
 		}
 		$this->assertEquals([1,2,3],$array3);
@@ -235,8 +233,8 @@ class IndexTest extends Person implements \es\core\IIterator{
 		$o4 = 'abcdefg';
 		$array4 = [];
 		$ITO2 = System::getIterator($o4);
-		for($ITO2->rewind();($IRV4 = $ITO2->next()) && !$IRV4->done;){
-			$f=$IRV4->value;
+		for($ITO2->rewind();($IRV2 = $ITO2->next()) && !$IRV2->done;){
+			$f=$IRV2->value;
 			array_push($array4,$f);
 		}
 		$this->assertEquals($o4,implode("", $array4));

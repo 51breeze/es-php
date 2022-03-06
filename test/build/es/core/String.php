@@ -11,6 +11,7 @@ require_once('es/core/Number.php');
 require_once('es/core/Number.php');
 require_once('es/core/IIterator.php');
 use \es\core\IIterator;
+use \Intl\CollatorOptions;
 use \es\core\RegExp;
 
 /**

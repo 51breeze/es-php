@@ -2,7 +2,6 @@
 require_once('es/core/Number.php');
 require_once('es/core/Number.php');
 require_once('es/core/Number.php');
-require_once('es/core/Number.php');
 require_once('es/core/String.php');
 require_once('com/TestInterface.php');
 use \PHPUnit\Framework\TestCase;
