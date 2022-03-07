@@ -61,9 +61,8 @@ class MemberExpression extends Syntax{
       }
 
       if(this.stack.computed){
-         const objectDesc = this.stack.object.description();
          const objectType = this.stack.object.type();
-         if( objectType && !objectType.isAnyType && objectDesc && objectDesc.assignItems && objectDesc.assignItems.size < 2 ){
+         if( objectType && !objectType.isAnyType ){
             const tName = this.getAvailableTypeName( objectType );
             if( tName === "array" || tName ==="string" ){
                return `${object}[${property}]`;

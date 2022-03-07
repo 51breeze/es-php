@@ -241,7 +241,7 @@ class StartTest extends Base{
 		$this->assertEquals('中国人A民bc解De放军FFFdddd',\es\core\es_string_replace($mixed,'DD','dd'));
 		$this->assertEquals('民bc解',mb_substr($mixed,4,4));
 		$paragraph = 'The quick brown fox jumps over the lazy dog. If the dog barked, was it really lazy?';
-		$regex = /[^\w\s]/g;
+		$regex = new RegExp('[^\w\s]','g');
 		$this->assertEquals(43,$regex->search($paragraph));
 		$this->assertEquals('.',$paragraph[$regex->search($paragraph)]);
 		$this->setNames1("Ye Jun");

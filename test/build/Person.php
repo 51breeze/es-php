@@ -1,7 +1,5 @@
 <?php
 require_once('es/core/Number.php');
-require_once('es/core/Number.php');
-require_once('es/core/Number.php');
 require_once('es/core/String.php');
 require_once('com/TestInterface.php');
 use \PHPUnit\Framework\TestCase;
@@ -58,6 +56,7 @@ class Person extends TestCase implements TestInterface{
 		$_V = ['1',1];
 		array_push($b,$_V);
 		$this->getTarget()->address();
+		$this->getPersonName();
 		return "sssss";
 	}
 

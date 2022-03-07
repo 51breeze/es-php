@@ -296,7 +296,7 @@ final class System
     static function getDefinitionByName( $name ){
         $name = str_replace(".",'\\',$name);
         if( !class_exists( $name, true ) ){
-            throw ReferenceError("is not exists ". $name );
+            throw new \Exception("is not exists ". $name );
         }
         return $name;
     }

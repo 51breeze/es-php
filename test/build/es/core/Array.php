@@ -7,7 +7,6 @@
  */
 namespace es\core;
 require_once('es/core/System.php');
-require_once('es/core/Number.php');
 require_once('es/core/String.php');
 require_once('es/core/Number.php');
 require_once('es/core/IIterator.php');

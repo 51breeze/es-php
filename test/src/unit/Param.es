@@ -1,13 +1,14 @@
 package unit;
 
-public class Param{
+import PHPUnit.Framework.TestCase;
 
+public class Param extends TestCase{
 
     start(){
 
         enum en {
             name1000=6,
-            age=7
+            age
         };
 
         enum t {
@@ -15,26 +16,23 @@ public class Param{
             A='c',
         }
 
+        this.assertEquals( 7, en.age );
+        this.assertEquals( 'A', t.name );
+
         var b:en = en.age;
-        this.getList(en ,  [9,5]);
+        this.assertEquals(6,this.getList(en ,  [9,5]));
         this.ave(2.3660);
     }
 
     getList<T,B>({name1000:T,age:number=9},[index:T,id=20]){
 
-        console.log( name1000, age ,index, id )
-
         var args = [index, id];
-
-        this.call( ...args );
-
-        console.log( ...args )
-
+        this.assertEquals(args, this.call( ...args ) );
         return name1000;
     }
 
     call(i,b){
-      
+       return [i,b];
     }
 
     ave<T>(age:T){

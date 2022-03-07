@@ -1,12 +1,12 @@
 <?php
 namespace unit;
-require_once('es/core/System.php');
 require_once('es/core/Number.php');
-use \es\core\System;
+use \PHPUnit\Framework\TestCase;
 /**
 * @class Param
+* @inherit \PHPUnit\Framework\TestCase
 */
-class Param{
+class Param extends TestCase{
 
 	/**
 	* @method start
@@ -18,7 +18,9 @@ class Param{
 		$t=new \ArrayObject([], \ArrayObject::STD_PROP_LIST | \ArrayObject::ARRAY_AS_PROPS);
 		$t[$t->name='A']='name';
 		$t[$t->A='c']='A';
-		$this->getList($en,[9,5]);
+		$this->assertEquals(7,$en->age);
+		$this->assertEquals('A',$t->name);
+		$this->assertEquals(6,$this->getList($en,[9,5]));
 		$this->ave(2.3660);
 	}
 
@@ -32,18 +34,16 @@ class Param{
 		$age = $_s->age ?? 9;
 		$index = $_s1[0];
 		$id = $_s1[1] ?? 20;
-		System::print($name1000,$age,$index,$id);
 		$args = [$index,$id];
-		$this->call(...$args);
-		System::print(...$args);
+		$this->assertEquals($args,$this->call(...$args));
 		return $name1000;
 	}
 
 	/**
 	* @method call
 	*/
-	public function call($i,$b){
-	
+	public function call($i,$b):array{
+		return [$i,$b];
 	}
 
 	/**

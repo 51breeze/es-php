@@ -8,7 +8,6 @@
 namespace es\core;
 require_once('es/core/RegExp.php');
 require_once('es/core/Number.php');
-require_once('es/core/Number.php');
 require_once('es/core/IIterator.php');
 use \es\core\IIterator;
 use \Intl\CollatorOptions;

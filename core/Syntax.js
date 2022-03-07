@@ -30,7 +30,11 @@ class Syntax extends events.EventEmitter {
 
     isNumberType(){
         return Array.from(arguments).every( stack=>{
-            const name = stack.type().toString();
+            let type = stack.type();
+            if( type.isLiteralType ){
+                type = type.inherit;
+            }
+            const name = type.toString().toLowerCase();
             switch( name ){
                 case "number" :
                 case "int" :
@@ -177,6 +181,9 @@ class Syntax extends events.EventEmitter {
             }
             if( type.isLiteralObjectType || type.toString() ==='Object' || type.toString() ==='object' ){
                 return null;
+            }
+            if( type.isLiteralType){
+                type = type.inherit;
             }
             switch( type.toString().toLowerCase() ){
                 case "string" : 
@@ -509,7 +516,7 @@ class Syntax extends events.EventEmitter {
     }
 
     isIteratorInterface(module){
-        return module && module.isInterface && module.isDeclaratorModule && module.id === 'Iterator' && module.file.includes("\\easescript\\lib");
+        return module && module.isInterface && module.isDeclaratorModule && module.id === 'Iterator';
     }
 
     getModuleFile(module, uniKey, type){
@@ -589,6 +596,11 @@ class Syntax extends events.EventEmitter {
     createDependencies(module, refs, requires){
         refs = refs || [];
         requires = requires || refs;
+        const push=( value )=>{
+            if(!requires.includes(value )){
+                requires.unshift( value );
+            }
+        }
         const importAlias = module.importAlias;
         this.getDependencies(module).forEach( depModule=>{
             if( this.isDependModule(depModule) ){
@@ -598,7 +610,7 @@ class Syntax extends events.EventEmitter {
                 if( polyfillModule ){
                     if( polyfillModule.export ){
                         paths = polyfillModule.namespace.split('.').concat(polyfillModule.export);
-                        requires.unshift( `require_once('${paths.join("/")}.php');` );
+                        push( `require_once('${paths.join("/")}.php');` );
                         if( !polyfillModule.isClass ){
                             paths = null;
                         }else  if( !polyfillModule.namespace ){
@@ -608,7 +620,7 @@ class Syntax extends events.EventEmitter {
                 }else{
                     paths = depModule.namespace.getChain().concat(depModule.id);
                     if( !depModule.isDeclaratorModule ){
-                        requires.unshift( `require_once('${paths.join("/")}.php');` );
+                        push( `require_once('${paths.join("/")}.php');` );
                     }
                     if( !depModule.namespace.identifier ){
                         paths = null;
