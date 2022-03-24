@@ -1,6 +1,6 @@
 {
   "name": "es-php",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "test",
   "main": "index.js",
   "scripts": {
@@ -24,10 +24,10 @@
   },
   "homepage": "https://github.com/51breeze/es-php#readme",
   "dependencies": {
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "easescript": "^0.0.75"
   },
   "devDependencies": {
-    "easescript": "0.0.51",
     "jasmine": "^3.10.0"
   }
 }
