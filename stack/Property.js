@@ -20,7 +20,7 @@ class Property extends Syntax{
     }
 
     assignmentExpression(left,right){
-        return this.semicolon( `\$${left}=${right}`);
+        return `\$${left}=${right}`;
     }
 
     getSpreadRefName( target, expression){

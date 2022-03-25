@@ -7,8 +7,8 @@
  * @author Jun Ye <664371281@qq.com>
  */
 namespace es\core;
-require_once('es/core/Number.php');
-require_once('es/core/String.php');
+require_once( __DIR__.'./Number.php' );
+require_once( __DIR__.'./String.php' );
 interface IIterator{
     public function next();
     public function rewind();

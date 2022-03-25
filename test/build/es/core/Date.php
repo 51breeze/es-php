@@ -7,8 +7,8 @@
  * @require System,ReferenceError,TypeError
  */
 namespace es\core;
-require_once('es/core/Number.php');
-require_once('es/core/String.php');
+require_once( __DIR__.'./Number.php' );
+require_once( __DIR__.'./String.php' );
 
 class Date{
     private $dateString=null;

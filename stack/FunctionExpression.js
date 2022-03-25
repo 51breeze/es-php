@@ -80,7 +80,7 @@ class FunctionExpression extends Syntax{
         const startIndent = this.stack.parentStack.isBlockStatement ? endIndent : '';
         const variableRefs = !method ? this.getVariableRefs() : null;
         const useVariables = variableRefs ? 'use('+Array.from( variableRefs.values() ).map( stack=>`&\$${stack.value()}` ).join(", ")+')' : '';
-        const type = this.stack.type(this.stack.getContext(null,null,true));
+        const type = this.stack.type( this.stack.getContext(null,null,true) );
         if( this.stack.isArrowFunctionExpression && this.stack.scope.isExpression ){
             const content = before.concat(insertBefore.splice(0), this.semicolon(`${this.getIndent(1)}\treturn ${body}`) ).join("\r\n");
             return `${startIndent}function(${params.join(",")})${useVariables}{\r\n${content}\r\n${endIndent}}`;
@@ -112,7 +112,7 @@ class FunctionExpression extends Syntax{
                     }
                 }
 
-                let typeName = this.getAvailableTypeName( type );
+                let typeName = refsAddress ? this.getAvailableTypeName( type ) : this.stack._returnType ? this.getAvailableTypeName( this.stack._returnType.type() ) : null;
                 typeName = typeName ? ':'+typeName : '';
                 if( this.stack.parentStack.isAccessor ){
                     if( this.stack.parentStack.isMethodGetterDefinition ){

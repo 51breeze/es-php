@@ -6,10 +6,10 @@
  * @author Jun Ye <664371281@qq.com>
  */
 namespace es\core;
-require_once('es/core/System.php');
-require_once('es/core/String.php');
-require_once('es/core/Number.php');
-require_once('es/core/IIterator.php');
+require_once( __DIR__.'./System.php' );
+require_once( __DIR__.'./String.php' );
+require_once( __DIR__.'./Number.php' );
+require_once( __DIR__.'./IIterator.php' );
 use \es\core\IIterator;
 use \es\core\System;
 

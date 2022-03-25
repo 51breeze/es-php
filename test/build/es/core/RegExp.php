@@ -1,7 +1,7 @@
 <?php 
 namespace es\core;
-require_once('es/core/Number.php');
-require_once('es/core/String.php');
+require_once( __DIR__.'./Number.php' );
+require_once( __DIR__.'./String.php' );
 
 class RegExp {
 
@@ -91,7 +91,7 @@ class RegExp {
         $pattern = $this->getPattern();
         $limit = $this->global ? -1 : 1;
         $result = is_callable($replacement) ? 
-        preg_replace_callback($pattern, function($matches){
+        preg_replace_callback($pattern, function($matches)use($replacement){
             return call_user_func_array( $replacement, $matches);
         }, $value, $limit) : preg_replace($pattern, $replacement, $value, $limit);
         return $result === null ? $value : $result;

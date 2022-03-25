@@ -14,6 +14,8 @@ const loadStack=()=>{
 
 const defaultConfig ={
     target:7,
+    requireFile:true,
+    prefixNamespace:null,
     suffix:'.php',
 }
 const configData = Object.assign({}, defaultConfig);

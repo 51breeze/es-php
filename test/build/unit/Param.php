@@ -1,6 +1,6 @@
 <?php
 namespace unit;
-require_once('es/core/Number.php');
+require_once( __DIR__.'./../es/core/Number.php' );
 use \PHPUnit\Framework\TestCase;
 /**
 * @class Param
@@ -42,7 +42,7 @@ class Param extends TestCase{
 	/**
 	* @method call
 	*/
-	public function call($i,$b):array{
+	public function call($i,$b){
 		return [$i,$b];
 	}
 

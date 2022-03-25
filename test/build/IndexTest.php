@@ -1,17 +1,17 @@
 <?php
-require_once('es/core/System.php');
-require_once('es/core/Reflect.php');
-require_once('es/core/RegExp.php');
-require_once('es/core/Array.php');
-require_once('es/core/Promise.php');
-require_once('es/core/Object.php');
-require_once('Types.php');
-require_once('unit/Param.php');
-require_once('com/TestInterface.php');
-require_once('es/core/Number.php');
-require_once('es/core/String.php');
-require_once('es/core/IIterator.php');
-require_once('Person.php');
+require_once( __DIR__.'./es/core/System.php' );
+require_once( __DIR__.'./es/core/Reflect.php' );
+require_once( __DIR__.'./es/core/RegExp.php' );
+require_once( __DIR__.'./es/core/Array.php' );
+require_once( __DIR__.'./es/core/Promise.php' );
+require_once( __DIR__.'./es/core/Object.php' );
+require_once( __DIR__.'./Types.php' );
+require_once( __DIR__.'./unit/Param.php' );
+require_once( __DIR__.'./com/TestInterface.php' );
+require_once( __DIR__.'./es/core/Number.php' );
+require_once( __DIR__.'./es/core/String.php' );
+require_once( __DIR__.'./es/core/IIterator.php' );
+require_once( __DIR__.'./Person.php' );
 use \es\core\IIterator;
 use \com\TestInterface;
 use \unit\Param;
@@ -62,7 +62,7 @@ class IndexTest extends Person implements \es\core\IIterator{
 	/**
 	* @method getObject
 	*/
-	static public function getObject():IndexTest{
+	static public function getObject(){
 		return new IndexTest();
 	}
 
@@ -306,7 +306,7 @@ class IndexTest extends Person implements \es\core\IIterator{
 	/**
 	* @method getTestObject
 	*/
-	private function getTestObject(bool $flag=null):IndexTest{
+	private function getTestObject(bool $flag=null){
 		$factor = function(){
 			$o = (object)[];
 			$o->test = new IndexTest();
@@ -405,14 +405,15 @@ class IndexTest extends Person implements \es\core\IIterator{
 	/**
 	* @method restFun
 	*/
-	public function restFun(...$types):array{
+	public function restFun(...$types){
 		return $types;
 	}
 
 	/**
 	* @method tetObject
 	*/
-	public function tetObject():IndexTest{
+	public function tetObject(){
+		$t = new IndexTest();
 		$b = $t;
 		$ii = (object)['bb'=>$b];
 		return $ii->bb;
@@ -445,7 +446,7 @@ class IndexTest extends Person implements \es\core\IIterator{
 	/**
 	* @method fetchApi
 	*/
-	public function fetchApi(string $name,int $data,int $delay):Promise{
+	public function fetchApi(string $name,int $data,int $delay){
 		return new Promise(function($resolve,$reject)use(&$name, &$data, &$delay){
 			call_user_func(function()use(&$name, &$data, &$resolve){
 				$_V = [$name,$data];
@@ -457,7 +458,7 @@ class IndexTest extends Person implements \es\core\IIterator{
 	/**
 	* @method loadRemoteData2
 	*/
-	public function loadRemoteData2():Promise{
+	public function loadRemoteData2(){
 		return Promise::getInstance(Promise::sent($this->fetchApi("one",1,800)));
 	}
 

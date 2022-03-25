@@ -1,7 +1,7 @@
 <?php
-require_once('es/core/Number.php');
-require_once('es/core/String.php');
-require_once('com/TestInterface.php');
+require_once( __DIR__.'./es/core/Number.php' );
+require_once( __DIR__.'./es/core/String.php' );
+require_once( __DIR__.'./com/TestInterface.php' );
 use \PHPUnit\Framework\TestCase;
 use \com\TestInterface;
 /**
@@ -36,7 +36,7 @@ class Person extends TestCase implements TestInterface{
 	/**
 	* @getter target
 	*/
-	public function getTarget():Person{
+	public function getTarget(){
 		return $this;
 	}
 

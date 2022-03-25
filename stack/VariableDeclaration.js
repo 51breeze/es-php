@@ -9,11 +9,21 @@ class VariableDeclaration extends Syntax {
             }
         });
 
+        const inFor = this.stack.flag;
         const declarations = declareBefore.concat(this.stack.declarations.map( item=>{
-            return this.make(item)
+            if( inFor || item.isPattern ){
+                return this.make(item);
+            }else{
+                return this.semicolon(this.make(item));
+            }
+           
         }));
-        if( this.stack.flag ){
-            return `${declarations.join(",")}`;
+        if( inFor ){
+            if( declarations.length > 1 ){
+                return `(${declarations.join(", ")})`;
+            }else{
+                return `${declarations[0]}`;
+            }
         }
         return declarations.join("\r\n");
    }

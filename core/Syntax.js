@@ -359,8 +359,8 @@ class Syntax extends events.EventEmitter {
         if( !flag && module && module.isModule ){
             if( module.isDeclaratorModule ){
                 const polyfillModule = Polyfill.modules.get( module.getName() );
-                const filename = module.id+suffix;
                 if( polyfillModule ){
+                    const filename = (polyfillModule.export || module.id)+suffix;
                     return PATH.join(output,(polyfillModule.namespace||config.ns).replace(/\./g,'/'),filename).replace(/\\/g,'/');
                 }
                 return PATH.join(output,module.getName("/")+suffix).replace(/\\/g,'/');
@@ -602,31 +602,41 @@ class Syntax extends events.EventEmitter {
             }
         }
         const importAlias = module.importAlias;
+        const config = this.getConfig();
         this.getDependencies(module).forEach( depModule=>{
             if( this.isDependModule(depModule) ){
                 const polyfillModule = depModule.isDeclaratorModule && Polyfill.modules.get(depModule.id);
                 const alias = importAlias.has(depModule) ? importAlias.get(depModule) : null;
-                const file = this.getOutputRelativePath(depModule,  module);
                 let paths = null;
                 if( polyfillModule ){
                     if( polyfillModule.export ){
-                        paths = polyfillModule.namespace.split('.').concat(polyfillModule.export);
-                        push( `require_once('${file}');` );
+                        if( config.requireFile ){
+                            const file = this.getOutputRelativePath(depModule,  module);
+                            push( `require_once( __DIR__.'${file}' );` );
+                        }
                         if( !polyfillModule.isClass ){
                             paths = null;
                         }else  if( !polyfillModule.namespace ){
                             paths = null;
+                        }else{
+                            paths = polyfillModule.namespace.split('.').concat(polyfillModule.export);
                         }
                     }
                 }else{
                     paths = depModule.namespace.getChain().concat(depModule.id);
-                    if( !depModule.isDeclaratorModule ){
-                        push( `require_once('${file}');` );
+                    if( !depModule.isDeclaratorModule && config.requireFile){
+                        const file = this.getOutputRelativePath(depModule,  module);
+                        push( `require_once( __DIR__.'${file}' );` );
                     }
                     if( !depModule.namespace.identifier ){
                         paths = null;
                     }
                 }
+
+                if( config.prefixNamespace ){
+                    paths = config.prefixNamespace.split('.').concat( paths || [] );
+                }
+
                 if( paths ){
                     refs.push( this.createImport('\\'+paths.join("\\"), alias) );
                 }

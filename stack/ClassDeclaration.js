@@ -161,7 +161,13 @@ class ClassDeclaration extends Syntax{
 
         const body = [];
         if( module.namespace.identifier){
-            refs.unshift(`namespace ${module.namespace.getChain().join("\\\\")};`);
+            const config = this.getConfig();
+            const nsArr = module.namespace.getChain();
+            if( config.prefixNamespace ){
+                refs.unshift(`namespace ${config.prefixNamespace.split('.').concat(nsArr).join("\\\\")};`);
+            }else{
+                refs.unshift(`namespace ${nsArr.join("\\\\")};`);
+            }
         }
         staticName && body.push( staticName );
         abstract && body.push( abstract );

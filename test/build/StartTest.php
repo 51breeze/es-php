@@ -1,14 +1,14 @@
 <?php
-require_once('Types.php');
-require_once('es/core/Number.php');
-require_once('es/core/Object.php');
-require_once('es/core/RegExp.php');
-require_once('es/core/Reflect.php');
-require_once('es/core/System.php');
-require_once('es/core/Array.php');
-require_once('es/core/Date.php');
-require_once('es/core/String.php');
-require_once('Base.php');
+require_once( __DIR__.'./Types.php' );
+require_once( __DIR__.'./es/core/Number.php' );
+require_once( __DIR__.'./es/core/Object.php' );
+require_once( __DIR__.'./es/core/RegExp.php' );
+require_once( __DIR__.'./es/core/Reflect.php' );
+require_once( __DIR__.'./es/core/System.php' );
+require_once( __DIR__.'./es/core/Array.php' );
+require_once( __DIR__.'./es/core/Date.php' );
+require_once( __DIR__.'./es/core/String.php' );
+require_once( __DIR__.'./Base.php' );
 use \es\core\Date;
 use \es\core\System;
 use \es\core\Reflect;
@@ -316,7 +316,7 @@ class StartTest extends Base{
 	/**
 	* @method call
 	*/
-	public function call():StartTest{
+	public function call(){
 		return $this;
 	}
 
