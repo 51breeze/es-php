@@ -20,13 +20,13 @@ class Property extends Syntax{
     }
 
     assignmentExpression(left,right){
-        return `\$${left}=${right}`;
+        return this.semicolon( `\$${left}=${right}`);
     }
 
     getSpreadRefName( target, expression){
         const desc = target.description(this);
         if( desc && (desc.isMethodDefinition || desc.isFunctionExpression)){
-            return this.generatorRefName(target, '_s', 'getSpreadRefName', expression );
+            return '$'+this.generatorRefName(target, '_s', 'getSpreadRefName', expression );
         }
         return expression();
     }
@@ -40,7 +40,7 @@ class Property extends Syntax{
                 const init = target.attribute( name );
                 return this.assignmentExpression( name, this.computeValue( this.make(init.init), init.init.isLiteral ? null : value ) );
             }else{
-                const obj = target.isIdentifier ? this.make(target) : this.getSpreadRefName(target, ()=>this.make(target) );
+                const obj = target.isIdentifier ? this.make(target) : this.getSpreadRefName(target, ()=>'(object)'+this.make(target) );
                 return this.assignmentExpression(name, this.computeValue(`${obj}->${name}`,value) );
             }
         }else{

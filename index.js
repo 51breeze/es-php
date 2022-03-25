@@ -64,7 +64,7 @@ function plugin(complier){
         defaultOptions.emitFile = true;
     }
     this.config( merge(defaultOptions,config) );
-    //complier.loadTypes([require.resolve('./types/web.es')],true,this);
+    complier.loadTypes([require.resolve('./types/index.d.es')],true,this);
 };
 
 Object.defineProperty(plugin.prototype, 'constructor', {

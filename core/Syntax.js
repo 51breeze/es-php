@@ -606,11 +606,12 @@ class Syntax extends events.EventEmitter {
             if( this.isDependModule(depModule) ){
                 const polyfillModule = depModule.isDeclaratorModule && Polyfill.modules.get(depModule.id);
                 const alias = importAlias.has(depModule) ? importAlias.get(depModule) : null;
+                const file = this.getOutputRelativePath(depModule,  module);
                 let paths = null;
                 if( polyfillModule ){
                     if( polyfillModule.export ){
                         paths = polyfillModule.namespace.split('.').concat(polyfillModule.export);
-                        push( `require_once('${paths.join("/")}.php');` );
+                        push( `require_once('${file}');` );
                         if( !polyfillModule.isClass ){
                             paths = null;
                         }else  if( !polyfillModule.namespace ){
@@ -620,7 +621,7 @@ class Syntax extends events.EventEmitter {
                 }else{
                     paths = depModule.namespace.getChain().concat(depModule.id);
                     if( !depModule.isDeclaratorModule ){
-                        push( `require_once('${paths.join("/")}.php');` );
+                        push( `require_once('${file}');` );
                     }
                     if( !depModule.namespace.identifier ){
                         paths = null;

@@ -44,9 +44,9 @@ class VariableDeclarator extends Syntax {
             const name = this.stack.id.value();
             if( init && !type.isNullableType ){
                 if( refs ){
-                    return `\$${name} = ${refs}${init}`;
+                    return this.semicolon(`\$${name} = ${refs}${init}`);
                 }
-                return `\$${name} = ${init}`;
+                return this.semicolon(`\$${name} = ${init}`);
             }
             return null;
         }

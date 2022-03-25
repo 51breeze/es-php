@@ -91,7 +91,7 @@ class RegExp {
         $pattern = $this->getPattern();
         $limit = $this->global ? -1 : 1;
         $result = is_callable($replacement) ? 
-        preg_replace_callback($pattern, function($matches){
+        preg_replace_callback($pattern, function($matches)use($replacement){
             return call_user_func_array( $replacement, $matches);
         }, $value, $limit) : preg_replace($pattern, $replacement, $value, $limit);
         return $result === null ? $value : $result;

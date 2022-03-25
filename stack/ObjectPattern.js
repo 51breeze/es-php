@@ -3,7 +3,7 @@ class ObjectPattern extends Syntax {
     emitter(){
         return this.stack.properties.map( item=> {
             return this.make(item);
-        });
+        }).join('\r\n');
     }
 }
 

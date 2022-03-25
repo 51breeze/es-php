@@ -15,7 +15,7 @@ class VariableDeclaration extends Syntax {
         if( this.stack.flag ){
             return `${declarations.join(",")}`;
         }
-        return this.semicolon(`${declarations.join(",")}`);
+        return declarations.join("\r\n");
    }
 }
 
