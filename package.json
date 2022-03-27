@@ -3,6 +3,7 @@
   "version": "0.0.7",
   "description": "test",
   "main": "index.js",
+  "typings": "./types",
   "scripts": {
     "dev-test": "jasmine ./test/index.js",
     "dev-run": "node ./test/php.js",
