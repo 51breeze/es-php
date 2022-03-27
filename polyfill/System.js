@@ -6,5 +6,6 @@ module.exports={
     require:['Iterator'],
     isSystem:true,
     isClass:true,
+    usePolyfill:false,
     namespace:"es.core"
 }

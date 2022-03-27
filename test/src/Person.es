@@ -24,6 +24,8 @@ public class Person<T> extends TestCase implements TestInterface
         return a;
     }
 
+
+    @Post('/method')
     public method( name:string, age:int):any
     {
         var str:string[] = ["a","1"];

@@ -5,5 +5,6 @@ module.exports={
     export:"Reflect",
     require:['System','RegExp','String','Array','Object','Number'],
     isClass:true,
+    usePolyfill:false,
     namespace:"es.core"
 }

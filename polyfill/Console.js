@@ -4,6 +4,7 @@ module.exports={
     require:[],
     isClass:false,
     namespace:"es.core",
+    usePolyfill:false,
     method(target, thisObject, name, args, desc, isStatic, getter=false){
         const throwError=()=>{
             if( getter ){

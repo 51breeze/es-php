@@ -466,6 +466,10 @@ class Syntax extends events.EventEmitter {
             depModule = this.getModuleById(depModule);
         }
         if( !depModule.isModule || depModule === this.module )return;
+        const polyModule = Polyfill.modules.get(depModule.id);
+        if( polyModule ){
+            polyModule.usePolyfill = true;
+        }
         this.compilation.addDependency(depModule,module);
     }
 
@@ -487,6 +491,12 @@ class Syntax extends events.EventEmitter {
         if(!module)return false;
         const isDeclaratorModule = module.isDeclaratorModule;
         const isPolyfill = isDeclaratorModule && Polyfill.modules.has( module.id );
+        if( isPolyfill ){
+            const polyModule = Polyfill.modules.get( module.id );
+            if( polyModule && !polyModule.usePolyfill ){
+                return false;
+            }
+        }
         return !isDeclaratorModule || isPolyfill;
     }
 
@@ -601,6 +611,7 @@ class Syntax extends events.EventEmitter {
                 requires.unshift( value );
             }
         }
+
         const importAlias = module.importAlias;
         const config = this.getConfig();
         this.getDependencies(module).forEach( depModule=>{
@@ -608,41 +619,68 @@ class Syntax extends events.EventEmitter {
                 const polyfillModule = depModule.isDeclaratorModule && Polyfill.modules.get(depModule.id);
                 const alias = importAlias.has(depModule) ? importAlias.get(depModule) : null;
                 let paths = null;
+                let classId = depModule.id;
                 if( polyfillModule ){
+                    if( !polyfillModule.usePolyfill ){
+                        return;
+                    }
                     if( polyfillModule.export ){
                         if( config.requireFile ){
                             const file = this.getOutputRelativePath(depModule,  module);
                             push( `require_once( __DIR__.'${file}' );` );
                         }
-                        if( !polyfillModule.isClass ){
-                            paths = null;
-                        }else  if( !polyfillModule.namespace ){
-                            paths = null;
-                        }else{
-                            paths = polyfillModule.namespace.split('.').concat(polyfillModule.export);
+                        if( !polyfillModule.isClass || !polyfillModule.namespace){
+                            return;
                         }
+                        classId = polyfillModule.export;
+                        paths = polyfillModule.namespace.split('.');
                     }
                 }else{
-                    paths = depModule.namespace.getChain().concat(depModule.id);
+                    paths = depModule.namespace.identifier && depModule.namespace.getChain();
                     if( !depModule.isDeclaratorModule && config.requireFile){
                         const file = this.getOutputRelativePath(depModule,  module);
                         push( `require_once( __DIR__.'${file}' );` );
                     }
-                    if( !depModule.namespace.identifier ){
-                        paths = null;
-                    }
-                }
-
-                if( config.prefixNamespace ){
-                    paths = config.prefixNamespace.split('.').concat( paths || [] );
                 }
 
                 if( paths ){
-                    refs.push( this.createImport('\\'+paths.join("\\"), alias) );
+                    const useName = this.createImport('\\'+this.getModuleNamespaceReferencePaths(depModule, paths).concat(classId).join("\\"), alias);
+                    if( !refs.includes(useName) ){
+                        refs.push( useName );
+                    }
                 }
             }
         });
         return refs;
+    }
+
+    getModuleNamespaceReferencePaths(depModule, paths){
+
+        if( !paths ){
+            const polyfillModule = depModule.isDeclaratorModule && Polyfill.modules.get(depModule.id);
+            if( polyfillModule ){
+                if( polyfillModule.export && !polyfillModule.isClass && polyfillModule.namespace ){ 
+                    paths = polyfillModule.namespace.split('.'); 
+                }
+            }else{
+                paths = depModule.namespace.identifier && depModule.namespace.getChain();
+            }
+        }
+
+        if( depModule.isDeclaratorModule || !paths || !(paths.length > 0) ){
+            return paths;
+        }
+
+        const config = this.getConfig();
+        if( config.namespaceAlias ){
+            const first = paths[0];
+            const alias = config.namespaceAlias[ first ];
+            if( alias ){
+                const ns =  typeof alias === 'string' ? alias.split('.') : alias;
+                return [].concat(ns, paths.slice(1) );
+            }
+        }
+        return paths;
     }
 
     createImport(name, alias){

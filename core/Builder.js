@@ -1,13 +1,19 @@
 const fs = require("fs");
 const path = require("path");
 const Syntax = require("./Syntax");
+const buildCaches = new WeakSet();
+const Metadata = new Map([
+    ['route', new Map()]
+]);
 class Builder extends Syntax{
     start(done){
         try{
             const compilation = this.compilation;
             const buildModules = new Set();
             const builder = ( module )=>{
-                if( this.isNeedBuild(module) && !module.compilation.completed(this.name) ){
+                const builded = module.compilation.completed(this.name) && buildCaches.has(module);
+                if( this.isNeedBuild(module) && !builded ){
+                    buildCaches.add( module );
                     const stack = compilation.getStackByModule(module);
                     if( stack ){
                         const file = this.getOutputAbsolutePath(module);
@@ -31,6 +37,7 @@ class Builder extends Syntax{
             buildModules.forEach( module=>{
                 module.compilation.completed(this.name,true);
             });
+            this.emitRoute();
             done();
         }catch(e){
             done(e);
@@ -53,10 +60,27 @@ class Builder extends Syntax{
                 }
             });
             compilation.completed(this.name,true);
+            this.emitRoute();
             done();
         }catch(e){
             done(e);
         }
+    }
+
+    emitRoute(){
+        const config = this.getConfig();
+        const options = this.getOptions();
+        const suffix = config.suffix||".php";
+        const output = config.output || options.output;
+        const routes = Array.from( Metadata.get('route').values() ) || [];
+        const content = routes.map( item=>{
+            return `Route::${item.method}('${item.path}', '${item.controller}')`
+        }).join(';\r\n');
+        var routePath = config.outputRoutePath || path.join(output, 'route'+suffix );
+        if( !routePath.endsWith(suffix) ){
+            routePath = path.join( routePath, `route${suffix}`);
+        }
+        this.emitFile(routePath,`<?php\r\nuse think\\facade\\Route;\r\n${content};`);
     }
 
     bootstrap(mainId, modules){
@@ -85,5 +109,8 @@ class Builder extends Syntax{
         fs.writeFileSync(file, content);
     }
 }
+
+Builder.Metadata = Metadata;
+
 
 module.exports = Builder;

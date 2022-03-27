@@ -13,6 +13,7 @@ class DeclaratorDeclaration extends Syntax{
         polyfillModule.require.forEach( name=>{
             this.addDepend(name);
         });
+
         this.createDependencies(module,refs,requires);
         return content.replace(/\/\/\/\/\[(require|namespace|reference)\](\r?\n)/g,(all,name,line)=>{
             let result = '';

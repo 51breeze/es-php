@@ -5,5 +5,6 @@ module.exports={
     export:"RegExp",
     require:[],
     isClass:true,
+    usePolyfill:false,
     namespace:"es.core"
 }

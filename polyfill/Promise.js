@@ -5,5 +5,6 @@ module.exports={
     export:"Promise",
     require:[],
     isClass:true,
+    usePolyfill:false,
     namespace:"es.core"
 }

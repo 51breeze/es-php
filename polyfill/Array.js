@@ -6,6 +6,7 @@ module.exports={
     require:['System'],
     isClass:false,
     namespace:"es.core",
+    usePolyfill:false,
     getName(name){
         return '\\'+this.namespace.split('.').concat( name ).join('\\');
     },

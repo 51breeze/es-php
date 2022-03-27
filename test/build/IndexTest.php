@@ -8,8 +8,6 @@ require_once( __DIR__.'./es/core/Object.php' );
 require_once( __DIR__.'./Types.php' );
 require_once( __DIR__.'./unit/Param.php' );
 require_once( __DIR__.'./com/TestInterface.php' );
-require_once( __DIR__.'./es/core/Number.php' );
-require_once( __DIR__.'./es/core/String.php' );
 require_once( __DIR__.'./es/core/IIterator.php' );
 require_once( __DIR__.'./Person.php' );
 use \es\core\IIterator;
@@ -44,7 +42,7 @@ class IndexTest extends Person implements \es\core\IIterator{
 		$buname = (object)['a'=>1];
 		$buname->test = $a;
 		$buname->person = '\Person';
-		$test=$buname->test;
+		$test=$buname->test ?? null;
 		$test::getClassObject();
 		return $buname;
 	}

@@ -8,7 +8,6 @@
  */
 namespace es\core;
 require_once( __DIR__.'./IIterator.php' );
-require_once( __DIR__.'./String.php' );
 require_once( __DIR__.'./Object.php' );
 use \es\core\IIterator;
 

@@ -6,6 +6,7 @@ module.exports={
     export:"String",
     require:[],
     isClass:false,
+    usePolyfill:false,
     namespace:"es.core",
     getName(name){
         return '\\'+this.namespace.split('.').concat( name ).join('\\');

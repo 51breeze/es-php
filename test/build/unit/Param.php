@@ -1,6 +1,5 @@
 <?php
 namespace unit;
-require_once( __DIR__.'./../es/core/Number.php' );
 use \PHPUnit\Framework\TestCase;
 /**
 * @class Param

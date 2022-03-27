@@ -2,21 +2,21 @@ const Syntax = require("../core/Syntax");
 class Property extends Syntax{
 
     computeValue(value,defaultValue){
-        if( !defaultValue ) {
+        if( defaultValue === void 0 ) {
             return value;
         }
-        const refName =  this.generatorVarName(this.stack, `_v`);
-        const statementStack= this.stack.getParentStack( (stack)=>{
-            return !!(stack.isVariableDeclaration || stack.isBlockStatement);
-        });
-        if( statementStack ){
-            if( statementStack.isVariableDeclaration ){
-                statementStack.dispatcher("insertDeclareBeforeEmit",{name:`\$${refName}=${value}`});
-            }else if( statementStack.isVariableDeclaration ){
-                statementStack.dispatcher("insert", this.semicolon(`\$${refName}=${value}`) );
-            }
-        }
-        return `\$${refName} ?? ${defaultValue}`;
+        // const refName =  this.generatorVarName(this.stack, `_v`);
+        // const statementStack= this.stack.getParentStack( (stack)=>{
+        //     return !!(stack.isVariableDeclaration || stack.isBlockStatement);
+        // });
+        // if( statementStack ){
+        //     if( statementStack.isVariableDeclaration ){
+        //         statementStack.dispatcher("insertDeclareBeforeEmit",{name:this.semicolon(`\$${refName}=${value}`)});
+        //     }else if( statementStack.isVariableDeclaration ){
+        //         statementStack.dispatcher("insert", this.semicolon(`\$${refName}=${value}`) );
+        //     }
+        // }
+        return `${value} ?? ${defaultValue}`;
     }
 
     assignmentExpression(left,right){
@@ -25,7 +25,7 @@ class Property extends Syntax{
 
     getSpreadRefName( target, expression){
         const desc = target.description(this);
-        if( desc && (desc.isMethodDefinition || desc.isFunctionExpression)){
+        if( desc && (desc.isMethodDefinition || desc.isFunctionExpression) ){
             return '$'+this.generatorRefName(target, '_s', 'getSpreadRefName', expression );
         }
         return expression();
@@ -35,13 +35,13 @@ class Property extends Syntax{
         if( this.stack.parentStack.isObjectPattern ){
             const target = this.parentStack.parentStack.init;
             const name = this.stack.value();
-            const value =this.stack.hasAssignmentPattern && this.make(this.stack.init.right);
+            const value =this.stack.hasAssignmentPattern ? this.make(this.stack.init.right) : 'null';
             if( target.isObjectExpression || target.isArrayExpression){
                 const init = target.attribute( name );
-                return this.assignmentExpression( name, this.computeValue( this.make(init.init), init.init.isLiteral ? null : value ) );
+                return this.assignmentExpression( name, init ? this.computeValue( this.make(init.init), init.init.isLiteral ? null : value ) : value );
             }else{
                 const obj = target.isIdentifier ? this.make(target) : this.getSpreadRefName(target, ()=>'(object)'+this.make(target) );
-                return this.assignmentExpression(name, this.computeValue(`${obj}->${name}`,value) );
+                return this.assignmentExpression(name, this.computeValue(`${obj}->${name}`, value) );
             }
         }else{
             const key = this.stack.computed ? this.make(this.stack.key) : this.stack.key.value();

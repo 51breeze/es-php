@@ -5,6 +5,7 @@ module.exports={
     export:false,
     require:[],
     isClass:false,
+    usePolyfill:false,
     namespace:"es.core",
     getName(name){
         return '\\'+this.namespace.split('.').concat( name ).join('\\');

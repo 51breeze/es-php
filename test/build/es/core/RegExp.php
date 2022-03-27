@@ -1,7 +1,5 @@
 <?php 
 namespace es\core;
-require_once( __DIR__.'./Number.php' );
-require_once( __DIR__.'./String.php' );
 
 class RegExp {
 
