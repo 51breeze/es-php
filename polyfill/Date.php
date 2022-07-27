@@ -9,7 +9,6 @@
 ////[namespace]
 ////[require]
 ////[reference]
-
 class Date{
     private $dateString=null;
     private $dateUTCString=null;

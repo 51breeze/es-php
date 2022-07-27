@@ -10,6 +10,8 @@
 ////[require]
 ////[reference]
 
+///<references from='System' />
+
 final class Reflect{
     /**
      * 针对全局对象中的方法进行兼容

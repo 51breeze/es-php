@@ -9,6 +9,7 @@
 ////[namespace]
 ////[require]
 ////[reference]
+///<references from='System' />
 
 class Map {
     private $dataset = [];

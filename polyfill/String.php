@@ -9,6 +9,8 @@
 ////[require]
 ////[reference]
 
+///<references from='RegExp' />
+
 /**
  * @name indexOf
  * @bind target
@@ -83,7 +85,7 @@ function es_string_normalize($target){
  * @bind target
  */
 function es_string_replace($target,$search,$replacement=''){
-    if( $search instanceof \es\core\RegExp ){
+    if( $search instanceof RegExp ){
         return $search->replace($target, $replacement);
     }else {
         $index = mb_strpos($target,$search);
@@ -102,10 +104,10 @@ function es_string_replace($target,$search,$replacement=''){
  * @bind target
  */
 function es_string_replace_all($target,$search,$replacement=''){
-    if( $search instanceof \es\core\RegExp ){
+    if( $search instanceof RegExp ){
         return $search->replaceAll($target, $replacement);
     }else if(is_callable($replacement)) {
-        $regExp = new \es\core\RegExp( $search );
+        $regExp = new RegExp( $search );
         return $regExp->replaceAll($target, $replacement);
     }else{
         return str_replace($search, $replacement, $target);
@@ -117,10 +119,10 @@ function es_string_replace_all($target,$search,$replacement=''){
  * @bind target
  */
 function es_string_match($target,$regexp){
-    if( $regexp instanceof \es\core\RegExp ){
+    if( $regexp instanceof RegExp ){
         return $search->match( $target );
     }else{
-        return (new \es\core\RegExp( $regexp ))->match( $target );
+        return (new RegExp( $regexp ))->match( $target );
     }
 }
 
@@ -129,10 +131,10 @@ function es_string_match($target,$regexp){
  * @bind target
  */
 function es_string_match_all($target,$regexp){
-    if( $regexp instanceof \es\core\RegExp ){
+    if( $regexp instanceof RegExp ){
         return $regexp->matchAll( $target );
     }else{
-        return (new \es\core\RegExp( $regexp ))->matchAll( $target );
+        return (new RegExp( $regexp ))->matchAll( $target );
     }
 }
 
@@ -141,10 +143,10 @@ function es_string_match_all($target,$regexp){
  * @bind target
  */
 function es_string_search($target,$search){
-    if( $search instanceof \es\core\RegExp ){
+    if( $search instanceof RegExp ){
         return $search->search( $target );
     }else{
-        return (new \es\core\RegExp( $search ))->search($target);
+        return (new RegExp( $search ))->search($target);
     }
 }
 

@@ -8,6 +8,7 @@
 ////[namespace]
 ////[require]
 ////[reference]
+///<references from='System' />
 
 /**
  * @name filter

@@ -1,16 +1,13 @@
 const fs = require("fs");
 const path = require("path");
 const Builder = require("./core/Builder");
-const Polyfill = require("./core/Polyfill");
 const {merge} = require("lodash");
 const modules = new Map();
-const loadStack=()=>{
-    const dirname = path.join(__dirname,"stack");
-    fs.readdirSync( dirname ).forEach( (filename)=>{
-        const info = path.parse( filename );
-        modules.set(info.name, require( path.join(dirname,filename) ) );
-    });
-}
+const dirname = path.join(__dirname,"tokens");
+fs.readdirSync( dirname ).forEach( (filename)=>{
+    const info = path.parse( filename );
+    modules.set(info.name, require( path.join(dirname,filename) ) );
+});
 
 const defaultConfig ={
     target:7,
@@ -18,83 +15,58 @@ const defaultConfig ={
     namespaceAlias:null,
     outputRoutePath:null,
     suffix:'.php',
+    coreNamespace:'es.core',
 }
-const configData = Object.assign({}, defaultConfig);
-const package = require('./package.json');
-const properties ={
-    name:package.name,
-    version:package.version,
-    platform:'server',
-    config(options){
-        const target = configData;
-        if(options){
-            merge(target, options);
-        }
-        return target;
-    },
-    getPolyfill(name){
-        return Polyfill.modules.get(name);
-    },
-    getStack(name){
+
+const pkg = require("./package.json");
+const generatedCodeMaps = new Map();
+
+class Plugin{
+
+    constructor(complier,options){
+        this.complier = complier;
+        this.options = merge({},defaultConfig, options);
+        this.generatedCodeMaps = generatedCodeMaps;
+        this.name = pkg.name;
+        this.version = pkg.version;
+        this.platform = 'server';
+        const dir = path.join(__dirname,'types');
+        const files = fs.readdirSync( dir ).filter( item=>!(item === '.' || item === '..') ).map( item=>path.join(dir,item) );
+        complier.loadTypes(files,true,null,true);
+    }
+
+    getGeneratedCodeByFile(file){
+        return this.generatedCodeMaps.get(file);
+    }
+
+    getGeneratedSourceMapByFile(file){
+        return null;
+    }
+
+    getTokenNode(name){
         return modules.get(name);
-    },
-    start(compilation, done, options){
-        if(options)this.config(options);
-        const builder = new Builder( compilation.stack );
-        builder.name = this.name;
-        builder.platform = this.platform;
-        builder.version = this.version;
+    }
+
+    start(compilation, done){
+        const builder = this.getBuilder( compilation );
         builder.start(done);
-    },
-    build(compilation, done, options){
-        if(options)this.config(options);
+        return builder;
+    }
+
+    build(compilation, done){
+        const builder = this.getBuilder( compilation );
+        builder.build(done);
+        return builder;
+    } 
+
+    getBuilder( compilation ){
         const builder = new Builder( compilation.stack );
         builder.name = this.name;
         builder.platform = this.platform;
-        builder.version = this.version;
-        builder.build(done);
+        builder.plugin = this;
+        return builder;
     }
 }
 
-function plugin(complier){
-    if( modules.size === 0 ){
-        loadStack();
-    }
-    this.complier = complier;
-    const defaultOptions = {};
-    const config = complier.options[this.name] || {};
-    if( complier.options.commandLineEntrance ){
-        defaultOptions.emitFile = true;
-    }
-    this.config( merge(defaultOptions,config) );
-    complier.loadTypes([require.resolve('./types/index.d.es')],true,this);
-};
 
-Object.defineProperty(plugin.prototype, 'constructor', {
-    value:plugin,
-    enumerable:false,
-    configurable:false
-});
-
-for(var name in properties){
-    Object.defineProperty(plugin.prototype,name,{
-        value:properties[name],
-        enumerable:false,
-        configurable:false
-    });
-    if( ['name','platform','version'].includes( name ) ){
-        Object.defineProperty(plugin,name,{
-            value:properties[name],
-            enumerable:true,
-            configurable:false
-        });
-    }
-}
-
-Object.defineProperty(plugin,'modules',{
-    value:modules,
-    enumerable:true,
-    configurable:false
-});
-
-module.exports = plugin;
+module.exports = Plugin;

@@ -1,18 +1,43 @@
-const fs = require("fs");
-const path = require("path");
+
+function getMethodFunction(ctx, name){
+    return ctx.createLiteralNode(name);
+}
+
 module.exports={
-    content: fs.readFileSync( path.join(__dirname,"./files/Array.php") ),
-    export:"Array",
-    require:['System'],
-    isClass:false,
-    namespace:"es.core",
-    usePolyfill:false,
-    getName(name){
-        return '\\'+this.namespace.split('.').concat( name ).join('\\');
+
+    isArray(ctx, args){
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode('is_array'),
+            args
+        );
     },
-    getMethodName(name){
-        return `'${name}'`;
+
+    from(ctx, args){
+        ctx.addDepend('System');
+        return ctx.createCalleeNode(
+            ctx.createStaticMemberNode([
+                ctx.createIdentifierNode('System'),
+                ctx.createIdentifierNode('toArray'),
+            ]),
+            args
+        );
     },
+
+    of(ctx, args, module){
+        ctx.addDepend('Array');
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode( ctx.builder.getModuleNamespace( module, 'es_array_new') ),
+            args
+        );
+    },
+
+    push(ctx, args, module, getter=false){
+        if(getter)return createMethodFunctionNode(ctx,'array_push')
+    },
+
+
+
+
     method(target, thisObject, name, args, desc, isStatic, getter=false){
         if( isStatic ){
             const throwError=()=>{
