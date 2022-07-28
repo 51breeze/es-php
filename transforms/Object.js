@@ -1,69 +1,89 @@
-const fs = require("fs");
-const path = require("path");
-module.exports={
-    content:fs.readFileSync( path.join(__dirname,"./files/Object.php") ),
-    export:'Object',
-    require:[],
-    isClass:false,
-    usePolyfill:false,
-    namespace:"es.core",
-    getName(name){
-        return '\\'+this.namespace.split('.').concat( name ).join('\\');
-    },
-    getMethodName(name){
-        return `'${name}'`;
-    },
-    method(target, thisObject, name, args, desc, isStatic, getter=false,makedThisObject=null){
-        let object = makedThisObject || target.make(thisObject);
-        if( isStatic ){
-            const throwError=()=>{
-                if( getter ){
-                    target.error('Object static method can only called.');
-                } 
-            }
-            switch( name ){
-                case "assign" :
-                    target.addDepend("Object");
-                    throwError();
-                    return this.getName(`es_object_assign`)+`(${args.join(",")})`;
-                case "keys" :
-                    target.addDepend("Object");
-                    throwError();
-                    return this.getName(`es_object_keys`)+`(${args.join(",")})`;
-                case "values" :
-                    target.addDepend("Object");
-                    throwError();
-                    return this.getName(`es_object_values`)+`(${args.join(",")})`;
-            }
-            return null;
-        }
-        switch( name ){
-            case "propertyIsEnumerable" :
-                target.addDepend("Object");
-                if( getter ){
-                    return this.getMethodName( this.getName(`es_object_property_is_enumerable`) );
-                }
-                return this.getName(`es_object_property_is_enumerable`)+`(${[object].concat(args).join(",")})`;
-            case "hasOwnProperty" :
-                target.addDepend("Object");
-                if( getter ){
-                    return this.getMethodName( this.getName(`es_object_has_own_property`) );
-                }
-                return this.getName(`es_object_has_own_property`)+`(${[object].concat(args).join(",")})`;
-            case "valueOf" :
-                target.addDepend("Object");
-                if( getter ){
-                    return this.getMethodName( this.getName(`es_object_value_of`) );
-                }
-                return this.getName(`es_object_value_of`)+`(${[object].concat(args).join(",")})`;
-            case "toLocaleString" :
-            case "toString" :
-                target.addDepend("Object");
-                if( getter ){
-                    return this.getMethodName( this.getName(`es_object_to_string`) );
-                }
-                return this.getName(`es_object_to_string`)+`(${[object].concat(args).join(",")})`;
-        }
-        return null;
+
+function createMethodFunctionNode(ctx, name){
+    return ctx.createLiteralNode(name);
+}
+
+function createObjectNodeRefs(ctx, object, desc){
+    if( object.type ==="Identifier"){
+        return ctx.createArrayAddressRefsNode(desc, object.value);
+    }else if( object.type === "ArrayExpression" ){
+        const refs = ctx.checkRefsName('_AR', false, null, (name)=>{
+            return object;
+        });
+        return ctx.createIdentifierNode(refs,null,true);
     }
+    return object;
+}
+
+function createCommonCalledNode(name,ctx, object, desc, args, called=true){
+    if(!called)return createMethodFunctionNode(ctx,name);
+    const obj = createObjectNodeRefs(ctx, object, desc );
+    return ctx.createCalleeNode(
+        ctx.createIdentifierNode(name),
+        [obj].concat(args)
+    );
+}
+
+module.exports={
+    
+    assign(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("Object");
+        const name = ctx.builder.getModuleNamespace( module, 'es_object_assign');
+        if(!called)return createMethodFunctionNode(ctx,name);
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode(name),
+            args
+        );
+    },
+
+    keys(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("Object");
+        const name = ctx.builder.getModuleNamespace( module, 'es_object_keys');
+        if(!called)return createMethodFunctionNode(ctx,name);
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode(name),
+            args
+        );
+    },
+
+    values(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("Object");
+        const name = ctx.builder.getModuleNamespace( module, 'es_object_values');
+        if(!called)return createMethodFunctionNode(ctx,name);
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode(name),
+            args
+        );
+    },
+   
+    propertyIsEnumerable(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("Object");
+        const name = ctx.builder.getModuleNamespace( module, 'es_object_property_is_enumerable');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    hasOwnProperty(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("Object");
+        const name = ctx.builder.getModuleNamespace( module, 'es_object_has_own_property');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    valueOf(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("Object");
+        const name = ctx.builder.getModuleNamespace( module, 'es_object_value_of');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    toLocaleString(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("Object");
+        const name = ctx.builder.getModuleNamespace( module, 'es_object_to_string');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    toString(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("Object");
+        const name = ctx.builder.getModuleNamespace( module, 'es_object_to_string');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    }
+
 }

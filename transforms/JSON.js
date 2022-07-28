@@ -1,18 +1,24 @@
 module.exports={
-    content:null,
-    export:false,
-    require:[],
-    isClass:false,
-    namespace:"es.core",
-    usePolyfill:false,
-    method(target, thisObject, name, args, isStatic){
-        if( isStatic ){
-            switch( name ){
-                case "parse" :
-                    return `json_decode(${args[0]})`;
-                case "stringify" :
-                    return `json_encode(${args[0]},JSON_UNESCAPED_UNICODE)`;
-            }
+
+    parse(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("System");
+        if(!called){
+            return ctx.createChunkNode(`function($target){return json_decode($target);}`)
         }
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode('json_decode'),
+            args
+        );
+    },
+
+    stringify(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("System");
+        if(!called){
+            return ctx.createChunkNode(`function($target){return json_encode($target,JSON_UNESCAPED_UNICODE);}`)
+        }
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode('json_encode'),
+            [ args[0] ].concat( ctx.createIdentifierNode(`JSON_UNESCAPED_UNICODE`) )
+        );
     }
 }

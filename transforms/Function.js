@@ -1,75 +1,41 @@
 module.exports={
-    content:null,
-    export:false,
-    require:[],
-    namespace:"es.core",
-    isClass:false,
-    usePolyfill:false,
-    getName(name){
-        return '\\'+this.namespace.split('.').concat( name ).join('\\');
-    },
-    getMethodName(name){
-        return `'${name}'`;
-    },
-    method(target, thisObject, name, args, desc, isStatic, getter=false){
-        let object = target.make(thisObject);
-        let targetObject = args.shift();
-        const first = target.stack.arguments && target.stack.arguments[0];
-        if( first){
-            if( first.isArrayExpression || first.isObjectExpression ){
-                const refs = '$'+target.generatorVarName(target.stack, '_AR');
-                target.insertExpression(target.semicolon(`${refs} = ${targetObject}`));
-                targetObject = refs;
-            }
-            if( first.isLiteral && name==="bind" ){
-                target.error("Cannot bind a literal as an object", first);
-            }
-        }
 
-        const intercept = ()=>{
-            const firstArg = target.stack.arguments && target.stack.arguments[0];
-            const targetType =firstArg && firstArg.type();
-            if( targetType ){
-                const type = target.compiler.callUtils("getOriginType",targetType);
-                if(type && type.id ==="Array"){
-                    object = object.replace(/[\'\"]/g,'');
-                    switch( object ){
-                        case "array_splice" :
-                            if( args.length > 3 ){
-                                args = args.slice(0,2).concat(`[${args.slice(2).join(',')}]`);
-                            }
-                        break;
-                        case "in_array" :
-                            return `${object}(${args.concat(targetObject).join(",")})`;
-                    }
-                    return `${object}(${[targetObject].concat(args).join(",")})`;
-                }
-            }
-        };
-
-        switch( name ){
-            case "apply" :
-            case "call" :
-                if( getter )return object;
-                const method = intercept();
-                if( method )return method;
-                target.addDepend("Reflect");
-                if(args.length > 0){
-                    return `Reflect::apply(${object},${targetObject},[${args.join(",")}])`;
-                }else{
-                    return `Reflect::apply(${object},${targetObject})`;
-                }
-            case "bind" :
-                target.addDepend("Reflect");
-                return `System::bind(${[object,targetObject].concat(args).join(",")})`;
-            case "toLocaleString" :
-            case "toString" :
-                target.addDepend("Object");
-                if( getter ){
-                    return this.getMethodName( this.getName(`es_object_to_string`) );
-                }
-                return this.getName(`es_object_to_string`)+`(${object})`;
+    apply(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("Reflect");
+        if(!called){
+            return ctx.createChunkNode(`function($calleed, &$target, ...$args){return Reflect::apply($calleed, $target, $args);}`)
         }
+        const target = args.shift();
+        const params = [object, target];
+        if( args.length > 0 ){
+            args =  ctx.createArrayNode( args );
+            params.push( args );
+        }
+        return ctx.createCalleeNode(
+            ctx.createStaticMemberNode([
+                ctx.createIdentifierNode('Reflect'),
+                ctx.createIdentifierNode('apply')
+            ]),
+            params
+        );
+    },
+
+    call(ctx, object, desc, args, module, called=true){
+        return this.apply(ctx, object, desc, args, module, called);
+    },
+
+    bind(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("System");
+        if(!called){
+            return ctx.createChunkNode(`function($calleed, &$target, ...$args){return System::bind($calleed, $target, ...$args);}`)
+        }
+        return ctx.createCalleeNode(
+            ctx.createStaticMemberNode([
+                ctx.createIdentifierNode('System'),
+                ctx.createIdentifierNode('bind')
+            ]),
+            [object].concat( args )
+        );
     }
     
 }

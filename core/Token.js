@@ -418,7 +418,6 @@ class Token extends events.EventEmitter {
         return assignAddressRef.get(desc);
     }
 
-
     addAssignAddressRef(desc, value){
         if(!desc)return null;
         var address = assignAddressRef.get(desc);
@@ -472,7 +471,7 @@ class Token extends events.EventEmitter {
         }
     }
 
-    checkRefsName(name,top=true,context=null){
+    checkRefsName(name,top=true,context=null,initInvoke=null){
 
         const ctx = context || this.getParentByType(parent=>{
             if( top ){
@@ -483,7 +482,7 @@ class Token extends events.EventEmitter {
         });
 
         if( !ctx )return name;
-        const scope = context && context.scope ? context.scope : this.scope || context.scope;
+        const scope = (context && context.scope) || this.scope;
         var dataset = SCOPE_MAP.get( ctx );
         if( !dataset ){
             SCOPE_MAP.set(ctx, dataset={
@@ -506,15 +505,36 @@ class Token extends events.EventEmitter {
             ctx.emit('onCreateRefsName', event);
             if( !event.prevent ){
                 const block = top ? ctx : ctx.body;
+                let init = null;
+                if( initInvoke ){
+                    init = initInvoke(value,name);
+                }
+                if( !init && top ){
+                    init = block.createIdentifierNode(name);
+                }
+                if( init ){
+                    (block.beforeBody||block.body).push(block.createDeclarationNode('const', [
+                        block.createDeclaratorNode(
+                            block.createIdentifierNode(value, null, true),
+                            init,
+                        )
+                    ]));
+                }
+            }
+            return value;
+        }else if(initInvoke){
+            var init = initInvoke(name, name);
+            const block = top ? ctx : ctx.body;
+            if( init ){
                 (block.beforeBody||block.body).push(block.createDeclarationNode('const', [
                     block.createDeclaratorNode(
-                        block.createIdentifierNode(value),
-                        block.createIdentifierNode(name),
+                        block.createIdentifierNode(value, null, true),
+                        init,
                     )
                 ]));
             }
-            return value;
         }
+
         return name;
     }
 

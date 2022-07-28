@@ -1,21 +1,19 @@
 module.exports={
-    content: null,
-    export:false,
-    require:[],
-    isClass:false,
-    namespace:"es.core",
-    usePolyfill:false,
-    method(target, thisObject, name, args, desc, isStatic, getter=false){
-        const throwError=()=>{
-            if( getter ){
-                target.error('Console static method can only called.');
-            } 
+    log(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("System");
+        if(!called){
+            return ctx.createChunkNode(`function(...$args){System::print(...$args);}`)
         }
-        switch( name ){
-            case "log" :
-                throwError();
-                target.addDepend("System");
-                return `System::print(${args.join(",")})`;
-        }
-    }
+        return ctx.createCalleeNode(
+            ctx.createStaticMemberNode([
+                ctx.createIdentifierNode('System'),
+                ctx.createIdentifierNode('print')
+            ]),
+            args
+        );
+    },
+    trace(ctx, object, desc, args, module, called=true){
+        return this.log(ctx, object, desc, args, module, called);
+    },
+    
 }

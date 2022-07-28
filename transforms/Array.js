@@ -1,6 +1,27 @@
 
-function getMethodFunction(ctx, name){
+function createMethodFunctionNode(ctx, name){
     return ctx.createLiteralNode(name);
+}
+
+function createObjectNodeRefs(ctx, object, desc){
+    if( object.type ==="Identifier"){
+        return ctx.createArrayAddressRefsNode(desc, object.value);
+    }else if( object.type === "ArrayExpression" ){
+        const refs = ctx.checkRefsName('_AR', false, null, (name)=>{
+            return object;
+        });
+        return ctx.createIdentifierNode(refs,null,true);
+    }
+    return object;
+}
+
+function createCommonCalledNode(name,ctx, object, desc, args, called=true){
+    if(!called)return createMethodFunctionNode(ctx,name);
+    const obj = createObjectNodeRefs(ctx, object, desc );
+    return ctx.createCalleeNode(
+        ctx.createIdentifierNode(name),
+        [obj].concat(args)
+    );
 }
 
 module.exports={
@@ -31,181 +52,194 @@ module.exports={
         );
     },
 
-    push(ctx, args, module, getter=false){
-        if(getter)return createMethodFunctionNode(ctx,'array_push')
+    push(ctx, object, desc, args, module, called=true){
+        return createCommonCalledNode('array_push', ctx, object, desc, args, called);
     },
 
+    unshift(ctx, object, desc, args, module,  called=true){
+        return createCommonCalledNode('array_unshift', ctx, object, desc, args, called);
+    },
 
+    pop(ctx, object, desc, args, module,  called=true){
+        return createCommonCalledNode('array_pop', ctx, object, desc, args, called);
+    },
 
+    shift(ctx, object, desc, args, module,  called=true){
+        return createCommonCalledNode('array_shift', ctx, object, desc, args, called);
+    },
 
-    method(target, thisObject, name, args, desc, isStatic, getter=false){
-        if( isStatic ){
-            const throwError=()=>{
-                if( getter ){
-                    target.error('Array static method can only called.');
-                } 
-            }
-            switch( name ){
-                case "isArray" :
-                    throwError();
-                    return `is_array(${args.join(",")})`;
-                case "from" :
-                    throwError();
-                    target.addDepend("System");
-                    return `System::toArray(${args.join(",")})`;
-                case "of" :
-                    throwError();
-                    target.addDepend("Array");
-                    return `${this.getName('es_array_new')}(${args.join(",")})`;
-            }
-            return null;
+    splice(ctx, object, desc, args, module,  called=true){
+        if( args.length > 3 ){
+            args = args.slice(0,2).concat( ctx.createArrayNode( args.slice(2) ) );
         }
+        return createCommonCalledNode('array_splice', ctx, object, desc, args, called);
+    },
 
-        const object = target.createArrayRefs(desc, target.make(thisObject) );
-        const getObject=()=>{
-            if( thisObject.isArrayExpression ){
-                const refs = '$'+target.generatorVarName(target.stack, '_AR');
-                target.insertExpression(target.semicolon(`${refs} = ${object}`));
-                return refs;
-            }
-            return object;
-        }
+    slice(ctx, object, desc, args, module,  called=true){
+        return createCommonCalledNode('array_slice', ctx, object, desc, args, called);
+    },
 
-        switch( name ){
-            case "push" :
-                if( getter )return this.getMethodName(`array_push`);
-                return `array_push(${getObject()},${args.join(',')})`
-            case "unshift" :
-                if( getter )return this.getMethodName(`array_unshift`);
-                return `array_unshift(${getObject()},${args.join(',')})`
-            case "pop" :
-                if( getter )return this.getMethodName(`array_pop`);
-                return `array_pop(${getObject()},${args.join(',')})`
-            case "shift" :
-                if( getter )return this.getMethodName(`array_shift`);
-                return `array_shift(${getObject()},${args.join(',')})`
-            case "splice" :
-                if( getter )return this.getMethodName(`array_splice`);
-                if( args.length > 3 ){
-                    args = args.slice(0,2).concat(`[${args.slice(2).join(',')}]`);
-                }
-                return `array_splice(${getObject()},${args.join(',')})`
-            case "slice" :
-                if( getter )return this.getMethodName(`array_slice`);
-                return `array_slice(${[object].concat(args).join(",")})`;
-            case "map" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_map'));
-                return `${this.getName('es_array_map')}(${[object].concat(args).join(",")})`;
-            case "find" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_find'));
-                return `${this.getName('es_array_find')}(${[object].concat(args).join(",")})`;
-            case "findIndex" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_find_index'));
-                return `${this.getName('es_array_find_index')}(${[object].concat(args).join(",")})`;
-            case "filter" :
-                target.addDepend( "Array" );
-                if( getter )return this.getMethodName(this.getName('es_array_filter'));
-                return `${this.getName('es_array_filter')}(${[object].concat(args).join(",")})`;
-            case "indexOf" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_search_index'));
-                return `${this.getName('es_array_search_index')}(${[object].concat(args).join(",")})`;
-            case "includes" :
-                if( getter )return this.getMethodName(`in_array`);
-                return `in_array(${args[0]},${object})`;
-            case "length" :
-                return `count(${object})`;
-            case "concat" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_concat'));
-                return `${this.getName('es_array_concat')}(${[object].concat(args).join(',')})`;
-            case "entries" :
-                if( getter )return this.getMethodName(`array_values`);
-                return `array_values(${[object]})`;
-            case "every" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_every'));
-                return `${this.getName('es_array_every')}(${[object].concat(args).join(",")})`;
-            case "some" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_some'));
-                return `${this.getName('es_array_some')}(${[object].concat(args).join(",")})`;
-            case "fill" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_fill'));
-                return `${this.getName('es_array_fill')}(${[object].concat(args).join(",")})`;
-            case "values" :
-                if( getter )return this.getMethodName(`array_values`);
-                return `array_values(${object})`;
-            case "forEach" :
-                target.addDepend("Array");
-                if( getter )return getMethodName(this.getName('es_array_foreach'));
-                return `${this.getName('es_array_foreach')}(${[object].concat(args).join(",")})`;
-            case "flat" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_flat'));
-                return `${this.getName('es_array_flat')}(${[object].concat(args).join(",")})`;
-            case "flatMap" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_flat_map'));
-                return `${this.getName('es_array_flat_map')}(${[object].concat(args).join(",")})`;
-            case "reduce" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_reduce'));
-                return `${this.getName('es_array_reduce')}(${[object].concat(args).join(",")})`;
-            case "reduceRight" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_reduce_right'));
-                return `${this.getName('es_array_reduce_right')}(${[object].concat(args).join(",")})`;
-            case "join" :
-                if( getter )return `function($obj,$val){return implode($val,$obj);}`;
-                return `implode(${args[0]}, ${object})`;
-            case "sort" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_sort'));
-                return `${this.getName('es_array_sort')}(${[getObject()].concat(args).join(",")})`;
-            case "keys" :
-                if( getter )return this.getMethodName(`array_keys`);
-                return `array_keys(${object})`;
-            case "reverse" :
-                if( getter )return this.getMethodName(`array_reverse`);
-                return `array_reverse(${object})`;
-            case "lastIndexOf" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_search_last_index'));
-                return `${this.getName('es_array_search_last_index')}(${object})`;
-            case "copyWithin" :
-                target.addDepend("Array");
-                if( getter )return this.getMethodName(this.getName('es_array_copy_within'));
-                return `${this.getName('es_array_copy_within')}(${[object].concat(args).join(",")})`;
-            case "propertyIsEnumerable" :
-                if( getter ){
-                    target.addDepend("Object");
-                    return this.getMethodName( this.getName(`es_object_property_is_enumerable`) );
-                }
-                return `isset(${object}[${args[0]}])`;
-            case "hasOwnProperty" :
-                if( getter ){
-                    target.addDepend("Object");
-                    return this.getMethodName( this.getName(`es_object_has_own_property`) );
-                }
-                return `isset(${object}[${args[0]}])`;
-            case "valueOf" :
-                if( getter ){
-                    target.addDepend("Object");
-                    return this.getMethodName( this.getName(`es_object_value_of`) );
-                }
-                return `${object}`;
-            case "toLocaleString" :
-            case "toString" :
-                if( getter ){
-                    target.addDepend("Object");
-                    return this.getMethodName( this.getName(`es_object_to_string`) );
-                }
-                return `implode(', ', ${object})`;
-        }
+    map(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_map');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    find(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_find');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    findIndex(ctx, object, desc, args,  module, called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_find_index');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    filter(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_filter');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    indexOf(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_find_index');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    lastIndexOf(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_search_last_index');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    copyWithin(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_copy_within');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    concat(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_concat');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    every(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_every');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    some(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_some');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    forEach(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_foreach');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    flat(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_flat');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    flatMap(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_flat_map');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    reduce(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_flat_reduce');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    reduceRight(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_flat_reduce_right');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    fill(ctx, object, desc, args, module,  called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_fill');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    sort(ctx, object, desc, args,  module, called=true){
+        ctx.addDepend("Array");
+        const name = ctx.builder.getModuleNamespace( module, 'es_array_sort');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+
+    join(ctx, object, desc, args,  module, called=true){
+        if(!called)return ctx.createChunkNode(`function($obj,$val){return implode($val,$obj);}`)
+        const obj = createObjectNodeRefs(ctx, object, desc );
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode('implode'),
+            args.concat(obj)
+        );
+    },
+
+    entries(ctx, object, desc, args,  module, called=true){
+        if(!called)return createMethodFunctionNode(ctx,'array_values');
+        const obj = createObjectNodeRefs(ctx, object, desc );
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode('array_values'),
+            [obj]
+        );
+    },
+
+    values(ctx, object, desc, args,  module, called=true){
+        if(!called)return createMethodFunctionNode(ctx,'array_values');
+        const obj = createObjectNodeRefs(ctx, object, desc );
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode('array_values'),
+            [obj]
+        );
+    },
+
+    keys(ctx, object, desc, args,  module,  called=true){
+        if(!called)return createMethodFunctionNode(ctx,'array_keys');
+        const obj = createObjectNodeRefs(ctx, object, desc );
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode('array_keys'),
+            [obj]
+        );
+    },
+
+    reverse(ctx, object, desc, args,  module, called=true){
+        if(!called)return createMethodFunctionNode(ctx,'array_reverse');
+        const obj = createObjectNodeRefs(ctx, object, desc );
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode('array_reverse'),
+            args.concat(obj)
+        );
+    },
+
+    includes(ctx, object, desc, args,  module, called=true){
+        if(!called)return createMethodFunctionNode(ctx,'in_array');
+        const obj = createObjectNodeRefs(ctx, object, desc );
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode('in_array'),
+            args.concat(obj)
+        );
+    },
+
+    length(ctx, object, desc, args,  module, called=true){
+        const obj = createObjectNodeRefs(ctx, object, desc );
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode('count'),
+            [obj]
+        );
     }
 }
