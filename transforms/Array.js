@@ -1,4 +1,6 @@
 
+const ObjectMethod = require("./Object");
+
 function createMethodFunctionNode(ctx, name){
     return ctx.createLiteralNode(name);
 }
@@ -24,7 +26,7 @@ function createCommonCalledNode(name,ctx, object, desc, args, called=true){
     );
 }
 
-module.exports={
+const methods = {
 
     isArray(ctx, args){
         return ctx.createCalleeNode(
@@ -182,7 +184,7 @@ module.exports={
     },
 
     join(ctx, object, desc, args,  module, called=true){
-        if(!called)return ctx.createChunkNode(`function($obj,$val){return implode($val,$obj);}`)
+        if(!called)return ctx.createChunkNode(`function($target,$delimiter){return implode($delimiter,$target);}`)
         const obj = createObjectNodeRefs(ctx, object, desc );
         return ctx.createCalleeNode(
             ctx.createIdentifierNode('implode'),
@@ -243,3 +245,11 @@ module.exports={
         );
     }
 }
+
+['propertyIsEnumerable','hasOwnProperty','valueOf','toLocaleString','toString'].forEach( name=>{
+    if( !methods.hasOwnProperty(name) ){
+        methods[name] =  ObjectMethod[name];
+    }
+});
+
+module.exports=methods;

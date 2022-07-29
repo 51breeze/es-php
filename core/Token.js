@@ -8,6 +8,11 @@ const addressRefNodes = new Map();
 
 class Token extends events.EventEmitter {
 
+    static SCOPE_REFS_All = 7;
+    static SCOPE_REFS_TOP = 4;
+    static SCOPE_REFS_UP = 2;
+    static SCOPE_REFS_DOWN = 1;
+
     constructor(type){
         super();
         this.type = type;
@@ -325,7 +330,7 @@ class Token extends events.EventEmitter {
     }
 
     createArrayAddressRefsNode(desc,name){
-        if(!desc || !desc.isStack)return;
+        if(!desc)return;
         const assignAddress = this.getAssignAddressRef(desc);
         if( assignAddress ){
             if( this.hasCrossScopeAssignment( desc.assignItems ) ){
@@ -340,14 +345,14 @@ class Token extends events.EventEmitter {
                     switchNode.condition = switchNode.createIdentifierNode( assert, null, true);
                     switchNode.cases = content;
                     let itemIndex = 0;
-                    method_name = this.checkRefsName( "_REF", false);
+                    method_name = this.checkRefsName(key, false);
                     desc.assignItems.forEach( (item)=>{
                         const desc = item.description();
                         if( assignAddress.hasName(desc) ){
                             const refs = assignAddress.getName(desc);
                             uses.push( this.createIdentifierNode(refs,null,true) );
                             const node = switchNode.createNode('SwitchCase');
-                            node.condition = node.createLiteralNode(itemIndex, itemIndex++);
+                            node.condition = node.createLiteralNode(itemIndex++);
                             node.consequent = node.createReturnNode( node.createIdentifierNode(refs,null,true) );
                             content.push( node );
                         }
@@ -371,8 +376,9 @@ class Token extends events.EventEmitter {
                         return item;
                     }));
                     funNode.comment =`/*References ${name} memory address*/`;
-                    this.insertNodeBlockContextAt( funNode );
-                    addressRefNodes.set(desc,{name:key,node:this.createAssignmentNode(this.createIdentifierNode(method_name),funNode)});
+                    const refsNode = this.createAssignmentNode(this.createIdentifierNode(method_name),funNode);
+                    this.insertNodeBlockContextAt( refsNode );
+                    addressRefNodes.set(desc,{name:key,node:refsNode});
                 }
                 return this.createCalleeNode( this.createIdentifierNode(method_name,null,true) );
 
@@ -420,6 +426,8 @@ class Token extends events.EventEmitter {
 
     addAssignAddressRef(desc, value){
         if(!desc)return null;
+        const type = desc.type();
+        if( !(type.isLiteralArrayType || type.isTupleType) )return null;
         var address = assignAddressRef.get(desc);
         if( !address ){
             address = new AddressVariable(desc, this);
@@ -471,7 +479,7 @@ class Token extends events.EventEmitter {
         }
     }
 
-    checkRefsName(name,top=true,context=null,initInvoke=null){
+    checkRefsName(name,top=true,flags=Token.SCOPE_REFS_UP, context=null, initInvoke=null){
 
         const ctx = context || this.getParentByType(parent=>{
             if( top ){
@@ -489,7 +497,25 @@ class Token extends events.EventEmitter {
                 scope,
                 result:new Map(),
                 check(name, scope){
-                    return (scope||this.scope).isDefine(name) || this.result.has(name);
+                    if( this.result.has(name) )return true;
+                    if( flags === Token.SCOPE_REFS_All ){
+                        return scope.topDeclarations.has(name);
+                    }
+                    if( scope.isDefine(name) ){
+                        return true;
+                    }
+                    var index = 0;
+                    var flag = 0;
+                    while( flag < (flags & Token.SCOPE_REFS_All) ){
+                        switch( flag = flags & Math.pow(2,index++) ){
+                            case Token.SCOPE_REFS_DOWN :
+                                if(scope.declarations.has(name) || scope.hasChildDeclared(name))return true;
+                            case Token.SCOPE_REFS_UP :
+                            case Token.SCOPE_REFS_TOP :
+                                return scope.isDefine(name);
+                        }
+                    }
+                    return false;
                 }
             });
         }else if( dataset.result.has(name) ){
@@ -522,19 +548,22 @@ class Token extends events.EventEmitter {
                 }
             }
             return value;
-        }else if(initInvoke){
-            var init = initInvoke(name, name);
-            const block = top ? ctx : ctx.body;
-            if( init ){
-                (block.beforeBody||block.body).push(block.createDeclarationNode('const', [
-                    block.createDeclaratorNode(
-                        block.createIdentifierNode(value, null, true),
-                        init,
-                    )
-                ]));
+        }else {
+            dataset.result.set(name,name);
+            if(initInvoke){
+                var init = initInvoke(name, name);
+                const block = top ? ctx : ctx.body;
+                if( init ){
+                    (block.beforeBody||block.body).push(block.createDeclarationNode('const', [
+                        block.createDeclaratorNode(
+                            block.createIdentifierNode(value, null, true),
+                            init,
+                        )
+                    ]));
+                }
             }
         }
-
+        
         return name;
     }
 

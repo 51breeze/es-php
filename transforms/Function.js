@@ -1,4 +1,5 @@
-module.exports={
+const ObjectMethod = require("./Object");
+const methods = {
 
     apply(ctx, object, desc, args, module, called=true){
         ctx.addDepend("Reflect");
@@ -39,3 +40,11 @@ module.exports={
     }
     
 }
+
+['propertyIsEnumerable','hasOwnProperty','valueOf','toLocaleString','toString'].forEach( name=>{
+    if( !methods.hasOwnProperty(name) ){
+        methods[name] =  ObjectMethod[name];
+    }
+});
+
+module.exports=methods;

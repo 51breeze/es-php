@@ -1,135 +1,150 @@
-const fs = require("fs");
-const path = require("path");
+
 const ObjectMethod = require("./Object");
-module.exports={
-    content: fs.readFileSync( path.join(__dirname,"./files/String.php") ),
-    export:"String",
-    require:[],
-    isClass:false,
-    usePolyfill:false,
-    namespace:"es.core",
-    getName(name){
-        return '\\'+this.namespace.split('.').concat( name ).join('\\');
+
+function createMethodFunctionNode(ctx, name){
+    return ctx.createLiteralNode(name);
+}
+
+function createCommonCalledNode(name,ctx, object, desc, args, called=true){
+    if(!called)return createMethodFunctionNode(ctx,name);
+    return ctx.createCalleeNode(
+        ctx.createIdentifierNode(name),
+        [object].concat(args)
+    );
+}
+
+const methods={
+   
+    charAt(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_char_at');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
-    getMethodName(name){
-        return `'${name}'`;
+
+    charCodeAt(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_char_code_at');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
-    method(target, thisObject, name, args, desc, isStatic, getter=false){
-        let object = target.make(thisObject);
-        switch( name ){
-            case "charAt" :
-                if( getter ){
-                    target.addDepend("String");
-                    return this.getMethodName( this.getName('es_string_char_at') );
-                }
-                return `mb_substr(${object},${args[0]},1)`;
-            case "charCodeAt" :
-                if( getter ){
-                    target.addDepend("String");
-                    return this.getMethodName( this.getName('es_string_char_code_at') );
-                }
-                return `mb_ord(mb_substr(${object},${args[0]},1),'UTF-8')`;
-            case "concat" :
-                if( getter ){
-                    target.addDepend("String");
-                    return this.getMethodName( this.getName('es_string_concat') );
-                }
-                return `(${[object].concat(args).join(" . ")})`;
-            case "includes" :
-                if( getter ){
-                    target.addDepend("String");
-                    return this.getMethodName( this.getName('es_string_includes') );
-                }
-                return `strpos(${[object].concat(args).join(",")}) !== false`;
-            case "indexOf" :
-                target.addDepend("String");
-                if( getter )return this.getMethodName( this.getName('es_string_index_of') );
-                return `${this.getName('es_string_index_of')}(${[object].concat(args).join(",")})`;
-            case "lastIndexOf" :
-                target.addDepend("String");
-                if( getter )return this.getMethodName( this.getName('es_string_last_index_of') );
-                return `${this.getName('es_string_last_index_of')}(${[object].concat(args).join(",")})`;
-            case "localeCompare" :
-                if( getter ){
-                    target.addDepend("String");
-                    return this.getMethodName( this.getName('es_string_locale_compare') );
-                }
-                return `strcmp(${[object].concat(args).join(",")})`;
-            case "match" :
-            case "matchAll" :
-            case "search" :
-                if( getter ){
-                    target.addDepend("String");
-                    const map = {"match":'es_string_math',"matchAll":'es_string_math_all','search':'es_string_search'};
-                    return this.getMethodName( this.getName( map[name] ) );
-                }
-                target.addDepend("RegExp");
-                if( target.stack.arguments[0].type().toString().toLowerCase()==="regexp" ){
-                    return `${args[0]}->${name}(${object})`;
-                }else{
-                    return `(new RegExp(${args[0]}))->${name}(${object})`;
-                }
-            case "replace" :
-                target.addDepend("String");
-                if( getter )return this.getMethodName( this.getName('es_string_replace') );
-                return `${this.getName('es_string_replace')}(${[object].concat(args).join(",")})`;
-            case "replaceAll" :
-                target.addDepend("String");
-                if( getter )return this.getMethodName( this.getName('es_string_replace_all') );
-                return `${this.getName('es_string_replace_all')}(${[object].concat(args).join(",")})`;
-            case "slice" :
-                target.addDepend("String");
-                if( getter )return this.getMethodName( this.getName('es_string_slice') );
-                return `${this.getName('es_string_slice')}(${[object].concat(args).join(",")})`;
-            case "repeat" :
-                return `str_repeat(${[object].concat(args).join(",")})`;
-            case "length" :
-                return `mb_strlen(${object})`;
-            case "substr" :
-                return `mb_substr(${[object].concat(args).join(",")})`;
-            case "substring" :
-                target.addDepend("String");
-                if( getter )return this.getMethodName( this.getName('es_string_substring') );
-                return `${this.getName('es_string_substring')}(${[object].concat(args).join(",")})`;
-            case "toLowerCase" :
-            case "toLocaleLowerCase" :
-                if( getter )return this.getMethodName(`mb_strtolower`);
-                return `mb_strtolower(${object})`;
-            case "toUpperCase" :
-            case "toLocaleUpperCase" :
-                if( getter )return this.getMethodName(`mb_strtoupper`);
-                return `mb_strtoupper(${object})`;
-            case "trim" :
-                if( getter )return this.getMethodName(`trim`);
-                return `trim(${object})`;
-            case "trimEnd" :
-                if( getter )return this.getMethodName(`rtrim`);
-                return `rtrim(${object})`;
-            case "trimStart" :
-                if( getter )return this.getMethodName(`ltrim`);
-                return `ltrim(${object})`;
-            case "split" :
-                return `explode(${args[0]},${object})`;
-            case "padStart" :
-                return `str_pad(${[object].concat(args).join(",")}, STR_PAD_LEFT)`;
-            case "padEnd" :
-                return `str_pad(${[object].concat(args).join(",")}, STR_PAD_RIGHT)`;
-            case "normalize" :
-                target.addDepend("String");
-                if( getter )return this.getMethodName( this.getName('es_string_normalize') );
-                return `${this.getName('es_string_normalize')}(${[object].concat(args).join(",")})`;
-            case "valueOf" :
-            case "toString" :
-                if( getter ){
-                    return ObjectMethod.method(target, thisObject, name, args, desc, isStatic, getter, object);
-                }
-                return `${object}`;
-            case "propertyIsEnumerable" :
-            case "hasOwnProperty" :
-                if( getter ){
-                    return ObjectMethod.method(target, thisObject, name, args, desc, isStatic, getter, object);
-                }
-                return `isset(${object}[${args[0]}])`;
+    concat(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_concat');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+    includes(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_includes');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+    indexOf(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_index_of');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+    lastIndexOf(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_last_index_of');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+    localeCompare(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_locale_compare');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+    match(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_math');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+    matchAll(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_math_all');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+    search(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_search');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+    replace(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_replace');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+    replaceAll(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_replace_all');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+    slice(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_slice');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+    repeat(ctx, object, desc, args, module, called=true){
+        return createCommonCalledNode('str_repeat', ctx, object, desc, args, called);
+    },
+    length(ctx, object, desc, args, module, called=true){
+        return createCommonCalledNode('mb_strlen', ctx, object, desc, args, called);
+    },
+    substr(ctx, object, desc, args, module, called=true){
+        return createCommonCalledNode('mb_substr', ctx, object, desc, args, called);
+    },
+    substring(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_substring');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
+    },
+    toLowerCase(ctx, object, desc, args, module, called=true){
+        return createCommonCalledNode('mb_strtolower', ctx, object, desc, args, called);
+    },
+    toLocaleLowerCase(ctx, object, desc, args, module, called=true){
+        return createCommonCalledNode('mb_strtolower', ctx, object, desc, args, called);
+    },
+    toUpperCase(ctx, object, desc, args, module, called=true){
+        return createCommonCalledNode('mb_strtoupper', ctx, object, desc, args, called);
+    },
+    toLocaleUpperCase(ctx, object, desc, args, module, called=true){
+        return createCommonCalledNode('mb_strtoupper', ctx, object, desc, args, called);
+    },
+    trim(ctx, object, desc, args, module, called=true){
+        return createCommonCalledNode('trim', ctx, object, desc, args, called);
+    },
+    trimEnd(ctx, object, desc, args, module, called=true){
+        return createCommonCalledNode('rtrim', ctx, object, desc, args, called);
+    },
+    trimStart(ctx, object, desc, args, module, called=true){
+        return createCommonCalledNode('ltrim', ctx, object, desc, args, called);
+    },
+    split(ctx, object, desc, args, module, called=true){
+        if(!called){
+            return ctx.createChunkNode(`function($target,$delimit){return explode($delimit,$target);}`)
         }
+        return ctx.createCalleeNode(
+            ctx.createIdentifierNode('explode'),
+            [args[0], object]
+        );
+    },
+
+    padStart(ctx, object, desc, args, module, called=true){
+        return createCommonCalledNode('str_pad', ctx, object, desc, [args[0], ctx.createIdentifierNode('STR_PAD_LEFT')], called);
+    },
+
+    padEnd(ctx, object, desc, args, module, called=true){
+        return createCommonCalledNode('str_pad', ctx, object, desc, [args[0], ctx.createIdentifierNode('STR_PAD_RIGHT')], called);
+    },
+
+    normalize(ctx, object, desc, args, module, called=true){
+        ctx.addDepend("String");
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_normalize');
+        return createCommonCalledNode(name, ctx, object, desc, args, called);
     }
 }
+
+['propertyIsEnumerable','hasOwnProperty','valueOf','toLocaleString','toString'].forEach( name=>{
+    if( !methods.hasOwnProperty(name) ){
+        methods[name] =  ObjectMethod[name];
+    }
+});
+
+module.exports = methods;
