@@ -8,8 +8,10 @@ const addressRefNodes = new Map();
 
 class Token extends events.EventEmitter {
 
-    static SCOPE_REFS_All = 7;
-    static SCOPE_REFS_TOP = 4;
+    static SCOPE_REFS_All = 31;
+    static SCOPE_REFS_TOP = 16;
+    static SCOPE_REFS_UP_CLASS = 8;
+    static SCOPE_REFS_UP_FUN = 4;
     static SCOPE_REFS_UP = 2;
     static SCOPE_REFS_DOWN = 1;
 
@@ -339,13 +341,13 @@ class Token extends events.EventEmitter {
                 let method_name = dataset && dataset.name;
                 if( !method_name ){
                     const content = [];
-                    const assert = this.checkRefsName( "_ARV", false);
+                    const assert = this.checkRefsName("_ARV");
                     const uses = [this.createIdentifierNode(name,null,true), this.createIdentifierNode(assert,null,true)];
                     const switchNode = this.createNode('SwitchStatement');
                     switchNode.condition = switchNode.createIdentifierNode( assert, null, true);
                     switchNode.cases = content;
                     let itemIndex = 0;
-                    method_name = this.checkRefsName(key, false);
+                    method_name = this.checkRefsName(key);
                     desc.assignItems.forEach( (item)=>{
                         const desc = item.description();
                         if( assignAddress.hasName(desc) ){
@@ -378,7 +380,7 @@ class Token extends events.EventEmitter {
                     funNode.comment =`/*References ${name} memory address*/`;
                     const refsNode = this.createAssignmentNode(this.createIdentifierNode(method_name),funNode);
                     this.insertNodeBlockContextAt( refsNode );
-                    addressRefNodes.set(desc,{name:key,node:refsNode});
+                    addressRefNodes.set(desc,{name:method_name,node:refsNode});
                 }
                 return this.createCalleeNode( this.createIdentifierNode(method_name,null,true) );
 
@@ -479,7 +481,7 @@ class Token extends events.EventEmitter {
         }
     }
 
-    checkRefsName(name,top=true,flags=Token.SCOPE_REFS_UP, context=null, initInvoke=null){
+    checkRefsName(name,top=false,flags=Token.SCOPE_REFS_DOWN | Token.SCOPE_REFS_UP_FUN, context=null, initInvoke=null){
 
         const ctx = context || this.getParentByType(parent=>{
             if( top ){
@@ -507,12 +509,18 @@ class Token extends events.EventEmitter {
                     var index = 0;
                     var flag = 0;
                     while( flag < (flags & Token.SCOPE_REFS_All) ){
-                        switch( flag = flags & Math.pow(2,index++) ){
+                        flag = Math.pow(2,index++);
+                        switch( flags & flag ){
                             case Token.SCOPE_REFS_DOWN :
                                 if(scope.declarations.has(name) || scope.hasChildDeclared(name))return true;
                             case Token.SCOPE_REFS_UP :
+                                if( scope.isDefine(name) )return true;
                             case Token.SCOPE_REFS_TOP :
-                                return scope.isDefine(name);
+                                if( scope.isDefine(name) || scope.hasChildDeclared(name) )return true;
+                            case Token.SCOPE_REFS_UP_FUN :
+                                if( scope.isDefine(name,'function') )return true;
+                            case Token.SCOPE_REFS_UP_CLASS :
+                                if( scope.isDefine(name,'class') )return true;
                         }
                     }
                     return false;
