@@ -1,5 +1,6 @@
 const Token = require("./Token");
 const JSXClassBuilder = require("./JSXClassBuilder");
+const Transform = require("./Transform");
 class JSXTransform extends Token{
     constructor(stack, ctx){
         super(stack.toString());
@@ -58,20 +59,13 @@ class JSXTransform extends Token{
             if( item.value.isJSXExpressionContainer ){
                 const expr = item.value.expression;
                 if( expr.isAssignmentExpression ){
-                    return this.createCalleeNode(
-                        this.createMemberNode([
-                            this.createParenthesNode(
-                                this.createFunctionNode((block)=>{
-                                    block.body=[
-                                        content
-                                    ]
-                                })
-                            ),
-                            this.createIdentifierNode('bind')
-                        ]),
-                        [
-                            this.createThisNode()
-                        ]
+                    return this.createFunBindNode(
+                        this.createFunctionNode((block)=>{
+                            block.body=[
+                                content
+                            ]
+                        }),  
+                        this.createThisNode()
                     );
                 }
             }
@@ -102,23 +96,15 @@ class JSXTransform extends Token{
                     data.scopedSlots.push(
                         this.createPropertyNode( 
                             this.createIdentifierNode(name), 
-                            this.createCalleeNode(
-                                this.createMemberNode(
-                                    [
-                                        this.createParenthesNode(
-                                            this.createFunctionNode((ctx)=>{
-                                                ctx.body.push(
-                                                    ctx.createReturnNode( childNodes ? childNodes : ctx.createLiteralNode(null) )
-                                                )
-                                            },[this.createIdentifierNode(scopeName)])
-                                            
-                                        ),
-                                        this.createIdentifierNode('bind')
-                                    ]
+                            this.createFunBindNode( 
+                                this.createFunctionNode((ctx)=>{
+                                        ctx.body.push(
+                                            ctx.createReturnNode( childNodes ? childNodes : ctx.createLiteralNode(null) )
+                                        )
+                                    },
+                                    [this.createIdentifierNode(scopeName)]
                                 ),
-                                [
-                                    this.createThisNode()
-                                ]
+                                this.createThisNode()
                             )
                         )
                     );
@@ -158,25 +144,20 @@ class JSXTransform extends Token{
                         this.createPropertyNode(this.createIdentifierNode('value'), value.value ),
                     ])
                 );
-                const funNode = this.createCalleeNode(
-                    this.createMemberNode([
-                        this.createParenthesNode(
-                            this.createFunctionNode((block)=>{
-                                block.body=[
-                                    block.createStatementNode(
-                                        block.createAssignmentNode(
-                                            value.value,
-                                            block.createChunkNode(`event && event.target && event.target.nodeType===1 ? event.target.value : event`, false)
-                                        )
+                const funNode = this.createFunBindNode( 
+                    this.createFunctionNode((block)=>{
+                            block.body=[
+                                block.createStatementNode(
+                                    block.createAssignmentNode(
+                                        value.value,
+                                        block.createChunkNode(`event && event.target && event.target.nodeType===1 ? event.target.value : event`, false)
                                     )
-                                ]
-                            },[ this.createIdentifierNode('event') ])
-                        ),
-                        this.createIdentifierNode('bind')
-                    ]),
-                    [
-                        this.createThisNode()
-                    ]
+                                )
+                            ]
+                        },
+                        [ this.createIdentifierNode('event') ]
+                    ), 
+                    this.createThisNode()
                 );
                 pushEvent(this.createIdentifierNode('input') , funNode , 'on');
             }
@@ -223,6 +204,24 @@ class JSXTransform extends Token{
         });
     }
 
+    createFunBindNode(target, thisArg, args=[]){
+        this.addDepend( this.builder.getGlobalModuleById('System') );
+        return this.createCalleeNode(
+            this.createStaticMemberNode([
+                this.createIdentifierNode('System'),
+                this.createIdentifierNode('bind')
+            ]),
+            [
+                target,
+                thisArg
+            ].concat( args.map( item=>{
+                const obj = item instanceof Token ? item : this.createIdentifierNode(item,null,true);
+                obj.isVariable = true;
+                return obj;
+            }))
+        );
+    }
+
     createPropertyKeyNode(name, stack){
         if( name.includes('-') ){
             return this.createLiteralNode(name, void 0, stack);
@@ -261,6 +260,7 @@ class JSXTransform extends Token{
             const valueArgument = directive.valueArgument;
             if( name ==="each" || name ==="for" ){
                 let refs = this.createToken(valueArgument.expression);
+                let desc = valueArgument.expression.isStack && valueArgument.expression.description();
                 let item = valueArgument.declare.item;
                 let key = valueArgument.declare.key;
                 let index = valueArgument.declare.index;
@@ -269,10 +269,11 @@ class JSXTransform extends Token{
                     content.push( this.createLiteralNode(null)  );
                     content[0] = this.cascadeConditionalNode( content );
                 }
+
                 if( name ==="each"){
-                    content[0] = this.createIterationNode(name, refs , this.checkRefsName('_refs'), content[0], item, key);
+                    content[0] = this.createIterationNode(name, refs, desc, this.checkRefsName('_refs'), content[0], item, key);
                 }else{
-                    content[0] = this.createIterationNode(name, refs , this.checkRefsName('_refs'), content[0], item, key, index );
+                    content[0] = this.createIterationNode(name, refs , desc, this.checkRefsName('_refs'), content[0], item, key, index );
                 }
                 cmd.push(name);
 
@@ -528,45 +529,26 @@ class JSXTransform extends Token{
     }
 
     createEachNode(element, args){
-        return this.createCalleeNode(
-            this.createMemberNode([
-                this.createParenthesNode(this.createFunctionNode(ctx=>{
+        return this.createFunBindNode( 
+            this.createFunctionNode(
+                ctx=>{
                     ctx.body.push( ctx.createReturnNode( element ) );
-                }, args)),
-                this.createIdentifierNode('bind')
-            ]),
-            [this.createThisNode()]
-        )
+                }, 
+                args
+            ), 
+            this.createThisNode()
+        );
     }
 
-    createIterationNode(name, refs, refName, element, item, key, index){
-    
+    createIterationNode(name, refs, desc, refName, element, item, key, index){
         if( name ==="each"){
             const args = [ this.createIdentifierNode(item) ];
             if(key){
                 args.push( this.createIdentifierNode(key) );
             }
-            return this.createCalleeNode( 
-                this.createMemberNode([
-                    refs,
-                    this.createIdentifierNode('map')
-                ]),
-                [
-                    this.createEachNode(element, args)
-                ] 
-            );
+            return Transform.Array.map( this, refs, desc, [ this.createEachNode(element, args) ], this.builder.getGlobalModuleById('Array') );
         }else{
-            return this.createCalleeNode(
-                this.createMemberNode([
-                    this.createParenthesNode( 
-                        this.createForInNode(refName, element, item, key, index) 
-                    ), this.createIdentifierNode('call')
-                ]),
-                [
-                    this.createThisNode(),
-                    refs
-                ]
-            );
+            return this.createFunBindNode(this.createForInNode(refName, element, item, key, index), this.createThisNode() , [refs]);
         }
     }
 
@@ -632,20 +614,20 @@ class JSXTransform extends Token{
 
     createElementHandleNode(stack){
         if( this.isWebComponent(stack) ){
+
+            this.createFunBindNode(this.createArrayNode([
+                this.createThisNode(),
+                this.createLiteralNode('createElement')
+            ]), this.createThisNode())
+
             return this.createDeclarationNode('const', [ 
                 this.createDeclaratorNode( 
                     this.createIdentifierNode('createElement'),
-                    this.createCalleeNode(
-                        this.createMemberNode([
-                            this.createThisNode(),
-                            this.createIdentifierNode('createElement'),
-                            this.createIdentifierNode('bind'),
-                        ]),
-                        [
-                            this.createThisNode()
-                        ]
-                    )
-                ) 
+                    this.createFunBindNode(this.createArrayNode([
+                        this.createThisNode(),
+                        this.createLiteralNode('createElement')
+                    ]), this.createThisNode())
+                )
             ]);
         }else{
             return this.createDeclarationNode('const', [ 
@@ -756,7 +738,10 @@ class JSXTransform extends Token{
                 const argument = {};
                 attrs.forEach( attr=>{
                     if( attr.name.value()==='name'){
-                        argument[ 'refs' ] = this.createToken( attr.parserAttributeValueStack() );
+                        const stack = attr.parserAttributeValueStack();
+                        argument[ 'refs' ] = this.createToken( stack );
+                        argument[ 'desc' ] = stack.isStack && stack.description();
+
                     }else{
                         argument[ attr.name.value() ] = attr.value.value();
                     }
@@ -764,18 +749,25 @@ class JSXTransform extends Token{
                 const fun = this.createIterationNode(
                     name, 
                     argument.refs, 
+                    argument.desc,
                     this.checkRefsName('_refs'),
                     children, 
                     argument.item || 'item',
                     argument.key || 'key', 
                     argument.index
                 );
-                return this.createCalleeNode(
-                    this.createMemberNode([fun,this.createIdentifierNode('reduce')]),
+                return Transform.Array.reduce(
+                    this, 
+                    this.createCalleeNode(
+                        this.createIdentifierNode('call_user_func'),
+                        [fun]
+                    ), 
+                    argument.desc,
                     [
-                        this.createChunkNode('function(acc, val){return acc.concat(val)}', false),
+                        this.createChunkNode('function($acc, $val){return array_merge($acc,is_array($val) ? $val : [$val]);}', false),
                         this.createArrayNode()
-                    ]
+                    ], 
+                    this.builder.getGlobalModuleById('Array')
                 );
         } 
         return null;

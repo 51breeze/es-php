@@ -11,11 +11,12 @@ fs.readdirSync( dirname ).forEach( (filename)=>{
 
 const defaultConfig ={
     target:7,
+    emitFile:true,
     requireFile:true,
     namespaceAlias:null,
     outputRoutePath:null,
     suffix:'.php',
-    coreNamespace:'es.core',
+    ns:'es.core',
 }
 
 const pkg = require("./package.json");

@@ -5,6 +5,7 @@ const SCOPE_MAP = new Map();
 const refsParentVariable = new Map();
 const assignAddressRef = new Map();
 const addressRefNodes = new Map();
+const accessorNamedMaps = new Map();
 
 class Token extends events.EventEmitter {
 
@@ -283,6 +284,15 @@ class Token extends events.EventEmitter {
         return token;
     }
 
+    createClassRefsNode( module, stack){
+        if(!module || !module.isModule)return null;
+        const name = this.getModuleReferenceName(module);
+        return this.createStaticMemberNode([
+            this.createIdentifierNode(name),
+            this.createIdentifierNode('class')
+        ],stack);
+    }
+
     createChunkNode(value, newLine=true, semicolon=false){
         const node = this.createNode('ChunkExpression');
         node.newLine = newLine;
@@ -474,7 +484,9 @@ class Token extends events.EventEmitter {
     }
 
     insertNodeBlockContextAt(node){
-        const block = this.getParentByType( 'BlockStatement' );
+        const block = this.getParentByType( (parent)=>{
+            return parent.type ==='BlockStatement' || parent.type ==="FunctionExpression" || TOP_SCOPE.includes(parent.type)
+        });
         if( block ){
             node.parent = block;
             block.body.push( node );
@@ -578,6 +590,32 @@ class Token extends events.EventEmitter {
     getModuleReferenceName(module,context){
         context = context || this.module;
         return this.builder.getModuleReferenceName(module,context);
+    }
+
+    getAccessorName(name, desc, accessor='get'){
+        const prefix = accessor;
+        const suffix = name.substr(0,1).toUpperCase()+name.substr(1);
+        var key = prefix+suffix;
+        if( desc && desc.isStack && desc.module ){
+            const module = desc.module;
+            const isStatic = !!(desc.static || module.static);
+            var dataset = accessorNamedMaps.get( module );
+            if( !dataset ){
+                accessorNamedMaps.set(module, dataset={});
+            }else if( dataset[ key ] ){
+                return dataset[ key ];
+            }
+            var index = 1;
+            var value = key;
+            while( true ){
+                const has = isStatic ? module.getMethod( value ) : module.getMember( value );
+                if(!has)break;
+                value = key+(index++);
+            }
+            dataset[ key ] = value;
+            return value;
+        }
+        return key;
     }
 
     error(message , stack=null){

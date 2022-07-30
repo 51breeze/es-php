@@ -17,7 +17,7 @@ class Creator {
         },options || {}));
         compiler.initialize();
         this._compiler = compiler;
-        this.plugin = compiler.getPlugin( plugin );
+        this.plugin = compiler.applyPlugin( plugin );
     }
 
     get compiler(){

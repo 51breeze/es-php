@@ -29,18 +29,11 @@ module.exports = function(ctx, stack, type){
         node.inherit = module.inherit;
     }
 
-    if( polyfillModule.id !== 'Class' &&  polyfillModule.createClass !== false ){
-        node.addDepend( stack.getGlobalTypeById('Class') );
-    }
-
     const body = node.body;
-    node.createDependencies(module).forEach( item=>body.push( item ) );
-    node.createModuleAssets(module).forEach( item=>body.push( item ) );
+    node.imports = [];
+    node.createDependencies(module).forEach( item=>node.imports.push( item ) );
+    node.createModuleAssets(module).forEach( item=>node.imports.push( item ) );
     body.push( node.createChunkNode( content ) );
 
-    if( polyfillModule.id !== 'Class' && polyfillModule.createClass !== false ){
-        body.push( node.createClassDescriptor(polyfillModule.export) );
-    }
-    body.push( node.createExportDeclaration(polyfillModule.export) );
     return node;
 }

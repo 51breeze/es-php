@@ -1,95 +1,41 @@
-<?php
-require_once( __DIR__.'./com/TestInterface.php' );
-use \PHPUnit\Framework\TestCase;
-use \com\TestInterface;
-/**
-* @class Person
-* @implements \com\TestInterface
-* @inherit \PHPUnit\Framework\TestCase
-*/
-class Person extends TestCase implements TestInterface{
-
-	/**
-	* @constructor Person
-	*/
-	public function __construct(){
-		parent::__construct();
-	}
-
-	/**
-	* @property addressName
-	*/
-	public $addressName = 'the Person properyt "addressName"';
-
-	/**
-	* @property _name
-	*/
-	private $_name = '';
-
-	/**
-	* @property _type
-	*/
-	private $_type = null;
-
-	/**
-	* @getter target
-	*/
-	public function getTarget(){
-		return $this;
-	}
-
-	/**
-	* @method setType
-	*/
-	public function setType($a){
-		return $a;
-	}
-
-	/**
-	* @method method
-	*/
-	public function method(string $name,int $age){
-		$b = ["",["1",1]];
-		array_push($b,'1');
-		$_V = ['1',1];
-		array_push($b,$_V);
-		$this->getTarget()->address();
-		$this->getPersonName();
-		return "sssss";
-	}
-
-	/**
-	* @getter personName
-	*/
-	public function getPersonName():string{
-		return $this->_name;
-	}
-
-	/**
-	* @setter personName
-	*/
-	public function setPersonName(string $val){
-		$this->_name = $val;
-	}
-
-	/**
-	* @method avg
-	*/
-	public function avg($a){
-	
-	}
-
-	/**
-	* @method address
-	*/
-	private function address(){
-	
-	}
-
-	/**
-	* @method addressNamesss
-	*/
-	protected function addressNamesss(){
-	
-	}
+<?php;
+include_once("./com/TestInterface.php");
+use TestInterface;
+public class Person implements TestInterface{
+    public function __construct(){
+        parent();
+    }
+    public $addressName="the Person properyt \"addressName\"";
+    private $_name='';
+    private $_type=null;
+    public function getTarget(){
+        return $this;
+    }
+    public function setType($a){
+        $this->_type=$a;
+        return $a;
+    }
+    public function method($name,$age){
+        $str = ["a","1"];
+        $b = ["",["1",1]];
+        $cc = [1];
+        $x = [1,1,'2222',(object){}];
+        $b->push('1');
+        $b->push(['1',1]);
+        $c = -1968;
+        $bs = 22.366;
+        $bssd = -22.366;
+        $this->getTarget()->address();
+        $this->getPersonName();
+        return "sssss";
+    }
+    public function getPersonName(){
+        return $this->_name;
+    }
+    public function setPersonName($val){
+        $this->_name=$val;
+    }
+    public function avg($a){}
+    private function address(){}
+    protected function addressNamesss(){}
 }

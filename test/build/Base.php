@@ -1,10 +1,4 @@
-<?php
-use \PHPUnit\Framework\TestCase;
-/**
-* @class Base
-* @inherit \PHPUnit\Framework\TestCase
-*/
-class Base extends TestCase{
-
-
+<?php;
+public class Base{
+    function __construct(){}
 }

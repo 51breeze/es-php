@@ -48,16 +48,10 @@ class Builder extends Token{
         });
     }
 
-    emitContent(file, content, output=null, sourceMap=null){
+    emitContent(file, content, output=null){
         this.plugin.generatedCodeMaps.set(file, content);
-        if( sourceMap ){
-            this.plugin.generatedSourceMaps.set(file, sourceMap);
-        }
         if(output){
             this.emitFile( output, content );
-            if( sourceMap ){
-                this.emitFile( output+'.map', JSON.stringify(sourceMap) );
-            }
         }
     }
 
@@ -160,8 +154,7 @@ class Builder extends Token{
                 this.emitContent(
                     file, 
                     content,  
-                    config.emitFile ? this.getOutputAbsolutePath(module ? module : compilation.file) : null,
-                    sourceMap
+                    config.emitFile ? this.getOutputAbsolutePath(module ? module : compilation.file) : null
                 );
             }
         }
@@ -322,7 +315,7 @@ class Builder extends Token{
     getPolyfillModule(id){
         return Polyfill.modules.get( id );
     }
-
+    
     isActiveForModule(depModule,ctxModule){
         ctxModule = ctxModule || this.module;
         if( this.compilation.isPolicy(2,depModule) ){
@@ -349,9 +342,18 @@ class Builder extends Token{
                     return module.id;
                 }
             }
-            return context.getReferenceNameByModule( module );
+            if( module === context ){
+                return module.id 
+            }
+            if( context.importAlias.has(module) ){
+                return context.importAlias.get(module);
+            }
+            if( module.required || context.imports.has( module.id ) ){
+                return module.id;
+            }
+            return module.namespace.getChain().concat(module.id).join("\\");
         }
-        return module.getName("_");
+        return module.getName("\\");
     }
 
     getModuleNamespace(module, suffix=null){
@@ -359,7 +361,7 @@ class Builder extends Token{
         if( module.isDeclaratorModule ){
             const polyfill = this.getPolyfillModule( module.getName() );
             if( polyfill ){
-                var ns = polyfill.namespace || this.plugin.options.coreNamespace;
+                var ns = polyfill.namespace || this.plugin.options.ns;
                 if( ns ){
                     ns = ns.replace(/\./g, '\\');
                     if( suffix ){
@@ -472,14 +474,6 @@ class Builder extends Token{
     }
 
     getModuleImportSource(source,module){
-        const config = this.plugin.options;
-        const isString = typeof source === 'string';
-        if( isString && source.includes('/node_modules/') ){
-            return source;
-        }
-        if( config.useAbsolutePathImport ){
-            return isString ? source : this.getModuleFile(source);
-        }
         return this.getOutputRelativePath(source, module);
     }
 

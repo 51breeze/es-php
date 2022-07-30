@@ -6,10 +6,9 @@
  * @author Jun Ye <664371281@qq.com>
  * @require System,ReferenceError,TypeError
  */
-namespace es\core;
-require_once( __DIR__.'./Number.php' );
-require_once( __DIR__.'./String.php' );
-
+////[namespace]
+////[require]
+////[reference]
 class Date{
     private $dateString=null;
     private $dateUTCString=null;

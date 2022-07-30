@@ -1,28 +1,28 @@
-const Constant = require("../core/Constant");
 module.exports = function(ctx,stack){
      const desc = stack.description();
-     const module = stack.module;
      const builder = ctx.builder;
      if( desc && (desc.isPropertyDefinition || desc.isMethodDefinition) ){
           const ownerModule = desc.module;
           const isStatic = !!(desc.static || ownerModule.static);
-          const property = ctx.createIdentifierNode(stack.value(), stack);
-          const modifier = stack.compiler.callUtils('getModifierValue', desc);
-          var object = isStatic ? ctx.createIdentifierNode(ownerModule.id) : ctx.createThisNode();
-          if( desc.isPropertyDefinition && modifier ==="private" && !isStatic ){
-               object = ctx.createMemberNode([
-                    object, 
-                    ctx.checkRefsName(Constant.REFS_DECLARE_PRIVATE_NAME)
+          if( isStatic ){
+               return ctx.createStaticMemberNode([
+                    ctx.createIdentifierNode( builder.getModuleNamespace(ownerModule) ),
+                    ctx.createIdentifierNode(stack.value(), stack)
                ]);
-               object.computed = true;
-               return ctx.createMemberNode([object, property]);
           }else{
-               return ctx.createMemberNode([object, property]);
+               return ctx.createStaticMemberNode([
+                    ctx.createThisNode(),
+                    ctx.createIdentifierNode(stack.value(), stack)
+               ]);
           }
      }
-     if( module && stack.compiler.callUtils("isClassType", desc) ){
-          builder.addDepend( desc );
-          return ctx.createIdentifierNode(builder.getModuleReferenceName(desc, module), stack);
+     if( stack.compiler.callUtils("isClassType", desc) ){
+          ctx.addDepend( desc );
+          if( stack.parentStack.isMemberExpression ){
+               return ctx.createIdentifierNode( ctx.getModuleReferenceName(desc), stack);
+          }else {
+               return ctx.createClassRefsNode(desc, stack)
+          }
      }
-     return ctx.createIdentifierNode(stack.value(), stack);
+     return ctx.createIdentifierNode(stack.value(), stack, !!(desc && desc.isDeclarator) );
 };

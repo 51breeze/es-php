@@ -139,10 +139,10 @@ const methods={
         const name = ctx.builder.getModuleNamespace( module, 'es_string_normalize');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     }
-}
+};
 
 ['propertyIsEnumerable','hasOwnProperty','valueOf','toLocaleString','toString'].forEach( name=>{
-    if( !methods.hasOwnProperty(name) ){
+    if( !Object.prototype.hasOwnProperty.call(methods,name) ){
         methods[name] =  ObjectMethod[name];
     }
 });

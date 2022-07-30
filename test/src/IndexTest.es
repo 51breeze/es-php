@@ -15,13 +15,13 @@ import unit.Param;
 /**
 * Test a class
 */
-public class IndexTest<U,B=string> extends Person<string> implements Iterator {
+public class IndexTest<U,B=string> extends Person<string> implements Iterator<any> {
 
     /**
     *  返回一个类的引用
     */
     static getClass(){
-        var a = IndexTest as class<IndexTest>;
+        var a = IndexTest as class<IndexTest<any>>;
         var buname = {a:1}
         buname.test = a;
         buname.person = Person;
@@ -30,7 +30,7 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator {
         return buname
     }
 
-    static getClassObject():class<IndexTest>{
+    static getClassObject():class<IndexTest<any>>{
         var a = IndexTest;
         var b = {
             test:a
@@ -56,7 +56,7 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator {
     * @private
     * the is class type.
     */
-    private static var iiu:class<IndexTest> = IndexTest;
+    private static var iiu:class<IndexTest<any>> = IndexTest;
 
     /**
     * @private
@@ -335,7 +335,7 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator {
             res.then((data)=>{
                 this.assertEquals(['one',1], data[0]);
                 this.assertEquals({ bss: [ 'two', 2 ], cc: [ 'three', 3 ] }, data[1]);
-                this.assertEquals(['three', 3 ], data[2]);
+                this.assertEquals(['three', 3 ], data[1]);
             });
         })();
 
@@ -447,11 +447,12 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator {
     }
 
     fetchApi(name:string, data:int, delay:int){
-        return new Promise<(string | int)[]>((resolve,reject)=>{
+        return new Promise<[string , int]>((resolve,reject)=>{
             setTimeout(()=>{
                 resolve([name,data]);
             },delay);
         });
+
     }
 
     public async loadRemoteData2(){
@@ -467,7 +468,7 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator {
             }
             var c = await this.fetchApi("three", 3, 900);
             bs.cc = c;
-            return [a,bs,c];
+            return a;
         }else{
 
             var list = [];
@@ -484,7 +485,7 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator {
                 list.push( await this.fetchApi(i+'',i,100) );
             }
             list.entries()
-            return list;
+            return list as [string,int];
         }
     }
 
@@ -530,7 +531,7 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator {
          name<TestInterface>( person ); 
          const bbb:TestInterface = name( person ); 
 
-         name<Person>( person ); 
+         name<Person<any>>( person ); 
 
         var dd:[int, uint, ...string ] = [1,1,"2222","66666","8888"];
 

@@ -6,7 +6,9 @@
  * https://github.com/51breeze/EaseScript
  * @author Jun Ye <664371281@qq.com>
  */
-namespace es\core;
+////[namespace]
+////[require]
+////[reference]
 interface IIterator{
     public function next();
     public function rewind();

@@ -6,15 +6,9 @@
  * https://github.com/51breeze/EaseScript
  * @author Jun Ye <664371281@qq.com>
  */
-namespace es\core;
-require_once( __DIR__.'./Array.php' );
-require_once( __DIR__.'./RegExp.php' );
-require_once( __DIR__.'./System.php' );
-require_once( __DIR__.'./Number.php' );
-require_once( __DIR__.'./String.php' );
-require_once( __DIR__.'./Object.php' );
-use \es\core\System;
-use \es\core\RegExp;
+////[namespace]
+////[require]
+////[reference]
 
 final class Reflect{
     /**

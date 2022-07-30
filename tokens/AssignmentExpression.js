@@ -1,3 +1,5 @@
+const Token = require("../core/Token");
+
 module.exports = function(ctx,stack){
     const desc = stack.description();
     const module = stack.module;
@@ -16,21 +18,20 @@ module.exports = function(ctx,stack){
 
     if(isReflect){
         ctx.addDepend( stack.getGlobalTypeById("Reflect") );
-        const callee = ctx.createMemberToken([ctx.checkRefsName("Reflect"),'set']);
+        const callee = ctx.createStaticMemberNode([
+            ctx.createIdentifierNode('Reflect'),
+            ctx.createIdentifierNode('set')
+        ]);
         return ctx.createCalleeNode( callee, [
-            this.createIdentifierNode(module.id),
-            this.createToken(stack.left.object), 
-            this.createToken(stack.left.property),
-            this.createToken(stack.right)
+            ctx.createClassRefsNode( module ),
+            ctx.createToken(stack.left.object), 
+            ctx.createToken(stack.left.property),
+            ctx.createToken(stack.right)
         ], stack);
-    }else if(desc && isMember && stack.left.object.isSuperExpression){
+    }else if(desc && desc.isMethodSetterDefinition){
         return ctx.createCalleeNode(
-            ctx.createMemberNode([
-                ctx.createToken(stack.left),
-                ctx.createIdentifierNode('call')
-            ]),
+            ctx.createToken( stack.left ),
             [
-                ctx.createThisNode(),
                 ctx.createToken(stack.right)
             ],
             stack
