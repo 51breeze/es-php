@@ -210,6 +210,13 @@ class Token extends events.EventEmitter {
         return expression;
     }
 
+    creaateAddressRefsNode( argument ){
+        const obj = this.createNode('AddressReferenceExpression');
+        obj.argument = argument;
+        argument.parent = obj;
+        return obj;
+    }
+
     createStatementNode( expression, stack){
         const obj = this.createNode('ExpressionStatement');
         obj.stack = stack;
@@ -646,6 +653,16 @@ class Token extends events.EventEmitter {
             return value;
         }
         return key;
+    }
+
+    isDeclaratorModuleMember( desc , global=false){
+        if( !desc )return false;
+        if( desc.isStack && desc.module && desc.module.isDeclaratorModule){
+            return global ? desc.module.file.includes("\\easescript\\lib") : true;
+        }else if( desc.isType && desc.target && desc.target.module && desc.target.module.isDeclaratorModule ){
+            return global ? desc.target.module.file.includes("\\easescript\\lib") : true;
+        }
+        return false;
     }
 
     error(message , stack=null){

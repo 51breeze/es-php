@@ -191,6 +191,9 @@ class Generator{
             case "AwaitExpression" :
                 this.make(token.argument);
             break;
+            case "AddressReferenceExpression" :
+                this.withString('&');
+                this.make(token.argument);
             case "BinaryExpression" :
                 this.make(token.left);
                 this.withOperator( token.operator );

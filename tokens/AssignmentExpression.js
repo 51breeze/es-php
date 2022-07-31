@@ -1,11 +1,9 @@
-const Token = require("../core/Token");
-
 module.exports = function(ctx,stack){
     const desc = stack.description();
     const module = stack.module;
     const isMember = stack.left.isMemberExpression;
 
-    let refs = null;
+    var addressRefs = null;
     if( desc && (desc.isVariableDeclarator || desc.isParamDeclarator) ){
         let addressRefObject = ctx.getAssignAddressRef(desc);
         if( addressRefObject ){
@@ -13,22 +11,21 @@ module.exports = function(ctx,stack){
             if(addressRefObject || maybeArrayRef ){
                 const originType = ctx.builder.getAvailableOriginType( stack.right.type( stack.right.getContext() ) );
                 if( originType === "Array" ){
-                    addressRefObject = ctx.addAssignAddressRef(desc, stack.right );
+                    addressRefObject = ctx.addAssignAddressRef(desc, stack.right);
                     const rDesc = stack.right.description();
-                    if( maybeArrayRef && !this.isDeclaratorModuleMember(rDesc,true) ){
+                    if( maybeArrayRef && !ctx.isDeclaratorModuleMember(rDesc,true) ){
                         const name = addressRefObject.createName( rDesc );
-                        refs = `\$${name} = &`;
+                        addressRefs = name;
                     }
                 }
             }
             if( addressRefObject && ctx.hasCrossScopeAssignment( desc.assignItems ) ){
                 const left = ctx.checkRefsName(desc,"_ARV")
-                const addressIndex = addressRefObject.getIndex( this.stack.right );
-                ctx.insertExpression( this.semicolon(`${left} = ${addressIndex}`) );
+                const addressIndex = addressRefObject.getIndex( stack.right );
+                ctx.insertNodeBlockContextAt( ctx.createAssignmentNode( ctx.createIdentifierNode(left), ctx.createLiteralNode(addressIndex) ) );
             }
         }
     }
-
 
     var isReflect = false;
     if( isMember ){
@@ -42,6 +39,14 @@ module.exports = function(ctx,stack){
         }
     }
 
+    var refsNode = ctx.createToken(stack.right);
+    if( addressRefs ){
+        refsNode = ctx.createAssignmentNode( 
+            ctx.createIdentifierNode(addressRefs,null,true), 
+            ctx.creaateAddressRefsNode(refsNode) 
+        );
+    }
+
     if(isReflect){
         ctx.addDepend( stack.getGlobalTypeById("Reflect") );
         const callee = ctx.createStaticMemberNode([
@@ -52,20 +57,21 @@ module.exports = function(ctx,stack){
             ctx.createClassRefsNode( module ),
             ctx.createToken(stack.left.object), 
             ctx.createToken(stack.left.property),
-            ctx.createToken(stack.right)
+            refsNode
         ], stack);
     }else if(desc && desc.isMethodSetterDefinition){
         return ctx.createCalleeNode(
             ctx.createToken( stack.left ),
             [
-                ctx.createToken(stack.right)
+                refsNode
             ],
             stack
         );
     }else{
         const node = ctx.createNode( stack );
         node.left = node.createToken( stack.left );
-        node.right = node.createToken( stack.right );
+        node.right = refsNode;
+        refsNode.parent = node;
         return node;
     }
 }

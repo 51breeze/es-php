@@ -34,7 +34,7 @@ public class IndexTest extends Person{
         ];
         $buname->test=$a;
         $buname->person=Person::class;
-        ${test=>test} = $buname;
+        ${$test=>$test} = $buname;
         $test->getClassObject();
         return $buname;
     }
