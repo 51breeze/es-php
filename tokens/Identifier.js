@@ -16,6 +16,7 @@ module.exports = function(ctx,stack){
                ]);
           }
      }
+
      if( stack.compiler.callUtils("isClassType", desc) ){
           ctx.addDepend( desc );
           if( stack.parentStack.isMemberExpression && stack.parentStack.object === stack || stack.parentStack.isNewExpression ){
@@ -26,7 +27,11 @@ module.exports = function(ctx,stack){
           }
      }
 
-     var isDeclarator = desc && desc.isDeclarator;
+     var isDeclarator = desc && (desc.isDeclarator || desc.isProperty && desc.parentStack.isObjectPattern);
+     if( isDeclarator ){
+         ctx.addVariableRefs( desc );
+     }
+
      if( stack.parentStack.isMemberExpression ){
           isDeclarator = false;
           if( stack.parentStack.computed && stack.parentStack.property === stack ){
