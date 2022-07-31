@@ -22,7 +22,7 @@ module.exports = function(ctx,stack){
             if( addressRefObject && ctx.hasCrossScopeAssignment( desc.assignItems ) ){
                 const left = ctx.checkRefsName(desc,"_ARV")
                 const addressIndex = addressRefObject.getIndex( stack.right );
-                ctx.insertNodeBlockContextAt( ctx.createAssignmentNode( ctx.createIdentifierNode(left), ctx.createLiteralNode(addressIndex) ) );
+                ctx.insertNodeBlockContextAt( ctx.createAssignmentNode( ctx.createIdentifierNode(left, null, true), ctx.createLiteralNode(addressIndex) ) );
             }
         }
     }

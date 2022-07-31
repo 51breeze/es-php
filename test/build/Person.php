@@ -15,13 +15,14 @@ public class Person implements TestInterface{
         $this->_type=$a;
         return $a;
     }
-    public function method($name,$age){
+    public function method(string $name,Int $age){
         $str = ["a","1"];
         $b = ["",["1",1]];
         $cc = [1];
         $x = [1,1,'2222',(object)[]];
         array_push($b,'1');
-        array_push($b,['1',1]);
+        $_V=['1',1];
+        array_push($b,$_V);
         $c = -1968;
         $bs = 22.366;
         $bssd = -22.366;
@@ -32,7 +33,7 @@ public class Person implements TestInterface{
     public function getPersonName(){
         return $this->_name;
     }
-    public function setPersonName($val){
+    public function setPersonName(string $val){
         $this->_name=$val;
     }
     public function avg($a){}

@@ -1,8 +1,35 @@
 const Transform = require('../core/Transform');
+function createParamsNode(ctx, stack, arguments, declareParams){
+    return arguments.map( (item,index)=>{
+        const node = ctx.createToken(item)
+        if( declareParams && declareParams[index] &&  item.isArrayExpression ){
+            const declareType = declareParams[index].type( stack.getContext() );
+            if( declareType ){
+                const originType = ctx.builder.getAvailableOriginType( declareType );
+                if( originType === "Array" ){
+                    const name = ctx.checkRefsName("_V" );
+                    ctx.insertNodeBlockContextAt(
+                        ctx.createAssignmentNode( ctx.createIdentifierNode(name, null, true), node )
+                    );
+                    return ctx.createIdentifierNode(name, null, true);
+                }
+            }
+        }
+        if( item.isIdentifier ){
+            return ctx.createArrayAddressRefsNode(item.description(), node.value);
+        }
+        return node;
+    });
+}
+
 module.exports = function(ctx,stack){
     const isMember = stack.callee.isMemberExpression;
     const desc = stack.callee.description();
     const module = stack.module;
+    const declareParams = desc && desc.params;
+    const node = ctx.createNode( stack );
+    const args = createParamsNode(node, stack, stack.arguments, declareParams);
+
     if( !stack.callee.isSuperExpression && isMember ){
         if( desc && desc.isType && desc.isAnyType ){
             ctx.addDepend( stack.getGlobalTypeById("Reflect") );
@@ -17,7 +44,7 @@ module.exports = function(ctx,stack){
                     ctx.createClassRefsNode(module),
                     ctx.createToken(stack.callee.object),
                     property,
-                    ctx.createArrayNode( stack.arguments.map( item=>ctx.createToken(item) ) )
+                    ctx.createArrayNode( args )
                 ],
                 stack
             );
@@ -31,7 +58,7 @@ module.exports = function(ctx,stack){
                     if( desc.static ){
                         return object[key](
                             ctx, 
-                            stack.arguments.map( item=>ctx.createToken(item) ), 
+                            args, 
                             desc.module 
                         );
                     }else{
@@ -39,7 +66,7 @@ module.exports = function(ctx,stack){
                             ctx, 
                             ctx.createToken(stack.callee.object), 
                             desc, 
-                            stack.arguments.map( item=>ctx.createToken(item) ), 
+                            args, 
                             desc.module 
                         );
                     }
@@ -53,7 +80,7 @@ module.exports = function(ctx,stack){
                     ctx.createIdentifierNode('call_user_func_array'),
                     [
                         ctx.createToken( stack.callee ),
-                    ].concat( stack.arguments.map( item=>ctx.createToken(item) ) )
+                    ].concat( args )
                 );
             }else{
                 return ctx.createCalleeNode(
@@ -66,7 +93,7 @@ module.exports = function(ctx,stack){
         }
     }
 
-    const node = ctx.createNode( stack );
+    
     if( desc && stack.callee.isSuperExpression && desc.isConstructor ){
         node.callee = node.createStaticMemberNode([
             node.createToken( stack.callee ),
@@ -75,6 +102,6 @@ module.exports = function(ctx,stack){
     }else{
         node.callee = node.createToken( stack.callee );
     }
-    node.arguments = stack.arguments.map( item=>node.createToken(item) );
+    node.arguments = args;
     return node;
 }

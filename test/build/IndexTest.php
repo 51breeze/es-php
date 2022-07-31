@@ -62,8 +62,8 @@ public class IndexTest extends Person{
         $this->assertTrue(is_a($this,Person::class));
         $this->assertTrue($this instanceof TestInterface);
         $this->assertTrue(is_a($this,TestInterface));
-        $this->assertEquals(IndexTest::class,IndexTest::getClass()->test);
-        $this->assertEquals(Person::class,IndexTest::getClass()->person);
+        $this->assertEquals($,IndexTest::getClass()->test);
+        $this->assertEquals($,IndexTest::getClass()->person);
         $o = new (IndexTest::getClass()->person)();
         $this->assertTrue($o instanceof Person::class);
         $this->assertEquals('bbss',$this->bbss);
@@ -71,12 +71,12 @@ public class IndexTest extends Person{
         $this->assertEquals('666666',$this->bbss);
         $this->setPersonName("test name");
         $this->assertEquals('test name',$this->getPersonName());
-        $bsp = function($flag){
+        $bsp = function($flag=null){
             return $this;
         }
         $this->assertEquals($this,call_user_func_array($bsp,1));
         $obj = (object)[];
-        $bsp=function($flag){
+        $bsp=function($flag=null){
             if($flag){
                 return $obj;
             }else{
@@ -242,15 +242,15 @@ public class IndexTest extends Person{
         $sss = $obj->getClassTestGenerics(1,1);
         $this->assertEquals([1,1],$sss);
     }
-    private function getClassTestGenerics($name,$age){
+    private function getClassTestGenerics($name,$age=null){
         $a = [$age,$name];
         return $a;
     }
-    private function getTestGenerics($name,$age){
+    private function getTestGenerics($name,string $age=null){
         $t = new IndexTest();
         return $age;
     }
-    private function getTestObject($flag){
+    private function getTestObject($flag=null){
         $factor = function(){
             $o = (object)[];
             $o->test=new IndexTest();
@@ -359,7 +359,7 @@ public class IndexTest extends Person{
         }
         return $b;
     }
-    public function fetchApi($name,$data,$delay){
+    public function fetchApi(string $name,Int $data,Int $delay){
         return new Promise(function($resolve,$reject){
             setTimeout(function(){
                 call_user_func_array($resolve,[$name,$data]);
@@ -395,7 +395,7 @@ public class IndexTest extends Person{
             return $list;
         }
     }
-    public function method($name,$age){
+    public function method(string $name,Int $age){
         parent::method($name,$age);
         $str = ["a","b"];
         $b = ["one",["one",1]];
@@ -403,21 +403,22 @@ public class IndexTest extends Person{
         $x = [1,1,'one'];
         array_push($b,'three');
         array_push($b,'four');
-        array_push($b,[$name,$age]);
+        $_V=[$name,$age];
+        array_push($b,$_V);
         return [$str,$cc,$x,$b];
     }
     public function getPersonName(){
         return parent::getPersonName();
     }
-    public function setPersonName($value){
+    public function setPersonName(string $value){
         parent::setPersonName($value);
     }
-    public function avg($yy){
+    public function avg(string $yy){
         $ii = function(){
             return 1;
         }
         $bb = ['1'];
-        function name($i){
+        function name(TestInterface $i){
             $b = $i;
             $i->avg(1);
             $i->method('',1);
@@ -433,7 +434,7 @@ public class IndexTest extends Person{
     }
     public function map(){
         $ddss = (object)[
-            "name"=>function($c,$b){
+            "name"=>function(object $c,$b){
                 $id = $b;
                 return $c;
             }

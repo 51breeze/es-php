@@ -194,6 +194,7 @@ class Generator{
             case "AddressReferenceExpression" :
                 this.withString('&');
                 this.make(token.argument);
+            break;
             case "BinaryExpression" :
                 this.make(token.left);
                 this.withOperator( token.operator );
@@ -517,6 +518,13 @@ class Generator{
                 this.make( token.init );
                 this.withSemicolon();
                 this.newLine();
+            break;
+            case "ParamDeclarator" :
+                if( token.prefix ){
+                    this.withString( token.prefix );
+                    this.withSpace();
+                }
+                this.make( token.argument );
             break;
             case "RestElement" :
                 this.withString('...' );

@@ -468,6 +468,12 @@ class Token extends events.EventEmitter {
         }
     }
 
+    getVariableRefs(){
+        
+    }
+
+
+
     getAssignAddressRef(desc){
         if(!desc)return null;
         return assignAddressRef.get(desc);
@@ -525,6 +531,9 @@ class Token extends events.EventEmitter {
             return parent.type ==='BlockStatement' || parent.type ==="FunctionExpression" || TOP_SCOPE.includes(parent.type)
         });
         if( block ){
+            if( node.type !== "ExpressionStatement"){
+                node = this.createStatementNode( node );
+            }
             node.parent = block;
             block.body.push( node );
         }

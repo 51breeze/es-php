@@ -40,7 +40,8 @@ public class StartTest extends Base{
         $bb = [];
         $this->addArray($bb,9);
         $this->assertEquals(1,$bb->length);
-        $this->addArray([],6);
+        $_V=[];
+        $this->addArray($_V,6);
         $bs = $this->ccArray();
         array_push($bs,6);
         $this->assertEquals($bs,$this->arrItems);
@@ -158,7 +159,7 @@ public class StartTest extends Base{
         $this->assertEquals(6,Reflect::apply("array_pop",$s));
         $this->assertEquals(3,array_pop($s));
     }
-    public function addArray($a,$b){
+    public function addArray(array &$a,$b){
         array_push($a,$b);
     }
     private const arrItems=[];
@@ -166,7 +167,7 @@ public class StartTest extends Base{
         $b = $this->arrItems;
         return $b;
     }
-    public function pushArray($a,$b){
+    public function pushArray(array &$a,$b){
         array_push($a,$b);
     }
     public function testString(){
@@ -229,7 +230,7 @@ public class StartTest extends Base{
         $fn = [$this,"getObject"];
         $this->assertEquals($this,call_user_func($fn));
     }
-    public function getObject($name){
+    public function getObject($name=null){
         return $this;
     }
     public function testNumber(){
@@ -269,7 +270,7 @@ public class StartTest extends Base{
         return $this->_names;
     }
     private $_names='test';
-    public function setNames1($val){
+    public function setNames1(string $val){
         $this->_names=$val;
     }
     public function getNames(){}
