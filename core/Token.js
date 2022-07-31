@@ -308,6 +308,36 @@ class Token extends events.EventEmitter {
         return node;
     }
 
+    createConditionalNode(test, consequent, alternate){
+        const node = this.createNode('ConditionalExpression');
+        node.test = test;
+        node.consequent = consequent;
+        node.alternate = alternate;
+        test.parent = node;
+        consequent.parent = node;
+        alternate.parent = node;
+        return node;
+    }
+
+    createBinaryNode(operator, left, right){
+        const node = this.createNode('BinaryExpression');
+        node.operator = operator;
+        node.left = left;
+        node.right = right;
+        left.parent = node;
+        right.parent = node;
+        return node;
+    }
+
+    createNewNode(callee, args=[]){
+        const node = this.createNode('NewExpression');
+        node.callee = callee;
+        node.arguments = args;
+        callee.parent = node;
+        args.forEach( item=>item.parent=node );
+        return node;
+    }
+
     createImportNode(source, specifiers, stack){
         const obj = this.createNode('ImportDeclaration');
         obj.stack = stack;

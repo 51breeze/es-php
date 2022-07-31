@@ -18,11 +18,23 @@ module.exports = function(ctx,stack){
      }
      if( stack.compiler.callUtils("isClassType", desc) ){
           ctx.addDepend( desc );
-          if( stack.parentStack.isMemberExpression ){
+          if( stack.parentStack.isMemberExpression && stack.parentStack.object === stack || stack.parentStack.isNewExpression ){
                return ctx.createIdentifierNode( ctx.getModuleReferenceName(desc), stack);
-          }else {
+          }
+          else {
                return ctx.createClassRefsNode(desc, stack)
           }
      }
-     return ctx.createIdentifierNode(stack.value(), stack, !!(desc && desc.isDeclarator) );
+
+     var isDeclarator = desc && desc.isDeclarator;
+     if( stack.parentStack.isMemberExpression ){
+          isDeclarator = false;
+          if( stack.parentStack.computed && stack.parentStack.property === stack ){
+               isDeclarator = true;
+          }else if( stack.parentStack.object === stack ){
+               isDeclarator = true;
+          }
+     }
+
+     return ctx.createIdentifierNode(stack.value(), stack, isDeclarator );
 };

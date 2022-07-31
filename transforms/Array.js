@@ -28,15 +28,15 @@ function createCommonCalledNode(name,ctx, object, desc, args, called=true){
 
 const methods = {
 
-    isArray(ctx, args){
+    isArray(ctx, args, module=null, called=true){
         return ctx.createCalleeNode(
             ctx.createIdentifierNode('is_array'),
             args
         );
     },
 
-    from(ctx, args){
-        ctx.addDepend('System');
+    from(ctx, args, module=null, called=true){
+        ctx.addDepend( ctx.builder.getGlobalModuleById('System') );
         return ctx.createCalleeNode(
             ctx.createStaticMemberNode([
                 ctx.createIdentifierNode('System'),
@@ -46,8 +46,8 @@ const methods = {
         );
     },
 
-    of(ctx, args, module){
-        ctx.addDepend('Array');
+    of(ctx, args, module=null, called=true){
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         return ctx.createCalleeNode(
             ctx.createIdentifierNode( ctx.builder.getModuleNamespace( module, 'es_array_new') ),
             args
@@ -82,103 +82,103 @@ const methods = {
     },
 
     map(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_map');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     find(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_find');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     findIndex(ctx, object, desc, args,  module, called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_find_index');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     filter(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_filter');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     indexOf(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_find_index');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     lastIndexOf(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_search_last_index');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     copyWithin(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_copy_within');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     concat(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_concat');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     every(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_every');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     some(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_some');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     forEach(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_foreach');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     flat(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_flat');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     flatMap(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_flat_map');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     reduce(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_flat_reduce');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     reduceRight(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_flat_reduce_right');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     fill(ctx, object, desc, args, module,  called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_fill');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     sort(ctx, object, desc, args,  module, called=true){
-        ctx.addDepend("Array");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Array') );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_sort');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },

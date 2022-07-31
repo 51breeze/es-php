@@ -1,54 +1,60 @@
-<?php;
+<?php
 include_once("./Person.php");
 include_once("./com/TestInterface.php");
+include_once("./es/core/RegExp.php");
 include_once("./unit/Param.php");
 include_once("./Types.php");
+include_once("./es/core/Number.php");
 include_once("./es/core/Reflect.php");
 include_once("./es/core/Promise.php");
-include_once("./es/core/System.php");
 include_once("./es/core/Array.php");
+include_once("./es/core/String.php");
+include_once("./es/core/System.php");
 include_once("./es/core/Iterator.php");
 use Person;
 use TestInterface;
+use RegExp;
 use Param;
 use Types;
+use Number;
 use Reflect;
 use Promise;
-use System;
 use Array;
+use String;
+use System;
 use Iterator;
 public class IndexTest extends Person{
     public function __construct(){
-        parent();
+        parent::__construct();
     }
     public function getClass(){
         $a = IndexTest::class;
-        $buname = (object){
-            a:1
-        }
+        $buname = (object)[
+            "a"=>1
+        ];
         $buname->test=$a;
         $buname->person=Person::class;
-        ${test:test} = $buname;
-        test->getClassObject();
+        ${test=>test} = $buname;
+        $test->getClassObject();
         return $buname;
     }
     public function getClassObject(){
         $a = IndexTest::class;
-        $b = (object){
-            test:$a
-        }
+        $b = (object)[
+            "test"=>$a
+        ];
         $b->person=Person::class;
         return $b->test;
     }
     public function getObject(){
-        return new IndexTest::class();
+        return new IndexTest();
     }
     public function getUuName(){
         return 'uuName';
     }
     static private $iiu=IndexTest::class;
     private $bbss='bbss';
-    private $age=40;
+    private const age=40;
     public function testBase(){
         $this->assertEquals("uuName",IndexTest::getClassObject()->getUuName());
         $this->assertEquals(40,$this->age);
@@ -63,13 +69,13 @@ public class IndexTest extends Person{
         $this->assertEquals('bbss',$this->bbss);
         $this->bbss="666666";
         $this->assertEquals('666666',$this->bbss);
-        $this->setPersonName()("test name");
+        $this->setPersonName("test name");
         $this->assertEquals('test name',$this->getPersonName());
         $bsp = function($flag){
             return $this;
         }
-        $this->assertEquals($this,$bsp(1));
-        $obj = (object){}
+        $this->assertEquals($this,call_user_func_array($bsp,1));
+        $obj = (object)[];
         $bsp=function($flag){
             if($flag){
                 return $obj;
@@ -78,36 +84,36 @@ public class IndexTest extends Person{
             }
         }
         $obds = 1;
-        $three = $bsp(false);
-        $once = (object){
-            two:(object){
-                $three:$three,
-                four:$bsp
-            }
-        }
-        $this->assertEquals($this,$once->two->$three);
+        $three = call_user_func_array($bsp,false);
+        $once = (object)[
+            "two"=>(object)[
+                "three"=>$three,
+                "four"=>$bsp
+            ]
+        ];
+        $this->assertEquals($this,$once->two->three);
         $this->assertEquals($obj,$once->two->four(true));
-        $this->assertTrue(/\d+/->test("123"));
-        $this->assertFalse(/^\d+/->test(" 123"));
-        $this->assertTrue(!!/^\d+/->exec("123"));
+        $this->assertTrue((new RegExp("/\d+/"))->test("123"));
+        $this->assertFalse((new RegExp("/^\d+/"))->test(" 123"));
+        $this->assertTrue(!!(new RegExp("/^\d+/"))->exec("123"));
         $this->assertEquals([1,"s","test"],$this->restFun(1,"s","test"));
-        $param = new Param::class();
+        $param = new Param();
         $param->start();
     }
     public function testComputeProperty(){
         $bname = "123";
-        $o = (object){
-            [bname]:1,
-            "sssss":2,
-            uuu:(object){
-                [bname]:3
-            }
-        }
+        $o = (object)[
+            [bname]=>1,
+            "sssss"=>2,
+            "uuu"=>(object)[
+                [bname]=>3
+            ]
+        ];
         $this->assertEquals(1,$o->$bname);
         $this->assertEquals(3,$o->uuu->$bname);
-        $this->assertEquals(3,$o->uuu->"123");
-        $o->"uuu"->$bname=true;
-        $this->assertTrue($o->"uuu"->$bname);
+        $this->assertEquals(3,$o->uuu->{"123"});
+        $o->{"uuu"}->$bname=true;
+        $this->assertTrue($o->{"uuu"}->$bname);
     }
     public function testLabel(){
         $num = 0;
@@ -133,95 +139,95 @@ public class IndexTest extends Person{
     }
     public function testIterator(){
         $array = [];
-        for($val,_v,_i=System::getIterator($this);_i && (_v=_i.next()) && !_v.done;){
+        for($_i=System::getIterator($this);$_i && ($_v=$_i->next()) && !$_v->done;){
             $val=$_v->value;
-            $array->push($val);
+            array_push($array,$val);
         }
         $this->assertEquals(5,$array->length);
         $this->assertEquals([0,1,2,3,4],$array);
         for($i = 0;$i < 5;$i++){
             $this->assertEquals($i,$array[$i]);
         }
-        for($b,_v,_i=System::getIterator($this);_i && (_v=_i.next()) && !_v.done;){
+        for($_i=System::getIterator($this);$_i && ($_v=$_i->next()) && !$_v->done;){
             $b=$_v->value;
-            $array->push($b);
+            array_push($array,$b);
         }
         $this->assertEquals([0,1,2,3,4,0,1,2,3,4],$array);
         $o = $this;
         $array1 = [];
-        for($c,_v,_i=System::getIterator($o);_i && (_v=_i.next()) && !_v.done;){
+        for($_i=System::getIterator($o);$_i && ($_v=$_i->next()) && !$_v->done;){
             $c=$_v->value;
-            $array1->push($c);
+            array_push($array1,$c);
         }
         $this->assertEquals([0,1,2,3,4],$array1);
         $o1 = [1,2,3];
         $array2 = [];
-        for($d of $o1){
-            $array2->push($d);
+        foreach($o1 as $d){
+            array_push($array2,$d);
         }
         $this->assertEquals($o1,$array2);
-        $o3 = (object){
-            length:3,
-            0:1,
-            1:2,
-            2:3
-        }
+        $o3 = (object)[
+            "length"=>3,
+            0=>1,
+            1=>2,
+            2=>3
+        ];
         $array3 = [];
-        for($e,_v,_i=System::getIterator($o3);_i && (_v=_i.next()) && !_v.done;){
+        for($_i=System::getIterator($o3);$_i && ($_v=$_i->next()) && !$_v->done;){
             $e=$_v->value;
-            $array3->push($e);
+            array_push($array3,$e);
         }
         $this->assertEquals([1,2,3],$array3);
-        $o5 = 
+        $o5 = (array)$o3;
         $ot = [1,2,3];
         $ot["length"]=3;
         $this->assertEquals($ot,$o5);
         $o4 = 'abcdefg';
         $array4 = [];
-        for($f of $o4){
-            $array4->push($f);
+        foreach($o4 as $f){
+            array_push($array4,$f);
         }
-        $this->assertEquals($o4,$array4->join(""));
+        $this->assertEquals($o4,implode("",$array4));
     }
     public function testFor(){
-        $o = (object){
-            name:'testFor',
-            age:30,
-            1:100
-        }
-        $t = (object){}
-        for($name in $o){
+        $o = (object)[
+            "name"=>'testFor',
+            "age"=>30,
+            1=>100
+        ];
+        $t = (object)[];
+        foreach($o as $name =>$_ ){
             $t->$name=$o->$name;
         }
         $this->assertEquals($o,$t);
         $s = 'abcd';
         $items = [];
-        for($n in $s){
-            $items->push($s[$n]);
+        foreach($s as $n =>$_ ){
+            array_push($items,$s[$n]);
         }
         $this->assertEquals(['a','b','c','d'],$items);
     }
     public function testGenerics(){
         $ddee = $this->map();
         $dd = $ddee;
-        $ccc = $ddee->name((object){
-            name:1,
-            age:1
-        },"123");
-        $cccww = $dd->name((object){
-            name:1,
-            age:30
-        },666);
+        $ccc = $ddee->name((object)[
+            "name"=>1,
+            "age"=>1
+        ],"123");
+        $cccww = $dd->name((object)[
+            "name"=>1,
+            "age"=>30
+        ],666);
         $types = '333';
-        $bds = (object){
-            name:123,
-            [types]:1
-        }
+        $bds = (object)[
+            "name"=>123,
+            [types]=>1
+        ];
         $this->assertEquals(123,$bds->name);
         $this->assertEquals(1,$bds->$types);
         $bds->$types=99;
-        $this->assertEquals('string',typeof $this->avg("test"));
-        $this->assertEquals("1.00",$ccc->name->toFixed(2));
+        $this->assertEquals('string',gettype($this->avg("test")));
+        $this->assertEquals("1.00",es\core\es_number_to_fixed(2));
         $this->assertEquals(30,$cccww->age);
         $this->assertEquals(99,$bds->$types);
         $obj = $this->getTestObject(true);
@@ -241,17 +247,17 @@ public class IndexTest extends Person{
         return $a;
     }
     private function getTestGenerics($name,$age){
-        $t = new IndexTest::class();
+        $t = new IndexTest();
         return $age;
     }
     private function getTestObject($flag){
         $factor = function(){
-            $o = (object){}
-            $o->test=new IndexTest::class();
+            $o = (object)[];
+            $o->test=new IndexTest();
             $o->name="test";
             return $o->test;
         }
-        $o = $factor();
+        $o = call_user_func($factor);
         return $o;
     }
     public function getNamess($s){
@@ -262,10 +268,10 @@ public class IndexTest extends Person{
             $res = $this->loadRemoteData(1);
             $res->then(function($data){
                 $this->assertEquals(['one',1],$data[0]);
-                $this->assertEquals((object){
-                    bss:['two',2],
-                    cc:['three',3]
-                },$data[1]);
+                $this->assertEquals((object)[
+                    "bss"=>['two',2],
+                    "cc"=>['three',3]
+                ],$data[1]);
                 $this->assertEquals(['three',3],$data[1]);
             });
         })();
@@ -292,27 +298,27 @@ public class IndexTest extends Person{
         $this->assertEquals(123,$this->getJson()->name);
     }
     public function getJson(){
-        return (object){
-            name:123
-        }
+        return (object)[
+            "name"=>123
+        ];
     }
     public function testTuple(){
         $data = $this->method("end",9);
         $this->assertEquals([['a','b'],[1],[1,1,'one'],['one',['one',1],'three','four',['end',9]]],$data);
     }
-    private $len=5;
+    private const len=5;
     private $currentIndex=0;
     public function next(){
         if(!($this->currentIndex < $this->len)){
-            return (object){
-                value:null,
-                done:true
-            }
+            return (object)[
+                "value"=>null,
+                "done"=>true
+            ];
         }
-        $d = (object){
-            value:$this->currentIndex++,
-            done:false
-        }
+        $d = (object)[
+            "value"=>$this->currentIndex++,
+            "done"=>false
+        ];
         return $d;
     }
     public function rewind(){
@@ -322,11 +328,11 @@ public class IndexTest extends Person{
         return $types;
     }
     public function tetObject(){
-        $t = new IndexTest::class();
+        $t = new IndexTest();
         $b = $t;
-        $ii = (object){
-            bb:$b
-        }
+        $ii = (object)[
+            "bb"=>$b
+        ];
         return $ii->bb;
     }
     public function getIuuu(){
@@ -340,13 +346,13 @@ public class IndexTest extends Person{
     public function getData(){
         $b = [];
         if(4){
-            $b=$this->avg;
+            $b=[$this,"avg"];
         }
-        $b=$this->avg;
+        $b=[$this,"avg"];
         $dd = function(){
-            $bs = new Promise::class(function($resolve,$reject){
+            $bs = new Promise(function($resolve,$reject){
                 setTimeout(function(){
-                    $resolve([]);
+                    call_user_func_array($resolve,[]);
                 },100);
             });
             return $bs;
@@ -354,9 +360,9 @@ public class IndexTest extends Person{
         return $b;
     }
     public function fetchApi($name,$data,$delay){
-        return new Promise::class(function($resolve,$reject){
+        return new Promise(function($resolve,$reject){
             setTimeout(function(){
-                $resolve([$name,$data]);
+                call_user_func_array($resolve,[$name,$data]);
             },$delay);
         });
     }
@@ -366,9 +372,9 @@ public class IndexTest extends Person{
     public function loadRemoteData($type){
         if($type === 1){
             $a = $this->fetchApi("one",1,800);
-            $bs = (object){
-                bss:$this->fetchApi("two",2,500)
-            }
+            $bs = (object)[
+                "bss"=>$this->fetchApi("two",2,500)
+            ];
             $c = $this->fetchApi("three",3,900);
             $bs->cc=$c;
             return $a;
@@ -380,12 +386,12 @@ public class IndexTest extends Person{
                     return $b;
                 case 4 :
                     $bb = $this->fetchApi("five",5,1200);
-                    $list->push($bb);
+                    array_push($list,$bb);
             }
             for($i = 0;$i < 5;$i++){
-                $list->push($this->fetchApi(System::addition($i,''),$i,100));
+                array_push($list,$this->fetchApi($i + '',$i,100));
             }
-            $list->entries();
+            array_values($list);
             return $list;
         }
     }
@@ -395,16 +401,16 @@ public class IndexTest extends Person{
         $b = ["one",["one",1]];
         $cc = [1];
         $x = [1,1,'one'];
-        $b->push('three');
-        $b->push('four');
-        $b->push([$name,$age]);
+        array_push($b,'three');
+        array_push($b,'four');
+        array_push($b,[$name,$age]);
         return [$str,$cc,$x,$b];
     }
     public function getPersonName(){
-        return parent->getPersonName();
+        return parent::getPersonName();
     }
     public function setPersonName($value){
-        parent->setPersonName()($value);
+        parent::setPersonName($value);
     }
     public function avg($yy){
         $ii = function(){
@@ -417,78 +423,78 @@ public class IndexTest extends Person{
             $i->method('',1);
             return $b;
         }
-        $person = new Person::class();
+        $person = new Person();
         name($person);
         $bbb = name($person);
         name($person);
         $dd = [1,1,"2222","66666","8888"];
-        $dd->push(1);
+        array_push($dd,1);
         return $yy;
     }
     public function map(){
-        $ddss = (object){
-            name:function($c,$b){
+        $ddss = (object)[
+            "name"=>function($c,$b){
                 $id = $b;
                 return $c;
             }
-        }
+        ];
         return $ddss;
     }
     public function testArray(){
         $dd = [];
-        $bb = (object){
-            global:1,
-            private:1,
-            items:[]
-        }
-        $dd->push(1);
-        $this->assertEquals([1],$dd->filter(function($value,$key,$array){
+        $bb = (object)[
+            "global"=>1,
+            "private"=>1,
+            "items"=>[]
+        ];
+        array_push($dd,1);
+        $this->assertEquals([1],es\core\es_array_filter($dd,function($value,$key,$array){
             return true;
         },$this));
-        $this->assertEquals([],$dd->filter(function($value,$key,$array){
+        $this->assertEquals([],es\core\es_array_filter($dd,function($value,$key,$array){
             return false;
         },$this));
         $tt = ["==="];
         $tt['index']=0;
         $tt['input']='============';
-        $this->assertEquals($tt,"============"->match('==='));
-        $bds = new Array::class($bb->global);
+        $this->assertEquals($tt,es\core\es_string_math("============",'==='));
+        $bds = new Array($bb->global);
         $this->assertEquals([null],$bds);
         $this->assertEquals($bb->global,$bds->length);
-        $this->assertEquals([1],Array::from($dd));
-        $items = $bb->$items;
+        $this->assertEquals([1],System::toArray($dd));
+        $items = $bb->items;
         if($bb->global === 1){
             $items=$dd;
         }
-        $items->push(0);
+        array_push($items,0);
         $bsdd = $items;
-        $items->push(1,9,6);
+        array_push($items,1,9,6);
         $this->assertEquals([1,0,1,9,6],$items);
         $this->assertEquals($items=[],$items);
-        $items->push(9999);
+        array_push($items,9999);
         $this->assertEquals([9999],$items);
-        $this->assertEquals(9999,$items->pop());
-        $items->splice(0,0,1,2,3);
+        $this->assertEquals(9999,array_pop($items));
+        array_splice($items,0,0,[1,2,3]);
         $this->assertEquals([1,2,3],$items);
-        $this->assertEquals([1,2],$items->splice(0,2,9));
+        $this->assertEquals([1,2],array_splice($items,0,2,9));
         $this->assertEquals([9,3],$items);
-        $this->assertEquals(9,$items->shift());
-        $items->unshift(0,5,6);
+        $this->assertEquals(9,array_shift($items));
+        array_unshift($items,0,5,6);
         $this->assertEquals([0,5,6,3],$items);
         $bs = null;
-        $bs=$this->$items;
+        $bs=$this->items;
         $bs=$dd;
-        $this->assertEquals('array',typeof $dd);
-        $this->getArrItems()->push(999);
-        $this->assertEquals([999],$this->$items);
+        $this->assertEquals('array',gettype($dd));
+        array_push($this->getArrItems(),999);
+        $this->assertEquals([999],$this->items);
         $this->assertEquals([],$this->getArrItems());
         $da = $this->getArrItems();
-        $da->push(9999666);
+        array_push($da,9999666);
         $this->assertEquals([9999666],$this->itemsB);
         $da=["hhhhhhhhhh"];
         $bdsu = $da;
-        $this->assertEquals("hhhhhhhhhh",$da->pop());
-        $ui = System::addition("=="->concat('da','bs'),"=========");
+        $this->assertEquals("hhhhhhhhhh",array_pop($da));
+        $ui = System::addition(es\core\es_string_concat("==",'da','bs'),"=========");
         $this->assertEquals("==dabs=========",$ui);
         $n = 8 + 6;
         $this->assertEquals(14,$n);

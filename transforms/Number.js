@@ -1,7 +1,7 @@
 const ObjectMethod = require("./Object");
 function createCommonCalledNode(name,ctx, object, desc, args, called=true){
     if(!called){
-        return ctx.createChunkNode(`function(...$args){return ${name}(...$args);}`)
+        return ctx.createLiteralNode( name.replace(/\\/g,'\\\\') );
     }
     return ctx.createCalleeNode(
         ctx.createIdentifierNode(name),
@@ -67,25 +67,25 @@ const methods = {
     },
 
     toFixed(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("Number");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Number') );
         const name = ctx.builder.getModuleNamespace( module, 'es_number_to_fixed')
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     toExponential(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("Number");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Number') );
         const name = ctx.builder.getModuleNamespace( module, 'es_number_to_exponential')
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     toPrecision(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("Number");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Number') );
         const name = ctx.builder.getModuleNamespace( module, 'es_number_to_precision')
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     valueOf(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("Number");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Number') );
         const name = ctx.builder.getModuleNamespace( module, 'es_number_value_of')
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },

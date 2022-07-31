@@ -175,7 +175,7 @@ class ClassBuilder extends Token{
                 ctx.body.push( 
                     ctx.createStatementNode(
                         ctx.createCalleeNode( 
-                            ctx.createMemberNode([se]),
+                            ctx.createStaticMemberNode([se, ctx.createIdentifierNode('__construct')]),
                             params
                         )
                     )

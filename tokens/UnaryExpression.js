@@ -1,11 +1,11 @@
 module.exports = function(ctx,stack){
    const operator = stack.node.operator;
    const prefix   = stack.node.prefix;
-   if( operator==='delete' ){
+   if( operator==='delete' || operator==="typeof"){
       return ctx.createCalleeNode(
-         ctx.createIdentifierNode('unset', stack),
+         ctx.createIdentifierNode(operator ==='typeof' ? 'gettype' : 'unset', stack),
          [
-            node.createToken(stack.argument)
+            ctx.createToken(stack.argument)
          ]
       );
    }

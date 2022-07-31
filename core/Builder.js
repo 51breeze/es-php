@@ -489,6 +489,11 @@ class Builder extends Token{
                 case 'Boolean' :
                 case 'RegExp' :
                     return originType.id;
+                case 'Uint' :
+                case 'Int' :
+                case 'Float' :
+                case 'Double' :
+                    return 'Number';
                 default :
             }
         }

@@ -1,3 +1,4 @@
+const Transform = require('../core/Transform');
 function MemberExpression(ctx,stack){
     const module = stack.module;
     const description = stack.description();
@@ -32,19 +33,50 @@ function MemberExpression(ctx,stack){
         }
     }
 
-    
+    const isStatic = stack.object.isSuperExpression || stack.compiler.callUtils("isClassType", stack.object.description() );
     if( description && (description.isMethodGetterDefinition || description.isMethodSetterDefinition) ){
-        return ctx.createCalleeNode(
-            ctx.createMemberNode([
+       const callee = isStatic ? ctx.createStaticMemberNode([
                 ctx.createToken(stack.object), 
                 ctx.createIdentifierNode( ctx.getAccessorName(stack.property.value(), description,  description.isMethodGetterDefinition ? 'get' : 'set') )
-            ]),
-            [],
-            stack
-        );
-    }
+            ],stack) : ctx.createMemberNode([
+                ctx.createToken(stack.object), 
+                ctx.createIdentifierNode( ctx.getAccessorName(stack.property.value(), description,  description.isMethodGetterDefinition ? 'get' : 'set') )
+            ],stack);
+        return description.isMethodGetterDefinition ? ctx.createCalleeNode(callee,[],stack) : callee;
+    }else if( description && description.isMethodDefinition ){
 
-    if( description && (!description.isAccessor && description.isMethodDefinition) ){
+        const name = ctx.builder.getAvailableOriginType( stack.object.type( stack.object.getContext() ) );
+        if( Transform.has(name) ){
+            const object = Transform.get(name);
+            const key = stack.property.value();
+            if( Object.prototype.hasOwnProperty.call(object, key) ){
+                if( description.static ){
+                    return object[key](
+                        ctx, 
+                        [], 
+                        description.module,
+                        false 
+                    );
+                }else{
+                    return object[key](
+                        ctx, 
+                        ctx.createToken(stack.object), 
+                        description, 
+                        [], 
+                        description.module,
+                        false
+                    );
+                }
+            }
+        }
+
+        if( !stack.parentStack.isCallExpression && !stack.parentStack.isMemberExpression ){
+            return ctx.createArrayNode([
+                ctx.createToken(stack.object),
+                ctx.createLiteralNode( stack.property.value() )
+            ]);
+        }
+
         const pStack = stack.getParentStack( stack=>!!(stack.jsxElement || stack.isBlockStatement || stack.isCallExpression || stack.isExpressionStatement));
         if( pStack && pStack.jsxElement ){
             ctx.addDepend( stack.getGlobalTypeById('System') );
@@ -73,7 +105,7 @@ function MemberExpression(ctx,stack){
     }
     node.object = node.createToken( stack.object );
     node.property = node.createToken( stack.property );
-    node.isStatic = stack.object.isSuperExpression || stack.compiler.callUtils("isClassType", stack.object.type() );
+    node.isStatic = isStatic;
     return node;
 }
 

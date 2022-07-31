@@ -2,9 +2,12 @@ const ObjectMethod = require("./Object");
 const methods = {
 
     apply(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("Reflect");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Reflect') );
         if(!called){
-            return ctx.createChunkNode(`function($calleed, &$target, ...$args){return Reflect::apply($calleed, $target, $args);}`)
+            return ctx.createArrayNode([
+                ctx.createClassRefsNode( ctx.builder.getGlobalModuleById('Reflect') ),
+                ctx.createLiteralNode('apply')
+            ]);
         }
         const target = args.shift();
         const params = [object, target];
@@ -26,9 +29,12 @@ const methods = {
     },
 
     bind(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("System");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('System') );
         if(!called){
-            return ctx.createChunkNode(`function($calleed, &$target, ...$args){return System::bind($calleed, $target, ...$args);}`)
+            return ctx.createArrayNode([
+                ctx.createClassRefsNode( ctx.builder.getGlobalModuleById('System') ),
+                ctx.createLiteralNode('bind')
+            ]);  
         }
         return ctx.createCalleeNode(
             ctx.createStaticMemberNode([

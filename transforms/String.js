@@ -16,68 +16,68 @@ function createCommonCalledNode(name,ctx, object, desc, args, called=true){
 const methods={
    
     charAt(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("String");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('String') );
         const name = ctx.builder.getModuleNamespace( module, 'es_string_char_at');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     charCodeAt(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("String");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('String') );
         const name = ctx.builder.getModuleNamespace( module, 'es_string_char_code_at');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
     concat(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("String");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('String') );
         const name = ctx.builder.getModuleNamespace( module, 'es_string_concat');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
     includes(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("String");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('String') );
         const name = ctx.builder.getModuleNamespace( module, 'es_string_includes');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
     indexOf(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("String");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('String') );
         const name = ctx.builder.getModuleNamespace( module, 'es_string_index_of');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
     lastIndexOf(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("String");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('String') );
         const name = ctx.builder.getModuleNamespace( module, 'es_string_last_index_of');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
     localeCompare(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("String");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('String') );
         const name = ctx.builder.getModuleNamespace( module, 'es_string_locale_compare');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
     match(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("String");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('String') );
         const name = ctx.builder.getModuleNamespace( module, 'es_string_math');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
     matchAll(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("String");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('String') );
         const name = ctx.builder.getModuleNamespace( module, 'es_string_math_all');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
     search(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("String");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('String') );
         const name = ctx.builder.getModuleNamespace( module, 'es_string_search');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
     replace(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("String");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('String') );
         const name = ctx.builder.getModuleNamespace( module, 'es_string_replace');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
     replaceAll(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("String");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('String') );
         const name = ctx.builder.getModuleNamespace( module, 'es_string_replace_all');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
     slice(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("String");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('String') );
         const name = ctx.builder.getModuleNamespace( module, 'es_string_slice');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
@@ -135,7 +135,7 @@ const methods={
     },
 
     normalize(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("String");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('String') );
         const name = ctx.builder.getModuleNamespace( module, 'es_string_normalize');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     }

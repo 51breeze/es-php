@@ -27,7 +27,7 @@ function createCommonCalledNode(name,ctx, object, desc, args, called=true){
 module.exports={
     
     assign(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("Object");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Object') );
         const name = ctx.builder.getModuleNamespace( module, 'es_object_assign');
         if(!called)return createMethodFunctionNode(ctx,name);
         return ctx.createCalleeNode(
@@ -37,7 +37,7 @@ module.exports={
     },
 
     keys(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("Object");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Object') );
         const name = ctx.builder.getModuleNamespace( module, 'es_object_keys');
         if(!called)return createMethodFunctionNode(ctx,name);
         return ctx.createCalleeNode(
@@ -47,7 +47,7 @@ module.exports={
     },
 
     values(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("Object");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Object') );
         const name = ctx.builder.getModuleNamespace( module, 'es_object_values');
         if(!called)return createMethodFunctionNode(ctx,name);
         return ctx.createCalleeNode(
@@ -57,31 +57,31 @@ module.exports={
     },
    
     propertyIsEnumerable(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("Object");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Object') );
         const name = ctx.builder.getModuleNamespace( module, 'es_object_property_is_enumerable');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     hasOwnProperty(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("Object");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Object') );
         const name = ctx.builder.getModuleNamespace( module, 'es_object_has_own_property');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     valueOf(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("Object");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Object') );
         const name = ctx.builder.getModuleNamespace( module, 'es_object_value_of');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     toLocaleString(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("Object");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Object') );
         const name = ctx.builder.getModuleNamespace( module, 'es_object_to_string');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     },
 
     toString(ctx, object, desc, args, module, called=true){
-        ctx.addDepend("Object");
+        ctx.addDepend( ctx.builder.getGlobalModuleById('Object') );
         const name = ctx.builder.getModuleNamespace( module, 'es_object_to_string');
         return createCommonCalledNode(name, ctx, object, desc, args, called);
     }

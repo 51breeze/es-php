@@ -280,11 +280,12 @@ class Generator{
             break;
             case "ForInStatement" :
                 this.newLine();
-                this.withString('for');
+                this.withString('foreach');
                 this.withParenthesL();
-                this.make(token.left);
-                this.withOperator('in');
                 this.make(token.right);
+                this.withOperator('as');
+                this.make(token.left);
+                this.withOperator('=>$_');
                 this.withParenthesR();
                 this.make(token.body);
                 if( token.body.type !=="BlockStatement" ){
@@ -293,11 +294,11 @@ class Generator{
             break;
             case "ForOfStatement" :
                 this.newLine();
-                this.withString('for');
+                this.withString('foreach');
                 this.withParenthesL();
-                this.make(token.left);
-                this.withOperator('of');
                 this.make(token.right);
+                this.withOperator('as');
+                this.make(token.left);
                 this.withParenthesR();
                 this.make(token.body);
                 if( token.body.type !=="BlockStatement" ){
@@ -433,7 +434,14 @@ class Generator{
                     }else{
                         this.withString('->');
                     }
-                    this.make(token.property);
+
+                    if( token.property.type ==="Literal"){
+                        this.withBraceL();
+                        this.make(token.property);
+                        this.withBraceR();
+                    }else{
+                        this.make(token.property);
+                    }
                 }
             break;
             case "NewExpression" :
@@ -446,7 +454,7 @@ class Generator{
             break;
             case "ObjectExpression" :
                 this.withString('(object)')
-                this.withBraceL();
+                this.withBracketL();
                 if( token.properties.length > 0 ){
                     this.newBlock();
                     this.newLine();
@@ -454,7 +462,7 @@ class Generator{
                     this.newLine();
                     this.endBlock();
                 }
-                this.withBraceR();
+                this.withBracketR();
             break;
             case "ObjectPattern" :
                 this.withBraceL();
@@ -481,7 +489,7 @@ class Generator{
                 }else{
                     this.make( token.key );
                 }
-                this.withColon()
+                this.withString('=>')
                 this.make( token.init );
             break;
             case "PropertyDefinition" :
@@ -494,7 +502,13 @@ class Generator{
                     this.make( token.modifier );
                     this.withSpace();
                 }
-                this.withString('$');
+                if( token.kind==='const'){
+                    this.withString('const');
+                    this.withSpace();
+                }else{
+                    this.withString('$');
+                }
+
                 this.make( token.key );
                 this.withString('=');
                 this.make( token.init );
@@ -520,7 +534,7 @@ class Generator{
                 this.make( token.argument );
             break;
             case "SuperExpression" :
-                this.withString(token.value);
+                this.withString('parent');
             break;
             case "SwitchCase" :
                 this.newLine();
@@ -651,6 +665,14 @@ class Generator{
                     this.withSemicolon();
                 }
             break;
+            case "TypeTransformExpression" :
+                if( token.typeName ){
+                    this.withParenthesL();
+                    this.withString(token.typeName)
+                    this.withParenthesR();
+                }
+                this.make( token.expression );
+            break;
             case "ClassDeclaration" :
             case "InterfaceDeclaration" :
                 this.genClass( token );
@@ -664,7 +686,8 @@ class Generator{
     }
 
     genClass(token){
-        this.withEnd('<?php');
+        this.withString('<?php');
+        this.newLine();
         token.imports.forEach( item=>{
             this.make( item );
         });
