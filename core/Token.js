@@ -446,16 +446,16 @@ class Token extends events.EventEmitter {
         if(!desc || !desc.isStack)return;
         const name = desc.value();
         let funScope = this.scope;
-        while( funScope && (funScope = funScope.getScopeByType("function")) && !funScope.isMethod && funScope.type('function') ){
-            const check = ( scope )=>{
-                if( !scope )return;
-                if( !scope.declarations.has( name ) ){
-                    return scope.children.some( child=>{
-                        return check(child);
-                    });
-                }
-                return true;
+        const check = ( scope )=>{
+            if( !scope )return;
+            if( !scope.declarations.has( name ) ){
+                return scope.children.some( child=>{
+                    return check(child);
+                });
             }
+            return true;
+        }
+        while( funScope && (funScope = funScope.getScopeByType("function")) && !funScope.isMethod && funScope.type('function') ){
             if( !check( funScope ) ){
                 let dataset = refsParentVariable.get(funScope);
                 if(!dataset){
@@ -469,10 +469,9 @@ class Token extends events.EventEmitter {
     }
 
     getVariableRefs(){
-        
+        const funScope = this.scope.getScopeByType("function");
+        return refsParentVariable.get(funScope);
     }
-
-
 
     getAssignAddressRef(desc){
         if(!desc)return null;
@@ -517,8 +516,8 @@ class Token extends events.EventEmitter {
         return this.builder.isActiveForModule(module, ctxModule || this.module);
     }
 
-    getParentByType( type ){
-        var parent = this.parent;
+    getParentByType( type, flag=false){
+        var parent = flag ? this : this.parent;
         var invoke = typeof type === 'function' ? type : item=>item.type === type;
         while( parent && !invoke(parent) ){
             parent = parent.parent;
@@ -547,9 +546,11 @@ class Token extends events.EventEmitter {
             }else{
                 return FUNCTION_SCOPE.includes( parent.type );
             }
-        });
+        }, true);
 
-        if( !ctx )return name;
+        if( !ctx ){
+            return name;
+        }
         const scope = (context && context.scope) || this.scope;
         var dataset = SCOPE_MAP.get( ctx );
         if( !dataset ){

@@ -73,16 +73,16 @@ public class IndexTest extends Person{
         $this->assertEquals('test name',$this->getPersonName());
         $bsp = function($flag=null){
             return $this;
-        }
+        };
         $this->assertEquals($this,call_user_func_array($bsp,1));
         $obj = (object)[];
-        $bsp=function($flag=null){
+        $bsp=function($flag=null)use(&$obj){
             if($flag){
                 return $obj;
             }else{
                 return $this;
             }
-        }
+        };
         $obds = 1;
         $three = call_user_func_array($bsp,false);
         $once = (object)[
@@ -242,7 +242,7 @@ public class IndexTest extends Person{
         $sss = $obj->getClassTestGenerics(1,1);
         $this->assertEquals([1,1],$sss);
     }
-    private function getClassTestGenerics($name,$age=null){
+    private function & getClassTestGenerics($name,$age=null){
         $a = [$age,$name];
         return $a;
     }
@@ -256,7 +256,7 @@ public class IndexTest extends Person{
             $o->test=new IndexTest();
             $o->name="test";
             return $o->test;
-        }
+        };
         $o = call_user_func($factor);
         return $o;
     }
@@ -324,7 +324,7 @@ public class IndexTest extends Person{
     public function rewind(){
         $this->currentIndex=0;
     }
-    public function restFun(...types){
+    public function & restFun(...$types){
         return $types;
     }
     public function tetObject(){
@@ -351,17 +351,17 @@ public class IndexTest extends Person{
         $b=[$this,"avg"];
         $dd = function(){
             $bs = new Promise(function($resolve,$reject){
-                setTimeout(function(){
+                setTimeout(function()use(&$resolve){
                     call_user_func_array($resolve,[]);
                 },100);
             });
             return $bs;
-        }
+        };
         return $b;
     }
     public function fetchApi(string $name,Int $data,Int $delay){
-        return new Promise(function($resolve,$reject){
-            setTimeout(function(){
+        return new Promise(function($resolve,$reject)use(&$name,&$data,&$delay){
+            setTimeout(function()use(&$name,&$data,&$resolve){
                 call_user_func_array($resolve,[$name,$data]);
             },$delay);
         });
@@ -416,7 +416,7 @@ public class IndexTest extends Person{
     public function avg(string $yy){
         $ii = function(){
             return 1;
-        }
+        };
         $bb = ['1'];
         function name(TestInterface $i){
             $b = $i;
@@ -434,14 +434,14 @@ public class IndexTest extends Person{
     }
     public function map(){
         $ddss = (object)[
-            "name"=>function(object $c,$b){
+            "name"=>function($c,$b){
                 $id = $b;
                 return $c;
             }
         ];
         return $ddss;
     }
-    public function testArray(){
+    public function & testArray(){
         $dd = [];
         $bb = (object)[
             "global"=>1,
@@ -501,7 +501,7 @@ public class IndexTest extends Person{
         $this->assertEquals(14,$n);
         return $dd;
     }
-    private function getArrItems(){
+    private function & getArrItems(){
         $b = $this->items;
         if($b){
             $b=$this->itemsB;

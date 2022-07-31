@@ -123,7 +123,7 @@ class Generator{
     withSemicolon(){
         const code = this.code;
         const char = code.charCodeAt( code.length-1 );
-        if( char === 59 || char === 10 || char ===13 || char ===32 || char===125 ){
+        if( char === 59 || char === 10 || char ===13 || char ===32 ){
             return this;
         }
         this.withString(';');
@@ -164,9 +164,19 @@ class Generator{
             break;
             case "ArrowFunctionExpression" :
                 this.withString('function');
+                if( token.prefix ){
+                    this.withSpace();
+                    this.withString( token.prefix );
+                }
                 this.withParenthesL();
                 this.withSequence(token.params);
                 this.withParenthesR();
+                if( token.using ){
+                    this.withString('use');
+                    this.withParenthesL();
+                    this.withSequence( token.using );
+                    this.withParenthesR();
+                }
                 if( token.body.type ==="BlockStatement"){
                     this.make(token.body);
                 }else{
@@ -338,6 +348,10 @@ class Generator{
                     this.make( token.final );
                 }
                 this.withString('function');
+                if( token.prefix ){
+                    this.withSpace();
+                    this.withString( token.prefix );
+                }
                 if( !token.key.computed ){
                     this.withSpace();
                     this.make( token.key );
@@ -345,14 +359,30 @@ class Generator{
                 this.withParenthesL();
                 this.withSequence(token.params);
                 this.withParenthesR();
+                if( token.using ){
+                    this.withString('use');
+                    this.withParenthesL();
+                    this.withSequence( token.using );
+                    this.withParenthesR();
+                }
                 this.make(token.body);
                 this.newLine();
             break;
             case "FunctionExpression" :
                 this.withString('function');
+                if( token.prefix ){
+                    this.withSpace();
+                    this.withString( token.prefix );
+                }
                 this.withParenthesL();
                 this.withSequence(token.params);
                 this.withParenthesR();
+                if( token.using ){
+                    this.withString('use');
+                    this.withParenthesL();
+                    this.withSequence( token.using );
+                    this.withParenthesR();
+                }
                 this.make(token.body);
             break;
             case "Identifier" :
@@ -528,7 +558,7 @@ class Generator{
             break;
             case "RestElement" :
                 this.withString('...' );
-                this.withString( token.value );
+                this.withString( '$'+token.value );
             break;
             case "ReturnStatement" :
                 this.newLine();

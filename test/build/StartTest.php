@@ -72,7 +72,7 @@ public class StartTest extends Base{
             return System::addition($all,$value);
         }));
         $searchItem = 'B';
-        $this->assertEquals("B",es\core\es_array_find($af,function($val){
+        $this->assertEquals("B",es\core\es_array_find($af,function($val)use(&$searchItem){
             return $val === $searchItem;
         }));
         $this->assertEquals(6,es\core\es_array_find($af,function($val){
@@ -163,7 +163,7 @@ public class StartTest extends Base{
         array_push($a,$b);
     }
     private const arrItems=[];
-    public function ccArray(){
+    public function & ccArray(){
         $b = $this->arrItems;
         return $b;
     }

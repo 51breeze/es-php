@@ -1,17 +1,18 @@
 const Token  = require('../core/Token');
 function createInitNode(ctx, name, initValue, defaultValue, operator){
-   return ctx.createAssignmentNode( 
+    
+   return ctx.createStatementNode( ctx.createAssignmentNode( 
       name instanceof Token ? name : ctx.createIdentifierNode(name,null,true),
       defaultValue ? ctx.createBinaryNode(
          operator, 
          initValue,  
          defaultValue
       ) : initValue
-   );
+   ));
 }
 
 function createRefsMemberNode(ctx, object, property , computed=false){
-   const node = ctx.createMemberNode([ctx.createIdentifierNode(object,null,true), ctx.createIdentifierNode(property)]);
+   const node = ctx.createMemberNode([ctx.createIdentifierNode(object,null,true), typeof property ==='number' ? ctx.createLiteralNode(property) :  ctx.createIdentifierNode(property)]);
    node.computed = computed;
    return node;
 }
@@ -26,9 +27,9 @@ function createParamNode(ctx,name,prefix){
 
 function createParamNodes(ctx, stack, params){
    const before = [];
-   const items = params.map( item=>{
+   const items = params.map( (item,index)=>{
       if( item.isObjectPattern ){
-         const sName = ctx.checkRefsName('_s', false, Token.SCOPE_REFS_DOWN );
+         const sName = ctx.checkRefsName('_s'+index, false, Token.SCOPE_REFS_DOWN );
          before.push(createInitNode(
             ctx, 
             sName,  
@@ -38,26 +39,24 @@ function createParamNodes(ctx, stack, params){
          ));
          item.properties.forEach( property=>{
             const key = property.key.value();
+            let defaultValue = null;
             if( property.hasInit ){
                const initStack = property.init.isAssignmentPattern ? property.init.right : property.init;
-               before.push(createInitNode(
-                  ctx, 
-                  key, 
-                  createRefsMemberNode(ctx,sName,key),
-                  ctx.createToken(initStack), 
-                  '??' 
-               ));
+               defaultValue = ctx.createToken(initStack);
             }else{
-               before.push(createInitNode(
-                  ctx, 
-                  key, 
-                  createRefsMemberNode(ctx,sName,key)
-               ));
+               defaultValue = ctx.createLiteralNode(null);
             }
+            before.push(createInitNode(
+               ctx, 
+               key, 
+               createRefsMemberNode(ctx,sName,key),
+               defaultValue,
+               '??'
+            ));
          });
          return createParamNode(ctx, sName, 'object');
       }else if( item.isArrayPattern ){
-         const sName = ctx.checkRefsName('_s', false, Token.SCOPE_REFS_DOWN );
+         const sName = ctx.checkRefsName('_s'+index, false, Token.SCOPE_REFS_DOWN );
          before.push(createInitNode(
             ctx, 
             sName,  
@@ -66,23 +65,22 @@ function createParamNodes(ctx, stack, params){
             '?:'
          ));
          item.elements.forEach( (property,index)=>{
+            let key= null;
+            let defaultValue = null;
             if( property.isAssignmentPattern ){
-               const key = property.left.value();
-               before.push(createInitNode(
-                  ctx, 
-                  key, 
-                  createRefsMemberNode(ctx,sName,index, true),
-                  ctx.createToken(property.right), 
-                  '??',
-               ));
+               key = property.left.value();
+               defaultValue = ctx.createToken(property.right);
             }else{
-               const key = property.value();
-               before.push(createInitNode(
-                  ctx, 
-                  key, 
-                  createRefsMemberNode(ctx,sName,index, true)
-               ));
+               key = property.value();
+               defaultValue = ctx.createLiteralNode(null)
             }
+            before.push(createInitNode(
+               ctx, 
+               key, 
+               createRefsMemberNode(ctx,sName,index, true),
+               defaultValue,
+               '??',
+            ));
          });
          return createParamNode(ctx, sName, 'array');
       }
@@ -112,9 +110,7 @@ function createParamNodes(ctx, stack, params){
             case 'Function' :
                typeName = '\\Closure';
                break;   
-            case 'Object' :
-               typeName = 'object';
-               break;   
+            case 'Object' :  
             case 'Boolean' :
             case 'Uint' :
             case 'Int' :
@@ -164,10 +160,18 @@ module.exports = function(ctx,stack,type){
       block.body.unshift( ...before );
    }
 
-
    const method = !!stack.parentStack.isMethodDefinition;
-   const variableRefs = !method ? this.getVariableRefs() : null;
+   const variableRefs = !method ? node.getVariableRefs() : null;
+   if( variableRefs ){
+      node.using = Array.from( variableRefs.values() ).map( item=>{
+         return node.creaateAddressRefsNode( node.createIdentifierNode( item.value(), item, true ) )
+      });
+   }
 
+   const returnType = stack.type( stack.getContext(null,null,true) );
+   if( returnType.isLiteralArrayType || returnType.isTupleType ){
+      node.prefix = '&';
+   }
 
    node.params = params;
    node.body = block;
