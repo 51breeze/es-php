@@ -1,0 +1,18 @@
+const modules = new Map();
+modules.set("Array",require('./Array.js'));
+modules.set("Base64",require('./Base64.js'));
+modules.set("Console",require('./Console.js'));
+modules.set("Double",require('./Double.js'));
+modules.set("Error",require('./Error.js'));
+modules.set("Float",require('./Float.js'));
+modules.set("Function",require('./Function.js'));
+modules.set("global",require('./global.js'));
+modules.set("IArguments",require('./IArguments.js'));
+modules.set("Int",require('./Int.js'));
+modules.set("JSON",require('./JSON.js'));
+modules.set("Math",require('./Math.js'));
+modules.set("Number",require('./Number.js'));
+modules.set("Object",require('./Object.js'));
+modules.set("String",require('./String.js'));
+modules.set("Uint",require('./Uint.js'));
+module.exports=modules;

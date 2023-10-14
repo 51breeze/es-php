@@ -1,0 +1,47 @@
+{
+  "name": "es-php",
+  "version": "0.3.0",
+  "description": "test",
+  "main": "dist/index.js",
+  "typings": "dist/types/index.d.es",
+  "scripts": {
+    "dev": "jasmine ./test/index.js",
+    "run": "node ./test/phptest.js",
+    "test": "npm run dev & npm run run",
+    "build": "node ./scripts/build.js",
+    "prepublish": "npm build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/51breeze/es-php.git"
+  },
+  "keywords": [
+    "es",
+    "javascript",
+    "web"
+  ],
+  "author": "Jun Ye",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/51breeze/es-php/issues"
+  },
+  "homepage": "https://github.com/51breeze/es-php#readme",
+  "dependencies": {
+    "lodash": "^4.17.21"
+  },
+  "esconfig":{
+    "scope":"es-php",
+    "inherits":[]
+  },
+  "devDependencies": {
+    "esbuild": "^0.17.11",
+    "esbuild-plugin-copy": "^2.1.0",
+    "jasmine": "^3.10.0",
+    "easescript": "latest",
+    "less": "^4.1.3",
+    "node-sass": "^7.0.1",
+    "rollup": "^2.78.1",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-node-resolve": "^5.2.0"
+  }
+}

@@ -1,0 +1,7 @@
+/node_modules
+/package-lock.json
+/test/composer.lock
+test/vendor
+test/build
+/test/vendor
+/test/build

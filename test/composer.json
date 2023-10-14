@@ -1,0 +1,9 @@
+{
+    "require-dev": {
+        "phpunit/phpunit": "9.5.0"
+    },
+    "require": {
+        "fightbulc/moment": "^1.33",
+        "php-ds/php-ds": "^1.4"
+    }
+}
