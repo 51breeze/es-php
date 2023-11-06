@@ -1516,6 +1516,12 @@ var require_Token = __commonJS({
               refsParentVariable.set(funScope, dataset);
             }
             dataset.add(refsName || desc2);
+            if (!refsName && (desc2.isVariableDeclarator || desc2.isParamDeclarator)) {
+              const addressRefObject = this.getAssignAddressRef(desc2);
+              if (addressRefObject) {
+                dataset.add(addressRefObject.createIndexName(desc2));
+              }
+            }
           }
           funScope = funScope.parent;
         }
@@ -1571,13 +1577,12 @@ var require_Token = __commonJS({
         } else {
           const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
           if (isWrapType) {
-            let inherit = type.inherit;
-            if (inherit) {
-              inherit = inherit.type();
-              if (this.builder.getGlobalTypeById("ArrayProtector") === inherit) {
-                return true;
-              } else if (this.builder.getGlobalTypeById("ObjectProtector") === inherit) {
-                return false;
+            let inherit = type.inherit.type();
+            if (this.builder.getGlobalModuleById("ArrayProtector") === inherit) {
+              return true;
+            } else if (type.types.length > 0) {
+              if (this.builder.getGlobalModuleById("RMD") === inherit || this.builder.getGlobalModuleById("ObjectProtector") === inherit) {
+                return this.isArrayAccessor(type.types[0].type());
               }
             }
           }
@@ -1595,8 +1600,16 @@ var require_Token = __commonJS({
           return true;
         }
         const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
-        const inherit = type.inherit;
-        return isWrapType && inherit && this.builder.getGlobalTypeById("ObjectProtector") === inherit.type();
+        if (isWrapType) {
+          const inherit = type.inherit.type();
+          if (type.types.length > 0) {
+            if (this.builder.getGlobalModuleById("RMD") === inherit || this.builder.getGlobalModuleById("ArrayProtector") === inherit) {
+              return this.isObjectAccessor(type.types[0].type());
+            }
+          }
+          return this.builder.getGlobalModuleById("ObjectProtector") === inherit;
+        }
+        return false;
       }
       isPassableReferenceExpress(stack, type) {
         if (!stack || !stack.isStack)
@@ -1611,7 +1624,17 @@ var require_Token = __commonJS({
         return true;
       }
       isAddressRefsType(type, stack) {
-        if (type && type.isClassGenericType && type.inherit.type() === this.builder.getGlobalModuleById("RMD")) {
+        const verify = (type2) => {
+          if (type2 && type2.isClassGenericType && type2.inherit.isAliasType) {
+            const inheritType = type2.inherit.type();
+            if (inheritType === this.builder.getGlobalModuleById("RMD")) {
+              return true;
+            } else if (type2.types.length > 0 && (inheritType === this.builder.getGlobalModuleById("ArrayProtector") || inheritType === this.builder.getGlobalModuleById("ObjectProtector"))) {
+              return verify(type2.types[0].type());
+            }
+          }
+        };
+        if (verify(type)) {
           return true;
         }
         const result = this.isArrayAddressRefsType(type);
@@ -1624,8 +1647,9 @@ var require_Token = __commonJS({
         }
         const check = (stack2, type2) => {
           if (type2) {
-            if (type2.isClassGenericType && type2.inherit.type() === this.builder.getGlobalModuleById("RMD"))
+            if (verify(type2)) {
               return true;
+            }
             if (!this.isArrayAddressRefsType(type2))
               return false;
           }
@@ -9856,18 +9880,6 @@ var require_MemberExpression = __commonJS({
           return result;
         isMember = true;
       }
-      let isObjectProtectorFlag = void 0;
-      const isObjectProtector = () => {
-        if (isObjectProtectorFlag !== void 0)
-          return isObjectProtectorFlag;
-        return isObjectProtectorFlag = isWrapType && stack.getGlobalTypeById("ObjectProtector") === rawObjectType.inherit;
-      };
-      const check = (type) => {
-        if (type.isLiteralObjectType || type.isLiteralType || type.isLiteralArrayType || type.isTupleType || stack.compiler.callUtils("getOriginType", type) === stack.getGlobalTypeById("Array") || isWrapType && stack.getGlobalTypeById("ArrayProtector") === rawObjectType.inherit || ctx.isArrayMappingType(stack.compiler.callUtils("getOriginType", type))) {
-          return isWrapType ? !isObjectProtector() : true;
-        }
-        return false;
-      };
       const node = ctx.createNode(stack);
       node.computed = computed;
       if (aliasAnnotation) {
@@ -9877,14 +9889,14 @@ var require_MemberExpression = __commonJS({
         const result = trans(ctx, stack, description, aliasAnnotation, objectType);
         if (result)
           return result;
-        if (!isStatic && objectType && check(objectType)) {
+        if (!isStatic && rawObjectType && ctx.isArrayAccessor(rawObjectType)) {
           node.computed = true;
-        } else {
-          node.computed = !isObjectProtector();
+        } else if (rawObjectType) {
+          node.computed = !ctx.isObjectAccessor(rawObjectType);
         }
       } else if (stack.object.isNewExpression) {
         objectNode = node.createParenthesNode(node.createToken(stack.object));
-      } else if (!isStatic && objectType && check(objectType)) {
+      } else if (!isStatic && rawObjectType && ctx.isArrayAccessor(rawObjectType)) {
         node.computed = true;
         propertyNode = node.createLiteralNode(stack.property.value(), void 0, stack.property);
       }
@@ -11254,8 +11266,7 @@ var require_package = __commonJS({
         dev: "jasmine ./test/index.js",
         run: "node ./test/phptest.js",
         test: "npm run dev & npm run run",
-        build: "node ./scripts/build.js",
-        prepublish: "npm build"
+        build: "node ./scripts/build.js"
       },
       repository: {
         type: "git",

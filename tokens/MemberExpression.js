@@ -196,25 +196,25 @@ function MemberExpression(ctx,stack){
         isMember = true;
     }
 
-    let isObjectProtectorFlag = void 0;
-    const isObjectProtector = ()=>{
-        if( isObjectProtectorFlag !== void 0 )return isObjectProtectorFlag;
-        return isObjectProtectorFlag = isWrapType && stack.getGlobalTypeById('ObjectProtector') === rawObjectType.inherit;
-    }
+    // let isObjectProtectorFlag = void 0;
+    // const isObjectProtector = ()=>{
+    //     if( isObjectProtectorFlag !== void 0 )return isObjectProtectorFlag;
+    //     return isObjectProtectorFlag = isWrapType && stack.getGlobalTypeById('ObjectProtector') === rawObjectType.inherit;
+    // }
 
-    const check = (type)=>{
-        if( type.isLiteralObjectType || 
-            type.isLiteralType || 
-            type.isLiteralArrayType || 
-            type.isTupleType || 
-            stack.compiler.callUtils("getOriginType",type)===stack.getGlobalTypeById('Array') ||
-            (isWrapType && stack.getGlobalTypeById('ArrayProtector') === rawObjectType.inherit) ||
-            ctx.isArrayMappingType( stack.compiler.callUtils("getOriginType",type) ) 
-        ){  
-            return isWrapType ? !isObjectProtector() : true;
-        }
-        return false
-    }
+    // const check = (type)=>{
+    //     if( type.isLiteralObjectType || 
+    //         type.isLiteralType || 
+    //         type.isLiteralArrayType || 
+    //         type.isTupleType || 
+    //         stack.compiler.callUtils("getOriginType",type)===stack.getGlobalTypeById('Array') ||
+    //         (isWrapType && stack.getGlobalTypeById('ArrayProtector') === rawObjectType.inherit) ||
+    //         ctx.isArrayMappingType( stack.compiler.callUtils("getOriginType",type) ) 
+    //     ){  
+    //         return isWrapType ? !isObjectProtector() : true;
+    //     }
+    //     return false
+    // }
 
     const node = ctx.createNode(stack);
     node.computed = computed;
@@ -224,16 +224,16 @@ function MemberExpression(ctx,stack){
     if( stack.computed ){
         const result = trans(ctx, stack, description, aliasAnnotation, objectType);
         if( result )return result;
-        if( !isStatic && objectType && check(objectType) ){
+        if( !isStatic && rawObjectType && ctx.isArrayAccessor(rawObjectType) /*check(objectType)*/ ){
             node.computed = true;
-        }else{
-            node.computed = !isObjectProtector();
+        }else if(rawObjectType){
+            node.computed = !ctx.isObjectAccessor(rawObjectType);
             //const propertyType = stack.property.type( objCtx );
             //node.computed = isDynamicProperty(stack, objectType, propertyType );
         }
     }else if( stack.object.isNewExpression ){
         objectNode = node.createParenthesNode( node.createToken( stack.object ) );
-    }else if( !isStatic && objectType && check(objectType) ){
+    }else if( !isStatic && rawObjectType && ctx.isArrayAccessor(rawObjectType) /*check(objectType)*/ ){
         node.computed = true;
         propertyNode = node.createLiteralNode(stack.property.value(), void 0,  stack.property);
     }

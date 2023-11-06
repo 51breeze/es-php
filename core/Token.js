@@ -543,6 +543,12 @@ class Token extends events.EventEmitter {
                     refsParentVariable.set(funScope,dataset);
                 }
                 dataset.add(refsName || desc);
+                if( !refsName && (desc.isVariableDeclarator || desc.isParamDeclarator) ){
+                    const addressRefObject = this.getAssignAddressRef(desc);
+                    if(addressRefObject){
+                        dataset.add(addressRefObject.createIndexName(desc));
+                    }
+                }
             }
             funScope = funScope.parent;
         }
@@ -600,13 +606,12 @@ class Token extends events.EventEmitter {
         }else{ 
             const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
             if( isWrapType ){
-                let inherit = type.inherit;
-                if( inherit ){
-                    inherit = inherit.type()
-                    if( this.builder.getGlobalTypeById('ArrayProtector') === inherit ){
-                        return true;
-                    }else if( this.builder.getGlobalTypeById('ObjectProtector') === inherit ){
-                        return false;
+                let inherit = type.inherit.type();
+                if( this.builder.getGlobalModuleById('ArrayProtector') === inherit ){
+                    return true;
+                }else if( type.types.length>0 ){
+                    if( this.builder.getGlobalModuleById('RMD') === inherit || this.builder.getGlobalModuleById('ObjectProtector') === inherit){
+                        return this.isArrayAccessor( type.types[0].type() )
                     }
                 }
             }
@@ -624,8 +629,16 @@ class Token extends events.EventEmitter {
             return true;
         }
         const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
-        const inherit = type.inherit;
-        return isWrapType && inherit && this.builder.getGlobalTypeById('ObjectProtector') === inherit.type();
+        if( isWrapType ){
+            const inherit = type.inherit.type();
+            if( type.types.length>0){
+                if( this.builder.getGlobalModuleById('RMD') === inherit || this.builder.getGlobalModuleById('ArrayProtector')===inherit ){
+                    return this.isObjectAccessor( type.types[0].type() );
+                }
+            }
+            return this.builder.getGlobalModuleById('ObjectProtector') === inherit;
+        }
+        return false;
     }
 
     isPassableReferenceExpress( stack, type ){
@@ -639,9 +652,24 @@ class Token extends events.EventEmitter {
     }
 
     isAddressRefsType( type , stack){
-        if( type && type.isClassGenericType && type.inherit.type() === this.builder.getGlobalModuleById('RMD') ){
+        const verify = (type)=>{
+            if(type && type.isClassGenericType && type.inherit.isAliasType){
+                const inheritType = type.inherit.type();
+                if( inheritType === this.builder.getGlobalModuleById('RMD') ){
+                    return true;
+                }else if(type.types.length>0 && (
+                    inheritType === this.builder.getGlobalModuleById('ArrayProtector') || 
+                    inheritType === this.builder.getGlobalModuleById('ObjectProtector'))
+                ){
+                    return verify(type.types[0].type());
+                }
+            }
+        }
+
+        if( verify(type) ){
             return true;
         }
+
         const result = this.isArrayAddressRefsType(type);
         if( !result )return false;
         if( !stack || !stack.isStack )return result;
@@ -650,7 +678,9 @@ class Token extends events.EventEmitter {
         }
         const check=(stack, type)=>{
             if( type ){
-                if( type.isClassGenericType && type.inherit.type() === this.builder.getGlobalModuleById('RMD') )return true;
+                if( verify(type) ){
+                    return true;
+                }
                 if( !this.isArrayAddressRefsType(type) )return false;
             }
             if( stack.isIdentifier || stack.isVariableDeclarator || stack.isParamDeclarator )return true;

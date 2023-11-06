@@ -8,8 +8,7 @@
     "dev": "jasmine ./test/index.js",
     "run": "node ./test/phptest.js",
     "test": "npm run dev & npm run run",
-    "build": "node ./scripts/build.js",
-    "prepublish": "npm build"
+    "build": "node ./scripts/build.js"
   },
   "repository": {
     "type": "git",
