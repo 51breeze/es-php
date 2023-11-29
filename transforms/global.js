@@ -75,5 +75,23 @@ module.exports={
         }else{
             return null;
         }
-    }
+    },
+
+    isNaN(ctx, object, args, called=false, isStatic=false){
+        if(!called){
+            return ctx.createLiteralNode('is_nan')
+        }
+        ctx.callee = ctx.createIdentifierNode('is_nan');
+        ctx.arguments = args.slice(0,1);
+        return ctx;
+    },
+
+    isFinite(ctx, object, args, called=false, isStatic=false){
+        if(!called){
+            return ctx.createLiteralNode('is_finite')
+        }
+        ctx.callee = ctx.createIdentifierNode('is_finite');
+        ctx.arguments = args.slice(0,1);
+        return ctx;
+    },
 }

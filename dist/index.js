@@ -5825,27 +5825,13 @@ var require_Number = __commonJS({
         return ctx.createLiteralNode(`2.220446049250313e-16`, `2.220446049250313e-16`);
       },
       isFinite(ctx, object, args, called = false, isStatic = false) {
-        if (!called) {
-          return ctx.createChunkNode(`function($value){return $value === Infinity;}`);
-        }
-        const node = ctx.createNode("LogicalExpression");
-        node.operator = "===";
-        node.left = args[0];
-        node.right = node.createIdentifierNode(`Infinity`);
-        return node;
+        return createCommonCalledNode("is_finite", ctx, object, args, called);
       },
       isNaN(ctx, object, args, called = false, isStatic = false) {
-        if (!called) {
-          return ctx.createChunkNode(`function($value){return $value === NaN;}`);
-        }
-        const node = ctx.createNode("LogicalExpression");
-        node.operator = "===";
-        node.left = args[0];
-        node.right = node.createIdentifierNode(`NaN`);
-        return node;
+        return createCommonCalledNode("is_nan", ctx, object, args, called);
       },
       isInteger(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("isInteger", ctx, object, args, called);
+        return createCommonCalledNode("is_int", ctx, object, args, called);
       },
       isSafeInteger(ctx, object, args, called = false, isStatic = false) {
         return createCommonCalledNode("is_int", ctx, object, args, called);
@@ -6344,6 +6330,22 @@ var require_global = __commonJS({
         } else {
           return null;
         }
+      },
+      isNaN(ctx, object, args, called = false, isStatic = false) {
+        if (!called) {
+          return ctx.createLiteralNode("is_nan");
+        }
+        ctx.callee = ctx.createIdentifierNode("is_nan");
+        ctx.arguments = args.slice(0, 1);
+        return ctx;
+      },
+      isFinite(ctx, object, args, called = false, isStatic = false) {
+        if (!called) {
+          return ctx.createLiteralNode("is_finite");
+        }
+        ctx.callee = ctx.createIdentifierNode("is_finite");
+        ctx.arguments = args.slice(0, 1);
+        return ctx;
       }
     };
   }

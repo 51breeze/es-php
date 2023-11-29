@@ -1,8 +1,8 @@
 <?php
 ///<references from='Iterator' />
 
-if( !defined('NaN') )define('NaN','NaN');
-if( !defined('Infinity') )define('Infinity','Infinity');
+//if( !defined('NaN') )define('NaN','NaN');
+//if( !defined('Infinity') )define('Infinity','Infinity');
 
 final class IterableIterator implements Iterator{
     private $target = null;
@@ -381,8 +381,36 @@ final class System{
         return is_object($target) || is_array($target);
     }
 
+    static function isNumber($target){
+        return $target === NaN || is_numeric($target);
+    }
+
+    static function isNaN($target){
+        return is_nan($target);
+    }
+
+    static function isFinite($target){
+        return is_finite($target);
+    }
+
     static function isIterator($target){
         return is_a($target, static::getCoreSystemNamespace('Iterator') );
+    }
+
+    static function isClass($target){
+        return is_string($target) && class_exists($target);
+    }
+
+    static function isString($target){
+        return is_string($target);
+    }
+
+    static function isScalar($target){
+        return is_scalar($target);
+    }
+
+    static function isBoolean($target){
+        return is_bool($target);
     }
 
     static function merge(&$target,...$args){

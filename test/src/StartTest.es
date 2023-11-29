@@ -193,6 +193,12 @@ public class StartTest extends Base
         array7.push(1);
         this.assertTrue( array7 === this.array2 );
 
+        this.assertTrue( isNaN(NaN) )
+
+        this.assertTrue( isNaN(Math.sqrt(-1)) )
+
+         this.assertTrue( NaN !== NaN )
+
     }
 
     testAssignment(){
