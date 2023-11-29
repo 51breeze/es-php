@@ -1,8 +1,8 @@
 <?php
 ///<references from='Iterator' />
 
-//if( !defined('NaN') )define('NaN','NaN');
-//if( !defined('Infinity') )define('Infinity','Infinity');
+if( !defined('NaN') )define('NaN', sqrt(-1));
+if( !defined('Infinity') )define('Infinity', 1e308 * 2);
 
 final class IterableIterator implements Iterator{
     private $target = null;
