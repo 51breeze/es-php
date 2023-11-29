@@ -32,7 +32,17 @@ const methods = {
     },
 
     isNaN(ctx, object, args, called=false, isStatic=false){
-        return createCommonCalledNode('is_nan', ctx, object, args, called);
+        ctx.addDepend( ctx.builder.getGlobalModuleById('System') );
+        if(!called){
+            ctx.createChunkNode(`function($target){return System::isNaN($target);}`)
+        }
+        return ctx.createCalleeNode(
+            ctx.createStaticMemberNode([
+                ctx.createIdentifierNode('System'),
+                ctx.createIdentifierNode('isNaN'),
+            ]),
+            [object].concat(args)
+        );
     },
 
     isInteger(ctx, object, args, called=false, isStatic=false){

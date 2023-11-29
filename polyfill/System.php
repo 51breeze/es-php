@@ -382,11 +382,11 @@ final class System{
     }
 
     static function isNumber($target){
-        return $target === NaN || is_numeric($target);
+        return is_numeric($target) || static::isNaN($target);
     }
 
     static function isNaN($target){
-        return is_nan($target);
+        return is_nan(floatval($target));
     }
 
     static function isFinite($target){
