@@ -4102,7 +4102,7 @@ var require_Builder = __commonJS({
           }
         });
       }
-      buildIncludes() {
+      async buildIncludes() {
         const includes = this.plugin.options.includes || [];
         const files = [];
         const push = (file, readdir) => {
@@ -4132,10 +4132,12 @@ var require_Builder = __commonJS({
           }
         };
         includes.forEach((file) => resolve(file));
-        files.forEach((file) => {
-          const compilation = this.esSuffix.test(file) ? this.compiler.createCompilation(file, null, true) : null;
+        await Promise.allSettled(files.map(async (file) => {
+          if (!this.esSuffix.test(file))
+            return;
+          const compilation = await this.compiler.createCompilation(file, null, true);
           if (compilation && !compilation.completed(this.plugin)) {
-            compilation.parser();
+            await compilation.parserAsync();
             if (compilation.isDescriptorDocument()) {
               compilation.modules.forEach((module3) => {
                 const stack = compilation.getStackByModule(module3);
@@ -4154,9 +4156,9 @@ var require_Builder = __commonJS({
           } else if (!compilation) {
             this.emitCopyFile(file, this.getOutputAbsolutePath(file));
           }
-        });
+        }));
       }
-      start(done) {
+      async start(done) {
         try {
           const compilation = this.compilation;
           if (compilation.isDescriptorDocument()) {
@@ -4175,7 +4177,7 @@ var require_Builder = __commonJS({
               this.buildForModule(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift());
             }
           }
-          this.buildIncludes();
+          await this.buildIncludes();
           this.buildModules.forEach((module3) => {
             module3.compilation.completed(this.plugin, true);
           });
@@ -4192,7 +4194,7 @@ var require_Builder = __commonJS({
           done(e);
         }
       }
-      build(done) {
+      async build(done) {
         const compilation = this.compilation;
         if (compilation.completed(this.plugin)) {
           return done(null, this);
@@ -4209,7 +4211,7 @@ var require_Builder = __commonJS({
           } else {
             this.make(compilation, compilation.stack, Array.from(compilation.modules.values()).shift());
           }
-          this.buildIncludes();
+          await this.buildIncludes();
           this.getRouterInstance().create().forEach((item) => {
             this.emitFile(item.file, item.content);
           });
@@ -5828,7 +5830,17 @@ var require_Number = __commonJS({
         return createCommonCalledNode("is_finite", ctx, object, args, called);
       },
       isNaN(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("is_nan", ctx, object, args, called);
+        ctx.addDepend(ctx.builder.getGlobalModuleById("System"));
+        if (!called) {
+          ctx.createChunkNode(`function($target){return System::isNaN($target);}`);
+        }
+        return ctx.createCalleeNode(
+          ctx.createStaticMemberNode([
+            ctx.createIdentifierNode("System"),
+            ctx.createIdentifierNode("isNaN")
+          ]),
+          [object].concat(args)
+        );
       },
       isInteger(ctx, object, args, called = false, isStatic = false) {
         return createCommonCalledNode("is_int", ctx, object, args, called);
@@ -6332,12 +6344,17 @@ var require_global = __commonJS({
         }
       },
       isNaN(ctx, object, args, called = false, isStatic = false) {
+        ctx.addDepend(ctx.builder.getGlobalModuleById("System"));
         if (!called) {
-          return ctx.createLiteralNode("is_nan");
+          ctx.createChunkNode(`function($target){return System::isNaN($target);}`);
         }
-        ctx.callee = ctx.createIdentifierNode("is_nan");
-        ctx.arguments = args.slice(0, 1);
-        return ctx;
+        return ctx.createCalleeNode(
+          ctx.createStaticMemberNode([
+            ctx.createIdentifierNode("System"),
+            ctx.createIdentifierNode("isNaN")
+          ]),
+          args
+        );
       },
       isFinite(ctx, object, args, called = false, isStatic = false) {
         if (!called) {
@@ -11263,12 +11280,13 @@ var require_package = __commonJS({
       version: "0.3.0",
       description: "test",
       main: "dist/index.js",
-      typings: "dist/types/index.d.es",
+      typings: "dist/types/typings.json",
       scripts: {
         dev: "jasmine ./test/index.js",
         run: "node ./test/phptest.js",
         test: "npm run dev & npm run run",
-        build: "node ./scripts/build.js"
+        build: "node ./scripts/build.js",
+        manifest: "node ./scripts/manifest.js"
       },
       repository: {
         type: "git",

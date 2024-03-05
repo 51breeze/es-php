@@ -3,12 +3,13 @@
   "version": "0.3.0",
   "description": "test",
   "main": "dist/index.js",
-  "typings": "dist/types/index.d.es",
+  "typings": "dist/types/typings.json",
   "scripts": {
     "dev": "jasmine ./test/index.js",
     "run": "node ./test/phptest.js",
     "test": "npm run dev & npm run run",
-    "build": "node ./scripts/build.js"
+    "build": "node ./scripts/build.js",
+    "manifest": "node ./scripts/manifest.js"
   },
   "repository": {
     "type": "git",

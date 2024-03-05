@@ -197,7 +197,7 @@ class Builder extends Token{
         });
     }
 
-    buildIncludes(){
+    async buildIncludes(){
         const includes = this.plugin.options.includes || [];
         const files = [];
         const push = (file, readdir)=>{
@@ -225,10 +225,12 @@ class Builder extends Token{
             }
         };
         includes.forEach( file=>resolve(file) );
-        files.forEach( file=>{
-            const compilation = this.esSuffix.test( file ) ? this.compiler.createCompilation(file,null,true) : null;
+
+        await Promise.allSettled(files.map( async file=>{
+            if(!this.esSuffix.test( file ))return;
+            const compilation = await this.compiler.createCompilation(file,null,true);
             if( compilation && !compilation.completed(this.plugin) ){
-                compilation.parser();
+                await compilation.parserAsync();
                 if( compilation.isDescriptorDocument() ){
                     compilation.modules.forEach( module=>{
                         const stack = compilation.getStackByModule(module);
@@ -247,10 +249,10 @@ class Builder extends Token{
             }else if(!compilation){
                 this.emitCopyFile(file, this.getOutputAbsolutePath(file) );
             }
-        });
+        }));
     }
 
-    start( done ){
+    async start( done ){
         try{
             const compilation = this.compilation;
             if( compilation.isDescriptorDocument() ){
@@ -270,7 +272,7 @@ class Builder extends Token{
                 }
             }
 
-            this.buildIncludes();
+            await this.buildIncludes();
 
             this.buildModules.forEach(module=>{
                 module.compilation.completed(this.plugin,true);
@@ -291,7 +293,7 @@ class Builder extends Token{
         }
     }
 
-    build(done){
+    async build(done){
         const compilation = this.compilation;
         if( compilation.completed(this.plugin) ){
             return done(null, this);
@@ -309,7 +311,7 @@ class Builder extends Token{
                 this.make(compilation, compilation.stack, Array.from(compilation.modules.values()).shift() );
             }
 
-            this.buildIncludes();
+            await this.buildIncludes();
 
             this.getRouterInstance().create().forEach( item=>{
                 this.emitFile(item.file, item.content);
