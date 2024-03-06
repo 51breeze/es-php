@@ -3961,6 +3961,8 @@ var require_Builder = __commonJS({
         sqlInstance.builder = this;
         routerInstance.builder = this;
         this.esSuffix = new RegExp(this.compiler.options.suffix.replace(".", "\\") + "$", "i");
+        this.checkRuntimeCache = /* @__PURE__ */ new Map();
+        this.checkPluginContextCache = /* @__PURE__ */ new Map();
       }
       createScopeId(context, source) {
         if (!context || !source || !context.file)
@@ -4086,7 +4088,7 @@ var require_Builder = __commonJS({
         if (!this.make(compilation, stack, module3))
           return;
         this.getDependencies(module3).forEach((depModule) => {
-          if (this.isNeedBuild(depModule) && !this.buildModules.has(depModule)) {
+          if (this.isNeedBuild(depModule, module3) && !this.buildModules.has(depModule)) {
             this.buildModules.add(depModule);
             const compilation2 = depModule.compilation;
             if (depModule.isDeclaratorModule) {
@@ -4265,13 +4267,121 @@ var require_Builder = __commonJS({
         });
         return true;
       }
-      isNeedBuild(module3) {
+      isNeedBuild(module3, ctxModule) {
         if (!module3 || !this.compiler.callUtils("isTypeModule", module3))
           return false;
-        if (!this.compiler.isPluginInContext(this.plugin, module3)) {
+        if (!this.isActiveForModule(module3, ctxModule))
+          return false;
+        if (!this.isPluginInContext(module3)) {
           return false;
         }
         return true;
+      }
+      isPluginInContext(module3) {
+        if (this.checkPluginContextCache.has(module3)) {
+          return this.checkPluginContextCache.get(module3);
+        }
+        let result = true;
+        if (module3 && module3.isModule && !this.checkRuntimeModule(module3)) {
+          result = false;
+        } else {
+          result = this.compiler.isPluginInContext(this.plugin, module3 || this.compilation);
+        }
+        this.checkPluginContextCache.set(module3, result);
+        return result;
+      }
+      checkRuntimeModule(module3) {
+        if (this.checkRuntimeCache.has(module3)) {
+          return this.checkRuntimeCache.get(module3);
+        }
+        const result = this.checkAnnotationBuildTactics(this.getModuleAnnotations(module3, ["runtime", "syntax"]));
+        this.checkRuntimeCache.set(module3, result);
+        return result;
+      }
+      checkAnnotationBuildTactics(items) {
+        if (!items || !items.length)
+          return true;
+        return items.every((item) => {
+          const name = item.name.toLowerCase();
+          if (!["runtime", "syntax", "env", "version"].includes(name)) {
+            return true;
+          }
+          const args = item.getArguments();
+          const indexes = name === "version" ? [, , , "expect"] : name === "env" ? [, , "expect"] : [, "expect"];
+          const _expect = this.getAnnotationArgument("expect", args, indexes, true);
+          const value = args[0].value;
+          const expect = _expect ? String(_expect.value).trim() !== "false" : true;
+          switch (name) {
+            case "runtime":
+              return this.isRuntime(value) === expect;
+            case "syntax":
+              return this.isSyntax(value) === expect;
+            case "env": {
+              const name2 = this.getAnnotationArgument("name", args, ["name", "value"], true);
+              const value2 = this.getAnnotationArgument("value", args, ["name", "value"], true);
+              if (value2 && name2) {
+                return this.isEnv(name2.value, value2.value) === expect;
+              } else {
+                item.error(`Missing name or value arguments. the '${item.name}' annotations.`);
+              }
+            }
+            case "version": {
+              const name2 = this.getAnnotationArgument("name", args, ["name", "version", "operator"], true);
+              const version = this.getAnnotationArgument("version", args, ["name", "version", "operator"], true);
+              const operator = this.getAnnotationArgument("operator", args, ["name", "version", "operator"], true);
+              if (name2 && version) {
+                return this.isVersion(name2.value, version.value, operator ? operator.value : "elt") === expect;
+              } else {
+                item.error(`Missing name or version arguments. the '${item.name}' annotations.`);
+              }
+            }
+          }
+          return true;
+        });
+      }
+      getModuleAnnotations(module3, allows = ["get", "post", "put", "delete", "option", "router"], inheritFlag = true) {
+        if (!module3 || !module3.isModule || !module3.isClass)
+          return [];
+        const stacks = module3.getStacks();
+        let _result = [];
+        for (let i = 0; i < stacks.length; i++) {
+          const stack = stacks[i];
+          let annotations = stack.annotations;
+          if (annotations) {
+            const result = annotations.filter((annotation) => allows.includes(annotation.name.toLowerCase()));
+            if (result.length > 0) {
+              _result = result;
+              break;
+            }
+          }
+        }
+        if (!_result) {
+          const impls = module3.extends.concat(module3.implements || []);
+          if (impls.length > 0 && inheritFlag) {
+            for (let b = 0; b < impls.length; b++) {
+              const inherit = impls[b];
+              if (inherit !== module3) {
+                const result = this.getModuleAnnotations(inherit, allows, inheritFlag);
+                if (result.length > 0) {
+                  _result = result;
+                  break;
+                }
+              }
+            }
+          }
+        }
+        return _result;
+      }
+      getAnnotationArgument(name, args = [], indexes = [], lowerFlag = false) {
+        let index = args.findIndex((item) => lowerFlag ? String(item.key).toLowerCase() === name : item.key === name);
+        if (index < 0) {
+          index = indexes.indexOf(name);
+          if (index >= 0) {
+            const arg = args[index];
+            return arg && !arg.assigned ? arg : null;
+          }
+        }
+        return args[index] || null;
       }
       isUsed(module3, ctxModule) {
         ctxModule = ctxModule || this.compilation;
@@ -4289,26 +4399,32 @@ var require_Builder = __commonJS({
         return this.compilation.getGlobalTypeById(id);
       }
       isRuntime(name) {
+        const metadata = this.plugin.options.metadata || {};
         switch (name.toLowerCase()) {
           case "client":
-            return this.platform === "client";
+            return (metadata.platform || this.platform) === "client";
           case "server":
-            return this.platform === "server";
+            return (metadata.platform || this.platform) === "server";
         }
         return false;
       }
       isSyntax(name) {
-        return name.toLowerCase() === this.name;
+        return name && name.toLowerCase() === this.name;
       }
       isEnv(name, value) {
         const metadata = this.plugin.options.metadata;
         const env = metadata.env || {};
         if (value !== void 0) {
+          if (name.toLowerCase() === "mode") {
+            if (this.plugin.options.mode === value || env.NODE_ENV === value) {
+              return true;
+            }
+          }
           return env[name] === value;
         }
         return false;
       }
-      isVersion(name, version, operator = "elt") {
+      isVersion(name, version, operator = "elt", flag = false) {
         const metadata = this.plugin.options.metadata;
         const right = String(metadata[name] || "0.0.0").trim();
         const left = String(version || "0.0.0").trim();
@@ -4316,6 +4432,9 @@ var require_Builder = __commonJS({
         if (!rule.test(left) || !rule.test(right)) {
           console.warn("Invalid version. in check metadata");
           return false;
+        }
+        if (flag) {
+          return this.isCompareVersion(right, left, operator);
         }
         return this.isCompareVersion(left, right, operator);
       }
@@ -4771,12 +4890,11 @@ var require_Builder = __commonJS({
         const isUsed = this.isUsed(depModule, ctxModule);
         if (!isUsed)
           return false;
-        const isRequire = this.compiler.callUtils("isLocalModule", depModule);
-        const isPolyfill = depModule.isDeclaratorModule && !!this.getPolyfillModule(depModule.getName());
-        if (isRequire || isPolyfill) {
-          return true;
+        if (depModule.isDeclaratorModule) {
+          return !!this.getPolyfillModule(depModule.getName());
+        } else {
+          return !this.compiler.callUtils("checkDepend", ctxModule, depModule);
         }
-        return false;
       }
       isReferenceDeclaratorModule(depModule, ctxModule) {
         if (depModule && depModule.isDeclaratorModule) {
@@ -5337,23 +5455,21 @@ var require_ClassBuilder = __commonJS({
           }
         };
         dependencies.forEach((depModule) => {
-          if (this.compiler.isPluginInContext(this.plugin, depModule)) {
-            if (!(excludes && excludes.includes(depModule))) {
-              if (this.isActiveForModule(depModule, module3)) {
-                if (importFlag) {
-                  if (!this.builder.isImportExclude(depModule)) {
-                    const source = this.builder.getModuleImportSource(depModule, module3);
-                    this.imports.push(this.createImportDeclaration(source));
-                  }
-                } else if (!(consistent || useFolderAsNamespace)) {
-                  const source = this.builder.getFileRelativeOutputPath(depModule);
-                  const name = this.builder.getModuleNamespace(depModule, depModule.id);
-                  this.builder.addFileAndNamespaceMapping(source, name);
+          if (!(excludes && excludes.includes(depModule)) && this.builder.isPluginInContext(depModule)) {
+            if (this.isActiveForModule(depModule, module3)) {
+              if (importFlag) {
+                if (!this.builder.isImportExclude(depModule)) {
+                  const source = this.builder.getModuleImportSource(depModule, module3);
+                  this.imports.push(this.createImportDeclaration(source));
                 }
-                createUse(depModule);
-              } else if (this.isReferenceDeclaratorModule(depModule, module3)) {
-                createUse(depModule);
+              } else if (!(consistent || useFolderAsNamespace)) {
+                const source = this.builder.getFileRelativeOutputPath(depModule);
+                const name = this.builder.getModuleNamespace(depModule, depModule.id);
+                this.builder.addFileAndNamespaceMapping(source, name);
               }
+              createUse(depModule);
+            } else if (this.isReferenceDeclaratorModule(depModule, module3)) {
+              createUse(depModule);
             }
           }
         });
@@ -10801,33 +10917,33 @@ var require_TypeTransformExpression = __commonJS({
       );
     }
     module2.exports = function(ctx, stack) {
-      const type = stack.typeExpression.type();
+      const type = stack.argument.type();
       var name = null;
       if (type) {
         const value = ctx.builder.getAvailableOriginType(type);
         name = type.toString();
         if (value === "Number") {
           const method = name === "float" || name === "double" ? "floatval" : "intval";
-          return createTransformNode(ctx, method, stack.referExpression);
+          return createTransformNode(ctx, method, stack.expression);
         } else if (value === "String") {
-          return createTransformNode(ctx, "strval", stack.referExpression);
+          return createTransformNode(ctx, "strval", stack.expression);
         } else if (value === "Boolean") {
-          return createTransformNode(ctx, "boolval", stack.referExpression);
+          return createTransformNode(ctx, "boolval", stack.expression);
         } else if (value === "RegExp") {
           const regexp = stack.getGlobalTypeById("RegExp");
           const refs = ctx.getModuleReferenceName(regexp);
           ctx.addDepend(regexp);
-          const test = ctx.createBinaryNode("instanceof", ctx.createToken(stack.referExpression), ctx.createIdentifierNode(refs));
+          const test = ctx.createBinaryNode("instanceof", ctx.createToken(stack.expression), ctx.createIdentifierNode(refs));
           const consequent = ctx.createIdentifierNode(refs);
           const alternate = ctx.createNewNode(
             ctx.createIdentifierNode(refs),
             [
-              ctx.createCalleeNode(ctx.createIdentifierNode("strval"), [ctx.createToken(stack.referExpression)])
+              ctx.createCalleeNode(ctx.createIdentifierNode("strval"), [ctx.createToken(stack.expression)])
             ]
           );
           return ctx.createParenthesNode(ctx.createConditionalNode(test, consequent, alternate));
         } else if (value === "Function") {
-          return ctx.createToken(stack.referExpression);
+          return ctx.createToken(stack.expression);
         } else if (value === "Array") {
           name = "array";
         } else if (value === "Object") {
@@ -10836,7 +10952,7 @@ var require_TypeTransformExpression = __commonJS({
       }
       const node = ctx.createNode(stack);
       node.typeName = name;
-      node.expression = node.createToken(stack.referExpression);
+      node.expression = node.createToken(stack.expression);
       return node;
     };
   }
@@ -11122,12 +11238,18 @@ var require_WhenStatement = __commonJS({
       ctx = ctx.createNode(stack);
       const name = stack.condition.value();
       const args = stack.condition.arguments.map((item, index) => {
-        const value = item.value();
-        const key = item.isAssignmentExpression ? item.left.value() : index;
-        return { key, value, stack: item };
+        let value = null;
+        let key = index;
+        if (item.isAssignmentExpression) {
+          key = item.left.value();
+          value = item.right.value();
+        } else {
+          value = item.value();
+        }
+        return { index, key, value, stack: item };
       });
       const expectRaw = args.find((item) => String(item.key).toLowerCase() === "expect");
-      const expect = args.length > 1 && args[1].key === "expect" ? !!args[1].value : true;
+      const expect = expectRaw ? String(expectRaw.value).trim() !== "false" : true;
       let result = false;
       switch (name) {
         case "Runtime":
@@ -11137,20 +11259,36 @@ var require_WhenStatement = __commonJS({
           result = ctx.builder.isSyntax(args[0].value) === expect;
           break;
         case "Env":
-          result = ctx.builder.isEnv(args[0].value, args[1] && args[1].value) === expect;
+          {
+            const name2 = args.find((item) => String(item.key).toLowerCase() === "name") || args[0];
+            const value = args.find((item) => String(item.key).toLowerCase() === "value") || args[1];
+            if (name2 && value) {
+              result = ctx.builder.isEnv(name2.value, value.value) === expect;
+            } else {
+              stack.condition.error(`Missing name or value arguments. the '${stack.condition.value()}' annotations.`);
+            }
+          }
           break;
         case "Version":
-          const nameRaw = args.find((item) => String(item.key).toLowerCase() === "name");
-          const items = args.filter((item) => expectRaw !== item && nameRaw !== item && item.value).map((item) => item.value);
-          if (nameRaw)
-            items.push(nameArg.value);
-          result = ctx.builder.isVersion.apply(ctx.builder, items) === expect;
+          {
+            const name2 = args.find((item) => String(item.key).toLowerCase() === "name") || args[0];
+            const version = args.find((item) => String(item.key).toLowerCase() === "version") || args[1];
+            const operator = args.find((item) => String(item.key).toLowerCase() === "operator") || args[2];
+            if (name2 && version) {
+              const args2 = [name2.value, version.value];
+              if (operator) {
+                args2.push(operator.value);
+              }
+              result = ctx.builder.isVersion.apply(ctx.builder, args2) === expect;
+            } else {
+              stack.condition.error(`Missing name or value arguments. the '${stack.condition.value()}' annotations.`);
+            }
+          }
           break;
         default:
       }
       const node = ctx.createToken(result ? stack.consequent : stack.alternate);
-      if (node)
-        node.isWhenStatement = true;
+      node && (node.isWhenStatement = true);
       return node;
     };
   }

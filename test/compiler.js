@@ -15,7 +15,7 @@ class Creator {
                 locations:true
             }
         },options || {}));
-        compiler.initialize();
+        
         this._compiler = compiler;
         this.plugin = compiler.applyPlugin( {plugin,options:{
             includes:['JsxTest.es'],
@@ -37,18 +37,23 @@ class Creator {
     }
 
     factor(file,source){
-        return new Promise((resolved,reject)=>{
+        return new Promise( async(resolved,reject)=>{
             const compiler = this.compiler;
-            const compilation=file ? compiler.createCompilation(file) : new Compilation( compiler );
+            await compiler.initialize();
+            await compiler.loadTypes([
+                'types/index.d.es',
+            ], {scope:'es-php'});
+            let compilation = null;
             try{
-                compilation.parser(source);
-                compilation.checker();
+                compilation=file ? await compiler.createCompilation(file) : new Compilation( compiler );
+                await compilation.parserAsync(source);
                 if(compilation.stack){
                     resolved(compilation);
                 }else{
                     reject({compilation,errors:compiler.errors});
                 }
             }catch(error){
+                console.log( error )
                 reject({compilation,errors:[error]});
             }
         });

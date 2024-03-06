@@ -332,23 +332,21 @@ class ClassBuilder extends Token{
         }
 
         dependencies.forEach( depModule =>{
-            if( this.compiler.isPluginInContext(this.plugin, depModule) ){
-                if( !(excludes && excludes.includes( depModule )) ){
-                    if( this.isActiveForModule( depModule, module ) ){
-                        if( importFlag ){
-                            if( !this.builder.isImportExclude(depModule) ){
-                                const source = this.builder.getModuleImportSource(depModule, module);
-                                this.imports.push( this.createImportDeclaration(source) );
-                            }
-                        }else if( !(consistent||useFolderAsNamespace) ){
-                            const source = this.builder.getFileRelativeOutputPath(depModule);
-                            const name = this.builder.getModuleNamespace(depModule, depModule.id);
-                            this.builder.addFileAndNamespaceMapping(source, name);
+            if( !(excludes && excludes.includes( depModule )) && this.builder.isPluginInContext(depModule) ){
+                if( this.isActiveForModule( depModule, module ) ){
+                    if( importFlag ){
+                        if( !this.builder.isImportExclude(depModule) ){
+                            const source = this.builder.getModuleImportSource(depModule, module);
+                            this.imports.push( this.createImportDeclaration(source) );
                         }
-                        createUse( depModule );
-                    }else if( this.isReferenceDeclaratorModule(depModule, module) ){
-                        createUse( depModule );
+                    }else if( !(consistent||useFolderAsNamespace) ){
+                        const source = this.builder.getFileRelativeOutputPath(depModule);
+                        const name = this.builder.getModuleNamespace(depModule, depModule.id);
+                        this.builder.addFileAndNamespaceMapping(source, name);
                     }
+                    createUse( depModule );
+                }else if( this.isReferenceDeclaratorModule(depModule, module) ){
+                    createUse( depModule );
                 }
             }
         });

@@ -44,6 +44,8 @@ class Builder extends Token{
         sqlInstance.builder = this;
         routerInstance.builder = this;
         this.esSuffix = new RegExp( this.compiler.options.suffix.replace('.','\\')+'$', 'i' );
+        this.checkRuntimeCache = new Map();
+        this.checkPluginContextCache = new Map();
     }
 
     createScopeId(context, source ){
@@ -180,7 +182,7 @@ class Builder extends Token{
     buildForModule(compilation, stack, module){
         if( !this.make(compilation, stack, module) )return;
         this.getDependencies(module).forEach( depModule=>{
-            if( this.isNeedBuild(depModule) && !this.buildModules.has(depModule) ){
+            if( this.isNeedBuild(depModule, module) && !this.buildModules.has(depModule) ){
                 this.buildModules.add(depModule);
                 const compilation = depModule.compilation;
                 if( depModule.isDeclaratorModule ){
@@ -375,12 +377,122 @@ class Builder extends Token{
         return true;
     }
 
-    isNeedBuild(module){
+    isNeedBuild(module, ctxModule){
         if(!module || !this.compiler.callUtils('isTypeModule', module))return false;
-        if( !this.compiler.isPluginInContext(this.plugin, module) ){
+        if( !this.isActiveForModule(module, ctxModule) )return false;
+        if( !this.isPluginInContext(module) ){
             return false;
         }
         return true;
+    }
+
+    isPluginInContext(module){
+        if(this.checkPluginContextCache.has(module)){
+            return this.checkPluginContextCache.get(module);
+        }
+        let result = true;
+        if(module && module.isModule && !this.checkRuntimeModule(module) ){
+            result = false;
+        }else{
+            result = this.compiler.isPluginInContext(this.plugin, module||this.compilation);
+        }
+        this.checkPluginContextCache.set(module, result);
+        return result;
+    }
+
+    checkRuntimeModule(module){
+        if(this.checkRuntimeCache.has(module)){
+            return this.checkRuntimeCache.get(module);
+        }
+        const result = this.checkAnnotationBuildTactics(this.getModuleAnnotations(module, ['runtime', 'syntax']));
+        this.checkRuntimeCache.set(module, result);
+        return result;
+    }
+
+    checkAnnotationBuildTactics(items){
+        if( !items || !items.length )return true;
+        return items.every( item=>{
+            const name = item.name.toLowerCase();
+            if(!['runtime', 'syntax','env','version'].includes(name)){
+                return true;
+            }
+            const args = item.getArguments();
+            const indexes = name==='version' ? [,,,'expect'] : (name==='env' ? [,,'expect'] : [,'expect']);
+            const _expect = this.getAnnotationArgument('expect', args, indexes, true);
+            const value = args[0].value;
+            const expect = _expect ? String(_expect.value).trim() !== 'false' : true;
+            switch( name ){
+                case "runtime" :
+                    return this.isRuntime(value) === expect;
+                case "syntax" :
+                    return this.isSyntax(value) === expect;
+                case "env" :{
+                    const name = this.getAnnotationArgument('name', args, ['name','value'], true);
+                    const value = this.getAnnotationArgument('value', args, ['name','value'], true);
+                    if(value && name){
+                        return this.isEnv(name.value, value.value) === expect;
+                    }else{
+                        item.error(`Missing name or value arguments. the '${item.name}' annotations.`);
+                    }
+                }
+                case 'version' :{
+                    const name = this.getAnnotationArgument('name', args, ['name','version','operator'], true);
+                    const version = this.getAnnotationArgument('version', args, ['name','version','operator'], true);
+                    const operator = this.getAnnotationArgument('operator', args, ['name','version','operator'], true);
+                    if(name && version){
+                        return this.isVersion(name.value, version.value, operator ? operator.value : 'elt') === expect;
+                    }else{
+                        item.error(`Missing name or version arguments. the '${item.name}' annotations.`);
+                    }
+                }
+            }
+            return true;
+        });
+    }
+
+    getModuleAnnotations(module, allows = ['get','post','put','delete','option','router'], inheritFlag=true){
+        if(!module||!module.isModule||!module.isClass)return [];
+        const stacks = module.getStacks();
+        let _result = [];
+        for(let i=0;i<stacks.length;i++){
+            const stack = stacks[i];
+            let annotations = stack.annotations;
+            if(annotations){
+                const result = annotations.filter( annotation=>allows.includes(annotation.name.toLowerCase()));
+                if( result.length>0 ){
+                    _result = result;
+                    break;
+                }
+            }
+        }
+        if( !_result ){
+            const impls = module.extends.concat( module.implements || [] );
+            if( impls.length>0 && inheritFlag){
+                for(let b=0;b<impls.length;b++){
+                    const inherit = impls[b];
+                    if( inherit !== module ){
+                        const result = this.getModuleAnnotations(inherit, allows, inheritFlag);
+                        if(result.length>0){
+                            _result = result;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return _result;
+    }
+
+    getAnnotationArgument(name, args=[], indexes=[], lowerFlag=false){
+        let index = args.findIndex(item=>lowerFlag ? String(item.key).toLowerCase() === name : item.key===name);
+        if( index < 0 ){
+            index = indexes.indexOf(name);
+            if( index>= 0 ){
+                const arg = args[index];
+                return arg && !arg.assigned ? arg : null;
+            }
+        }
+        return args[index] || null;
     }
 
     isUsed(module, ctxModule){
@@ -401,29 +513,35 @@ class Builder extends Token{
     }
 
     isRuntime( name ){
+        const metadata = this.plugin.options.metadata || {};
         switch( name.toLowerCase() ){
             case "client" :
-                return this.platform === "client";
+                return (metadata.platform || this.platform) === "client";
             case  "server" :
-                return this.platform === "server";
+                return (metadata.platform || this.platform) === "server";
         }
         return false;
     }
 
     isSyntax( name ){
-        return name.toLowerCase() === this.name;
+        return name && name.toLowerCase() === this.name;
     }
 
     isEnv(name, value){
         const metadata = this.plugin.options.metadata;
         const env = metadata.env || {};
         if( value !== void 0 ){
+            if(name.toLowerCase()==='mode'){
+                if(this.plugin.options.mode === value || env.NODE_ENV===value){
+                    return true;
+                }
+            }
             return env[name] === value;
         }
         return false;
     }
 
-    isVersion(name, version, operator='elt'){
+    isVersion(name, version, operator='elt', flag=false){
         const metadata = this.plugin.options.metadata;
         const right = String(metadata[name] || '0.0.0').trim();
         const left = String(version || '0.0.0').trim();
@@ -431,6 +549,9 @@ class Builder extends Token{
         if( !rule.test(left) || !rule.test(right) ){
             console.warn('Invalid version. in check metadata');
             return false;
+        }
+        if( flag ){
+            return this.isCompareVersion(right, left, operator);
         }
         return this.isCompareVersion(left, right, operator);
     }
@@ -895,13 +1016,12 @@ class Builder extends Token{
             return false;
         }
         const isUsed = this.isUsed(depModule, ctxModule);
-        if( !isUsed )return false;
-        const isRequire = this.compiler.callUtils("isLocalModule", depModule);         
-        const isPolyfill = depModule.isDeclaratorModule && !!this.getPolyfillModule( depModule.getName() );
-        if(isRequire || isPolyfill){
-            return true;
+        if(!isUsed)return false;
+        if(depModule.isDeclaratorModule){
+            return !!this.getPolyfillModule( depModule.getName() );
+        }else{
+            return !this.compiler.callUtils("checkDepend",ctxModule, depModule);
         }
-        return false;
     }
 
     isReferenceDeclaratorModule( depModule,ctxModule ){

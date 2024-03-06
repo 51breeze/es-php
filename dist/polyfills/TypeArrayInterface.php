@@ -101,6 +101,22 @@ abstract class TypeArrayInterface implements \ArrayAccess
         }
     }
 
+    public function __set($name, $value){
+        if(is_numeric($name)){
+            $this->offsetSet((int)$name, $value);
+        }else{
+            $this[$name] = $value;
+        }
+    }
+
+    public function __get($name){
+        if(is_numeric($name)){
+            return $this->offsetGet((int)$name);
+        }else{
+            return $this[$name];
+        }
+    }
+
     public function set($object, int $offset = 0) {
         if ($object instanceof TypeArrayInterface) {
             $length = $object->length;
