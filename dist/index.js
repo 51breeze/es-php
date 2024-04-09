@@ -1072,6 +1072,10 @@ var require_Token = __commonJS({
         const type = stack.toString();
         if (type === "TypeStatement")
           return null;
+        if (type === "NewDefinition")
+          return null;
+        if (type === "CallDefinition")
+          return null;
         const creator = this.plugin.getTokenNode(type);
         if (creator) {
           try {
@@ -8412,7 +8416,7 @@ var require_CallExpression = __commonJS({
     }
     function CallExpression(ctx, stack) {
       const isMember = stack.callee.isMemberExpression;
-      const desc2 = stack.callee.description();
+      const desc2 = stack.doGetDeclareFunctionType(stack.callee.description());
       const module3 = stack.module;
       const declareParams = desc2 && desc2.params;
       const node = ctx.createNode(stack);
@@ -8457,8 +8461,19 @@ var require_CallExpression = __commonJS({
             );
           } else if (desc2.isStack) {
             let name = node.builder.getAvailableOriginType(objectType) || objectType.toString();
-            if ((objectType.isUnionType || objectType.isIntersectionType) && desc2.isMethodDefinition && desc2.module && desc2.module.isModule) {
+            let descModule = null;
+            if ((objectType.isUnionType || objectType.isIntersectionType) && (desc2.isMethodDefinition || desc2.isCallDefinition) && desc2.module && desc2.module.isModule) {
               name = desc2.module.id;
+              descModule = desc2.module;
+            }
+            let newWrapObject = null;
+            let isStringNewWrapObject = null;
+            if (objectType.isInstanceofType && !objectType.isThisType) {
+              const origin = objectType.inherit.type();
+              isStringNewWrapObject = origin === ctx.builder.getGlobalModuleById("String");
+              if (isStringNewWrapObject || origin === ctx.builder.getGlobalModuleById("Number") || origin === ctx.builder.getGlobalModuleById("Boolean")) {
+                newWrapObject = true;
+              }
             }
             if (Transform2.has(name)) {
               const object = Transform2.get(name);
@@ -8473,9 +8488,13 @@ var require_CallExpression = __commonJS({
                     true
                   );
                 } else {
+                  let callee = node.createToken(stack.callee.object);
+                  if (newWrapObject && isStringNewWrapObject) {
+                    callee = node.createCalleeNode(node.createMemberNode([callee, "toString"]));
+                  }
                   return object[key](
                     node,
-                    node.createToken(stack.callee.object),
+                    callee,
                     args,
                     true,
                     false
@@ -8483,7 +8502,7 @@ var require_CallExpression = __commonJS({
                 }
               }
             }
-            if (!desc2.isMethodDefinition) {
+            if (!(desc2.isMethodDefinition || desc2.isCallDefinition)) {
               node.callee = node.createIdentifierNode("call_user_func");
               node.arguments = [node.createToken(stack.callee)].concat(args);
               return node;
@@ -8525,8 +8544,8 @@ var require_CallExpression = __commonJS({
                 false
               );
             }
-          } else if (desc2.isType && desc2.isModule && args.length === 1) {
-            const name = node.builder.getAvailableOriginType(desc2) || desc2.toString();
+          } else if ((desc2.isCallDefinition || desc2.isType && desc2.isModule) && args.length === 1) {
+            const name = desc2.isCallDefinition && desc2.module ? desc2.module.id : node.builder.getAvailableOriginType(desc2) || desc2.toString();
             if (name && Transform2.has(name)) {
               const object = Transform2.get(name);
               return object.valueOf(
@@ -9083,6 +9102,7 @@ var require_FunctionDeclaration = __commonJS({
 // tokens/Identifier.js
 var require_Identifier = __commonJS({
   "tokens/Identifier.js"(exports2, module2) {
+    var globals = ["String", "Number", "Boolean", "Object", "Array"];
     module2.exports = function(ctx, stack) {
       if (!stack.parentStack.isMemberExpression && stack.value() === "arguments") {
         return ctx.createCalleeNode(ctx.createIdentifierNode("func_get_args"));
@@ -9123,7 +9143,7 @@ var require_Identifier = __commonJS({
       }
       if (stack.compiler.callUtils("isTypeModule", desc2)) {
         ctx.addDepend(desc2);
-        if (stack.parentStack.isMemberExpression && stack.parentStack.object === stack || stack.parentStack.isNewExpression || stack.parentStack.isBinaryExpression && stack.parentStack.right === stack && stack.parentStack.node.operator === "instanceof") {
+        if (stack.parentStack.isMemberExpression && stack.parentStack.object === stack || stack.parentStack.isNewExpression && !globals.includes(desc2.getName()) || stack.parentStack.isBinaryExpression && stack.parentStack.right === stack && stack.parentStack.node.operator === "instanceof") {
           return ctx.createIdentifierNode(ctx.getModuleReferenceName(desc2), stack);
         } else {
           return ctx.createClassRefsNode(desc2, stack);
@@ -10117,12 +10137,18 @@ var require_NewExpression = __commonJS({
       });
     }
     module2.exports = function(ctx, stack) {
-      const desc2 = stack.callee.description();
-      if (stack.compiler.callUtils("isTypeModule", desc2)) {
-        ctx.addDepend(desc2);
+      let type = stack.callee.type();
+      let [classModule, desc2] = stack.getConstructMethod(type);
+      let wrapType = null;
+      if (desc2 && desc2.isNewDefinition && desc2.module) {
+        type = desc2.module;
       }
-      if (desc2 && desc2.isModule) {
-        if (desc2 === ctx.builder.getGlobalModuleById("Array")) {
+      if (type) {
+        type = stack.compiler.callUtils("getOriginType", type);
+        if (stack.compiler.callUtils("isTypeModule", type)) {
+          ctx.addDepend(type);
+        }
+        if (type === ctx.builder.getGlobalModuleById("Array")) {
           return Transform2.get("Array").of(
             ctx,
             null,
@@ -10131,6 +10157,40 @@ var require_NewExpression = __commonJS({
             false
           );
         }
+        if (type === ctx.builder.getGlobalModuleById("String")) {
+          wrapType = "String";
+        } else if (type === ctx.builder.getGlobalModuleById("Number")) {
+          wrapType = "Number";
+        } else if (type === ctx.builder.getGlobalModuleById("Boolean")) {
+          wrapType = "Boolean";
+        } else if (type === ctx.builder.getGlobalModuleById("Object")) {
+          wrapType = "Object";
+        }
+      }
+      if (!type || !type.isModule || wrapType) {
+        const Reflect2 = stack.getGlobalTypeById("Reflect");
+        const node2 = ctx.createNode(stack);
+        node2.addDepend(Reflect2);
+        let target = node2.createToken(stack.callee);
+        if (!wrapType && !stack.callee.isIdentifier) {
+          const refs = node2.checkRefsName("ref");
+          ctx.insertNodeBlockContextAt(
+            ctx.createAssignmentNode(ctx.createIdentifierNode(refs, null, true), target)
+          );
+          target = ctx.createIdentifierNode(refs, null, true);
+        }
+        return node2.createCalleeNode(
+          node2.createStaticMemberNode([
+            node2.createIdentifierNode(node2.getModuleReferenceName(Reflect2)),
+            node2.createIdentifierNode("construct")
+          ]),
+          [
+            stack.module ? node2.createClassRefsNode(stack.module) : node2.createLiteralNode(null),
+            target,
+            node2.createArrayNode(createArgumentNodes(ctx, stack, stack.arguments || [], desc2 && desc2.params), stack)
+          ],
+          stack
+        );
       }
       const node = ctx.createNode(stack);
       node.callee = node.createToken(stack.callee);
@@ -10139,7 +10199,7 @@ var require_NewExpression = __commonJS({
         node.insertNodeBlockContextAt(ctx.createAssignmentNode(ctx.createIdentifierNode(name, null, true), node.callee.expression));
         node.callee = ctx.createIdentifierNode(name, null, true);
       }
-      node.arguments = createArgumentNodes(node, stack, stack.arguments, desc2 && desc2.params);
+      node.arguments = createArgumentNodes(node, stack, stack.arguments || [], desc2 && desc2.params);
       return node;
     };
   }
@@ -10902,6 +10962,9 @@ var require_TryStatement = __commonJS({
 var require_TypeAssertExpression = __commonJS({
   "tokens/TypeAssertExpression.js"(exports2, module2) {
     module2.exports = function(ctx, stack) {
+      if (stack.left.isParenthesizedExpression) {
+        return ctx.createToken(stack.left.expression);
+      }
       return ctx.createToken(stack.left);
     };
   }

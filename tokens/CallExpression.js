@@ -21,7 +21,7 @@ function createArgumentNodes(ctx, stack, arguments, declareParams){
 
 function CallExpression(ctx,stack){
     const isMember = stack.callee.isMemberExpression;
-    const desc = stack.callee.description();
+    const desc =stack.doGetDeclareFunctionType(stack.callee.description());
     const module = stack.module;
     const declareParams = desc && desc.params;
     const node = ctx.createNode( stack );
@@ -68,9 +68,25 @@ function CallExpression(ctx,stack){
                 );
             }else if( desc.isStack ){
                 let name = node.builder.getAvailableOriginType( objectType ) || objectType.toString();
-                if( (objectType.isUnionType || objectType.isIntersectionType) && desc.isMethodDefinition && desc.module && desc.module.isModule ){
+                let descModule = null;
+                if( (objectType.isUnionType || objectType.isIntersectionType) && (desc.isMethodDefinition || desc.isCallDefinition) && desc.module && desc.module.isModule ){
                     name = desc.module.id;
+                    descModule = desc.module;
                 }
+
+                let newWrapObject = null;
+                let isStringNewWrapObject = null;
+                if(objectType.isInstanceofType && !objectType.isThisType){
+                    const origin = objectType.inherit.type();
+                    isStringNewWrapObject = origin === ctx.builder.getGlobalModuleById("String");
+                    if( 
+                        isStringNewWrapObject || 
+                        origin === ctx.builder.getGlobalModuleById("Number") || 
+                        origin === ctx.builder.getGlobalModuleById("Boolean")){
+                            newWrapObject = true;
+                    }
+                }
+
                 if( Transform.has(name) ){
                     const object = Transform.get(name);
                     const key = stack.callee.property.value();
@@ -84,9 +100,13 @@ function CallExpression(ctx,stack){
                                 true
                             );
                         }else{
+                            let callee = node.createToken(stack.callee.object);
+                            if(newWrapObject && isStringNewWrapObject){
+                                callee = node.createCalleeNode(node.createMemberNode([callee, 'toString']))
+                            }
                             return object[key](
                                 node, 
-                                node.createToken(stack.callee.object), 
+                                callee,
                                 args,
                                 true,
                                 false
@@ -94,7 +114,7 @@ function CallExpression(ctx,stack){
                         }
                     }
                 }
-                if( !desc.isMethodDefinition ){
+                if(!(desc.isMethodDefinition ||  desc.isCallDefinition)){
                     node.callee = node.createIdentifierNode('call_user_func');
                     node.arguments = [ node.createToken(stack.callee) ].concat( args );
                     return node;
@@ -137,8 +157,8 @@ function CallExpression(ctx,stack){
                         false
                     );
                 }
-            }else if( desc.isType && desc.isModule && args.length === 1 ){
-                const name = node.builder.getAvailableOriginType( desc ) || desc.toString();
+            }else if((desc.isCallDefinition || desc.isType && desc.isModule) && args.length === 1 ){
+                const name = desc.isCallDefinition && desc.module ? desc.module.id :(node.builder.getAvailableOriginType( desc ) || desc.toString());
                 if( name && Transform.has(name) ){
                     const object = Transform.get(name);
                     return object.valueOf(

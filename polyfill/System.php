@@ -90,6 +90,57 @@ final class IterableIterator implements Iterator{
     }
 }
 
+class ObjectWraper implements \JsonSerializable{
+    private $source = null;
+    private $type = null;
+    public function __construct($value, $type){
+        if($type==='object'){
+            if($value){
+                $value = (object)$value;
+            }else{
+                $value = new \stdClass();
+            }
+        }else if($type==='number'){
+            $value = is_string($value) && strpos($value,'.') !== false ? floatval($value) : intval($value);
+        }else if($type==='boolean'){
+            if(is_array($value))$value = true;
+            else $value = boolval($value);
+        }
+        $this->source = $value;
+        $this->type = $type;
+    }
+    public function __typeof(){
+        return $this->type;
+    }
+    public function valueOf(){
+        return $this->source;
+    }
+    public function __set($key, $value){
+        if($this->type !=='object')return;
+        $this->source->{$key} = $value;
+    }
+    public function __get($key){
+        if($this->type !=='object' && $this->type !=='string')return null;
+        return $this->source->{$key};
+    }
+    public function toString(){
+        $type = $this->type;
+        if($type==='boolean'){
+            return $this->source ? 'true' : 'false';
+        }
+        if($type==='object'){
+            return '[object Object]';
+        }
+        return strval($this->source);
+    }
+    public function __toString(){
+        return $this->toString();
+    }
+    public function jsonSerialize(){
+        return $this->source;
+    }
+}
+
 final class System{
 
     public static function getCoreSystemNamespace( $className ){
@@ -116,10 +167,19 @@ final class System{
             return 'regexp';
         }else if( is_array($obj) ){
             return 'object';
+        }else if(is_a($obj, ObjectWraper::class)){
+            return$obj->__typeof();
         }
         return gettype($obj);
     }
 
+    public static function newObjectWraper($value, $type){
+        return new ObjectWraper($value, $type);
+    }
+
+    public static function isObjectWraper($object){
+        return is_a($object, ObjectWraper::class);
+    }
 
     public static function condition( $value ){
         if( $value )return true;

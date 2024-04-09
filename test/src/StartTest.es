@@ -414,6 +414,21 @@ public class StartTest extends Base
         this.assertEquals(59, date.getSeconds());
         this.assertEquals(1628924399000,  date.getTime() );
         this.assertEquals("Sat Aug 14 2021 14:59:59 PRC+0800", date.toString() );
+        this.assertEquals("123", new String('123456').substr(0,3) );
+        this.assertEquals("123456", new String('123456').valueOf() );
+        this.assertEquals(1000, new Number('1000').valueOf() );
+        this.assertEquals(10.5020, new Number('10.5020').valueOf() );
+        this.assertEquals(10.50, new Number('10.5020').toFixed(2) );
+        this.assertEquals("1000", new Number(1000).toString() );
+        this.assertEquals("false", new Boolean(false).toString() );
+        this.assertEquals(true, new Boolean('true').valueOf() );
+
+        const classFactory:class<Object> = Object;
+        const obj = (new classFactory()) as Record;
+        this.assertEquals('[object Object]', obj);
+        obj.name = 'test';
+        this.assertEquals('test', obj.name);
+        this.assertEquals('{"name":"test"}', JSON.stringify(obj));
     }
 
     call(){

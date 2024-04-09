@@ -1,3 +1,6 @@
+
+const globals =['String','Number','Boolean','Object','Array'];
+
 module.exports = function(ctx,stack){
 
     if( !stack.parentStack.isMemberExpression && stack.value() ==="arguments" ){
@@ -43,7 +46,7 @@ module.exports = function(ctx,stack){
     if( stack.compiler.callUtils("isTypeModule", desc) ){
         ctx.addDepend( desc );
         if( stack.parentStack.isMemberExpression && stack.parentStack.object === stack || 
-            stack.parentStack.isNewExpression || 
+            stack.parentStack.isNewExpression && !globals.includes(desc.getName()) || 
             stack.parentStack.isBinaryExpression && stack.parentStack.right === stack && stack.parentStack.node.operator==='instanceof'){
             return ctx.createIdentifierNode( ctx.getModuleReferenceName(desc), stack);
         }

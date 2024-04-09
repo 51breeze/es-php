@@ -310,8 +310,22 @@ final class Reflect{
      * @param argumentsList
      * @returns {*}
      */
-    final static public function construct($scope, $target , $args=null ){
-        if( class_exists($target) ){
+    final static public function construct($scope, $target, $args=null ){
+        if($target ==='String' || $target==='Boolean' || $target==='Object' || $target==='Number'){
+            return System::newObjectWraper($args[0] ?? null, strtolower($target));
+        }else if($target==='Array'){
+            if(!is_array($args))$args = [];
+            if( count($args) === 1 && is_numeric($args[0]) ){
+                return array_fill(0, $args[0], null);
+            }
+            return array_slice((array)$args,0);
+        }
+        $exists = class_exists($target);
+        if(!$exists){
+            $target = System::getCoreSystemNamespace($target);
+            $exists = class_exists($target);
+        }
+        if($exists){
             $reflect = new \ReflectionClass( $target );
             if( $reflect->isAbstract() ){
                 throw new TypeError('Abstract class cannot be instantiated');

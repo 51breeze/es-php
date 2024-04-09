@@ -19,13 +19,19 @@ function createArgumentNodes(ctx, stack, arguments, declareParams){
 }
 
 module.exports = function(ctx,stack){
-    const desc = stack.callee.description();
-    if( stack.compiler.callUtils("isTypeModule",desc) ){
-        ctx.addDepend( desc );
+    let type = stack.callee.type();
+    let [classModule,desc] = stack.getConstructMethod(type);
+    let wrapType = null;
+    if(desc && desc.isNewDefinition && desc.module){
+        type = desc.module;
     }
 
-    if( desc && desc.isModule ){
-        if( desc === ctx.builder.getGlobalModuleById("Array") ){
+    if(type){
+        type = stack.compiler.callUtils('getOriginType', type)
+        if(stack.compiler.callUtils("isTypeModule",type) ){
+            ctx.addDepend(type);
+        }
+        if(type === ctx.builder.getGlobalModuleById("Array") ){
             return Transform.get('Array').of( 
                 ctx, 
                 null,
@@ -34,6 +40,41 @@ module.exports = function(ctx,stack){
                 false
             );
         }
+        if(type === ctx.builder.getGlobalModuleById("String")){
+            wrapType = 'String';
+        }else if(type === ctx.builder.getGlobalModuleById("Number")){
+            wrapType = 'Number';
+        }else if(type === ctx.builder.getGlobalModuleById("Boolean")){
+            wrapType = 'Boolean';
+        }else if(type === ctx.builder.getGlobalModuleById("Object")){
+            wrapType = 'Object';
+        }
+    }
+
+    if(!type || !type.isModule || wrapType){
+        const Reflect = stack.getGlobalTypeById("Reflect");
+        const node = ctx.createNode( stack );
+        node.addDepend( Reflect );
+        let target = node.createToken(stack.callee);
+        if(!wrapType && !stack.callee.isIdentifier ){
+            const refs = node.checkRefsName('ref');
+            ctx.insertNodeBlockContextAt(
+                ctx.createAssignmentNode( ctx.createIdentifierNode(refs, null, true), target )
+            );
+            target = ctx.createIdentifierNode(refs, null, true);
+        }
+        return node.createCalleeNode(
+            node.createStaticMemberNode([
+                node.createIdentifierNode( node.getModuleReferenceName(Reflect) ),
+                node.createIdentifierNode("construct")
+            ]),
+            [
+                stack.module ? node.createClassRefsNode(stack.module) : node.createLiteralNode(null),
+                target,
+                node.createArrayNode(createArgumentNodes(ctx, stack, stack.arguments||[], desc && desc.params), stack)
+            ],
+            stack
+        );
     }
 
     const node = ctx.createNode( stack );
@@ -43,6 +84,6 @@ module.exports = function(ctx,stack){
         node.insertNodeBlockContextAt( ctx.createAssignmentNode( ctx.createIdentifierNode(name,null,true), node.callee.expression ) );
         node.callee = ctx.createIdentifierNode(name,null,true);
     }
-    node.arguments = createArgumentNodes(node, stack, stack.arguments, desc && desc.params );
+    node.arguments = createArgumentNodes(node, stack, stack.arguments||[], desc && desc.params );
     return node;
 }
