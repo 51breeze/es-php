@@ -12,3 +12,4 @@ package-lock.json
 /make.js
 .phpunit.result.cache
 /standard
+/es.config.js
