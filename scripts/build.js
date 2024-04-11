@@ -5,7 +5,7 @@ esbuild.build({
   },
   bundle: true,
   outdir: './dist',
-  external: ['fsevents','less','node-sass','rollup','rollup-plugin-commonjs','rollup-plugin-node-resolve'],
+  external: ['fsevents','less','node-sass','rollup','rollup-plugin-commonjs','rollup-plugin-node-resolve','fs-extra','lodash'],
   format: 'cjs',
   platform: 'node',
   minify:false,

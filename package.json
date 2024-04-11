@@ -1,6 +1,6 @@
 {
   "name": "es-php",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "test",
   "main": "dist/index.js",
   "typings": "dist/types/typings.json",
@@ -27,17 +27,18 @@
   },
   "homepage": "https://github.com/51breeze/es-php#readme",
   "dependencies": {
+    "fs-extra": "^11.2.0",
     "lodash": "^4.17.21"
   },
-  "esconfig":{
-    "scope":"es-php",
-    "inherits":[]
+  "esconfig": {
+    "scope": "es-php",
+    "inherits": []
   },
   "devDependencies": {
+    "easescript": "latest",
     "esbuild": "^0.17.11",
     "esbuild-plugin-copy": "^2.1.0",
     "jasmine": "^3.10.0",
-    "easescript": "latest",
     "less": "^4.1.3",
     "node-sass": "^7.0.1",
     "rollup": "^2.78.1",

@@ -1,4 +1,5 @@
-const fs = require("fs");
+const fs = require("fs-extra");
+const crypto = require('crypto');
 const Generator = require("./Generator");
 const Token = require("./Token");
 const Polyfill = require("./Polyfill");
@@ -61,13 +62,7 @@ class Builder extends Token{
     }
 
     createHash(str){
-        str = str.toLowerCase();
-        var hash=Number.MAX_VALUE,i,ch;
-        for (i = str.length - 1; i >= 0; i--) {
-            ch = str.charCodeAt(i);
-            hash ^= ((hash << 5) + ch + (hash >> 2));
-        }
-        return  (hash & 0x7FFFFFFF);
+        return crypto.createHash('md5').update(str).digest('hex').substring(0,8);
     }
 
     addSqlTableNode(id, node, stack){
@@ -136,7 +131,9 @@ class Builder extends Token{
     }
 
     getOutputPath(){
-        return this.compiler.pathAbsolute( this.plugin.options.output || this.compiler.options.output );
+        const value = this.__outputPath;
+        if(value)return value;
+        return this.__outputPath = this.compiler.pathAbsolute(this.plugin.options.output || this.compiler.options.output);
     }
 
     getComposerPath(){
@@ -156,14 +153,7 @@ class Builder extends Token{
 
     emitFile(file, content){
         if( content=== null )return;
-        var dir = file;
-        const paths = [];
-        while( dir && !fs.existsSync( dir = PATH.dirname(dir) ) ){
-            paths.push( dir );
-        }
-        while( paths.length > 0 ){
-            fs.mkdirSync( paths.pop() );
-        }
+        fs.mkdirSync(PATH.dirname(file),{recursive: true});
         if( file.endsWith('.php') ){
             if( this.plugin.options.strict ){
                 fs.writeFileSync(file, '<?php\r\ndeclare (strict_types = 1);\r\n'+content);
@@ -1069,7 +1059,7 @@ class Builder extends Token{
     getAssetFileReferenceName(module, file){
         const asset = staticAssets.getAsset(file);
         if( asset ){
-            return asset.getAssetFilePath();
+            return asset.getOutputFilePath();
         }
         return '';
     }

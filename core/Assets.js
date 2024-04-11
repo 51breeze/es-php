@@ -1,7 +1,12 @@
 const PATH= require('path');
 const crypto = require('crypto');
 const merge = require("lodash/merge");
-const fs = require('fs');
+const fs = require("fs-extra");
+const suffixMaps = {
+    '.less':'.css',
+    '.sacc':'.css',
+    '.scss':'.css',
+}
 class Asset{
     constructor(file, source, local, module, context){
         this.file = file;
@@ -11,14 +16,22 @@ class Asset{
         this.context = context;
         this.content = '';
         this.change = true;
+        this.format = '[name]-[hash][ext]';
+        this.extname = '';
+        if(file){
+            const ext = PATH.extname(file);
+            if(ext){
+                this.extname = ext;
+            }
+        }
     }
 
     emit(done){
         if( this.change ){
             this.change = false;
             const output = this.context.getOutputPath();
-            const file = PATH.join(output, this.getOutputFilename());
-            this.mkdir( file );
+            const file = PATH.join(output, this.getOutputFilePath());
+            fs.mkdirSync(PATH.dirname(file), {recursive: true});
             const ext = this.getExt();
             if( ext ==='.less'){
                 this.lessCompile(done, file);
@@ -34,8 +47,7 @@ class Asset{
                 }
                 if(done)done();
             }
-        }
-        
+        } 
     }
 
     lessCompile(done, filename){
@@ -99,17 +111,6 @@ class Asset{
         }).catch( done );
     }
 
-    mkdir( file ){
-        var dir = file;
-        const paths = [];
-        while( dir && !fs.existsSync( dir = PATH.dirname(dir) ) ){
-            paths.push( dir );
-        }
-        while( paths.length > 0 ){
-            fs.mkdirSync( paths.pop() );
-        }
-    }
-
     setContent(content){
         if( content !== this.content ){
             this.change = true;
@@ -118,22 +119,43 @@ class Asset{
     }
 
     getExt(){
-        const pos = this.file.lastIndexOf('.');
-        if( pos > 0 ){
-            return this.file.substring(pos).toLowerCase();
-        }
-        return '';
+        return this.extname;
     }
 
-    getOutputFilename(){
-        if(this.outputFilename)return this.outputFilename;
-        const name = this.getFilename();
-        return this.outputFilename = name+this.getExt();
+    getOutputFilePath(){
+        if(this.assetOutputFile)return this.assetOutputFile;
+        const publicPath = (this.context.plugin.options.resolve.publicPath || '').trim();
+        let folder = this.getFolder();
+        if( publicPath && !PATH.isAbsolute(folder)){
+            folder = PATH.join(publicPath,folder);
+        }
+        const ext = this.getExt();
+        const data = {
+            name:this.getFilename(),
+            hash:this.getHash(),
+            ext:suffixMaps[ext] || ext
+        }
+        let file = this.format.replace(/\[(\w+)\]/g,(_,name)=>{
+            return data[name] || '';
+        });
+        file = PATH.join(folder, file);
+        return this.assetOutputFile = this.context.compiler.normalizePath( PATH.isAbsolute(file) ? PATH.relative(this.context.getOutputPath(),file) : file );
     }
 
     getFilename(){
         if(this.filename)return this.filename;
-        return this.filename = crypto.createHash('md5').update(this.file).digest('hex');
+        let name = this.module ? this.module.id : ''
+        if( PATH.isAbsolute(this.file) ){
+            name = PATH.basename(this.file, PATH.extname(this.file))
+        }else{
+            name = PATH.extname(this.file).slice(1)
+        }
+        return this.filename = String(name).toLowerCase();
+    }
+
+    getHash(){
+        if(this.hash)return this.hash;
+        return this.hash = crypto.createHash('md5').update(this.file).digest('hex').substring(0,8);
     }
 
     getFolder(){
@@ -143,13 +165,7 @@ class Asset{
     }
 
     getAssetFilePath(){
-        if(this.assetFilePath)return this.assetFilePath;
-        const publicPath = (this.context.plugin.options.resolve.publicPath || '').trim();
-        let folder = this.getFolder();
-        if( publicPath ){
-            folder = PATH.relative('./'+publicPath, folder).replace(/^[\.\/\\]+/,'')
-        }
-        return this.assetFilePath = this.context.compiler.normalizePath( PATH.join( folder, this.getFilename()+this.getExt() ) );
+       return this.file;
     }
 
     toString(){
