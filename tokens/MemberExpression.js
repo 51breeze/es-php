@@ -100,7 +100,7 @@ function MemberExpression(ctx,stack){
     }
     
     if(objectType.isNamespace && !stack.parentStack.isMemberExpression){
-        const mappingNs = ctx.builder.geMappingNamespace( stack.value() );
+        const mappingNs = ctx.builder.getMappingNamespace( stack.value() );
         if( mappingNs !== null ){
             return mappingNs ? ctx.createIdentifierNode( mappingNs +'\\'+ stack.property.value(), stack.property) : ctx.createToken(stack.property);
         }

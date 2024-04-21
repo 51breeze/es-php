@@ -19,14 +19,14 @@ class Creator {
         this._compiler = compiler;
         this.plugin = compiler.applyPlugin( {plugin,options:{
             includes:['JsxTest.es'],
-            env:{NODE_ENV:'development'},
+            folderAsNamespace:true,
+            metadata:{
+                env:{NODE_ENV:'development'}
+            },
             resolve:{
-                useFolderAsNamespace:true,
-                using:['PHPUnit.Framework.TestCase'],
-                mapping:{
-                    folder:{
-                        "*.es::global":"escore",
-                    }
+                usings:['PHPUnit/Framework/TestCase'],
+                folders:{
+                    "*.global":"escore",
                 }
             }
         }});

@@ -1,10 +1,11 @@
 const esbuild = require('esbuild');
-esbuild.build({
+const config = {
   entryPoints:{
     index: 'index.js',
   },
   bundle: true,
   outdir: './dist',
+  //outExtension:{'.js':'.mjs'},
   external: ['fsevents','less','node-sass','rollup','rollup-plugin-commonjs','rollup-plugin-node-resolve','fs-extra','lodash'],
   format: 'cjs',
   platform: 'node',
@@ -36,7 +37,9 @@ esbuild.build({
       keepStructure: false,
     })
   ],
-}).then( ()=>{
+};
+
+esbuild.build(config).then( ()=>{
   console.log('Build done.\r\n')
 }).catch(() =>{
   console.log('Build error.\r\n')

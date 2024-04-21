@@ -116,7 +116,6 @@ class Builder extends Token{
             const items = [];
             const root = this.plugin.options.resolve.mapping.folder.root;
             const file  = PATH.isAbsolute(root) ? root : PATH.join(this.getOutputPath(), root, 'manifest.php');
-            this.resolveSourceFileMappingPath( )
             fileAndNamespaceMappingCached.forEach( (ns,file)=>{
                 items.push(`'${ns}'=>'${file}'`)
             });
@@ -125,8 +124,7 @@ class Builder extends Token{
     }
 
     emitSql(){
-        const root = this.plugin.options.resolve.mapping.folder.root || '';
-        const file  = PATH.isAbsolute(root) ? root : PATH.join(this.getOutputPath(), root, 'app.sql');
+        const file  = PATH.join(this.getOutputPath(),  'app.sql');
         this.emitFile(file,sqlInstance.toString());
     }
 
@@ -581,13 +579,13 @@ class Builder extends Token{
         const output = this.getOutputPath();
         const isStr = typeof module === "string";
         if( !module )return output;
-        const folder = isStr ? this.getSourceFileMappingFolder(module, compilation) : this.getModuleMappingFolder( module );
+        const folder = isStr ? this.getSourceFileMappingFolder(module) : this.getModuleMappingFolder(module);
         if( !isStr && module && module.isModule ){
             if( module.isDeclaratorModule ){
                 const polyfillModule = Polyfill.modules.get( module.getName() );
                 const filename = module.id+suffix;
                 if( polyfillModule ){
-                    return this.compiler.normalizePath( PATH.join(output,(folder||polyfillModule.namespace||config.ns).replace(/\./g,'/'),filename) );
+                    return this.compiler.normalizePath( PATH.join(output,(folder||polyfillModule.namespace),filename) );
                 }
                 return this.compiler.normalizePath( PATH.join(output, (folder ? folder : module.getName("/"))+suffix) );
             }else if( module.compilation.isDescriptorDocument() ){
@@ -611,61 +609,22 @@ class Builder extends Token{
         return filepath;
     }
 
-    recursionModule(module, callback, imps=false){
-        var current = module; 
-        while( current && current.isModule ){
-            let res = callback(current);
-            if( res !== false ){
-                return res;
-            }
-            if(imps){
-                for(var i=0; i<module.implements.length ;i++){
-                    let res = this.recursionModule(module.implements[i], callback, true);
-                    if( res !== false ){
-                        return res;
-                    }
-                }
-            }
-            current = current.inherit;
-        }
-        return false;
-    }
-
-    findDefineAnnotationForType(annotations){
-        if(!annotations)return null;
-        const annotation = annotations.find( annotation=>{
-            if( annotation.name.toLowerCase()==='define' ){
-                const args = annotation.getArguments();
-                if( args[0] ){
-                    return String(args[0].key).toLowerCase() === 'type' && args[0].value;
-                }
-            }
-            return false;
-        });
-        if( annotation ){
-            const args = annotation.getArguments();
-            const resolveType = args[0].value;
-            if( resolveType ){
-                return resolveType.toLowerCase();
-            }
-        }
-        return null;
-    }
-
     resolveModuleType(module){
         if( resolveModuleTypeCached.has( module ) ){
             return resolveModuleTypeCached.get( module );
         }
-        const resolve = !module.isModule && module.stack ? this.findDefineAnnotationForType(module.stack.annotations) : this.recursionModule(module,(current)=>{
-            const stack = this.compilation.getStackByModule( current );
-            if( stack ){
-                const annotation = this.findDefineAnnotationForType(stack.annotations);
-                if( annotation ){
-                    return annotation;
+
+        let resolve = null;
+        this.compilation.stack.findAnnotation(module, (annotation)=>{
+            if( annotation.name.toLowerCase()==='define' ){
+                const args = annotation.getArguments();
+                if(args[0] && String(args[0].key).toLowerCase() === 'type'){
+                    return resolve = args[0].value;
                 }
             }
             return false;
-        },true);
+        });
+
         switch( resolve ){
             case 'controller' : 
                 resolveModuleTypeCached.set( module, Builder.MODULE_TYPE_CONTROLLER );
@@ -704,239 +663,78 @@ class Builder extends Token{
         return '*';
     }
 
-    checkResolveRuleMatch(rule, relative, type, fileExt, fileName, delimiter='/'){
-        let test = rule.test;
-        if( test.charCodeAt(0) ===46 ){
-            test = test.substring(1);
-        }
-        if( test.charCodeAt(0) ===47 ){
-            test = test.substring(1);
-        }
-
-        if( type ){
-            let match = '::'+type;
-            let len = match.length;
-            if( test.slice( -len ) !== match )return false;
-            test = test.slice(0, -len);
-        }
-
-        if( fileExt ){
-            let suffixPos = test.lastIndexOf('.');
-            if( suffixPos>0  ){
-                const ruleSuffix = test.slice( suffixPos );
-                if( ruleSuffix !=='.*' && test.slice( suffixPos ) !== fileExt )return false;
-                test = test.slice(0, suffixPos);
-            }else{
-                if( test.slice(-1) !== '*' )return false;
-                test = test.slice(0, -1);
-            }
-        }
-
-        if( fileName ){
-            let filenamePos = test.lastIndexOf('/');
-            if( test.slice( filenamePos+1 ) === fileName ){
-                test = filenamePos >=0 ? test.slice(0, filenamePos) : '';
-            }else{
-                let token = test.slice(-1);
-                if( !(token === '*') )return false;
-                test = test.slice(0, -1);
-            }
-            if( test.charCodeAt(test.length-1)===47 ){
-                test = test.slice(0,-1);
-            }
-        }
-
-        if( !relative && !test ){
-            return [[], []];
-        }
-
-        const segments = test.split('/');
-        const parts = relative.split( delimiter );
-        let rest = false;
-        const flag = segments.every( (seg,index)=>{
-            if( !seg && !test)return true;
-            if( seg.includes('**') ){
-                rest= true;
-                return true;
-            }
-            return seg === '*' || parts[index] === seg;
-        });
-        const count = rest ? segments.length - 1 :  segments.length;
-        if( count > parts.length )return false;
-        if( flag ){
-            if( rest ){
-                return [segments, parts];
-            }else if( segments.length === parts.length ){
-                return [segments, parts];
-            }
-        }
-        return false;
+    getSourceFileMappingFolder(file){ 
+        return this.resolveSourceFileMappingPath(file, 'folders');
     }
 
-    getSourceFileMappingFolder(file, compilation){
-        if( this.plugin.options.assets.test(file) ){
-            return this.resolveSourceFileMappingPath(file, this.plugin.options.resolve.mapping.folder, 'asset');
-        }else{
-            var type = 'general';
-            if( compilation && file === compilation.file && compilation.stack){
-                const annotation = this.findDefineAnnotationForType( compilation.stack.annotations );
-                if( annotation ){
-                    type = annotation;
-                }
-            }
-            return this.resolveSourceFileMappingPath(file, this.plugin.options.resolve.mapping.folder, type);
-        }
-    }
-
-    getModuleMappingFolder(module, typeName=null){
+    getModuleMappingFolder(module){
         if( module && module.isModule ){
-            typeName = typeName || this.resolveModuleTypeName(module);
             let file = module.compilation.file;
             if( module.isDeclaratorModule ){
-                let ns = module.namespace.parent ? module.namespace : null;
-                if( (!typeName || typeName ==='*') && !ns ){
-                    typeName = 'global';
-                }
-                if( ns ){
-                    file = module.namespace.getChain().join('/') + module.id+PATH.extname(file);
-                    
-                }else{
-                    file =  module.id+PATH.extname(file);
+                file = module.getName('/');
+                const compilation = module.compilation;
+                if(compilation){
+                    if(compilation.isGlobalFlag && compilation.pluginScopes.scope ==='global'){
+                        file += '.global';
+                    }
                 }
             }
-            return this.resolveSourceFileMappingPath(file, this.plugin.options.resolve.mapping.folder, typeName);
+            return this.resolveSourceFileMappingPath(file,'folders');
         }
         return null;
     }
 
     getModuleMappingNamespace(module){
         if(!module || !module.isModule)return null;
-        var ns = module.id;
-        var assignment = null;
-        if( module.isDeclaratorModule ){
-            const polyfill = this.getPolyfillModule( module.getName() );
+        let ns = module.id;
+        let assignment = null;
+        if(module.isDeclaratorModule){
+            const polyfill = this.getPolyfillModule(module.getName());
             if( polyfill ){
-                assignment = polyfill.namespace || this.plugin.options.ns;
-                ns = [assignment, polyfill.export || module.id].join('.');
+                assignment = polyfill.namespace ? polyfill.namespace.replace(/\./g, '/') : '';
+                ns = [assignment, polyfill.export || module.id].filter(Boolean).join('/');
             }else{
-                ns = module.getName();
+                ns = module.getName('/');
             }
-        }else{
-            ns = module.getName();
-        }
-
-        if( ns ){
-            const result = this.geMappingNamespace(ns, module);
-            if( result )return result;
-        }
-
-        if( this.plugin.options.resolve.useFolderAsNamespace ){
-            const folder = this.getModuleMappingFolder(module);
-            if( folder ){
-                return folder.replace(/[\.\\\\/]/g, '\\');
-            }
-        }
-
-        if( assignment ){
-            return assignment.replace(/\./g, '\\');
-        }
-        return null;
-    }
-
-    geMappingNamespace(ns, module){
-        const namespace = this.plugin.options.resolve.mapping.namespace;
-        if( !namespace.explicit ){
-            for(let rule of namespace.rules){
-                if( rule.vague > 0 || rule.dynamic){
-                    const result = this.checkResolveRuleMatch(rule, ns, null, null, null, '.');
-                    if( result ){
-                        if( !rule.dynamic )return rule.value;
-                        const [segments, parts] = result;
-                        const restMatchPos = segments.findIndex( seg=> seg.includes('**') );
-                        parts.pop();
-                        return rule.segments.map( (item)=>{
-                            if( item.includes('%') ){
-                                return item.split('%').slice(1).map( key=>{
-                                    if( key.includes('...') && restMatchPos >= 0 ){
-                                        const range = restMatchPos === segments.length-1 ? parts.slice(restMatchPos, parts.length) : 
-                                        parts.slice(restMatchPos, parts.length-(segments.length-restMatchPos));
-                                        let startIndex = 0;
-                                        let endIndex = range.length;
-                                        if( key !== '...' ){
-                                            let [start,end] = key.split('...').map( val=>parseInt(val) );
-                                            if( start > 0 )startIndex = start;
-                                            if( end > 0 )endIndex = end;
-                                        }
-                                        return range.slice(startIndex,endIndex).join('\\');
-                                    }
-                                    return parts[key] || null;
-                                }).filter( item=>!!item ).join('');
-                            }
-                            return item;
-                        }).filter(item=>!!item).join('\\');
-                    }
-                }else if(rule.raw === ns){
-                    return rule.value;
+            const compilation = module.compilation;
+            if(compilation){
+                if(compilation.isGlobalFlag && compilation.pluginScopes.scope ==='global'){
+                    ns += '.global';
                 }
             }
-        }else if( hasOwn.call(namespace.map, ns) ){
-            return namespace.map[ns].value;
+            
+        }else{
+            ns = module.getName('/');
         }
-        return null;
-    }
 
-    getModuleMappingRoute(module, data={}){
-        if( module && module.isModule && !module.isDeclaratorModule ){
-            if( this.resolveModuleType(module) !== Builder.MODULE_TYPE_CONTROLLER )return null;
-            return this.resolveSourceFileMappingPath(module.compilation.file, this.plugin.options.resolve.mapping.route, 'controller', '/', data)
+        if(ns){
+            const result = this.getMappingNamespace(ns);
+            if(result)return result;
         }
-        return null;
-    }
 
-    resolveSourceFileMappingPath(file, mapping, type, delimiter='/', dataset={}){
-        if(!mapping || !file)return null;
-        const rules = mapping.rules;
-        if( !rules.length )return null;
-        const isAbsolute = PATH.isAbsolute( file );
-        const fileInfo = PATH.parse( file );
-        const workspace = this.compiler.options.workspace;
-        file = isAbsolute ? PATH.relative(workspace, fileInfo.dir) : file;
-        const relative = this.compiler.normalizePath( file.replace(/^[\.\\\/]+/,'') );
-        for( let rule of rules ){
-            const result = this.checkResolveRuleMatch( rule, relative, type, fileInfo.ext, fileInfo.name );
-            if( result ){
-                const value = rule.value;
-                if( !rule.dynamic )return value;
-                const [segments, parts] = result;
-                const restMatchPos = segments.findIndex( seg=> seg.includes('**') );
-                return rule.segments.map( (item)=>{
-                    if( item.includes('%') ){
-                        return item.split('%').slice(1).map( key=>{
-                            if( key.includes('...') && restMatchPos >= 0 ){
-                                const range = restMatchPos === segments.length-1 ? parts.slice(restMatchPos, parts.length) : 
-                                parts.slice(restMatchPos, parts.length-(segments.length-restMatchPos));
-                                let startIndex = 0;
-                                let endIndex = range.length;
-                                if( key !== '...' ){
-                                   let [start,end] = key.split('...', 2).map( val=>parseInt(val) );
-                                   if( start > 0 )startIndex = start;
-                                   if( end > 0 )endIndex = end;
-                                }
-                                return range.slice(startIndex,endIndex).join( delimiter );
-                            }else if( key==='filename'){
-                                return fileInfo.name;
-                            }else if( key==='ext' ){
-                                return fileInfo.ext;
-                            }else if( key ==='classname' || key ==='method' ){
-                                return dataset[key] || null;
-                            }
-                            return parts[key] || null;
-                        }).filter( item=>!!item ).join('');
-                    }
-                    return item;
-                }).filter(item=>!!item).join( delimiter );
+        if( this.plugin.options.folderAsNamespace ){
+            const folder = this.getModuleMappingFolder(module);
+            if(folder){
+                return folder.replace(/[\\\\/]/g, '\\');
             }
         }
+        if( assignment ){
+            return assignment.replace(/[\\\\/]/g, '\\');
+        }
+        return null;
+    }
+
+    getMappingNamespace(id){
+        return this.plugin.resolveSourceId(id, 'namespaces')
+    }
+
+    getModuleMappingRoute(id, data={}){
+        return this.plugin.resolveSourceId(id, 'routes', data)
+    }
+
+    resolveSourceFileMappingPath(file, type='folders'){
+        file = PATH.isAbsolute( file ) ? PATH.relative(this.compiler.workspace, file) : file;
+        return this.plugin.resolveSourceId(this.compiler.normalizePath(file), type)
     }
 
     getOutputRelativePath(module,context){
@@ -997,7 +795,7 @@ class Builder extends Token{
     }
 
     getPolyfillModule(id){
-        return Polyfill.modules.get( id );
+        return Polyfill.modules.get(id);
     }
     
     isActiveForModule(depModule,ctxModule){
@@ -1010,44 +808,18 @@ class Builder extends Token{
         if(depModule.isDeclaratorModule){
             return !!this.getPolyfillModule( depModule.getName() );
         }else{
-            return !this.compiler.callUtils("checkDepend",ctxModule, depModule);
+            return !this.compiler.callUtils("checkDepend", ctxModule, depModule);
         }
     }
 
-    isReferenceDeclaratorModule( depModule,ctxModule ){
+    isReferenceDeclaratorModule(depModule){
         if( depModule && depModule.isDeclaratorModule ){
-
             if( depModule.isStructTable ){
                 return false;
             }
-
-            const disuse = this.plugin.options.resolve.disuse;
-            if( this.checkModulePresetState(depModule,disuse) ){
-                return false;
-            }
-
-            const using = this.plugin.options.resolve.using;
-            if( this.checkModulePresetState(depModule,using) ){
+            if( this.plugin.resolveSourcePresetFlag(depModule.getName('/'), 'usings') ){
                 return true;
             }
-        }
-        return false;
-    }
-
-    checkModulePresetState(module, setting){
-        if( !setting.explicit ){
-            for(let rule of setting.rules){
-                if( rule.vague > 0 ){
-                    const result = this.checkResolveRuleMatch(rule, module.getName(), null, null, null, '.');
-                    if( result ){
-                       return true;
-                    }
-                }else if(rule.raw === module.getName() ){
-                    return true;
-                }
-            }
-        }else if( hasOwn.call(setting.map, module.getName()) ){
-            return true;
         }
         return false;
     }
@@ -1204,7 +976,7 @@ class Builder extends Token{
     }
 
     isImportExclude(source){
-        const excludes = this.plugin.options.resolve.excludes;
+        const excludes = this.plugin.options.excludes;
         if( excludes && excludes.length > 0 ){
             const isModule = typeof source !== 'string' && source.isModule ? true : false;
             source = String(isModule ? source.getName() : source);

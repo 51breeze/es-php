@@ -48,10 +48,10 @@ const methods = {
                 ctx.createLiteralNode('bind')
             ]);  
         }
-        const arguments = ctx.stack.arguments || [];
+        const _arguments = ctx.stack.arguments || [];
         let flagNode = ctx.createLiteralNode(null);
-        if( arguments[0] ){
-            const type = ctx.inferType(arguments[0]);
+        if( _arguments[0] ){
+            const type = ctx.inferType(_arguments[0]);
             if( type.isLiteralArrayType || ctx.builder.getGlobalModuleById('Array') === ctx.stack.compiler.callUtils('getOriginType', type) ){
                 flagNode = ctx.createLiteralNode(true);
             }else if( !type.isAnyType ){

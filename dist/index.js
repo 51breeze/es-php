@@ -1,12 +1,12 @@
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __defNormalProp = (obj, key, value2) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value: value2 }) : obj[key] = value2;
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
-var __publicField = (obj, key, value) => {
-  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-  return value;
+var __publicField = (obj, key, value2) => {
+  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value2);
+  return value2;
 };
 
 // core/Generator.js
@@ -67,15 +67,15 @@ var require_Generator = __commonJS({
         }
         return this.column;
       }
-      withString(value) {
-        if (!value)
+      withString(value2) {
+        if (!value2)
           return;
         if (this.column === 0) {
           this.column = this.getStartColumn();
           this.code += "    ".repeat(this.indent);
         }
-        this.code += value;
-        this.column += value.length;
+        this.code += value2;
+        this.column += value2.length;
       }
       withEnd(expr) {
         if (expr) {
@@ -111,8 +111,8 @@ var require_Generator = __commonJS({
       withColon() {
         this.withString(":");
       }
-      withOperator(value) {
-        this.withString(` ${value} `);
+      withOperator(value2) {
+        this.withString(` ${value2} `);
       }
       withComma() {
         this.withString(",");
@@ -942,17 +942,17 @@ var require_Generator = __commonJS({
 var require_AddressVariable = __commonJS({
   "core/AddressVariable.js"(exports2, module2) {
     var AddressVariable = class {
-      constructor(target, ctx) {
+      constructor(target, ctx2) {
         this.dataset = /* @__PURE__ */ new Map();
         this.refs = /* @__PURE__ */ new Map();
         this.target = target;
-        this.ctx = ctx;
+        this.ctx = ctx2;
         this.cross = 0;
         this.last = null;
         this.indexName = null;
       }
-      setName(desc2, name) {
-        this.refs.set(desc2, name);
+      setName(desc2, name2) {
+        this.refs.set(desc2, name2);
       }
       getName(desc2) {
         return this.refs.get(desc2);
@@ -962,9 +962,9 @@ var require_AddressVariable = __commonJS({
       }
       getLastAssignedRef() {
         if (!this.hasCross() && this.last) {
-          const name = this.getName(this.last.description());
-          if (name) {
-            return name;
+          const name2 = this.getName(this.last.description());
+          if (name2) {
+            return name2;
           }
         }
         return null;
@@ -973,9 +973,9 @@ var require_AddressVariable = __commonJS({
         if (!description)
           return null;
         if (!this.refs.has(description)) {
-          const name = this.ctx.getDeclareRefsName(description, AddressVariable.REFS_NAME);
-          this.setName(description, name);
-          return name;
+          const name2 = this.ctx.getDeclareRefsName(description, AddressVariable.REFS_NAME);
+          this.setName(description, name2);
+          return name2;
         }
         return this.getName(description);
       }
@@ -983,29 +983,29 @@ var require_AddressVariable = __commonJS({
         if (!description || !description.isStack)
           return null;
         if (this.indexName === null) {
-          const name = this.ctx.getDeclareRefsName(description, AddressVariable.REFS_INDEX);
-          this.indexName = name;
+          const name2 = this.ctx.getDeclareRefsName(description, AddressVariable.REFS_INDEX);
+          this.indexName = name2;
         }
         return this.indexName;
       }
-      add(value) {
-        if (!value)
+      add(value2) {
+        if (!value2)
           return;
-        if (this.last && this.last.scope !== value.scope) {
-          if (this.last.description() !== value.description()) {
+        if (this.last && this.last.scope !== value2.scope) {
+          if (this.last.description() !== value2.description()) {
             this.cross++;
           }
         }
         const index = this.dataset.size;
-        this.dataset.set(value, index);
-        this.last = value;
+        this.dataset.set(value2, index);
+        this.last = value2;
         return index;
       }
-      getIndex(value) {
-        if (!this.dataset.has(value)) {
-          this.add(value);
+      getIndex(value2) {
+        if (!this.dataset.has(value2)) {
+          this.add(value2);
         }
-        return this.dataset.get(value);
+        return this.dataset.get(value2);
       }
       hasCross() {
         return this.cross > 0;
@@ -1123,9 +1123,9 @@ var require_Token = __commonJS({
         object.stack = stack;
         object.properties = [];
         if (properties) {
-          properties.forEach((value) => {
-            value.parent = object;
-            object.properties.push(value);
+          properties.forEach((value2) => {
+            value2.parent = object;
+            object.properties.push(value2);
           });
         }
         return object;
@@ -1135,9 +1135,9 @@ var require_Token = __commonJS({
         object.stack = stack;
         object.elements = [];
         if (elements) {
-          elements.forEach((value) => {
-            value.parent = object;
-            object.elements.push(value);
+          elements.forEach((value2) => {
+            value2.parent = object;
+            object.elements.push(value2);
           });
         }
         return object;
@@ -1176,8 +1176,8 @@ var require_Token = __commonJS({
         return node;
       }
       createMemberNode(items, stack, computed = false) {
-        const create = (items2, object, ctx) => {
-          const member = ctx.createNode("MemberExpression");
+        const create = (items2, object, ctx2) => {
+          const member = ctx2.createNode("MemberExpression");
           if (object instanceof _Token) {
             member.object = object;
           } else {
@@ -1191,8 +1191,8 @@ var require_Token = __commonJS({
             member.property = member.createNode("Identifier");
             member.property.value = property;
           }
-          member.object.parent = ctx;
-          member.property.parent = ctx;
+          member.object.parent = ctx2;
+          member.property.parent = ctx2;
           if (items2.length > 0) {
             return create(items2, member, member);
           }
@@ -1206,14 +1206,14 @@ var require_Token = __commonJS({
         }
         return node;
       }
-      createCalleeNode(callee, args, stack) {
+      createCalleeNode(callee, args2, stack) {
         const expression = this.createNode("CallExpression");
         expression.stack = stack;
         callee.parent = expression;
         expression.callee = callee;
         expression.arguments = [];
-        if (args) {
-          args.forEach((item) => {
+        if (args2) {
+          args2.forEach((item) => {
             if (item) {
               item.parent = expression;
               expression.arguments.push(item);
@@ -1270,10 +1270,10 @@ var require_Token = __commonJS({
         });
         return obj;
       }
-      createDeclaratorNode(id, init, stack) {
+      createDeclaratorNode(id2, init, stack) {
         const obj = this.createNode("VariableDeclarator");
         obj.stack = stack;
-        obj.id = id instanceof _Token ? id : obj.createIdentifierNode(id);
+        obj.id = id2 instanceof _Token ? id2 : obj.createIdentifierNode(id2);
         obj.init = init;
         obj.id.parent = obj;
         if (init) {
@@ -1281,44 +1281,44 @@ var require_Token = __commonJS({
         }
         return obj;
       }
-      createLiteralNode(value, raw, stack) {
+      createLiteralNode(value2, raw, stack) {
         const node = this.createNode("Literal");
         node.stack = stack;
-        node.value = value;
+        node.value = value2;
         if (raw === void 0) {
-          if (typeof value === "string") {
-            node.raw = `'${value}'`;
+          if (typeof value2 === "string") {
+            node.raw = `'${value2}'`;
           } else {
-            node.raw = String(value);
+            node.raw = String(value2);
           }
         } else {
-          node.raw = String(value);
+          node.raw = String(value2);
         }
         return node;
       }
-      createIdentifierNode(value, stack, isVariable = false) {
+      createIdentifierNode(value2, stack, isVariable = false) {
         const token = this.createNode("Identifier");
         token.stack = stack;
-        token.value = value;
-        token.raw = value;
+        token.value = value2;
+        token.raw = value2;
         token.isVariable = isVariable;
         return token;
       }
       createClassRefsNode(module3, stack) {
         if (!module3 || !module3.isModule)
           return null;
-        const name = this.getModuleReferenceName(module3);
+        const name2 = this.getModuleReferenceName(module3);
         return this.createStaticMemberNode([
-          this.createIdentifierNode(name),
+          this.createIdentifierNode(name2),
           this.createIdentifierNode("class")
         ], stack);
       }
-      createChunkNode(value, newLine = true, semicolon = false) {
+      createChunkNode(value2, newLine = true, semicolon = false) {
         const node = this.createNode("ChunkExpression");
         node.newLine = newLine;
         node.semicolon = semicolon;
-        node.value = value;
-        node.raw = value;
+        node.value = value2;
+        node.raw = value2;
         return node;
       }
       createThisNode(stack) {
@@ -1345,12 +1345,12 @@ var require_Token = __commonJS({
         right.parent = node;
         return node;
       }
-      createNewNode(callee, args = []) {
+      createNewNode(callee, args2 = []) {
         const node = this.createNode("NewExpression");
         node.callee = callee;
-        node.arguments = args;
+        node.arguments = args2;
         callee.parent = node;
-        args.forEach((item) => item.parent = node);
+        args2.forEach((item) => item.parent = node);
         return node;
       }
       createUsingStatementNode(specifier) {
@@ -1390,22 +1390,22 @@ var require_Token = __commonJS({
         type = type || this.inferType(stack);
         originType = originType || this.builder.getAvailableOriginType(type);
         if (originType && originType.toLowerCase() === "array") {
-          let value = tokenValue || this.createToken(stack);
+          let value2 = tokenValue || this.createToken(stack);
           if (assignName) {
-            value = this.createAssignmentNode(this.createIdentifierNode(assignName, null, true), value);
+            value2 = this.createAssignmentNode(this.createIdentifierNode(assignName, null, true), value2);
           }
-          return this.createCalleeNode(this.createIdentifierNode("is_array"), [value]);
+          return this.createCalleeNode(this.createIdentifierNode("is_array"), [value2]);
         } else if (type.isAnyType || type.isUnionType || type.isIntersectionType || type.isLiteralObjectType) {
           const system = this.builder.getGlobalModuleById("System");
           this.addDepend(system);
-          let value = tokenValue || this.createToken(stack);
+          let value2 = tokenValue || this.createToken(stack);
           if (assignName) {
-            value = this.createAssignmentNode(this.createIdentifierNode(assignName, null, true), value);
+            value2 = this.createAssignmentNode(this.createIdentifierNode(assignName, null, true), value2);
           }
           return this.createCalleeNode(this.createStaticMemberNode([
             this.createIdentifierNode(this.getModuleReferenceName(system)),
             this.createIdentifierNode("condition")
-          ]), [value]);
+          ]), [value2]);
         }
         return tokenValue || this.createToken(stack);
       }
@@ -1471,31 +1471,31 @@ var require_Token = __commonJS({
       createCallReflectPropertyNode(memberStack) {
         return memberStack.computed ? this.createToken(memberStack.property) : this.createLiteralNode(memberStack.property.value());
       }
-      createArrayAddressRefsNode(desc2, name, nameNode) {
+      createArrayAddressRefsNode(desc2, name2, nameNode) {
         if (!desc2)
           return;
         const assignAddress = desc2.isStack && desc2.assignItems && this.getAssignAddressRef(desc2);
         if (assignAddress) {
-          const name2 = assignAddress.getName(desc2);
+          const name3 = assignAddress.getName(desc2);
           const rd = assignAddress.createIndexName(desc2);
           if (rd) {
             return this.createMemberNode([
-              this.createIdentifierNode(name2, null, true),
+              this.createIdentifierNode(name3, null, true),
               this.createIdentifierNode(rd, null, true)
             ], null, true);
           }
         }
-        return nameNode || this.createIdentifierNode(name, null, true);
+        return nameNode || this.createIdentifierNode(name2, null, true);
       }
       addVariableRefs(desc2, refsName) {
         if (!desc2 || !desc2.isStack)
           return;
-        const name = refsName || desc2.value();
+        const name2 = refsName || desc2.value();
         let funScope = this.scope;
         const check = (scope) => {
           if (!scope)
             return;
-          if (!scope.declarations.has(name)) {
+          if (!scope.declarations.has(name2)) {
             return scope.children.some((child) => {
               return check(child);
             });
@@ -1540,7 +1540,7 @@ var require_Token = __commonJS({
           return null;
         return assignAddressRef.get(desc2);
       }
-      addAssignAddressRef(desc2, value) {
+      addAssignAddressRef(desc2, value2) {
         if (!desc2)
           return null;
         var address = assignAddressRef.get(desc2);
@@ -1548,8 +1548,8 @@ var require_Token = __commonJS({
           address = new AddressVariable(desc2, this);
           assignAddressRef.set(desc2, address);
         }
-        if (value) {
-          address.add(value);
+        if (value2) {
+          address.add(value2);
         }
         return address;
       }
@@ -1763,16 +1763,16 @@ var require_Token = __commonJS({
         }
         return false;
       }
-      checkRefsName(name, top = false, flags = _Token.SCOPE_REFS_DOWN | _Token.SCOPE_REFS_UP_FUN, context = null, initInvoke = null) {
-        const ctx = context || this.getParentByType((parent) => {
+      checkRefsName(name2, top = false, flags = _Token.SCOPE_REFS_DOWN | _Token.SCOPE_REFS_UP_FUN, context = null, initInvoke = null) {
+        const ctx2 = context || this.getParentByType((parent) => {
           if (top) {
             return TOP_SCOPE.includes(parent.type);
           } else {
             return FUNCTION_SCOPE.includes(parent.type);
           }
         }, true);
-        if (!ctx) {
-          return name;
+        if (!ctx2) {
+          return name2;
         }
         if (top)
           flags = _Token.SCOPE_REFS_All;
@@ -1785,13 +1785,13 @@ var require_Token = __commonJS({
           cache.set(key, dataset = {
             scope,
             result: /* @__PURE__ */ new Set(),
-            check(name2, scope2) {
-              if (this.result.has(name2))
+            check(name3, scope2) {
+              if (this.result.has(name3))
                 return true;
               if (flags === _Token.SCOPE_REFS_All) {
-                return scope2.topDeclarations.has(name2);
+                return scope2.topDeclarations.has(name3);
               }
-              if (scope2.isDefine(name2)) {
+              if (scope2.isDefine(name3)) {
                 return true;
               }
               var index2 = 0;
@@ -1800,19 +1800,19 @@ var require_Token = __commonJS({
                 flag = Math.pow(2, index2++);
                 switch (flags & flag) {
                   case _Token.SCOPE_REFS_DOWN:
-                    if (scope2.declarations.has(name2) || scope2.hasChildDeclared(name2))
+                    if (scope2.declarations.has(name3) || scope2.hasChildDeclared(name3))
                       return true;
                   case _Token.SCOPE_REFS_UP:
-                    if (scope2.isDefine(name2))
+                    if (scope2.isDefine(name3))
                       return true;
                   case _Token.SCOPE_REFS_TOP:
-                    if (scope2.isDefine(name2) || scope2.hasChildDeclared(name2))
+                    if (scope2.isDefine(name3) || scope2.hasChildDeclared(name3))
                       return true;
                   case _Token.SCOPE_REFS_UP_FUN:
-                    if (scope2.isDefine(name2, "function"))
+                    if (scope2.isDefine(name3, "function"))
                       return true;
                   case _Token.SCOPE_REFS_UP_CLASS:
-                    if (scope2.isDefine(name2, "class"))
+                    if (scope2.isDefine(name3, "class"))
                       return true;
                 }
               }
@@ -1820,69 +1820,69 @@ var require_Token = __commonJS({
             }
           });
         }
-        const isTokenCtx = ctx instanceof _Token;
-        var body = isTokenCtx ? ctx.beforeBody || ctx.body : null;
-        var block = isTokenCtx ? ctx : null;
+        const isTokenCtx = ctx2 instanceof _Token;
+        var body = isTokenCtx ? ctx2.beforeBody || ctx2.body : null;
+        var block = isTokenCtx ? ctx2 : null;
         if (body && body.type === "BlockStatement") {
           block = body;
           body = body.body;
         }
-        if (dataset.check(name, scope)) {
+        if (dataset.check(name2, scope)) {
           var index = 1;
-          while (dataset.check(name + index, scope) && index++)
+          while (dataset.check(name2 + index, scope) && index++)
             ;
-          var value = name + index;
-          dataset.result.add(value);
+          var value2 = name2 + index;
+          dataset.result.add(value2);
           if (isTokenCtx) {
-            const event = { name, value, top, context: ctx, scope, prevent: false };
-            ctx.emit("onCreateRefsName", event);
+            const event = { name: name2, value: value2, top, context: ctx2, scope, prevent: false };
+            ctx2.emit("onCreateRefsName", event);
             if (block && !event.prevent) {
               let init2 = null;
               if (initInvoke) {
-                init2 = initInvoke(value, name);
+                init2 = initInvoke(value2, name2);
               }
               if (init2) {
                 body.push(block.createDeclarationNode("const", [
                   block.createDeclaratorNode(
-                    block.createIdentifierNode(value),
+                    block.createIdentifierNode(value2),
                     init2
                   )
                 ]));
               }
             }
           }
-          return value;
+          return value2;
         } else if (!top) {
-          dataset.result.add(name);
+          dataset.result.add(name2);
           if (initInvoke && block) {
-            var init = initInvoke(name, name);
+            var init = initInvoke(name2, name2);
             if (init) {
               body.push(block.createDeclarationNode("const", [
                 block.createDeclaratorNode(
-                  block.createIdentifierNode(name),
+                  block.createIdentifierNode(name2),
                   init
                 )
               ]));
             }
           }
         }
-        return name;
+        return name2;
       }
-      getDeclareRefsName(desc2, name, flags = _Token.SCOPE_REFS_DOWN | _Token.SCOPE_REFS_UP_FUN, initInvoke = null, context = null) {
+      getDeclareRefsName(desc2, name2, flags = _Token.SCOPE_REFS_DOWN | _Token.SCOPE_REFS_UP_FUN, initInvoke = null, context = null) {
         if (!desc2)
-          return name;
+          return name2;
         var cache = DECLARE_REFS.get(desc2);
         if (!cache)
           DECLARE_REFS.set(desc2, cache = {});
-        if (Object.prototype.hasOwnProperty.call(cache, name)) {
-          return cache[name];
+        if (Object.prototype.hasOwnProperty.call(cache, name2)) {
+          return cache[name2];
         }
-        return cache[name] = this.checkRefsName(name, false, flags, context, initInvoke);
+        return cache[name2] = this.checkRefsName(name2, false, flags, context, initInvoke);
       }
-      getWasRefsName(desc2, name) {
+      getWasRefsName(desc2, name2) {
         var cache = DECLARE_REFS.get(desc2);
         if (cache) {
-          return cache[name];
+          return cache[name2];
         }
         return null;
       }
@@ -1914,9 +1914,9 @@ var require_Token = __commonJS({
         }
         return stack;
       }
-      getAccessorName(name, desc2, accessor = "get") {
+      getAccessorName(name2, desc2, accessor = "get") {
         const prefix = accessor;
-        const suffix = name.substr(0, 1).toUpperCase() + name.substr(1);
+        const suffix = name2.substr(0, 1).toUpperCase() + name2.substr(1);
         var key = prefix + suffix;
         if (desc2 && desc2.isStack && desc2.module) {
           const module3 = desc2.module;
@@ -1928,15 +1928,15 @@ var require_Token = __commonJS({
             return dataset[key];
           }
           var index = 1;
-          var value = key;
+          var value2 = key;
           while (true) {
-            const has = isStatic ? module3.getMethod(value) : module3.getMember(value);
+            const has = isStatic ? module3.getMethod(value2) : module3.getMember(value2);
             if (!has)
               break;
-            value = key + index++;
+            value2 = key + index++;
           }
-          dataset[key] = value;
-          return value;
+          dataset[key] = value2;
+          return value2;
         }
         return key;
       }
@@ -1974,11 +1974,11 @@ var require_Token = __commonJS({
 var require_Polyfill = __commonJS({
   "core/Polyfill.js"(exports2, module2) {
     var fs = require("fs");
-    var path2 = require("path");
+    var path3 = require("path");
     var modules2 = /* @__PURE__ */ new Map();
-    var dirname = true ? path2.join(__dirname, "polyfills") : path2.join(__dirname, "../", "polyfill");
-    var parseModule = (modules3, file, name) => {
-      const info = path2.parse(name);
+    var dirname = true ? path3.join(__dirname, "polyfills") : path3.join(__dirname, "../", "polyfill");
+    var parseModule = (modules3, file, name2) => {
+      const info = path3.parse(name2);
       let content = fs.readFileSync(file).toString();
       let exportName = info.name;
       let require2 = [];
@@ -1991,12 +1991,12 @@ var require_Polyfill = __commonJS({
         content = content.substring(comment.index + comment[0].length);
         comment = comment[0];
       }
-      content = content.replace(/([\r\n\s]+)?\/\/\/[\s+]?<(references|namespaces|export|import|createClass)\s+(.*?)\/>\s+?/g, function(_, a, b, c) {
+      content = content.replace(/([\r\n\s]+)?\/\/\/[\s+]?<(references|namespaces|export|import|createClass)\s+(.*?)\/>\s+?/g, function(_2, a, b, c) {
         const items = c.trim().replace(/[\s+]?=[\s+]?/g, "=").split(/\s+/g);
         const attr = {};
         items.forEach((item) => {
-          const [key, value] = item.replace(/[\'\"]/g, "").trim().split("=");
-          attr[key] = value;
+          const [key, value2] = item.replace(/[\'\"]/g, "").trim().split("=");
+          attr[key] = value2;
         });
         switch (b) {
           case "references":
@@ -2016,8 +2016,8 @@ var require_Polyfill = __commonJS({
             break;
           case "import":
             if (attr["from"]) {
-              const name2 = attr["to"] || attr["name"];
-              requires.set(name2, { key: name2, value: name2, from: attr["from"], extract: !!attr["extract"] });
+              const name3 = attr["to"] || attr["name"];
+              requires.set(name3, { key: name3, value: name3, from: attr["from"], extract: !!attr["extract"] });
             }
             break;
           case "createClass":
@@ -2028,8 +2028,8 @@ var require_Polyfill = __commonJS({
         }
         return "";
       });
-      var id = namespace ? `${namespace}.${info.name}` : info.name;
-      modules3.set(id, {
+      var id2 = namespace ? `${namespace}.${info.name}` : info.name;
+      modules3.set(id2, {
         id: info.name,
         content,
         export: exportName,
@@ -2044,7 +2044,7 @@ var require_Polyfill = __commonJS({
       if (!fs.existsSync(dirname2))
         return;
       fs.readdirSync(dirname2).forEach((filename) => {
-        const filepath = path2.join(dirname2, filename);
+        const filepath = path3.join(dirname2, filename);
         if (fs.statSync(filepath).isFile()) {
           parseModule(modules3, filepath, filename);
         } else if (fs.statSync(filepath).isDirectory()) {
@@ -2078,12 +2078,12 @@ var require_Router = __commonJS({
         }
         return object;
       }
-      addItem(file, className, action, path2, method, params) {
-        while (path2.charCodeAt(0) === 47) {
-          path2 = path2.substring(1);
+      addItem(file, className, action, path3, method, params) {
+        while (path3.charCodeAt(0) === 47) {
+          path3 = path3.substring(1);
         }
-        const item = { className, action, path: path2, method, params };
-        const cacheKey = [path2].concat((params || []).map((item2) => item2.name)).join("-");
+        const item = { className, action, path: path3, method, params };
+        const cacheKey = [path3].concat((params || []).map((item2) => item2.name)).join("-");
         const cacheValue = [className, "::", action, "/", cacheKey, ":", method].join("");
         const old = this.cached[cacheKey];
         if (old) {
@@ -2271,7 +2271,7 @@ var require_Assets = __commonJS({
       getOutputFilePath() {
         if (this.assetOutputFile)
           return this.assetOutputFile;
-        const publicPath = (this.context.plugin.options.resolve.publicPath || "").trim();
+        const publicPath = (this.context.plugin.options.publicPath || "").trim();
         let folder = this.getFolder();
         if (publicPath && !PATH.isAbsolute(folder)) {
           folder = PATH.join(publicPath, folder);
@@ -2282,8 +2282,8 @@ var require_Assets = __commonJS({
           hash: this.getHash(),
           ext: suffixMaps[ext] || ext
         };
-        let file = this.format.replace(/\[(\w+)\]/g, (_, name) => {
-          return data2[name] || "";
+        let file = this.format.replace(/\[(\w+)\]/g, (_2, name2) => {
+          return data2[name2] || "";
         });
         file = PATH.join(folder, file);
         return this.assetOutputFile = this.context.compiler.normalizePath(PATH.isAbsolute(file) ? PATH.relative(this.context.getOutputPath(), file) : file);
@@ -2291,13 +2291,13 @@ var require_Assets = __commonJS({
       getFilename() {
         if (this.filename)
           return this.filename;
-        let name = this.module ? this.module.id : "";
+        let name2 = this.module ? this.module.id : "";
         if (PATH.isAbsolute(this.file)) {
-          name = PATH.basename(this.file, PATH.extname(this.file));
+          name2 = PATH.basename(this.file, PATH.extname(this.file));
         } else {
-          name = PATH.extname(this.file).slice(1);
+          name2 = PATH.extname(this.file).slice(1);
         }
-        return this.filename = String(name).toLowerCase();
+        return this.filename = String(name2).toLowerCase();
       }
       getHash() {
         if (this.hash)
@@ -2327,8 +2327,8 @@ var require_Assets = __commonJS({
         this.dataset = /* @__PURE__ */ new Map();
         this.context = null;
       }
-      setContext(ctx) {
-        this.context = ctx;
+      setContext(ctx2) {
+        this.context = ctx2;
       }
       emit(done) {
         const queues = Array.from(this.dataset.values()).filter((asset) => asset.change).map((asset) => new Promise((resolve, reject) => {
@@ -2390,7 +2390,6 @@ var require_Builder = __commonJS({
     var sqlInstance = new Sql2();
     var fileContextScopes = /* @__PURE__ */ new Map();
     var privateKey = Symbol("key");
-    var hasOwn = Object.prototype.hasOwnProperty;
     var _Builder = class extends Token2 {
       constructor(compilation) {
         super(null);
@@ -2427,11 +2426,11 @@ var require_Builder = __commonJS({
       createHash(str) {
         return crypto.createHash("md5").update(str).digest("hex").substring(0, 8);
       }
-      addSqlTableNode(id, node, stack) {
-        sqlInstance.addTable(id, node, stack);
+      addSqlTableNode(id2, node, stack) {
+        sqlInstance.addTable(id2, node, stack);
       }
-      hasSqlTableNode(id) {
-        return sqlInstance.has(id);
+      hasSqlTableNode(id2) {
+        return sqlInstance.has(id2);
       }
       getRouterInstance() {
         return routerInstance;
@@ -2441,12 +2440,12 @@ var require_Builder = __commonJS({
           fileAndNamespaceMappingCached.set(file, namespace);
         }
       }
-      addRouterConfig(module3, method, path2, action, params) {
+      addRouterConfig(module3, method, path3, action, params) {
         const outputFolder = this.getModuleMappingFolder(module3, "router");
         if (!outputFolder)
           return;
         const className = this.getModuleNamespace(module3, module3.id, false);
-        this.getRouterInstance().addItem(PATH.join(this.getOutputPath(), outputFolder), className, action, path2, method, params);
+        this.getRouterInstance().addItem(PATH.join(this.getOutputPath(), outputFolder), className, action, path3, method, params);
       }
       addDependencyForComposer(identifier, version, env = "prod") {
         composerDependencies.set(identifier, { name: identifier, version, env });
@@ -2472,7 +2471,6 @@ var require_Builder = __commonJS({
           const items = [];
           const root = this.plugin.options.resolve.mapping.folder.root;
           const file = PATH.isAbsolute(root) ? root : PATH.join(this.getOutputPath(), root, "manifest.php");
-          this.resolveSourceFileMappingPath();
           fileAndNamespaceMappingCached.forEach((ns, file2) => {
             items.push(`'${ns}'=>'${file2}'`);
           });
@@ -2482,14 +2480,13 @@ var require_Builder = __commonJS({
         }
       }
       emitSql() {
-        const root = this.plugin.options.resolve.mapping.folder.root || "";
-        const file = PATH.isAbsolute(root) ? root : PATH.join(this.getOutputPath(), root, "app.sql");
+        const file = PATH.join(this.getOutputPath(), "app.sql");
         this.emitFile(file, sqlInstance.toString());
       }
       getOutputPath() {
-        const value = this.__outputPath;
-        if (value)
-          return value;
+        const value2 = this.__outputPath;
+        if (value2)
+          return value2;
         return this.__outputPath = this.compiler.pathAbsolute(this.plugin.options.output || this.compiler.options.output);
       }
       getComposerPath() {
@@ -2739,35 +2736,35 @@ var require_Builder = __commonJS({
         if (!items || !items.length)
           return true;
         return items.every((item) => {
-          const name = item.name.toLowerCase();
-          if (!["runtime", "syntax", "env", "version"].includes(name)) {
+          const name2 = item.name.toLowerCase();
+          if (!["runtime", "syntax", "env", "version"].includes(name2)) {
             return true;
           }
-          const args = item.getArguments();
-          const indexes = name === "version" ? [, , , "expect"] : name === "env" ? [, , "expect"] : [, "expect"];
-          const _expect = this.getAnnotationArgument("expect", args, indexes, true);
-          const value = args[0].value;
+          const args2 = item.getArguments();
+          const indexes = name2 === "version" ? [, , , "expect"] : name2 === "env" ? [, , "expect"] : [, "expect"];
+          const _expect = this.getAnnotationArgument("expect", args2, indexes, true);
+          const value2 = args2[0].value;
           const expect = _expect ? String(_expect.value).trim() !== "false" : true;
-          switch (name) {
+          switch (name2) {
             case "runtime":
-              return this.isRuntime(value) === expect;
+              return this.isRuntime(value2) === expect;
             case "syntax":
-              return this.isSyntax(value) === expect;
+              return this.isSyntax(value2) === expect;
             case "env": {
-              const name2 = this.getAnnotationArgument("name", args, ["name", "value"], true);
-              const value2 = this.getAnnotationArgument("value", args, ["name", "value"], true);
-              if (value2 && name2) {
-                return this.isEnv(name2.value, value2.value) === expect;
+              const name3 = this.getAnnotationArgument("name", args2, ["name", "value"], true);
+              const value3 = this.getAnnotationArgument("value", args2, ["name", "value"], true);
+              if (value3 && name3) {
+                return this.isEnv(name3.value, value3.value) === expect;
               } else {
                 item.error(`Missing name or value arguments. the '${item.name}' annotations.`);
               }
             }
             case "version": {
-              const name2 = this.getAnnotationArgument("name", args, ["name", "version", "operator"], true);
-              const version = this.getAnnotationArgument("version", args, ["name", "version", "operator"], true);
-              const operator = this.getAnnotationArgument("operator", args, ["name", "version", "operator"], true);
-              if (name2 && version) {
-                return this.isVersion(name2.value, version.value, operator ? operator.value : "elt") === expect;
+              const name3 = this.getAnnotationArgument("name", args2, ["name", "version", "operator"], true);
+              const version = this.getAnnotationArgument("version", args2, ["name", "version", "operator"], true);
+              const operator = this.getAnnotationArgument("operator", args2, ["name", "version", "operator"], true);
+              if (name3 && version) {
+                return this.isVersion(name3.value, version.value, operator ? operator.value : "elt") === expect;
               } else {
                 item.error(`Missing name or version arguments. the '${item.name}' annotations.`);
               }
@@ -2809,16 +2806,16 @@ var require_Builder = __commonJS({
         }
         return _result;
       }
-      getAnnotationArgument(name, args = [], indexes = [], lowerFlag = false) {
-        let index = args.findIndex((item) => lowerFlag ? String(item.key).toLowerCase() === name : item.key === name);
+      getAnnotationArgument(name2, args2 = [], indexes = [], lowerFlag = false) {
+        let index = args2.findIndex((item) => lowerFlag ? String(item.key).toLowerCase() === name2 : item.key === name2);
         if (index < 0) {
-          index = indexes.indexOf(name);
+          index = indexes.indexOf(name2);
           if (index >= 0) {
-            const arg = args[index];
+            const arg = args2[index];
             return arg && !arg.assigned ? arg : null;
           }
         }
-        return args[index] || null;
+        return args2[index] || null;
       }
       isUsed(module3, ctxModule) {
         ctxModule = ctxModule || this.compilation;
@@ -2829,15 +2826,15 @@ var require_Builder = __commonJS({
         }
         return !!(this.compiler.callUtils("isTypeModule", module3) && module3.used);
       }
-      getModuleById(id, flag = false) {
-        return this.compilation.getModuleById(id, flag);
+      getModuleById(id2, flag = false) {
+        return this.compilation.getModuleById(id2, flag);
       }
-      getGlobalModuleById(id) {
-        return this.compilation.getGlobalTypeById(id);
+      getGlobalModuleById(id2) {
+        return this.compilation.getGlobalTypeById(id2);
       }
-      isRuntime(name) {
+      isRuntime(name2) {
         const metadata = this.plugin.options.metadata || {};
-        switch (name.toLowerCase()) {
+        switch (name2.toLowerCase()) {
           case "client":
             return (metadata.platform || this.platform) === "client";
           case "server":
@@ -2845,28 +2842,28 @@ var require_Builder = __commonJS({
         }
         return false;
       }
-      isSyntax(name) {
-        return name && name.toLowerCase() === this.name;
+      isSyntax(name2) {
+        return name2 && name2.toLowerCase() === this.name;
       }
-      isEnv(name, value) {
+      isEnv(name2, value2) {
         const metadata = this.plugin.options.metadata;
         const env = metadata.env || {};
-        if (value !== void 0) {
-          if (name.toLowerCase() === "mode") {
-            if (this.plugin.options.mode === value || env.NODE_ENV === value) {
+        if (value2 !== void 0) {
+          if (name2.toLowerCase() === "mode") {
+            if (this.plugin.options.mode === value2 || env.NODE_ENV === value2) {
               return true;
             }
           }
-          return env[name] === value;
+          return env[name2] === value2;
         }
         return false;
       }
-      isVersion(name, version, operator = "elt", flag = false) {
+      isVersion(name2, version, operator = "elt", flag = false) {
         const metadata = this.plugin.options.metadata;
-        const right = String(metadata[name] || "0.0.0").trim();
+        const right = String(metadata[name2] || "0.0.0").trim();
         const left = String(version || "0.0.0").trim();
-        const rule = /^\d+\.\d+\.\d+$/;
-        if (!rule.test(left) || !rule.test(right)) {
+        const rule2 = /^\d+\.\d+\.\d+$/;
+        if (!rule2.test(left) || !rule2.test(right)) {
           console.warn("Invalid version. in check metadata");
           return false;
         }
@@ -2911,13 +2908,13 @@ var require_Builder = __commonJS({
         const isStr = typeof module3 === "string";
         if (!module3)
           return output;
-        const folder = isStr ? this.getSourceFileMappingFolder(module3, compilation) : this.getModuleMappingFolder(module3);
+        const folder = isStr ? this.getSourceFileMappingFolder(module3) : this.getModuleMappingFolder(module3);
         if (!isStr && module3 && module3.isModule) {
           if (module3.isDeclaratorModule) {
             const polyfillModule = Polyfill2.modules.get(module3.getName());
             const filename = module3.id + suffix;
             if (polyfillModule) {
-              return this.compiler.normalizePath(PATH.join(output, (folder || polyfillModule.namespace || config.ns).replace(/\./g, "/"), filename));
+              return this.compiler.normalizePath(PATH.join(output, folder || polyfillModule.namespace, filename));
             }
             return this.compiler.normalizePath(PATH.join(output, (folder ? folder : module3.getName("/")) + suffix));
           } else if (module3.compilation.isDescriptorDocument()) {
@@ -2940,60 +2937,20 @@ var require_Builder = __commonJS({
         outputAbsolutePathCached.set(module3, filepath);
         return filepath;
       }
-      recursionModule(module3, callback, imps = false) {
-        var current = module3;
-        while (current && current.isModule) {
-          let res = callback(current);
-          if (res !== false) {
-            return res;
-          }
-          if (imps) {
-            for (var i = 0; i < module3.implements.length; i++) {
-              let res2 = this.recursionModule(module3.implements[i], callback, true);
-              if (res2 !== false) {
-                return res2;
-              }
-            }
-          }
-          current = current.inherit;
-        }
-        return false;
-      }
-      findDefineAnnotationForType(annotations) {
-        if (!annotations)
-          return null;
-        const annotation = annotations.find((annotation2) => {
-          if (annotation2.name.toLowerCase() === "define") {
-            const args = annotation2.getArguments();
-            if (args[0]) {
-              return String(args[0].key).toLowerCase() === "type" && args[0].value;
-            }
-          }
-          return false;
-        });
-        if (annotation) {
-          const args = annotation.getArguments();
-          const resolveType = args[0].value;
-          if (resolveType) {
-            return resolveType.toLowerCase();
-          }
-        }
-        return null;
-      }
       resolveModuleType(module3) {
         if (resolveModuleTypeCached.has(module3)) {
           return resolveModuleTypeCached.get(module3);
         }
-        const resolve = !module3.isModule && module3.stack ? this.findDefineAnnotationForType(module3.stack.annotations) : this.recursionModule(module3, (current) => {
-          const stack = this.compilation.getStackByModule(current);
-          if (stack) {
-            const annotation = this.findDefineAnnotationForType(stack.annotations);
-            if (annotation) {
-              return annotation;
+        let resolve = null;
+        this.compilation.stack.findAnnotation(module3, (annotation) => {
+          if (annotation.name.toLowerCase() === "define") {
+            const args2 = annotation.getArguments();
+            if (args2[0] && String(args2[0].key).toLowerCase() === "type") {
+              return resolve = args2[0].value;
             }
           }
           return false;
-        }, true);
+        });
         switch (resolve) {
           case "controller":
             resolveModuleTypeCached.set(module3, _Builder.MODULE_TYPE_CONTROLLER);
@@ -3030,239 +2987,72 @@ var require_Builder = __commonJS({
         }
         return "*";
       }
-      checkResolveRuleMatch(rule, relative, type, fileExt, fileName, delimiter = "/") {
-        let test = rule.test;
-        if (test.charCodeAt(0) === 46) {
-          test = test.substring(1);
-        }
-        if (test.charCodeAt(0) === 47) {
-          test = test.substring(1);
-        }
-        if (type) {
-          let match = "::" + type;
-          let len = match.length;
-          if (test.slice(-len) !== match)
-            return false;
-          test = test.slice(0, -len);
-        }
-        if (fileExt) {
-          let suffixPos = test.lastIndexOf(".");
-          if (suffixPos > 0) {
-            const ruleSuffix = test.slice(suffixPos);
-            if (ruleSuffix !== ".*" && test.slice(suffixPos) !== fileExt)
-              return false;
-            test = test.slice(0, suffixPos);
-          } else {
-            if (test.slice(-1) !== "*")
-              return false;
-            test = test.slice(0, -1);
-          }
-        }
-        if (fileName) {
-          let filenamePos = test.lastIndexOf("/");
-          if (test.slice(filenamePos + 1) === fileName) {
-            test = filenamePos >= 0 ? test.slice(0, filenamePos) : "";
-          } else {
-            let token = test.slice(-1);
-            if (!(token === "*"))
-              return false;
-            test = test.slice(0, -1);
-          }
-          if (test.charCodeAt(test.length - 1) === 47) {
-            test = test.slice(0, -1);
-          }
-        }
-        if (!relative && !test) {
-          return [[], []];
-        }
-        const segments = test.split("/");
-        const parts = relative.split(delimiter);
-        let rest = false;
-        const flag = segments.every((seg, index) => {
-          if (!seg && !test)
-            return true;
-          if (seg.includes("**")) {
-            rest = true;
-            return true;
-          }
-          return seg === "*" || parts[index] === seg;
-        });
-        const count = rest ? segments.length - 1 : segments.length;
-        if (count > parts.length)
-          return false;
-        if (flag) {
-          if (rest) {
-            return [segments, parts];
-          } else if (segments.length === parts.length) {
-            return [segments, parts];
-          }
-        }
-        return false;
+      getSourceFileMappingFolder(file) {
+        return this.resolveSourceFileMappingPath(file, "folders");
       }
-      getSourceFileMappingFolder(file, compilation) {
-        if (this.plugin.options.assets.test(file)) {
-          return this.resolveSourceFileMappingPath(file, this.plugin.options.resolve.mapping.folder, "asset");
-        } else {
-          var type = "general";
-          if (compilation && file === compilation.file && compilation.stack) {
-            const annotation = this.findDefineAnnotationForType(compilation.stack.annotations);
-            if (annotation) {
-              type = annotation;
-            }
-          }
-          return this.resolveSourceFileMappingPath(file, this.plugin.options.resolve.mapping.folder, type);
-        }
-      }
-      getModuleMappingFolder(module3, typeName = null) {
+      getModuleMappingFolder(module3) {
         if (module3 && module3.isModule) {
-          typeName = typeName || this.resolveModuleTypeName(module3);
           let file = module3.compilation.file;
           if (module3.isDeclaratorModule) {
-            let ns = module3.namespace.parent ? module3.namespace : null;
-            if ((!typeName || typeName === "*") && !ns) {
-              typeName = "global";
-            }
-            if (ns) {
-              file = module3.namespace.getChain().join("/") + module3.id + PATH.extname(file);
-            } else {
-              file = module3.id + PATH.extname(file);
+            file = module3.getName("/");
+            const compilation = module3.compilation;
+            if (compilation) {
+              if (compilation.isGlobalFlag && compilation.pluginScopes.scope === "global") {
+                file += ".global";
+              }
             }
           }
-          return this.resolveSourceFileMappingPath(file, this.plugin.options.resolve.mapping.folder, typeName);
+          return this.resolveSourceFileMappingPath(file, "folders");
         }
         return null;
       }
       getModuleMappingNamespace(module3) {
         if (!module3 || !module3.isModule)
           return null;
-        var ns = module3.id;
-        var assignment = null;
+        let ns = module3.id;
+        let assignment = null;
         if (module3.isDeclaratorModule) {
           const polyfill = this.getPolyfillModule(module3.getName());
           if (polyfill) {
-            assignment = polyfill.namespace || this.plugin.options.ns;
-            ns = [assignment, polyfill.export || module3.id].join(".");
+            assignment = polyfill.namespace ? polyfill.namespace.replace(/\./g, "/") : "";
+            ns = [assignment, polyfill.export || module3.id].filter(Boolean).join("/");
           } else {
-            ns = module3.getName();
+            ns = module3.getName("/");
+          }
+          const compilation = module3.compilation;
+          if (compilation) {
+            if (compilation.isGlobalFlag && compilation.pluginScopes.scope === "global") {
+              ns += ".global";
+            }
           }
         } else {
-          ns = module3.getName();
+          ns = module3.getName("/");
         }
         if (ns) {
-          const result = this.geMappingNamespace(ns, module3);
+          const result = this.getMappingNamespace(ns);
           if (result)
             return result;
         }
-        if (this.plugin.options.resolve.useFolderAsNamespace) {
+        if (this.plugin.options.folderAsNamespace) {
           const folder = this.getModuleMappingFolder(module3);
           if (folder) {
-            return folder.replace(/[\.\\\\/]/g, "\\");
+            return folder.replace(/[\\\\/]/g, "\\");
           }
         }
         if (assignment) {
-          return assignment.replace(/\./g, "\\");
+          return assignment.replace(/[\\\\/]/g, "\\");
         }
         return null;
       }
-      geMappingNamespace(ns, module3) {
-        const namespace = this.plugin.options.resolve.mapping.namespace;
-        if (!namespace.explicit) {
-          for (let rule of namespace.rules) {
-            if (rule.vague > 0 || rule.dynamic) {
-              const result = this.checkResolveRuleMatch(rule, ns, null, null, null, ".");
-              if (result) {
-                if (!rule.dynamic)
-                  return rule.value;
-                const [segments, parts] = result;
-                const restMatchPos = segments.findIndex((seg) => seg.includes("**"));
-                parts.pop();
-                return rule.segments.map((item) => {
-                  if (item.includes("%")) {
-                    return item.split("%").slice(1).map((key) => {
-                      if (key.includes("...") && restMatchPos >= 0) {
-                        const range = restMatchPos === segments.length - 1 ? parts.slice(restMatchPos, parts.length) : parts.slice(restMatchPos, parts.length - (segments.length - restMatchPos));
-                        let startIndex = 0;
-                        let endIndex = range.length;
-                        if (key !== "...") {
-                          let [start, end] = key.split("...").map((val) => parseInt(val));
-                          if (start > 0)
-                            startIndex = start;
-                          if (end > 0)
-                            endIndex = end;
-                        }
-                        return range.slice(startIndex, endIndex).join("\\");
-                      }
-                      return parts[key] || null;
-                    }).filter((item2) => !!item2).join("");
-                  }
-                  return item;
-                }).filter((item) => !!item).join("\\");
-              }
-            } else if (rule.raw === ns) {
-              return rule.value;
-            }
-          }
-        } else if (hasOwn.call(namespace.map, ns)) {
-          return namespace.map[ns].value;
-        }
-        return null;
+      getMappingNamespace(id2) {
+        return this.plugin.resolveSourceId(id2, "namespaces");
       }
-      getModuleMappingRoute(module3, data2 = {}) {
-        if (module3 && module3.isModule && !module3.isDeclaratorModule) {
-          if (this.resolveModuleType(module3) !== _Builder.MODULE_TYPE_CONTROLLER)
-            return null;
-          return this.resolveSourceFileMappingPath(module3.compilation.file, this.plugin.options.resolve.mapping.route, "controller", "/", data2);
-        }
-        return null;
+      getModuleMappingRoute(id2, data2 = {}) {
+        return this.plugin.resolveSourceId(id2, "routes", data2);
       }
-      resolveSourceFileMappingPath(file, mapping, type, delimiter = "/", dataset = {}) {
-        if (!mapping || !file)
-          return null;
-        const rules = mapping.rules;
-        if (!rules.length)
-          return null;
-        const isAbsolute = PATH.isAbsolute(file);
-        const fileInfo = PATH.parse(file);
-        const workspace = this.compiler.options.workspace;
-        file = isAbsolute ? PATH.relative(workspace, fileInfo.dir) : file;
-        const relative = this.compiler.normalizePath(file.replace(/^[\.\\\/]+/, ""));
-        for (let rule of rules) {
-          const result = this.checkResolveRuleMatch(rule, relative, type, fileInfo.ext, fileInfo.name);
-          if (result) {
-            const value = rule.value;
-            if (!rule.dynamic)
-              return value;
-            const [segments, parts] = result;
-            const restMatchPos = segments.findIndex((seg) => seg.includes("**"));
-            return rule.segments.map((item) => {
-              if (item.includes("%")) {
-                return item.split("%").slice(1).map((key) => {
-                  if (key.includes("...") && restMatchPos >= 0) {
-                    const range = restMatchPos === segments.length - 1 ? parts.slice(restMatchPos, parts.length) : parts.slice(restMatchPos, parts.length - (segments.length - restMatchPos));
-                    let startIndex = 0;
-                    let endIndex = range.length;
-                    if (key !== "...") {
-                      let [start, end] = key.split("...", 2).map((val) => parseInt(val));
-                      if (start > 0)
-                        startIndex = start;
-                      if (end > 0)
-                        endIndex = end;
-                    }
-                    return range.slice(startIndex, endIndex).join(delimiter);
-                  } else if (key === "filename") {
-                    return fileInfo.name;
-                  } else if (key === "ext") {
-                    return fileInfo.ext;
-                  } else if (key === "classname" || key === "method") {
-                    return dataset[key] || null;
-                  }
-                  return parts[key] || null;
-                }).filter((item2) => !!item2).join("");
-              }
-              return item;
-            }).filter((item) => !!item).join(delimiter);
-          }
-        }
+      resolveSourceFileMappingPath(file, type = "folders") {
+        file = PATH.isAbsolute(file) ? PATH.relative(this.compiler.workspace, file) : file;
+        return this.plugin.resolveSourceId(this.compiler.normalizePath(file), type);
       }
       getOutputRelativePath(module3, context) {
         const contextPath = this.getOutputAbsolutePath(context);
@@ -3316,8 +3106,8 @@ var require_Builder = __commonJS({
         }
         return Array.from(dataset.values());
       }
-      getPolyfillModule(id) {
-        return Polyfill2.modules.get(id);
+      getPolyfillModule(id2) {
+        return Polyfill2.modules.get(id2);
       }
       isActiveForModule(depModule, ctxModule) {
         ctxModule = ctxModule || this.compilation;
@@ -3333,36 +3123,14 @@ var require_Builder = __commonJS({
           return !this.compiler.callUtils("checkDepend", ctxModule, depModule);
         }
       }
-      isReferenceDeclaratorModule(depModule, ctxModule) {
+      isReferenceDeclaratorModule(depModule) {
         if (depModule && depModule.isDeclaratorModule) {
           if (depModule.isStructTable) {
             return false;
           }
-          const disuse = this.plugin.options.resolve.disuse;
-          if (this.checkModulePresetState(depModule, disuse)) {
-            return false;
-          }
-          const using = this.plugin.options.resolve.using;
-          if (this.checkModulePresetState(depModule, using)) {
+          if (this.plugin.resolveSourcePresetFlag(depModule.getName("/"), "usings")) {
             return true;
           }
-        }
-        return false;
-      }
-      checkModulePresetState(module3, setting) {
-        if (!setting.explicit) {
-          for (let rule of setting.rules) {
-            if (rule.vague > 0) {
-              const result = this.checkResolveRuleMatch(rule, module3.getName(), null, null, null, ".");
-              if (result) {
-                return true;
-              }
-            } else if (rule.raw === module3.getName()) {
-              return true;
-            }
-          }
-        } else if (hasOwn.call(setting.map, module3.getName())) {
-          return true;
         }
         return false;
       }
@@ -3448,7 +3216,7 @@ var require_Builder = __commonJS({
       crateAssetItems(module3, dataset, assets, externals, context) {
         assets.forEach((asset) => {
           if (asset.file) {
-            const external = externals && asset.file ? externals.find((name) => asset.file.indexOf(name) === 0) : null;
+            const external = externals && asset.file ? externals.find((name2) => asset.file.indexOf(name2) === 0) : null;
             if (!external) {
               const object = staticAssets.create(asset.resolve, asset.file, asset.assign, module3 || context);
               dataset.add(object);
@@ -3483,7 +3251,7 @@ var require_Builder = __commonJS({
         const requires = module3.requires;
         if (requires && requires.size > 0) {
           requires.forEach((item) => {
-            const external = externals && item.from ? externals.find((name) => item.from.indexOf(name) === 0) : null;
+            const external = externals && item.from ? externals.find((name2) => item.from.indexOf(name2) === 0) : null;
             const object = staticAssets.create(item.resolve, external || item.from, item.key, module3);
             if (item.extract) {
               object.extract = true;
@@ -3506,11 +3274,11 @@ var require_Builder = __commonJS({
         return dataset;
       }
       isImportExclude(source) {
-        const excludes = this.plugin.options.resolve.excludes;
+        const excludes = this.plugin.options.excludes;
         if (excludes && excludes.length > 0) {
           const isModule = typeof source !== "string" && source.isModule ? true : false;
           source = String(isModule ? source.getName() : source);
-          if (excludes.some((rule) => rule instanceof RegExp ? rule.test(source) : source === rule)) {
+          if (excludes.some((rule2) => rule2 instanceof RegExp ? rule2.test(source) : source === rule2)) {
             return true;
           }
         }
@@ -3558,8 +3326,8 @@ var require_Builder = __commonJS({
       getGlobalModules() {
         if (this._globalModules)
           return this._globalModules;
-        return this._globalModules = ["Array", "Object", "Boolean", "Math", "Number", "String", "Console"].map((name) => {
-          return this.compilation.getGlobalTypeById(name);
+        return this._globalModules = ["Array", "Object", "Boolean", "Math", "Number", "String", "Console"].map((name2) => {
+          return this.compilation.getGlobalTypeById(name2);
         });
       }
     };
@@ -3580,22 +3348,22 @@ var require_ClassBuilder = __commonJS({
     var Token2 = require_Token();
     var RouteMethods = ["router", "get", "post", "put", "delete", "option"];
     var ClassBuilder2 = class extends Token2 {
-      static createClassNode(stack, ctx, type) {
-        const obj = new ClassBuilder2(stack, ctx, type);
+      static createClassNode(stack, ctx2, type) {
+        const obj = new ClassBuilder2(stack, ctx2, type);
         return obj.create();
       }
-      constructor(stack, ctx, type) {
+      constructor(stack, ctx2, type) {
         super(type || stack.toString());
         this.stack = stack;
         this.scope = stack.scope;
         this.compilation = stack.compilation;
         this.compiler = stack.compiler;
         this.module = stack.module;
-        this.plugin = ctx.plugin;
-        this.name = ctx.name;
-        this.platform = ctx.platform;
-        this.parent = ctx;
-        this.builder = ctx.builder;
+        this.plugin = ctx2.plugin;
+        this.name = ctx2.name;
+        this.platform = ctx2.platform;
+        this.parent = ctx2;
+        this.builder = ctx2.builder;
         this.initProperties = [];
         this.injectProperties = [];
         this.provideProperties = [];
@@ -3652,9 +3420,9 @@ var require_ClassBuilder = __commonJS({
         if (annotations) {
           const syntaxAnnotation = annotations.find((annotation) => annotation.name.toLowerCase() === "syntax");
           if (syntaxAnnotation) {
-            const args = syntaxAnnotation.getArguments();
-            if (args[0]) {
-              if (this.builder.isSyntax(args[0].value)) {
+            const args2 = syntaxAnnotation.getArguments();
+            if (args2[0]) {
+              if (this.builder.isSyntax(args2[0].value)) {
                 this.compilation.isServerPolicy(module3);
                 return true;
               } else {
@@ -3712,9 +3480,9 @@ var require_ClassBuilder = __commonJS({
             }
           }
           if (item.isMethodSetterDefinition || item.isMethodGetterDefinition) {
-            const name = child.key.value;
+            const name2 = child.key.value;
             const dataset = isStatic ? cache1 : cache2;
-            var target = dataset.get(name);
+            var target = dataset.get(name2);
             if (!target) {
               target = {
                 isAccessor: true,
@@ -3722,7 +3490,7 @@ var require_ClassBuilder = __commonJS({
                 key: child.key,
                 modifier: child.modifier
               };
-              dataset.set(name, target);
+              dataset.set(name2, target);
               refs.push(target);
             }
             if (item.isMethodGetterDefinition) {
@@ -3761,53 +3529,55 @@ var require_ClassBuilder = __commonJS({
             return RouteMethods.includes(annotation2.name.toLowerCase());
           });
           if (annotation) {
-            const args = annotation.getArguments();
+            const args2 = annotation.getArguments();
             const action = memeberStack.key.value();
             const params = memeberStack.params.map((item) => {
               const required = !(item.question || item.isAssignmentPattern);
               return { name: item.value(), required };
             });
             let method = annotation.name.toLowerCase();
-            let path2 = action;
+            let path3 = action;
             if (method === "router") {
-              method = args[0] && args[0].value ? args[0].value : "get";
-              if (args[1] && args[1].value) {
-                path2 = args[1].value.trim();
+              method = args2[0] && args2[0].value ? args2[0].value : "get";
+              if (args2[1] && args2[1].value) {
+                path3 = args2[1].value.trim();
               }
-            } else if (args[0] && args[0].value) {
-              path2 = args[0].value.trim();
+            } else if (args2[0] && args2[0].value) {
+              path3 = args2[0].value.trim();
             }
-            if (path2.charCodeAt(0) === 64) {
-              this.builder.addRouterConfig(this.module, method, path2, action, []);
-            } else if (path2.charCodeAt(0) === 47) {
-              this.builder.addRouterConfig(this.module, method, path2, action, params);
+            if (path3.charCodeAt(0) === 64) {
+              const routePath = this.builder.getModuleMappingRoute(path3, { method, params, action, path: path3, annotation, module: this.module });
+              this.builder.addRouterConfig(this.module, method, routePath, action, params);
+            } else if (path3.charCodeAt(0) === 47) {
+              const routePath = this.builder.getModuleMappingRoute(path3, { method, params, action, path: path3, annotation, module: this.module });
+              this.builder.addRouterConfig(this.module, method, routePath, action, params);
             } else {
-              const prefix = this.builder.getModuleMappingRoute(this.module, { method: action, classname: this.module.id }) || this.module.getName("/");
-              this.builder.addRouterConfig(this.module, method, prefix + "/" + path2, action, params);
+              const routePath = this.builder.getModuleMappingRoute(this.module.getName("/") + "/" + path3, { method, params, action, path: path3, annotation, module: this.module });
+              this.builder.addRouterConfig(this.module, method, routePath, action, params);
             }
           } else if (this.builder.resolveModuleTypeName(this.module) === "controller") {
             const method = "any";
             const action = memeberStack.key.value();
-            const prefix = this.builder.getModuleMappingRoute(this.module, { method: action, classname: this.module.id }) || this.module.getName("/");
             const params = memeberStack.params.map((item) => {
               const required = !(item.question || item.isAssignmentPattern);
               return { name: item.value(), required };
             });
-            this.builder.addRouterConfig(this.module, method, prefix + "/" + action, action, params);
+            const routePath = this.builder.getModuleMappingRoute(this.module.getName("/") + "/" + action, { method, params, action, path: null, annotation: null, module: this.module });
+            this.builder.addRouterConfig(this.module, method, routePath, action, params);
           }
         }
         return node;
       }
       createDefaultConstructMethod(methodName, initProperties, params = []) {
         const inherit = this.inherit;
-        const node = this.createMethodNode(methodName ? this.createIdentifierNode(methodName) : null, (ctx) => {
+        const node = this.createMethodNode(methodName ? this.createIdentifierNode(methodName) : null, (ctx2) => {
           if (inherit) {
-            const se = ctx.createNode("SuperExpression");
+            const se = ctx2.createNode("SuperExpression");
             se.value = "parent";
-            ctx.body.push(
-              ctx.createStatementNode(
-                ctx.createCalleeNode(
-                  ctx.createStaticMemberNode([se, ctx.createIdentifierNode("__construct")]),
+            ctx2.body.push(
+              ctx2.createStatementNode(
+                ctx2.createCalleeNode(
+                  ctx2.createStaticMemberNode([se, ctx2.createIdentifierNode("__construct")]),
                   params
                 )
               )
@@ -3815,14 +3585,14 @@ var require_ClassBuilder = __commonJS({
           }
           if (initProperties && initProperties.length) {
             initProperties.forEach((item) => {
-              ctx.body.push(item);
+              ctx2.body.push(item);
             });
           }
         }, params);
         node.type = "FunctionDeclaration";
         return node;
       }
-      createStatementMember(name, members) {
+      createStatementMember(name2, members) {
         if (!members.length)
           return [];
         const body = [];
@@ -3873,16 +3643,16 @@ var require_ClassBuilder = __commonJS({
         }
         const importFlag = this.plugin.options.import;
         const consistent = this.plugin.options.consistent;
-        const useFolderAsNamespace = this.plugin.options.resolve.useFolderAsNamespace;
+        const folderAsNamespace = this.plugin.options.folderAsNamespace;
         const usingExcludes = this.builder.getGlobalModules();
         const createUse = (depModule) => {
           if (!usingExcludes.includes(depModule)) {
-            const name = this.builder.getModuleNamespace(depModule, depModule.id);
-            if (name) {
-              let local = name;
+            const name2 = this.builder.getModuleNamespace(depModule, depModule.id);
+            if (name2) {
+              let local = name2;
               let imported = void 0;
               if (module3.importAlias && module3.importAlias.has(depModule)) {
-                imported = name;
+                imported = name2;
                 local = module3.importAlias.get(depModule);
               }
               this.using.push(this.createUsingStatementNode(
@@ -3899,10 +3669,10 @@ var require_ClassBuilder = __commonJS({
                   const source = this.builder.getModuleImportSource(depModule, module3);
                   this.imports.push(this.createImportDeclaration(source));
                 }
-              } else if (!(consistent || useFolderAsNamespace)) {
+              } else if (!(consistent || folderAsNamespace)) {
                 const source = this.builder.getFileRelativeOutputPath(depModule);
-                const name = this.builder.getModuleNamespace(depModule, depModule.id);
-                this.builder.addFileAndNamespaceMapping(source, name);
+                const name2 = this.builder.getModuleNamespace(depModule, depModule.id);
+                this.builder.addFileAndNamespaceMapping(source, name2);
               }
               createUse(depModule);
             } else if (this.isReferenceDeclaratorModule(depModule, module3)) {
@@ -3914,7 +3684,7 @@ var require_ClassBuilder = __commonJS({
           const polyfillModule = this.builder.getPolyfillModule(module3.getName());
           if (polyfillModule && polyfillModule.requires.size > 0) {
             polyfillModule.requires.forEach((item) => {
-              const name = item.key;
+              const name2 = item.key;
               const source = item.from;
               if (importFlag && !this.builder.isImportExclude(source)) {
                 this.imports.push(this.createImportDeclaration(source));
@@ -3922,9 +3692,9 @@ var require_ClassBuilder = __commonJS({
               if (!usingExcludes.includes(module3)) {
                 const ns = this.builder.getModuleNamespace(module3, polyfillModule.export);
                 if (ns) {
-                  if (name !== item.value) {
+                  if (name2 !== item.value) {
                     this.using.push(this.createUsingStatementNode(
-                      this.createImportSpecifierNode(name, ns)
+                      this.createImportSpecifierNode(name2, ns)
                     ));
                   } else {
                     this.using.push(this.createUsingStatementNode(
@@ -3981,80 +3751,80 @@ var require_Constant = __commonJS({
 // transforms/Object.js
 var require_Object = __commonJS({
   "transforms/Object.js"(exports2, module2) {
-    function createMethodFunctionNode(ctx, name) {
-      return ctx.createLiteralNode(name);
+    function createMethodFunctionNode(ctx2, name2) {
+      return ctx2.createLiteralNode(name2);
     }
-    function createCommonCalledNode(name, ctx, object, args, called) {
+    function createCommonCalledNode(name2, ctx2, object, args2, called) {
       if (!called)
-        return createMethodFunctionNode(ctx, name);
-      return ctx.createCalleeNode(
-        ctx.createIdentifierNode(name),
-        object ? [object].concat(args) : args
+        return createMethodFunctionNode(ctx2, name2);
+      return ctx2.createCalleeNode(
+        ctx2.createIdentifierNode(name2),
+        object ? [object].concat(args2) : args2
       );
     }
     module2.exports = {
-      assign(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Object");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_object_assign");
+      assign(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Object");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_object_assign");
         if (!called)
-          return createMethodFunctionNode(ctx, name);
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode(name),
-          args
+          return createMethodFunctionNode(ctx2, name2);
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode(name2),
+          args2
         );
       },
-      keys(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Object");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_object_keys");
+      keys(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Object");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_object_keys");
         if (!called)
-          return createMethodFunctionNode(ctx, name);
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode(name),
-          args
+          return createMethodFunctionNode(ctx2, name2);
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode(name2),
+          args2
         );
       },
-      values(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Object");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_object_values");
+      values(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Object");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_object_values");
         if (!called)
-          return createMethodFunctionNode(ctx, name);
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode(name),
-          args
+          return createMethodFunctionNode(ctx2, name2);
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode(name2),
+          args2
         );
       },
-      propertyIsEnumerable(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Object");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_object_property_is_enumerable");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      propertyIsEnumerable(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Object");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_object_property_is_enumerable");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      hasOwnProperty(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Object");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_object_has_own_property");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      hasOwnProperty(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Object");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_object_has_own_property");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      valueOf(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Object");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_object_value_of");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      valueOf(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Object");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_object_value_of");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      toLocaleString(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Object");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_object_to_string");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      toLocaleString(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Object");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_object_to_string");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      toString(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Object");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_object_to_string");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      toString(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Object");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_object_to_string");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       }
     };
   }
@@ -4065,234 +3835,234 @@ var require_Array = __commonJS({
   "transforms/Array.js"(exports2, module2) {
     var ObjectMethod = require_Object();
     var Token2 = require_Token();
-    function createMethodFunctionNode(ctx, name) {
-      return ctx.createLiteralNode(name);
+    function createMethodFunctionNode(ctx2, name2) {
+      return ctx2.createLiteralNode(name2);
     }
-    function createObjectNodeRefs(ctx, object, name) {
+    function createObjectNodeRefs(ctx2, object, name2) {
       return object;
     }
-    function createCommonCalledNode(name, ctx, object, args, called = true) {
+    function createCommonCalledNode(name2, ctx2, object, args2, called = true) {
       if (!called)
-        return createMethodFunctionNode(ctx, name);
-      const obj = createObjectNodeRefs(ctx, object, name);
-      return ctx.createCalleeNode(
-        ctx.createIdentifierNode(name),
-        [obj].concat(args).filter((v) => !!v)
+        return createMethodFunctionNode(ctx2, name2);
+      const obj = createObjectNodeRefs(ctx2, object, name2);
+      return ctx2.createCalleeNode(
+        ctx2.createIdentifierNode(name2),
+        [obj].concat(args2).filter((v) => !!v)
       );
     }
     var methods = {
-      isArray(ctx, object, args, called = false, isStatic = false) {
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("is_array"),
-          args
+      isArray(ctx2, object, args2, called = false, isStatic = false) {
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("is_array"),
+          args2
         );
       },
-      from(ctx, object, args, called = false, isStatic = false) {
-        ctx.addDepend(ctx.builder.getGlobalModuleById("System"));
-        return ctx.createCalleeNode(
-          ctx.createStaticMemberNode([
-            ctx.createIdentifierNode("System"),
-            ctx.createIdentifierNode("toArray")
+      from(ctx2, object, args2, called = false, isStatic = false) {
+        ctx2.addDepend(ctx2.builder.getGlobalModuleById("System"));
+        return ctx2.createCalleeNode(
+          ctx2.createStaticMemberNode([
+            ctx2.createIdentifierNode("System"),
+            ctx2.createIdentifierNode("toArray")
           ]),
-          args
+          args2
         );
       },
-      of(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode(ctx.builder.getModuleNamespace(module3, "es_array_new")),
-          args
+      of(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode(ctx2.builder.getModuleNamespace(module3, "es_array_new")),
+          args2
         );
       },
-      push(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("array_push", ctx, object, args, called);
+      push(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("array_push", ctx2, object, args2, called);
       },
-      unshift(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("array_unshift", ctx, object, args, called);
+      unshift(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("array_unshift", ctx2, object, args2, called);
       },
-      pop(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("array_pop", ctx, object, args, called);
+      pop(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("array_pop", ctx2, object, args2, called);
       },
-      shift(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("array_shift", ctx, object, args, called);
+      shift(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("array_shift", ctx2, object, args2, called);
       },
-      splice(ctx, object, args, called = false, isStatic = false) {
-        if (args.length > 3) {
-          args = args.slice(0, 2).concat(ctx.createArrayNode(args.slice(2)));
+      splice(ctx2, object, args2, called = false, isStatic = false) {
+        if (args2.length > 3) {
+          args2 = args2.slice(0, 2).concat(ctx2.createArrayNode(args2.slice(2)));
         }
-        return createCommonCalledNode("array_splice", ctx, object, args, called);
+        return createCommonCalledNode("array_splice", ctx2, object, args2, called);
       },
-      slice(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("array_slice", ctx, object, args, called);
+      slice(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("array_slice", ctx2, object, args2, called);
       },
-      map(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_map");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      map(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_map");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      find(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_find");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      find(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_find");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      findIndex(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_find_index");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      findIndex(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_find_index");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      filter(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_filter");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      filter(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_filter");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      indexOf(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_find_index");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      indexOf(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_find_index");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      lastIndexOf(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_search_last_index");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      lastIndexOf(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_search_last_index");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      copyWithin(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_copy_within");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      copyWithin(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_copy_within");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      concat(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_concat");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      concat(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_concat");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      every(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_every");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      every(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_every");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      some(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_some");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      some(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_some");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      forEach(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_foreach");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      forEach(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_foreach");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      flat(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_flat");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      flat(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_flat");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      flatMap(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_flat_map");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      flatMap(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_flat_map");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      reduce(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_reduce");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      reduce(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_reduce");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      reduceRight(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_reduce_right");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      reduceRight(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_reduce_right");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      fill(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_fill");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      fill(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_fill");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      sort(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Array");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_array_sort");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      sort(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Array");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_sort");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      join(ctx, object, args, called = false, isStatic = false) {
+      join(ctx2, object, args2, called = false, isStatic = false) {
         if (!called)
-          return ctx.createChunkNode(`function($target,$delimiter){return implode($delimiter,$target);}`);
-        object = createObjectNodeRefs(ctx, object, "implode");
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("implode"),
-          args.concat(object)
+          return ctx2.createChunkNode(`function($target,$delimiter){return implode($delimiter,$target);}`);
+        object = createObjectNodeRefs(ctx2, object, "implode");
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("implode"),
+          args2.concat(object)
         );
       },
-      entries(ctx, object, args, called = false, isStatic = false) {
+      entries(ctx2, object, args2, called = false, isStatic = false) {
         if (!called)
-          return createMethodFunctionNode(ctx, "array_values");
-        object = createObjectNodeRefs(ctx, object, "array_values");
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("array_values"),
+          return createMethodFunctionNode(ctx2, "array_values");
+        object = createObjectNodeRefs(ctx2, object, "array_values");
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("array_values"),
           [object]
         );
       },
-      values(ctx, object, args, called = false, isStatic = false) {
+      values(ctx2, object, args2, called = false, isStatic = false) {
         if (!called)
-          return createMethodFunctionNode(ctx, "array_values");
-        object = createObjectNodeRefs(ctx, object, "array_values");
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("array_values"),
+          return createMethodFunctionNode(ctx2, "array_values");
+        object = createObjectNodeRefs(ctx2, object, "array_values");
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("array_values"),
           [object]
         );
       },
-      keys(ctx, object, args, called = false, isStatic = false) {
+      keys(ctx2, object, args2, called = false, isStatic = false) {
         if (!called)
-          return createMethodFunctionNode(ctx, "array_keys");
-        object = createObjectNodeRefs(ctx, object, "array_keys");
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("array_keys"),
+          return createMethodFunctionNode(ctx2, "array_keys");
+        object = createObjectNodeRefs(ctx2, object, "array_keys");
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("array_keys"),
           [object]
         );
       },
-      reverse(ctx, object, args, called = false, isStatic = false) {
+      reverse(ctx2, object, args2, called = false, isStatic = false) {
         if (!called)
-          return createMethodFunctionNode(ctx, "array_reverse");
-        object = createObjectNodeRefs(ctx, object, "array_reverse");
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("array_reverse"),
-          args.concat(object)
+          return createMethodFunctionNode(ctx2, "array_reverse");
+        object = createObjectNodeRefs(ctx2, object, "array_reverse");
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("array_reverse"),
+          args2.concat(object)
         );
       },
-      includes(ctx, object, args, called = false, isStatic = false) {
+      includes(ctx2, object, args2, called = false, isStatic = false) {
         if (!called)
-          return createMethodFunctionNode(ctx, "in_array");
-        object = createObjectNodeRefs(ctx, object, "in_array");
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("in_array"),
-          args.concat(object)
+          return createMethodFunctionNode(ctx2, "in_array");
+        object = createObjectNodeRefs(ctx2, object, "in_array");
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("in_array"),
+          args2.concat(object)
         );
       },
-      length(ctx, object, args, called = false, isStatic = false) {
-        const obj = createObjectNodeRefs(ctx, object, "count");
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("count"),
+      length(ctx2, object, args2, called = false, isStatic = false) {
+        const obj = createObjectNodeRefs(ctx2, object, "count");
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("count"),
           [obj]
         );
       }
     };
-    ["propertyIsEnumerable", "hasOwnProperty", "valueOf", "toLocaleString", "toString"].forEach((name) => {
-      if (!Object.prototype.hasOwnProperty.call(methods, name)) {
-        methods[name] = ObjectMethod[name];
+    ["propertyIsEnumerable", "hasOwnProperty", "valueOf", "toLocaleString", "toString"].forEach((name2) => {
+      if (!Object.prototype.hasOwnProperty.call(methods, name2)) {
+        methods[name2] = ObjectMethod[name2];
       }
     });
     module2.exports = methods;
@@ -4303,22 +4073,22 @@ var require_Array = __commonJS({
 var require_Base64 = __commonJS({
   "transforms/Base64.js"(exports2, module2) {
     module2.exports = {
-      decode(ctx, object, args, called = false, isStatic = false) {
+      decode(ctx2, object, args2, called = false, isStatic = false) {
         if (!called) {
-          return ctx.createChunkNode(`function($value){return base64_decode( $value );}`);
+          return ctx2.createChunkNode(`function($value){return base64_decode( $value );}`);
         }
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("base64_decode"),
-          args
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("base64_decode"),
+          args2
         );
       },
-      encode(ctx, object, args, called = false, isStatic = false) {
+      encode(ctx2, object, args2, called = false, isStatic = false) {
         if (!called) {
-          return ctx.createChunkNode(`function($value){return base64_encode( $value );}`);
+          return ctx2.createChunkNode(`function($value){return base64_encode( $value );}`);
         }
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("base64_encode"),
-          args
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("base64_encode"),
+          args2
         );
       }
     };
@@ -4329,22 +4099,22 @@ var require_Base64 = __commonJS({
 var require_Console = __commonJS({
   "transforms/Console.js"(exports2, module2) {
     module2.exports = {
-      log(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("System");
-        ctx.addDepend(module3);
+      log(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("System");
+        ctx2.addDepend(module3);
         if (!called) {
-          return ctx.createChunkNode(`function(...$args){System::print(...$args);}`);
+          return ctx2.createChunkNode(`function(...$args){System::print(...$args);}`);
         }
-        return ctx.createCalleeNode(
-          ctx.createStaticMemberNode([
-            ctx.createIdentifierNode("System"),
-            ctx.createIdentifierNode("print")
+        return ctx2.createCalleeNode(
+          ctx2.createStaticMemberNode([
+            ctx2.createIdentifierNode("System"),
+            ctx2.createIdentifierNode("print")
           ]),
-          args
+          args2
         );
       },
-      trace(ctx, object, args, called = false, isStatic = false) {
-        return this.log(ctx, object, args, called, isStatic);
+      trace(ctx2, object, args2, called = false, isStatic = false) {
+        return this.log(ctx2, object, args2, called, isStatic);
       }
     };
   }
@@ -4354,87 +4124,87 @@ var require_Console = __commonJS({
 var require_Number = __commonJS({
   "transforms/Number.js"(exports2, module2) {
     var ObjectMethod = require_Object();
-    function createCommonCalledNode(name, ctx, object, args, called = true) {
+    function createCommonCalledNode(name2, ctx2, object, args2, called = true) {
       if (!called) {
-        return ctx.createLiteralNode(name.replace(/\\/g, "\\\\"));
+        return ctx2.createLiteralNode(name2.replace(/\\/g, "\\\\"));
       }
-      return ctx.createCalleeNode(
-        ctx.createIdentifierNode(name),
-        [object].concat(args)
+      return ctx2.createCalleeNode(
+        ctx2.createIdentifierNode(name2),
+        [object].concat(args2)
       );
     }
     var methods = {
-      MAX_VALUE(ctx) {
-        return ctx.createLiteralNode(`1.79E+308`, `1.79E+308`);
+      MAX_VALUE(ctx2) {
+        return ctx2.createLiteralNode(`1.79E+308`, `1.79E+308`);
       },
-      MIN_VALUE(ctx) {
-        return ctx.createLiteralNode(`5e-324`, `5e-324`);
+      MIN_VALUE(ctx2) {
+        return ctx2.createLiteralNode(`5e-324`, `5e-324`);
       },
-      MAX_SAFE_INTEGER(ctx) {
-        return ctx.createLiteralNode(`9007199254740991`, `9007199254740991`);
+      MAX_SAFE_INTEGER(ctx2) {
+        return ctx2.createLiteralNode(`9007199254740991`, `9007199254740991`);
       },
-      POSITIVE_INFINITY(ctx) {
-        return ctx.createIdentifierNode(`Infinity`);
+      POSITIVE_INFINITY(ctx2) {
+        return ctx2.createIdentifierNode(`Infinity`);
       },
-      EPSILON(ctx) {
-        return ctx.createLiteralNode(`2.220446049250313e-16`, `2.220446049250313e-16`);
+      EPSILON(ctx2) {
+        return ctx2.createLiteralNode(`2.220446049250313e-16`, `2.220446049250313e-16`);
       },
-      isFinite(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("is_finite", ctx, object, args, called);
+      isFinite(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("is_finite", ctx2, object, args2, called);
       },
-      isNaN(ctx, object, args, called = false, isStatic = false) {
-        ctx.addDepend(ctx.builder.getGlobalModuleById("System"));
+      isNaN(ctx2, object, args2, called = false, isStatic = false) {
+        ctx2.addDepend(ctx2.builder.getGlobalModuleById("System"));
         if (!called) {
-          ctx.createChunkNode(`function($target){return System::isNaN($target);}`);
+          ctx2.createChunkNode(`function($target){return System::isNaN($target);}`);
         }
-        return ctx.createCalleeNode(
-          ctx.createStaticMemberNode([
-            ctx.createIdentifierNode("System"),
-            ctx.createIdentifierNode("isNaN")
+        return ctx2.createCalleeNode(
+          ctx2.createStaticMemberNode([
+            ctx2.createIdentifierNode("System"),
+            ctx2.createIdentifierNode("isNaN")
           ]),
-          [object].concat(args)
+          [object].concat(args2)
         );
       },
-      isInteger(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("is_int", ctx, object, args, called);
+      isInteger(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("is_int", ctx2, object, args2, called);
       },
-      isSafeInteger(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("is_int", ctx, object, args, called);
+      isSafeInteger(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("is_int", ctx2, object, args2, called);
       },
-      parseFloat(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("floatval", ctx, object, args, called);
+      parseFloat(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("floatval", ctx2, object, args2, called);
       },
-      parseInt(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("intval", ctx, object, args, called);
+      parseInt(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("intval", ctx2, object, args2, called);
       },
-      toFixed(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Number");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_number_to_fixed");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      toFixed(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Number");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_number_to_fixed");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      toExponential(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Number");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_number_to_exponential");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      toExponential(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Number");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_number_to_exponential");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      toPrecision(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Number");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_number_to_precision");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      toPrecision(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Number");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_number_to_precision");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      valueOf(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("Number");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_number_value_of");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      valueOf(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("Number");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_number_value_of");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       }
     };
-    ["propertyIsEnumerable", "hasOwnProperty", "toLocaleString", "toString"].forEach((name) => {
-      if (!Object.prototype.hasOwnProperty.call(methods, name)) {
-        methods[name] = ObjectMethod[name];
+    ["propertyIsEnumerable", "hasOwnProperty", "toLocaleString", "toString"].forEach((name2) => {
+      if (!Object.prototype.hasOwnProperty.call(methods, name2)) {
+        methods[name2] = ObjectMethod[name2];
       }
     });
     module2.exports = methods;
@@ -4452,54 +4222,54 @@ var require_Double = __commonJS({
 var require_Error = __commonJS({
   "transforms/Error.js"(exports2, module2) {
     module2.exports = {
-      message(ctx, object, args, called = false, isStatic = false) {
-        return ctx.createCalleeNode(
-          ctx.createMemberNode([
+      message(ctx2, object, args2, called = false, isStatic = false) {
+        return ctx2.createCalleeNode(
+          ctx2.createMemberNode([
             object,
-            ctx.createIdentifierNode("getMessage")
+            ctx2.createIdentifierNode("getMessage")
           ])
         );
       },
-      cause(ctx, object, args, called = false, isStatic = false) {
-        return ctx.createCalleeNode(
-          ctx.createMemberNode([
+      cause(ctx2, object, args2, called = false, isStatic = false) {
+        return ctx2.createCalleeNode(
+          ctx2.createMemberNode([
             object,
-            ctx.createIdentifierNode("getPrevious")
+            ctx2.createIdentifierNode("getPrevious")
           ])
         );
       },
-      name(ctx, object, args, called = false, isStatic = false) {
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("get_class"),
+      name(ctx2, object, args2, called = false, isStatic = false) {
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("get_class"),
           [
             object
           ]
         );
       },
-      toString(ctx, object, args, called = false, isStatic = false) {
+      toString(ctx2, object, args2, called = false, isStatic = false) {
         if (!called) {
-          const Reflect2 = ctx.builder.getGlobalModuleById("Reflect");
-          ctx.addDepend(Reflect2);
-          return ctx.createCalleeNode(
-            ctx.createStaticMemberNode(
+          const Reflect2 = ctx2.builder.getGlobalModuleById("Reflect");
+          ctx2.addDepend(Reflect2);
+          return ctx2.createCalleeNode(
+            ctx2.createStaticMemberNode(
               [
-                ctx.createIdentifierNode(
-                  ctx.getModuleReferenceName(Reflect2)
+                ctx2.createIdentifierNode(
+                  ctx2.getModuleReferenceName(Reflect2)
                 ),
-                ctx.createIdentifierNode("get")
+                ctx2.createIdentifierNode("get")
               ]
             ),
             [
-              ctx.createLiteralNode(null),
+              ctx2.createLiteralNode(null),
               object,
-              ctx.createIdentifierNode("__toString")
+              ctx2.createIdentifierNode("__toString")
             ]
           );
         }
-        return ctx.createCalleeNode(
-          ctx.createMemberNode([
+        return ctx2.createCalleeNode(
+          ctx2.createMemberNode([
             object,
-            ctx.createIdentifierNode("__toString")
+            ctx2.createIdentifierNode("__toString")
           ])
         );
       }
@@ -4518,74 +4288,74 @@ var require_Float = __commonJS({
 var require_Function = __commonJS({
   "transforms/Function.js"(exports2, module2) {
     var ObjectMethod = require_Object();
-    function createCallNode(ctx, target, args) {
-      ctx.addDepend(ctx.builder.getGlobalModuleById("Reflect"));
-      return ctx.createCalleeNode(
-        ctx.createStaticMemberNode([
-          ctx.createIdentifierNode("Reflect"),
-          ctx.createIdentifierNode("apply")
+    function createCallNode(ctx2, target, args2) {
+      ctx2.addDepend(ctx2.builder.getGlobalModuleById("Reflect"));
+      return ctx2.createCalleeNode(
+        ctx2.createStaticMemberNode([
+          ctx2.createIdentifierNode("Reflect"),
+          ctx2.createIdentifierNode("apply")
         ]),
-        [target].concat(args)
+        [target].concat(args2)
       );
     }
     var methods = {
-      apply(ctx, object, args, called = false, isStatic = false) {
+      apply(ctx2, object, args2, called = false, isStatic = false) {
         const callee = object.type === "MemberExpression" ? object.object : object;
         if (!called) {
           return callee;
         }
-        const _arguments = [args[0]];
-        if (args.length > 1) {
-          _arguments.push(ctx.createArrayNode(args.slice(1)));
+        const _arguments = [args2[0]];
+        if (args2.length > 1) {
+          _arguments.push(ctx2.createArrayNode(args2.slice(1)));
         }
-        return createCallNode(ctx, callee, _arguments);
+        return createCallNode(ctx2, callee, _arguments);
       },
-      call(ctx, object, args, called = false, isStatic = false) {
+      call(ctx2, object, args2, called = false, isStatic = false) {
         const callee = object.type === "MemberExpression" ? object.object : object;
         if (!called) {
           return callee;
         }
-        const _arguments = [args[0]];
-        if (args.length > 1) {
-          _arguments.push(ctx.createArrayNode(args.slice(1)));
+        const _arguments = [args2[0]];
+        if (args2.length > 1) {
+          _arguments.push(ctx2.createArrayNode(args2.slice(1)));
         }
-        return createCallNode(ctx, callee, _arguments);
+        return createCallNode(ctx2, callee, _arguments);
       },
-      bind(ctx, object, args, called = false, isStatic = false) {
-        args = args.slice();
-        ctx.addDepend(ctx.builder.getGlobalModuleById("System"));
+      bind(ctx2, object, args2, called = false, isStatic = false) {
+        args2 = args2.slice();
+        ctx2.addDepend(ctx2.builder.getGlobalModuleById("System"));
         if (!called) {
-          return ctx.createArrayNode([
-            ctx.createClassRefsNode(ctx.builder.getGlobalModuleById("System")),
-            ctx.createLiteralNode("bind")
+          return ctx2.createArrayNode([
+            ctx2.createClassRefsNode(ctx2.builder.getGlobalModuleById("System")),
+            ctx2.createLiteralNode("bind")
           ]);
         }
-        const arguments = ctx.stack.arguments || [];
-        let flagNode = ctx.createLiteralNode(null);
-        if (arguments[0]) {
-          const type = ctx.inferType(arguments[0]);
-          if (type.isLiteralArrayType || ctx.builder.getGlobalModuleById("Array") === ctx.stack.compiler.callUtils("getOriginType", type)) {
-            flagNode = ctx.createLiteralNode(true);
+        const _arguments = ctx2.stack.arguments || [];
+        let flagNode = ctx2.createLiteralNode(null);
+        if (_arguments[0]) {
+          const type = ctx2.inferType(_arguments[0]);
+          if (type.isLiteralArrayType || ctx2.builder.getGlobalModuleById("Array") === ctx2.stack.compiler.callUtils("getOriginType", type)) {
+            flagNode = ctx2.createLiteralNode(true);
           } else if (!type.isAnyType) {
-            flagNode = ctx.createLiteralNode(false);
+            flagNode = ctx2.createLiteralNode(false);
           }
         }
-        args.splice(1, 0, flagNode);
+        args2.splice(1, 0, flagNode);
         if (object.type === "MemberExpression") {
-          object = ctx.createArrayNode([object.object, object.createLiteralNode(object.property.value)]);
+          object = ctx2.createArrayNode([object.object, object.createLiteralNode(object.property.value)]);
         }
-        return ctx.createCalleeNode(
-          ctx.createStaticMemberNode([
-            ctx.createIdentifierNode("System"),
-            ctx.createIdentifierNode("bind")
+        return ctx2.createCalleeNode(
+          ctx2.createStaticMemberNode([
+            ctx2.createIdentifierNode("System"),
+            ctx2.createIdentifierNode("bind")
           ]),
-          [object].concat(args)
+          [object].concat(args2)
         );
       }
     };
-    ["propertyIsEnumerable", "hasOwnProperty", "valueOf", "toLocaleString", "toString"].forEach((name) => {
-      if (!Object.prototype.hasOwnProperty.call(methods, name)) {
-        methods[name] = ObjectMethod[name];
+    ["propertyIsEnumerable", "hasOwnProperty", "valueOf", "toLocaleString", "toString"].forEach((name2) => {
+      if (!Object.prototype.hasOwnProperty.call(methods, name2)) {
+        methods[name2] = ObjectMethod[name2];
       }
     });
     module2.exports = methods;
@@ -4677,127 +4447,127 @@ var require_date = __commonJS({
         group.push(parting);
       return group;
     }
-    function createDateNode(ctx, format, args = []) {
-      const node = ctx.createLiteralNode(format);
+    function createDateNode(ctx2, format, args2 = []) {
+      const node = ctx2.createLiteralNode(format);
       if (/\\/.test(format)) {
         node.raw = `"${format}"`;
       }
-      return ctx.createCalleeNode(
-        ctx.createIdentifierNode("date"),
-        [node].concat(args)
+      return ctx2.createCalleeNode(
+        ctx2.createIdentifierNode("date"),
+        [node].concat(args2)
       );
     }
-    function createFixNode(ctx, format, now) {
+    function createFixNode(ctx2, format, now) {
       switch (format) {
         case "k":
         case "kk":
-          return ctx.createCalleeNode(
-            ctx.createIdentifierNode("sprintf"),
+          return ctx2.createCalleeNode(
+            ctx2.createIdentifierNode("sprintf"),
             [
-              ctx.createLiteralNode(format === "kk" ? "%02d" : "%d"),
-              ctx.createBinaryNode(
+              ctx2.createLiteralNode(format === "kk" ? "%02d" : "%d"),
+              ctx2.createBinaryNode(
                 "+",
-                ctx.createCalleeNode(
-                  ctx.createIdentifierNode("intval"),
-                  [createDateNode(ctx, "G", now)]
+                ctx2.createCalleeNode(
+                  ctx2.createIdentifierNode("intval"),
+                  [createDateNode(ctx2, "G", now)]
                 ),
-                ctx.createLiteralNode(1)
+                ctx2.createLiteralNode(1)
               )
             ]
           );
         case "ww":
-          return ctx.createCalleeNode(
-            ctx.createIdentifierNode("sprintf"),
+          return ctx2.createCalleeNode(
+            ctx2.createIdentifierNode("sprintf"),
             [
-              ctx.createLiteralNode("%02d"),
-              createDateNode(ctx, "W", now)
+              ctx2.createLiteralNode("%02d"),
+              createDateNode(ctx2, "W", now)
             ]
           );
         case "s":
         case "m":
-          return ctx.createCalleeNode(
-            ctx.createIdentifierNode("ltrim"),
+          return ctx2.createCalleeNode(
+            ctx2.createIdentifierNode("ltrim"),
             [
-              createDateNode(ctx, format === "m" ? "i" : "s", now),
-              ctx.createLiteralNode("0")
+              createDateNode(ctx2, format === "m" ? "i" : "s", now),
+              ctx2.createLiteralNode("0")
             ]
           );
         case "x":
-          return ctx.createCalleeNode(
-            ctx.createIdentifierNode("sprintf"),
+          return ctx2.createCalleeNode(
+            ctx2.createIdentifierNode("sprintf"),
             [
-              ctx.createLiteralNode("%d%03d"),
-              createDateNode(ctx, "U", now),
-              ctx.createBinaryNode(
+              ctx2.createLiteralNode("%d%03d"),
+              createDateNode(ctx2, "U", now),
+              ctx2.createBinaryNode(
                 "/",
-                ctx.createCalleeNode(
-                  ctx.createIdentifierNode("date_format"),
+                ctx2.createCalleeNode(
+                  ctx2.createIdentifierNode("date_format"),
                   [
-                    ctx.createCalleeNode(ctx.createIdentifierNode("date_create"), now),
-                    ctx.createLiteralNode("u")
+                    ctx2.createCalleeNode(ctx2.createIdentifierNode("date_create"), now),
+                    ctx2.createLiteralNode("u")
                   ]
                 ),
-                ctx.createLiteralNode(1e3)
+                ctx2.createLiteralNode(1e3)
               )
             ]
           );
         case "E":
-          return ctx.createCalleeNode(
-            ctx.createIdentifierNode("sprintf"),
+          return ctx2.createCalleeNode(
+            ctx2.createIdentifierNode("sprintf"),
             [
-              ctx.createLiteralNode("%d"),
-              ctx.createBinaryNode(
+              ctx2.createLiteralNode("%d"),
+              ctx2.createBinaryNode(
                 "+",
-                ctx.createCalleeNode(
-                  ctx.createIdentifierNode("intval"),
-                  [createDateNode(ctx, "w", now)]
+                ctx2.createCalleeNode(
+                  ctx2.createIdentifierNode("intval"),
+                  [createDateNode(ctx2, "w", now)]
                 ),
-                ctx.createLiteralNode(1)
+                ctx2.createLiteralNode(1)
               )
             ]
           );
         case "Q":
         case "Qo":
-          return ctx.createCalleeNode(
-            ctx.createIdentifierNode("sprintf"),
+          return ctx2.createCalleeNode(
+            ctx2.createIdentifierNode("sprintf"),
             [
-              ctx.createLiteralNode(format === "Qo" ? "%d%s" : "%d"),
-              ctx.createCalleeNode(
-                ctx.createIdentifierNode("ceil"),
+              ctx2.createLiteralNode(format === "Qo" ? "%d%s" : "%d"),
+              ctx2.createCalleeNode(
+                ctx2.createIdentifierNode("ceil"),
                 [
-                  ctx.createBinaryNode(
+                  ctx2.createBinaryNode(
                     "/",
-                    ctx.createCalleeNode(
-                      ctx.createIdentifierNode("intval"),
-                      [createDateNode(ctx, "n", now)]
+                    ctx2.createCalleeNode(
+                      ctx2.createIdentifierNode("intval"),
+                      [createDateNode(ctx2, "n", now)]
                     ),
-                    ctx.createLiteralNode(3)
+                    ctx2.createLiteralNode(3)
                   )
                 ]
               ),
-              format === "Qo" && createDateNode(ctx, "S", now)
+              format === "Qo" && createDateNode(ctx2, "S", now)
             ].filter((item) => !!item)
           );
       }
       if (format.charCodeAt(0) === 83) {
         const len = format.length;
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("sprintf"),
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("sprintf"),
           [
-            len > 3 ? ctx.createLiteralNode(`%-\\'0${len}s`) : ctx.createLiteralNode(`%0${len}d`),
-            ctx.createCalleeNode(
-              ctx.createIdentifierNode("round"),
+            len > 3 ? ctx2.createLiteralNode(`%-\\'0${len}s`) : ctx2.createLiteralNode(`%0${len}d`),
+            ctx2.createCalleeNode(
+              ctx2.createIdentifierNode("round"),
               [
-                ctx.createBinaryNode(
+                ctx2.createBinaryNode(
                   "/",
-                  ctx.createCalleeNode(
-                    ctx.createIdentifierNode("date_format"),
+                  ctx2.createCalleeNode(
+                    ctx2.createIdentifierNode("date_format"),
                     [
-                      ctx.createCalleeNode(ctx.createIdentifierNode("date_create"), now),
-                      ctx.createLiteralNode("u")
+                      ctx2.createCalleeNode(ctx2.createIdentifierNode("date_create"), now),
+                      ctx2.createLiteralNode("u")
                     ]
                   ),
-                  ctx.createLiteralNode(Math.pow(10, Math.max(6 - len, 3)))
+                  ctx2.createLiteralNode(Math.pow(10, Math.max(6 - len, 3)))
                 )
               ]
             )
@@ -4805,15 +4575,15 @@ var require_date = __commonJS({
         );
       }
       if (/[^\\][a-zA-Z]+/.test(format)) {
-        return createDateNode(ctx, format, now);
+        return createDateNode(ctx2, format, now);
       } else {
-        return ctx.createLiteralNode(format);
+        return ctx2.createLiteralNode(format);
       }
     }
-    function createCalleeNode(ctx, args) {
-      const group = parseFormat(args[0].value);
+    function createCalleeNode(ctx2, args2) {
+      const group = parseFormat(args2[0].value);
       const segments = [];
-      var now = args.slice(1, 2);
+      var now = args2.slice(1, 2);
       var format = "";
       group.forEach((parting) => {
         if (not_support_parting.includes(parting) || parting.charCodeAt(0) === 83) {
@@ -4829,13 +4599,13 @@ var require_date = __commonJS({
         segments.push(format);
       if (segments.length > 1) {
         let base = null;
-        const node = createFixNode(ctx, segments.pop(), now);
+        const node = createFixNode(ctx2, segments.pop(), now);
         while (segments.length > 0) {
-          base = ctx.createBinaryNode(".", createFixNode(base || ctx, segments.pop(), now), base || node);
+          base = ctx2.createBinaryNode(".", createFixNode(base || ctx2, segments.pop(), now), base || node);
         }
         return base;
       }
-      return createDateNode(ctx, segments[0], now);
+      return createDateNode(ctx2, segments[0], now);
     }
     module2.exports = createCalleeNode;
   }
@@ -4862,60 +4632,60 @@ var require_global = __commonJS({
       //         return ctx;
       //     }
       // },
-      setInterval(ctx, object, args, called = false, isStatic = false) {
-        ctx.callee = ctx.createIdentifierNode("call_user_func");
-        ctx.arguments = args.slice(0, 1);
-        return ctx;
+      setInterval(ctx2, object, args2, called = false, isStatic = false) {
+        ctx2.callee = ctx2.createIdentifierNode("call_user_func");
+        ctx2.arguments = args2.slice(0, 1);
+        return ctx2;
       },
-      setTimeout(ctx, object, args, called = false, isStatic = false) {
-        ctx.callee = ctx.createIdentifierNode("call_user_func");
-        ctx.arguments = args.slice(0, 1);
-        return ctx;
+      setTimeout(ctx2, object, args2, called = false, isStatic = false) {
+        ctx2.callee = ctx2.createIdentifierNode("call_user_func");
+        ctx2.arguments = args2.slice(0, 1);
+        return ctx2;
       },
-      clearTimeout(ctx, object, args, called = false, isStatic = false) {
+      clearTimeout(ctx2, object, args2, called = false, isStatic = false) {
         return null;
       },
-      clearInterval(ctx, object, args, called = false, isStatic = false) {
+      clearInterval(ctx2, object, args2, called = false, isStatic = false) {
         return null;
       },
-      parseInt(ctx, object, args, called = false, isStatic = false) {
+      parseInt(ctx2, object, args2, called = false, isStatic = false) {
         if (called) {
-          ctx.callee = ctx.createIdentifierNode("intval");
-          ctx.arguments = args.slice(0, 2);
-          return ctx;
+          ctx2.callee = ctx2.createIdentifierNode("intval");
+          ctx2.arguments = args2.slice(0, 2);
+          return ctx2;
         } else {
           return null;
         }
       },
-      parseFloat(ctx, object, args, called = false, isStatic = false) {
+      parseFloat(ctx2, object, args2, called = false, isStatic = false) {
         if (called) {
-          ctx.callee = ctx.createIdentifierNode("floatval");
-          ctx.arguments = args.slice(0, 1);
-          return ctx;
+          ctx2.callee = ctx2.createIdentifierNode("floatval");
+          ctx2.arguments = args2.slice(0, 1);
+          return ctx2;
         } else {
           return null;
         }
       },
-      isNaN(ctx, object, args, called = false, isStatic = false) {
-        ctx.addDepend(ctx.builder.getGlobalModuleById("System"));
+      isNaN(ctx2, object, args2, called = false, isStatic = false) {
+        ctx2.addDepend(ctx2.builder.getGlobalModuleById("System"));
         if (!called) {
-          ctx.createChunkNode(`function($target){return System::isNaN($target);}`);
+          ctx2.createChunkNode(`function($target){return System::isNaN($target);}`);
         }
-        return ctx.createCalleeNode(
-          ctx.createStaticMemberNode([
-            ctx.createIdentifierNode("System"),
-            ctx.createIdentifierNode("isNaN")
+        return ctx2.createCalleeNode(
+          ctx2.createStaticMemberNode([
+            ctx2.createIdentifierNode("System"),
+            ctx2.createIdentifierNode("isNaN")
           ]),
-          args
+          args2
         );
       },
-      isFinite(ctx, object, args, called = false, isStatic = false) {
+      isFinite(ctx2, object, args2, called = false, isStatic = false) {
         if (!called) {
-          return ctx.createLiteralNode("is_finite");
+          return ctx2.createLiteralNode("is_finite");
         }
-        ctx.callee = ctx.createIdentifierNode("is_finite");
-        ctx.arguments = args.slice(0, 1);
-        return ctx;
+        ctx2.callee = ctx2.createIdentifierNode("is_finite");
+        ctx2.arguments = args2.slice(0, 1);
+        return ctx2;
       }
     };
   }
@@ -4926,16 +4696,16 @@ var require_IArguments = __commonJS({
   "transforms/IArguments.js"(exports2, module2) {
     var ObjectMethod = require_Object();
     var methods = {
-      length(ctx, object, args, called = false, isStatic = false) {
-        return ctx.createCalleeNode(ctx.createIdentifierNode("func_num_args"));
+      length(ctx2, object, args2, called = false, isStatic = false) {
+        return ctx2.createCalleeNode(ctx2.createIdentifierNode("func_num_args"));
       },
-      $computed(ctx, object, args, called = false, isStatic = false) {
-        return ctx.createCalleeNode(ctx.createIdentifierNode("func_get_arg"), args);
+      $computed(ctx2, object, args2, called = false, isStatic = false) {
+        return ctx2.createCalleeNode(ctx2.createIdentifierNode("func_get_arg"), args2);
       }
     };
-    ["propertyIsEnumerable", "hasOwnProperty", "valueOf", "toLocaleString", "toString"].forEach((name) => {
-      if (!Object.prototype.hasOwnProperty.call(methods, name)) {
-        methods[name] = ObjectMethod[name];
+    ["propertyIsEnumerable", "hasOwnProperty", "valueOf", "toLocaleString", "toString"].forEach((name2) => {
+      if (!Object.prototype.hasOwnProperty.call(methods, name2)) {
+        methods[name2] = ObjectMethod[name2];
       }
     });
     module2.exports = methods;
@@ -4953,22 +4723,22 @@ var require_Int = __commonJS({
 var require_JSON = __commonJS({
   "transforms/JSON.js"(exports2, module2) {
     module2.exports = {
-      parse(ctx, object, args, called = false, isStatic = false) {
+      parse(ctx2, object, args2, called = false, isStatic = false) {
         if (!called) {
-          return ctx.createChunkNode(`function($target){return json_decode($target);}`);
+          return ctx2.createChunkNode(`function($target){return json_decode($target);}`);
         }
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("json_decode"),
-          args.slice(0, 1)
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("json_decode"),
+          args2.slice(0, 1)
         );
       },
-      stringify(ctx, object, args, called = false, isStatic = false) {
+      stringify(ctx2, object, args2, called = false, isStatic = false) {
         if (!called) {
-          return ctx.createChunkNode(`function($target){return json_encode($target,JSON_UNESCAPED_UNICODE);}`);
+          return ctx2.createChunkNode(`function($target){return json_encode($target,JSON_UNESCAPED_UNICODE);}`);
         }
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("json_encode"),
-          args.slice(0, 1).concat(ctx.createIdentifierNode(`JSON_UNESCAPED_UNICODE`))
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("json_encode"),
+          args2.slice(0, 1).concat(ctx2.createIdentifierNode(`JSON_UNESCAPED_UNICODE`))
         );
       }
     };
@@ -4978,34 +4748,34 @@ var require_JSON = __commonJS({
 // transforms/Math.js
 var require_Math = __commonJS({
   "transforms/Math.js"(exports2, module2) {
-    function createCommonCalledNode(name, ctx, object, args, called, params) {
+    function createCommonCalledNode(name2, ctx2, object, args2, called, params) {
       if (!called) {
-        return createCalleeFunctionNode(ctx, params || ["value"], name);
+        return createCalleeFunctionNode(ctx2, params || ["value"], name2);
       }
       let len = 1;
       if (params && Array.isArray(params)) {
-        len = params[0] === "..." ? args.length : params.length;
+        len = params[0] === "..." ? args2.length : params.length;
       }
-      return ctx.createCalleeNode(
-        ctx.createIdentifierNode(name),
-        args.slice(0, len)
+      return ctx2.createCalleeNode(
+        ctx2.createIdentifierNode(name2),
+        args2.slice(0, len)
       );
     }
-    function createCalleeFunctionNode(ctx, args, callName) {
-      const cratePparams = () => args.map((name) => {
-        if (name === "...") {
-          const node = ctx.createNode("RestElement");
+    function createCalleeFunctionNode(ctx2, args2, callName) {
+      const cratePparams = () => args2.map((name2) => {
+        if (name2 === "...") {
+          const node = ctx2.createNode("RestElement");
           node.value = "args";
           node.raw = "args";
           return node;
         }
-        return ctx.createIdentifierNode(name, null, true);
+        return ctx2.createIdentifierNode(name2, null, true);
       });
-      return ctx.createFunctionNode((ctx2) => {
-        ctx2.body.push(
-          ctx2.createReturnNode(
-            ctx2.createCalleeNode(
-              ctx2.createIdentifierNode(callName),
+      return ctx2.createFunctionNode((ctx3) => {
+        ctx3.body.push(
+          ctx3.createReturnNode(
+            ctx3.createCalleeNode(
+              ctx3.createIdentifierNode(callName),
               cratePparams()
             )
           )
@@ -5013,80 +4783,80 @@ var require_Math = __commonJS({
       }, cratePparams());
     }
     module2.exports = {
-      E(ctx) {
-        return ctx.createLiteralNode(2.718281828459045);
+      E(ctx2) {
+        return ctx2.createLiteralNode(2.718281828459045);
       },
-      LN10(ctx) {
-        return ctx.createLiteralNode(2.302585092994046);
+      LN10(ctx2) {
+        return ctx2.createLiteralNode(2.302585092994046);
       },
-      LN2(ctx) {
-        return ctx.createLiteralNode(0.6931471805599453);
+      LN2(ctx2) {
+        return ctx2.createLiteralNode(0.6931471805599453);
       },
-      LOG2E(ctx) {
-        return ctx.createLiteralNode(1.4426950408889634);
+      LOG2E(ctx2) {
+        return ctx2.createLiteralNode(1.4426950408889634);
       },
-      LOG10E(ctx) {
-        return ctx.createLiteralNode(0.4342944819032518);
+      LOG10E(ctx2) {
+        return ctx2.createLiteralNode(0.4342944819032518);
       },
-      PI(ctx) {
-        return ctx.createLiteralNode(3.141592653589793);
+      PI(ctx2) {
+        return ctx2.createLiteralNode(3.141592653589793);
       },
-      SQRT1_2(ctx) {
-        return ctx.createLiteralNode(0.7071067811865476);
+      SQRT1_2(ctx2) {
+        return ctx2.createLiteralNode(0.7071067811865476);
       },
-      SQRT2(ctx) {
-        return ctx.createLiteralNode(1.4142135623730951);
+      SQRT2(ctx2) {
+        return ctx2.createLiteralNode(1.4142135623730951);
       },
-      abs(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("abs", ctx, object, args, called);
+      abs(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("abs", ctx2, object, args2, called);
       },
-      acos(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("acos", ctx, object, args, called);
+      acos(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("acos", ctx2, object, args2, called);
       },
-      asin(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("asin", ctx, object, args, called);
+      asin(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("asin", ctx2, object, args2, called);
       },
-      atan2(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("atan2", ctx, object, args, called, ["a", "b"]);
+      atan2(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("atan2", ctx2, object, args2, called, ["a", "b"]);
       },
-      ceil(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("ceil", ctx, object, args, called);
+      ceil(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("ceil", ctx2, object, args2, called);
       },
-      cos(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("cos", ctx, object, args, called);
+      cos(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("cos", ctx2, object, args2, called);
       },
-      log(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("log", ctx, object, args, called);
+      log(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("log", ctx2, object, args2, called);
       },
-      max(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("max", ctx, object, args, called, ["..."]);
+      max(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("max", ctx2, object, args2, called, ["..."]);
       },
-      min(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("min", ctx, object, args, called, ["..."]);
+      min(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("min", ctx2, object, args2, called, ["..."]);
       },
-      pow(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("pow", ctx, object, args, called, ["a", "b"]);
+      pow(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("pow", ctx2, object, args2, called, ["a", "b"]);
       },
-      sin(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("sin", ctx, object, args, called);
+      sin(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("sin", ctx2, object, args2, called);
       },
-      sqrt(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("sqrt", ctx, object, args, called);
+      sqrt(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("sqrt", ctx2, object, args2, called);
       },
-      tan(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("tan", ctx, object, args, called);
+      tan(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("tan", ctx2, object, args2, called);
       },
-      round(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("round", ctx, object, args, called);
+      round(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("round", ctx2, object, args2, called);
       },
-      floor(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("floor", ctx, object, args, called);
+      floor(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("floor", ctx2, object, args2, called);
       },
-      random(ctx, object, args, called = false, isStatic = false) {
+      random(ctx2, object, args2, called = false, isStatic = false) {
         if (!called) {
-          return ctx.createChunkNode(`function(){return mt_rand(1,2147483647) / 2147483647;}`);
+          return ctx2.createChunkNode(`function(){return mt_rand(1,2147483647) / 2147483647;}`);
         }
-        return ctx.createChunkNode(`(mt_rand(1,2147483647) / 2147483647)`);
+        return ctx2.createChunkNode(`(mt_rand(1,2147483647) / 2147483647)`);
       }
     };
   }
@@ -5096,175 +4866,175 @@ var require_Math = __commonJS({
 var require_String = __commonJS({
   "transforms/String.js"(exports2, module2) {
     var ObjectMethod = require_Object();
-    function createMethodFunctionNode(ctx, name) {
-      return ctx.createLiteralNode(name);
+    function createMethodFunctionNode(ctx2, name2) {
+      return ctx2.createLiteralNode(name2);
     }
-    function createCommonCalledNode(name, ctx, object, args, called) {
+    function createCommonCalledNode(name2, ctx2, object, args2, called) {
       if (!called)
-        return createMethodFunctionNode(ctx, name);
-      return ctx.createCalleeNode(
-        ctx.createIdentifierNode(name),
-        object ? [object].concat(args) : args
+        return createMethodFunctionNode(ctx2, name2);
+      return ctx2.createCalleeNode(
+        ctx2.createIdentifierNode(name2),
+        object ? [object].concat(args2) : args2
       );
     }
     var methods = {
-      fromCharCode(ctx, object, args, called = false, isStatic = false) {
+      fromCharCode(ctx2, object, args2, called = false, isStatic = false) {
         if (!called) {
-          return ctx.createChunkNode(`function($code){return chr($code);}`);
+          return ctx2.createChunkNode(`function($code){return chr($code);}`);
         }
-        if (args.length === 1) {
-          return createCommonCalledNode("chr", ctx, null, args, true);
+        if (args2.length === 1) {
+          return createCommonCalledNode("chr", ctx2, null, args2, true);
         }
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_from_char_code");
-        ctx.addDepend(module3);
-        return createCommonCalledNode(name, ctx, null, args, true);
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_from_char_code");
+        ctx2.addDepend(module3);
+        return createCommonCalledNode(name2, ctx2, null, args2, true);
       },
-      charAt(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_char_at");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      charAt(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_char_at");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      charCodeAt(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_char_code_at");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      charCodeAt(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_char_code_at");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      concat(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_concat");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      concat(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_concat");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      includes(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_includes");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      includes(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_includes");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      indexOf(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_index_of");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      indexOf(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_index_of");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      lastIndexOf(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_last_index_of");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      lastIndexOf(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_last_index_of");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      localeCompare(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_locale_compare");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      localeCompare(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_locale_compare");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      match(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_match");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      match(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_match");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      matchAll(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_match_all");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      matchAll(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_match_all");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      search(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_search");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      search(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_search");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      replace(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_replace");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      replace(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_replace");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      replaceAll(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_replace_all");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      replaceAll(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_replace_all");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      slice(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_slice");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      slice(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_slice");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      repeat(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("str_repeat", ctx, object, args, called);
+      repeat(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("str_repeat", ctx2, object, args2, called);
       },
-      length(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("mb_strlen", ctx, object, args, true);
+      length(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("mb_strlen", ctx2, object, args2, true);
       },
-      substr(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("mb_substr", ctx, object, args, called);
+      substr(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("mb_substr", ctx2, object, args2, called);
       },
-      substring(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_substring");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      substring(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_substring");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      toLowerCase(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("mb_strtolower", ctx, object, args, called);
+      toLowerCase(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("mb_strtolower", ctx2, object, args2, called);
       },
-      toLocaleLowerCase(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("mb_strtolower", ctx, object, args, called);
+      toLocaleLowerCase(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("mb_strtolower", ctx2, object, args2, called);
       },
-      toUpperCase(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("mb_strtoupper", ctx, object, args, called);
+      toUpperCase(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("mb_strtoupper", ctx2, object, args2, called);
       },
-      toLocaleUpperCase(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("mb_strtoupper", ctx, object, args, called);
+      toLocaleUpperCase(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("mb_strtoupper", ctx2, object, args2, called);
       },
-      trim(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("trim", ctx, object, args, called);
+      trim(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("trim", ctx2, object, args2, called);
       },
-      trimEnd(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("rtrim", ctx, object, args, called);
+      trimEnd(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("rtrim", ctx2, object, args2, called);
       },
-      trimStart(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("ltrim", ctx, object, args, called);
+      trimStart(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("ltrim", ctx2, object, args2, called);
       },
-      split(ctx, object, args, called = false, isStatic = false) {
+      split(ctx2, object, args2, called = false, isStatic = false) {
         if (!called) {
-          return ctx.createChunkNode(`function($target,$delimit){return explode($delimit,$target);}`);
+          return ctx2.createChunkNode(`function($target,$delimit){return explode($delimit,$target);}`);
         }
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("explode"),
-          [args[0], object]
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("explode"),
+          [args2[0], object]
         );
       },
-      padStart(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("str_pad", ctx, object, [args[0], ctx.createIdentifierNode("STR_PAD_LEFT")], called);
+      padStart(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("str_pad", ctx2, object, [args2[0], ctx2.createIdentifierNode("STR_PAD_LEFT")], called);
       },
-      padEnd(ctx, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode("str_pad", ctx, object, [args[0], ctx.createIdentifierNode("STR_PAD_RIGHT")], called);
+      padEnd(ctx2, object, args2, called = false, isStatic = false) {
+        return createCommonCalledNode("str_pad", ctx2, object, [args2[0], ctx2.createIdentifierNode("STR_PAD_RIGHT")], called);
       },
-      normalize(ctx, object, args, called = false, isStatic = false) {
-        const module3 = ctx.builder.getGlobalModuleById("String");
-        ctx.addDepend(module3);
-        const name = ctx.builder.getModuleNamespace(module3, "es_string_normalize");
-        return createCommonCalledNode(name, ctx, object, args, called);
+      normalize(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_normalize");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       },
-      valueOf(ctx, object, args, called = false, isStatic = false) {
+      valueOf(ctx2, object, args2, called = false, isStatic = false) {
         if (!called) {
-          return ctx.createChunkNode(`function($target){return $target;}`);
+          return ctx2.createChunkNode(`function($target){return $target;}`);
         }
-        return createCommonCalledNode("strval", ctx, object, [], called);
+        return createCommonCalledNode("strval", ctx2, object, [], called);
       }
     };
-    ["propertyIsEnumerable", "hasOwnProperty", "valueOf", "toLocaleString", "toString"].forEach((name) => {
-      if (!Object.prototype.hasOwnProperty.call(methods, name)) {
-        methods[name] = ObjectMethod[name];
+    ["propertyIsEnumerable", "hasOwnProperty", "valueOf", "toLocaleString", "toString"].forEach((name2) => {
+      if (!Object.prototype.hasOwnProperty.call(methods, name2)) {
+        methods[name2] = ObjectMethod[name2];
       }
     });
     module2.exports = methods;
@@ -5340,38 +5110,38 @@ var require_JSXTransform = __commonJS({
     var JSXClassBuilder2 = require_JSXClassBuilder();
     var Transform2 = require_Transform();
     var JSXTransform2 = class extends Token2 {
-      constructor(stack, ctx) {
+      constructor(stack, ctx2) {
         super(stack.toString());
         this.stack = stack;
         this.scope = stack.scope;
         this.compilation = stack.compilation;
         this.compiler = stack.compiler;
         this.module = stack.module;
-        this.plugin = ctx.plugin;
-        this.name = ctx.name;
-        this.platform = ctx.platform;
-        this.parent = ctx;
-        this.builder = ctx.builder;
+        this.plugin = ctx2.plugin;
+        this.name = ctx2.name;
+        this.platform = ctx2.platform;
+        this.parent = ctx2;
+        this.builder = ctx2.builder;
       }
       makeConfig(data2) {
         const items = [];
         Object.entries(data2).map((item) => {
-          const [key, value] = item;
-          if (value) {
-            if (Array.isArray(value)) {
-              if (value.length > 0) {
-                const isObject = value[0].type === "Property";
+          const [key, value2] = item;
+          if (value2) {
+            if (Array.isArray(value2)) {
+              if (value2.length > 0) {
+                const isObject = value2[0].type === "Property";
                 if (isObject) {
-                  items.push(this.createPropertyNode(this.createLiteralNode(key), this.createObjectNode(value)));
+                  items.push(this.createPropertyNode(this.createLiteralNode(key), this.createObjectNode(value2)));
                 } else {
-                  items.push(this.createPropertyNode(this.createLiteralNode(key), this.createArrayNode(value)));
+                  items.push(this.createPropertyNode(this.createLiteralNode(key), this.createArrayNode(value2)));
                 }
               }
             } else {
-              if (value.type === "Property") {
-                items.push(value);
+              if (value2.type === "Property") {
+                items.push(value2);
               } else {
-                items.push(this.createPropertyNode(this.createLiteralNode(key), value));
+                items.push(this.createPropertyNode(this.createLiteralNode(key), value2));
               }
             }
           }
@@ -5379,9 +5149,9 @@ var require_JSXTransform = __commonJS({
         return items.length > 0 ? this.createObjectNode(items) : null;
       }
       makeAttributes(stack, childNodes, data2, spreadAttributes) {
-        const pushEvent = (name, callback, category) => {
+        const pushEvent = (name2, callback, category) => {
           const events = data2[category] || (data2[category] = []);
-          const property = this.createPropertyNode(name, callback);
+          const property = this.createPropertyNode(name2, callback);
           if (property.key.computed) {
             property.computed = true;
             property.key.computed = false;
@@ -5407,8 +5177,8 @@ var require_JSXTransform = __commonJS({
         stack.openingElement.attributes.forEach((item) => {
           if (item.isAttributeXmlns || item.isAttributeDirective) {
             if (item.isAttributeDirective) {
-              const name2 = item.name.value();
-              if (name2 === "show") {
+              const name3 = item.name.value();
+              if (name3 === "show") {
                 data2.directives.push(
                   this.createObjectNode([
                     this.createPropertyNode(this.createIdentifierNode("name"), this.createLiteralNode("show")),
@@ -5422,16 +5192,16 @@ var require_JSXTransform = __commonJS({
             spreadAttributes && spreadAttributes.push(this.createToken(item));
             return;
           } else if (item.isAttributeSlot) {
-            const name2 = item.name.value();
+            const name3 = item.name.value();
             const scopeName = item.value ? item.value.value() : null;
             if (scopeName) {
               data2.scopedSlots.push(
                 this.createPropertyNode(
-                  this.createIdentifierNode(name2),
+                  this.createIdentifierNode(name3),
                   this.createFunctionNode(
-                    (ctx) => {
-                      ctx.body.push(
-                        ctx.createReturnNode(childNodes ? childNodes : ctx.createLiteralNode(null))
+                    (ctx2) => {
+                      ctx2.body.push(
+                        ctx2.createReturnNode(childNodes ? childNodes : ctx2.createLiteralNode(null))
                       );
                     },
                     [this.createIdentifierNode(scopeName)]
@@ -5439,38 +5209,38 @@ var require_JSXTransform = __commonJS({
                 )
               );
             } else {
-              data2.slot = this.createLiteralNode(name2);
+              data2.slot = this.createLiteralNode(name3);
             }
             return;
           }
-          let value = this.createToken(item);
-          if (!value)
+          let value2 = this.createToken(item);
+          if (!value2)
             return;
-          let ns = value.namespace;
-          let name = value.name.name;
+          let ns = value2.namespace;
+          let name2 = value2.name.name;
           if (ns && ns.includes("::")) {
             let [seg, className] = ns.split("::", 2);
             ns = seg;
             const refsModule = stack.getModuleById(className);
             const moduleClass = this.getModuleReferenceName(refsModule);
             this.addDepend(refsModule);
-            name = this.createStaticMemberNode([
+            name2 = this.createStaticMemberNode([
               this.createIdentifierNode(moduleClass),
-              name
-            ], name);
-            name.computed = true;
+              name2
+            ], name2);
+            name2.computed = true;
           }
           if (ns === "@events") {
-            pushEvent(name, toFun(item, value.value), "on");
+            pushEvent(name2, toFun(item, value2.value), "on");
             return;
           } else if (ns === "@natives") {
-            pushEvent(name, toFun(item, value.value), "nativeOn");
+            pushEvent(name2, toFun(item, value2.value), "nativeOn");
             return;
           } else if (ns === "@binding") {
             data2.directives.push(
               this.createObjectNode([
                 this.createPropertyNode(this.createIdentifierNode("name"), this.createLiteralNode("model")),
-                this.createPropertyNode(this.createIdentifierNode("value"), value.value)
+                this.createPropertyNode(this.createIdentifierNode("value"), value2.value)
               ])
             );
             const funNode = this.createFunctionNode(
@@ -5478,7 +5248,7 @@ var require_JSXTransform = __commonJS({
                 block.body = [
                   block.createStatementNode(
                     block.createAssignmentNode(
-                      value.value,
+                      value2.value,
                       block.createChunkNode(`event && event.target && event.target.nodeType===1 ? event.target.value : event`, false)
                     )
                   )
@@ -5488,7 +5258,7 @@ var require_JSXTransform = __commonJS({
             );
             pushEvent(this.createIdentifierNode("input"), funNode, "on");
           }
-          let propName = name = value.name.value;
+          let propName = name2 = value2.name.value;
           if (item.isMemberProperty) {
             let isDOMAttribute = false;
             let attrDesc = item.getAttributeDescription(stack.getSubClassDescription());
@@ -5496,19 +5266,19 @@ var require_JSXTransform = __commonJS({
               isDOMAttribute = attrDesc.annotations.some((item2) => item2.name.toLowerCase() === "domattribute");
               const alias = attrDesc.annotations.find((item2) => item2.name.toLowerCase() === "alias");
               if (alias) {
-                const args = alias.getArguments();
-                if (args.length > 0) {
-                  propName = args[0].value;
+                const args2 = alias.getArguments();
+                if (args2.length > 0) {
+                  propName = args2[0].value;
                 }
               }
             }
             if (!isDOMAttribute) {
-              data2.props.push(this.createPropertyNode(this.createPropertyKeyNode(propName, value.name.stack), value.value));
+              data2.props.push(this.createPropertyNode(this.createPropertyKeyNode(propName, value2.name.stack), value2.value));
               return;
             }
           }
-          const property = this.createPropertyNode(this.createPropertyKeyNode(propName, value.name.stack), value.value);
-          switch (name) {
+          const property = this.createPropertyNode(this.createPropertyKeyNode(propName, value2.name.stack), value2.value);
+          switch (name2) {
             case "class":
             case "style":
             case "key":
@@ -5517,7 +5287,7 @@ var require_JSXTransform = __commonJS({
             case "tag":
             case "staticStyle":
             case "staticClass":
-              data2[name] = property;
+              data2[name2] = property;
               break;
             case "innerHTML":
               data2.domProps.push(property);
@@ -5528,7 +5298,7 @@ var require_JSXTransform = __commonJS({
           }
         });
       }
-      createFunBindNode(target, thisArg, args = []) {
+      createFunBindNode(target, thisArg, args2 = []) {
         this.addDepend(this.builder.getGlobalModuleById("System"));
         return this.createCalleeNode(
           this.createStaticMemberNode([
@@ -5538,15 +5308,15 @@ var require_JSXTransform = __commonJS({
           [
             target,
             thisArg
-          ].concat(args.map((item) => {
+          ].concat(args2.map((item) => {
             const obj = item instanceof Token2 ? item : this.createIdentifierNode(item, null, true);
             obj.isVariable = true;
             return obj;
           }))
         );
       }
-      createPropertyKeyNode(name, stack) {
-        return this.createLiteralNode(name, void 0, stack);
+      createPropertyKeyNode(name2, stack) {
+        return this.createLiteralNode(name2, void 0, stack);
       }
       makeProperties(children, data2) {
         children.forEach((child) => {
@@ -5566,52 +5336,52 @@ var require_JSXTransform = __commonJS({
           return { cmd, child, content };
         }
         const directives = child.directives.slice(0).sort((a, b) => {
-          const name = b.name.value();
-          return name === "each" || name === "for" ? -1 : 0;
+          const name2 = b.name.value();
+          return name2 === "each" || name2 === "for" ? -1 : 0;
         });
-        let ctx = element.jsxTransformNode || this;
+        let ctx2 = element.jsxTransformNode || this;
         while (directives.length > 0) {
           const directive = directives.shift();
-          const name = directive.name.value();
+          const name2 = directive.name.value();
           const valueArgument = directive.valueArgument;
-          if (name === "each" || name === "for") {
-            let refs = ctx.createToken(valueArgument.expression);
+          if (name2 === "each" || name2 === "for") {
+            let refs = ctx2.createToken(valueArgument.expression);
             let desc2 = valueArgument.expression.isStack && valueArgument.expression.description();
             let item = valueArgument.declare.item;
             let key = valueArgument.declare.key;
             let index = valueArgument.declare.index;
             if (cmd.includes("if")) {
               cmd.pop();
-              content.push(ctx.createLiteralNode(null));
-              content[0] = ctx.cascadeConditionalNode(content);
+              content.push(ctx2.createLiteralNode(null));
+              content[0] = ctx2.cascadeConditionalNode(content);
             }
-            if (name === "each") {
-              content[0] = ctx.createIterationNode(name, refs, desc2, ctx.checkRefsName("_refs"), content[0], item, key);
+            if (name2 === "each") {
+              content[0] = ctx2.createIterationNode(name2, refs, desc2, ctx2.checkRefsName("_refs"), content[0], item, key);
             } else {
-              content[0] = ctx.createIterationNode(name, refs, desc2, ctx.checkRefsName("_refs"), content[0], item, key, index);
+              content[0] = ctx2.createIterationNode(name2, refs, desc2, ctx2.checkRefsName("_refs"), content[0], item, key, index);
             }
-            cmd.push(name);
-          } else if (name === "if") {
-            const node = ctx.createNode("ConditionalExpression");
-            node.test = ctx.createToken(valueArgument.expression);
+            cmd.push(name2);
+          } else if (name2 === "if") {
+            const node = ctx2.createNode("ConditionalExpression");
+            node.test = ctx2.createToken(valueArgument.expression);
             node.consequent = content[0];
             content[0] = node;
-            cmd.push(name);
-          } else if (name === "elseif") {
+            cmd.push(name2);
+          } else if (name2 === "elseif") {
             if (!prevResult || !(prevResult.cmd.includes("if") || prevResult.cmd.includes("elseif"))) {
-              directive.name.error(1114, name);
+              directive.name.error(1114, name2);
             } else {
-              cmd.push(name);
+              cmd.push(name2);
             }
-            const node = ctx.createNode("ConditionalExpression");
-            node.test = ctx.createToken(valueArgument.expression);
+            const node = ctx2.createNode("ConditionalExpression");
+            node.test = ctx2.createToken(valueArgument.expression);
             node.consequent = content[0];
             content[0] = node;
-          } else if (name === "else") {
+          } else if (name2 === "else") {
             if (!prevResult || !(prevResult.cmd.includes("if") || prevResult.cmd.includes("elseif"))) {
-              directive.name.error(1114, name);
+              directive.name.error(1114, name2);
             } else {
-              cmd.push(name);
+              cmd.push(name2);
             }
           }
         }
@@ -5647,9 +5417,9 @@ var require_JSXTransform = __commonJS({
             if (!elem)
               return null;
             if (child.isSlot && !child.isSlotDeclared) {
-              const name = child.openingElement.name.value();
+              const name2 = child.openingElement.name.value();
               if (child.attributes.length > 0) {
-                data2.scopedSlots.push(this.createPropertyNode(this.createLiteralNode(name), elem.content[0]));
+                data2.scopedSlots.push(this.createPropertyNode(this.createLiteralNode(name2), elem.content[0]));
                 return next();
               }
             } else if (child.isDirective) {
@@ -5696,12 +5466,12 @@ var require_JSXTransform = __commonJS({
           }
           return null;
         };
-        const push = (data3, value) => {
-          if (value) {
-            if (Array.isArray(value)) {
-              data3.push(...value);
+        const push = (data3, value2) => {
+          if (value2) {
+            if (Array.isArray(value2)) {
+              data3.push(...value2);
             } else {
-              data3.push(value);
+              data3.push(value2);
             }
           }
         };
@@ -5709,29 +5479,29 @@ var require_JSXTransform = __commonJS({
         while (true) {
           result = next();
           if (last) {
-            let value = null;
+            let value2 = null;
             const hasIf = last.cmd.includes("if");
             if (hasIf) {
               if (result && result.cmd.includes("elseif")) {
                 result.cmd = last.cmd.concat(result.cmd);
                 result.content = last.content.concat(result.content);
               } else if (result && result.cmd.includes("else")) {
-                value = this.cascadeConditionalNode(last.content.concat(result.content));
+                value2 = this.cascadeConditionalNode(last.content.concat(result.content));
                 result.ifEnd = true;
               } else {
                 if (result)
                   result.ifEnd = true;
                 last.content.push(this.createLiteralNode(null));
-                value = this.cascadeConditionalNode(last.content);
+                value2 = this.cascadeConditionalNode(last.content);
               }
             } else if (!(last.ifEnd && last.cmd.includes("else"))) {
-              value = last.content;
+              value2 = last.content;
             }
             const complex = last.child.isJSXExpressionContainer ? !!(last.child.expression.isMemberExpression || last.child.expression.isCallExpression) : false;
             if (last.cmd.includes("each") || last.cmd.includes("for") || last.child.isSlot || last.child.isDirective || complex) {
               hasComplex = true;
             }
-            push(content, value);
+            push(content, value2);
           }
           last = result;
           if (!result)
@@ -5763,26 +5533,26 @@ var require_JSXTransform = __commonJS({
         return node;
       }
       createForInNode(refName, element, item, key, index) {
-        const node = this.createFunctionNode((ctx) => {
+        const node = this.createFunctionNode((ctx2) => {
           const refArray = `_${refName}`;
-          ctx.body.push(
-            ctx.createDeclarationNode("var", [
-              ctx.createDeclaratorNode(ctx.createIdentifierNode(refArray), ctx.createArrayNode())
+          ctx2.body.push(
+            ctx2.createDeclarationNode("var", [
+              ctx2.createDeclaratorNode(ctx2.createIdentifierNode(refArray), ctx2.createArrayNode())
             ])
           );
           if (index) {
-            ctx.body.push(
-              ctx.createDeclarationNode("var", [
-                ctx.createDeclaratorNode(
-                  ctx.createIdentifierNode(index),
-                  ctx.createLiteralNode(0, 0)
+            ctx2.body.push(
+              ctx2.createDeclarationNode("var", [
+                ctx2.createDeclaratorNode(
+                  ctx2.createIdentifierNode(index),
+                  ctx2.createLiteralNode(0, 0)
                 )
               ])
             );
           }
           const _key = key || `_${item}Key`;
-          const forNode = ctx.createNode("ForInStatement");
-          ctx.body.push(forNode);
+          const forNode = ctx2.createNode("ForInStatement");
+          ctx2.body.push(forNode);
           forNode.left = forNode.createDeclarationNode("var", [
             forNode.createDeclaratorNode(_key)
           ]);
@@ -5807,7 +5577,7 @@ var require_JSXTransform = __commonJS({
             dec.operator = "++";
             forBody.push(forBlock.createStatementNode(dec));
           }
-          ctx.body.push(ctx.createReturnNode(ctx.createIdentifierNode(refArray, null, true)));
+          ctx2.body.push(ctx2.createReturnNode(ctx2.createIdentifierNode(refArray, null, true)));
         }, [this.createIdentifierNode(refName, null, true)]);
         node.using = this.createFunctionGlobalUsing();
         const variableRefs = this.getVariableRefs();
@@ -5824,12 +5594,12 @@ var require_JSXTransform = __commonJS({
         node.isVariable = true;
         return [this.creaateAddressRefsNode(node)];
       }
-      createEachNode(element, args) {
+      createEachNode(element, args2) {
         const node = this.createFunctionNode(
-          (ctx) => {
-            ctx.body.push(ctx.createReturnNode(element.type === "ArrayExpression" && element.elements.length === 1 ? element.elements[0] : element));
+          (ctx2) => {
+            ctx2.body.push(ctx2.createReturnNode(element.type === "ArrayExpression" && element.elements.length === 1 ? element.elements[0] : element));
           },
-          args
+          args2
         );
         node.using = this.createFunctionGlobalUsing();
         const variableRefs = this.getVariableRefs();
@@ -5841,13 +5611,13 @@ var require_JSXTransform = __commonJS({
         }
         return node;
       }
-      createIterationNode(name, refs, desc2, refName, element, item, key, index) {
-        if (name === "each") {
-          const args = [this.createIdentifierNode(item, null, true)];
+      createIterationNode(name2, refs, desc2, refName, element, item, key, index) {
+        if (name2 === "each") {
+          const args2 = [this.createIdentifierNode(item, null, true)];
           if (key) {
-            args.push(this.createIdentifierNode(key, null, true));
+            args2.push(this.createIdentifierNode(key, null, true));
           }
-          const node = Transform2.get("Array").map(this, refs, [this.createEachNode(element, args)], true);
+          const node = Transform2.get("Array").map(this, refs, [this.createEachNode(element, args2)], true);
           return node;
         } else {
           const node = this.createCalleeNode(
@@ -5862,11 +5632,11 @@ var require_JSXTransform = __commonJS({
       }
       createRenderNode(stack, child) {
         const handle = this.createElementHandleNode(stack);
-        const node = this.createMethodNode("render", (ctx) => {
-          handle.parent = ctx;
-          ctx.body = [
+        const node = this.createMethodNode("render", (ctx2) => {
+          handle.parent = ctx2;
+          ctx2.body = [
             handle,
-            ctx.createReturnNode(child)
+            ctx2.createReturnNode(child)
           ];
         });
         node.static = false;
@@ -5940,20 +5710,20 @@ var require_JSXTransform = __commonJS({
         const root = this.stack.jsxRootElement;
         return this.createIdentifierNode(this.getDeclareRefsName(root, "createNode", Token2.SCOPE_REFS_DOWN | Token2.SCOPE_REFS_UP_FUN, null, root));
       }
-      createElementNode(stack, ...args) {
+      createElementNode(stack, ...args2) {
         const refs = this.createElementRefsNode();
         refs.isVariable = true;
-        const node = this.createCalleeNode(refs, args);
+        const node = this.createCalleeNode(refs, args2);
         return node;
       }
-      createSlotCalleeNode(child, ...args) {
+      createSlotCalleeNode(child, ...args2) {
         const node = this.createNode("LogicalExpression");
         node.left = node.createCalleeNode(
           node.createMemberNode([
             node.createThisNode(),
             node.createIdentifierNode("slot")
           ]),
-          args
+          args2
         );
         node.right = child;
         node.left.parent = node;
@@ -5984,11 +5754,11 @@ var require_JSXTransform = __commonJS({
             return this.createSlotCalleeNode(
               this.createCalleeNode(
                 this.createMemberNode([
-                  this.createParenthesNode(this.createFunctionNode((ctx) => {
-                    const node = ctx.createNode("ReturnStatement");
+                  this.createParenthesNode(this.createFunctionNode((ctx2) => {
+                    const node = ctx2.createNode("ReturnStatement");
                     node.argument = children;
                     children.parent = node;
-                    ctx.body.push(node);
+                    ctx2.body.push(node);
                   }, [
                     this.createIdentifierNode(scopeName)
                   ])),
@@ -6011,8 +5781,8 @@ var require_JSXTransform = __commonJS({
       }
       makeDirectiveElement(stack, children) {
         const openingElement = stack.openingElement;
-        const name = openingElement.name.value();
-        switch (name) {
+        const name2 = openingElement.name.value();
+        switch (name2) {
           case "show":
             return children;
           case "if":
@@ -6038,7 +5808,7 @@ var require_JSXTransform = __commonJS({
               }
             });
             const fun = this.createIterationNode(
-              name,
+              name2,
               argument.refs,
               argument.desc,
               this.checkRefsName("_refs"),
@@ -6055,25 +5825,25 @@ var require_JSXTransform = __commonJS({
         return null;
       }
       makeHTMLElement(stack, data2, children) {
-        var name = null;
+        var name2 = null;
         if (stack.isComponent) {
           if (stack.jsxRootElement === stack && stack.parentStack.isProgram) {
-            name = this.createLiteralNode("div");
+            name2 = this.createLiteralNode("div");
           } else {
             const module3 = stack.description();
             this.addDepend(module3);
-            name = this.createClassRefsNode(module3, stack);
+            name2 = this.createClassRefsNode(module3, stack);
           }
         } else {
-          name = this.createLiteralNode(stack.openingElement.name.value(), void 0, stack.openingElement.name);
+          name2 = this.createLiteralNode(stack.openingElement.name.value(), void 0, stack.openingElement.name);
         }
         data2 = this.makeConfig(data2);
         if (children) {
-          return this.createElementNode(stack, name, data2 || this.createLiteralNode(null), children);
+          return this.createElementNode(stack, name2, data2 || this.createLiteralNode(null), children);
         } else if (data2) {
-          return this.createElementNode(stack, name, data2);
+          return this.createElementNode(stack, name2, data2);
         } else {
-          return this.createElementNode(stack, name);
+          return this.createElementNode(stack, name2);
         }
       }
       create(stack) {
@@ -6081,8 +5851,8 @@ var require_JSXTransform = __commonJS({
         const children = stack.children.filter((child) => !(child.isJSXScript && child.isScriptProgram || child.isJSXStyle));
         const childNodes = this.makeChildren(children, data2);
         if (stack.parentStack.isSlot) {
-          const name = stack.parentStack.openingElement.name.value();
-          data2.slot = this.createLiteralNode(name);
+          const name2 = stack.parentStack.openingElement.name.value();
+          data2.slot = this.createLiteralNode(name2);
         } else if (stack.parentStack && stack.parentStack.isDirective) {
           let dName = stack.parentStack.openingElement.name.value();
           if (dName === "show") {
@@ -6155,8 +5925,8 @@ var require_JSXTransform = __commonJS({
             const renderMethod = this.createRenderNode(stack, nodeElement);
             nodeElement = this.createClassNode(stack, renderMethod, initProperties);
           } else {
-            const block = this.getParentByType((ctx) => {
-              return ctx.type === "BlockStatement" && ctx.parent.type === "MethodDefinition";
+            const block = this.getParentByType((ctx2) => {
+              return ctx2.type === "BlockStatement" && ctx2.parent.type === "MethodDefinition";
             });
             if (block && !block.existCreateElementHandle) {
               block.existCreateElementHandle = true;
@@ -6172,6 +5942,336 @@ var require_JSXTransform = __commonJS({
   }
 });
 
+// node_modules/glob-path/index.js
+var require_glob_path = __commonJS({
+  "node_modules/glob-path/index.js"(exports, module) {
+    var path = require("path");
+    var slashDelimitRegexp = /(?<!\\)[\/]+/;
+    var keyScheme = Symbol("scheme");
+    var Glob = class {
+      #rules = [];
+      #initialized = false;
+      #cache = {};
+      #extensions = {};
+      addExt(group, ext) {
+        this.#extensions[group] = ext;
+      }
+      addExts(data2 = {}) {
+        Object.keys(data2).forEach((key) => {
+          this.#extensions[key] = data2[key];
+        });
+      }
+      addRules(rules, group = null, data2 = {}) {
+        Object.keys(rules).forEach((key) => {
+          this.addRule(key, data2[key], 0, group, data2);
+        });
+      }
+      addRule(pattern, target, priority = 0, group = null, data2 = {}) {
+        let type = pattern instanceof RegExp ? "regexp" : typeof pattern;
+        let method = typeof target;
+        let segments = [];
+        let asterisks = 0;
+        if (type === "string") {
+          pattern = pattern.trim();
+          segments = pattern.replace(/^\/|\/$/).split(slashDelimitRegexp);
+          asterisks = (pattern.match(/(?<!\\)\*/g) || []).length;
+          if (pattern.includes("****")) {
+            if (segments.length > 1) {
+              throw new TypeError(`Glob the '****' full match pattern cannot have separator.`);
+            }
+          } else if (pattern.includes("***")) {
+            const at = pattern.indexOf("***");
+            if (at < pattern.length - 3) {
+              throw new TypeError(`Glob the '***' full match pattern should is at the pattern ends.`);
+            }
+          } else if (/\*\*\.\w+$/.test(pattern)) {
+            throw new TypeError(`Glob the '**.ext' file match pattern should have a separator between the two asterisks. as the '*/*.ext'`);
+          } else if (/\*{4,}/.test(pattern)) {
+            throw new TypeError(`Glob the '***' full match pattern should is three asterisks.`);
+          }
+        } else if (!(type === "regexp" || type === "function")) {
+          throw new TypeError(`Glob pattern must is regexp or string or function`);
+        }
+        if (method === "function") {
+          method = true;
+        } else if (method === "string") {
+          method = false;
+        } else if (target) {
+          throw new TypeError(`Glob the 'target' argument must is string or function`);
+        }
+        this.#rules.push({
+          pattern,
+          target,
+          segments,
+          asterisks,
+          priority,
+          group,
+          type,
+          method,
+          data: data2,
+          setValue(prefix, name2, value2) {
+            if (arguments.length === 2) {
+              return data2[prefix] = name2;
+            } else if (arguments.length === 3) {
+              let dataset = data2[prefix] || (data2[prefix] = {});
+              return dataset[name2] = value2;
+            }
+            return false;
+          },
+          getValue(prefix, name2 = null) {
+            if (arguments.length === 1) {
+              return data2[prefix];
+            }
+            let dataset = data2[prefix] || (data2[prefix] = {});
+            return dataset[name2];
+          }
+        });
+        this.#initialized = false;
+      }
+      removeRules() {
+        this.#initialized = false;
+        return this.#rules.splice(0, this.#rules.length);
+      }
+      removeRule(pattern) {
+        this.#initialized = false;
+        pattern = typeof pattern === "function" ? pattern : (rule2) => rule2.pattern === pattern;
+        const index = this.#rules.findIndex(pattern);
+        if (index >= 0) {
+          return this.#rules.splice(index, 1);
+        }
+        return null;
+      }
+      #init() {
+        this.#rules.sort((a, b) => {
+          if (a.priority < b.priority)
+            return -1;
+          if (a.priority > b.priority)
+            return 1;
+          if (a.type === "regexp" || a.type === "function")
+            return -1;
+          if (b.type === "regexp" || b.type === "function")
+            return 1;
+          if (a.asterisks === 0)
+            return -1;
+          if (b.asterisks === 0)
+            return 1;
+          let a1 = a.segments.length;
+          let b1 = b.segments.length;
+          if (a1 > b1)
+            return -1;
+          if (a1 < b1)
+            return 1;
+          let a2 = a.asterisks;
+          let b2 = b.asterisks;
+          return a2 - b2;
+        });
+        this.#initialized = true;
+      }
+      matchRule(paths, segments, basename2, extname2, globs = []) {
+        let len = paths.length - 1;
+        let base = paths[len];
+        let globPos = -1;
+        globs.length = 0;
+        if (segments.length < len)
+          return false;
+        if (base === "****") {
+          globs.push(segments.slice(0, -1));
+          return true;
+        }
+        if (base !== "***") {
+          if (extname2 && !(base.endsWith(extname2) || base.endsWith(".*"))) {
+            return false;
+          } else if (basename2 !== base && !base.startsWith("*")) {
+            return false;
+          } else if (base.includes(".") && !extname2) {
+            return false;
+          }
+        }
+        const push = (end) => {
+          if (globPos >= 0) {
+            globs.push(segments.slice(globPos, end));
+            globPos = -1;
+          }
+        };
+        let offset = 0;
+        let at = 0;
+        for (let i = 0; i < len; i++) {
+          let segment = paths[i];
+          at = offset + i;
+          if (segment === segments[at]) {
+            push(at);
+            continue;
+          } else if (segment === "**") {
+            let next = paths[i + 1];
+            if (next && !next.startsWith("*") && next !== base) {
+              let start = at;
+              while (start < segments.length && next !== segments[++start])
+                ;
+              if (next !== segments[start]) {
+                return false;
+              }
+              offset = start - at - 1;
+            }
+            globPos = at;
+            continue;
+          } else if (segment === "*") {
+            push(at);
+            globs.push([segments[at]]);
+            continue;
+          }
+          return false;
+        }
+        push(-1);
+        if (base === "*") {
+          at++;
+          if (at < segments.length - 1)
+            return false;
+        } else if (base === "**" || base === "***") {
+          at++;
+          globPos = at;
+          push(-1);
+        }
+        return true;
+      }
+      scheme(id2, ctx2 = {}, excludes = null) {
+        if (!this.#initialized) {
+          this.#init();
+        }
+        let normalId = String(id2).trim().replace(/\\/g, "/").replace(/^\/|\/$/);
+        let group = ctx2.group;
+        let extname2 = ctx2.extname || this.#extensions[group] || null;
+        let delimiter2 = ctx2.delimiter || "/";
+        let key = [normalId, String(group), delimiter2, String(extname2)].join(":");
+        if (!excludes && this.#cache.hasOwnProperty(key)) {
+          return this.#cache[key];
+        }
+        let segments = normalId.split(slashDelimitRegexp);
+        let basename2 = segments[segments.length - 1];
+        let dotAt = basename2.lastIndexOf(".");
+        let result = null;
+        let globs = [];
+        if (dotAt >= 0) {
+          if (!extname2) {
+            extname2 = basename2.slice(dotAt);
+          }
+          basename2 = basename2.substring(0, dotAt);
+        }
+        for (let rule2 of this.#rules) {
+          if (excludes) {
+            if (excludes === rule2)
+              continue;
+            if (Array.isArray(excludes) && excludes.includes(rule2))
+              continue;
+          }
+          if (group && rule2.group && rule2.group !== group) {
+            continue;
+          }
+          if (rule2.type === "function") {
+            if (rule2.pattern(id2, ctx2, rule2)) {
+              result = rule2;
+              break;
+            }
+          } else if (rule2.type === "regexp") {
+            if (rule2.pattern.test(id2)) {
+              result = rule2;
+              break;
+            }
+          } else if (rule2.pattern === id2 || rule2.pattern === normalId) {
+            result = rule2;
+            break;
+          } else if (this.matchRule(rule2.segments, segments, basename2, extname2, globs)) {
+            result = rule2;
+            break;
+          }
+        }
+        const args2 = result ? globs.flat() : [];
+        return this.#cache[key] = {
+          segments,
+          basename: basename2,
+          extname: extname2,
+          args: args2,
+          globs,
+          id: id2,
+          normalId,
+          rule: result,
+          value: null,
+          [keyScheme]: true
+        };
+      }
+      dest(id2, ctx2 = {}) {
+        return this.parse(this.scheme(id2, ctx2), ctx2);
+      }
+      parse(scheme, ctx = {}) {
+        const defaultValue = ctx.failValue !== void 0 ? ctx.failValue : false;
+        if (!scheme || !scheme.rule || scheme[keyScheme] !== true)
+          return defaultValue;
+        const { basename, extname, rule, args, value, id } = scheme;
+        if (!rule.target) {
+          return rule.target;
+        }
+        if (value) {
+          return value;
+        }
+        if (rule.method) {
+          let _result = rule.target(id, scheme, ctx, this);
+          let _scheme = scheme;
+          let _excludes = [rule];
+          while (_result === void 0) {
+            _scheme = this.scheme(_scheme.id, ctx, _excludes);
+            if (_scheme && _scheme.rule) {
+              _excludes.push(_scheme.rule);
+              _result = this.parse(_scheme, ctx);
+            } else {
+              break;
+            }
+          }
+          return scheme.value = _result;
+        }
+        const delimiter = ctx.delimiter || "/";
+        const _value = rule.target.replace(/(?<!\\)\{(.*?)\}/g, (_, name) => {
+          name = name.trim();
+          if (name.startsWith("...")) {
+            name = name.substring(3).trim();
+            if (!name) {
+              return args.join("/");
+            }
+          }
+          if (name.startsWith("globs")) {
+            try {
+              let _globs = eval(`(${name.replace(/\bglobs\b/g, "scheme.globs")})`);
+              _globs = Array.isArray(_globs) ? _globs.flat() : [_globs];
+              return _globs.join("/");
+            } catch (e) {
+              throw new ReferenceError(`${name} expression invalid`);
+            }
+          } else if (name === "basename") {
+            return `${basename}${extname || ""}`;
+          } else if (name === "filename") {
+            return basename;
+          } else if (name === "extname") {
+            return (extname || "").substring(1);
+          } else if (name === "ext") {
+            return extname || "";
+          } else if (/-?\d+/.test(name)) {
+            if (name[0] === "-") {
+              name = args.length - Number(name.substring(1));
+            }
+            return args[name] || "";
+          } else if (name === "group") {
+            return ctx[name] || "";
+          }
+          if (ctx.data && Object.prototype.hasOwnProperty.call(ctx.data, name)) {
+            return String(ctx.data[name]);
+          }
+          return "";
+        });
+        return scheme.value = path.normalize(_value).split(/[\\\/]+/).filter(Boolean).join(delimiter);
+      }
+    };
+    module.exports = Glob;
+  }
+});
+
 // tokens/AnnotationDeclaration.js
 var require_AnnotationDeclaration = __commonJS({
   "tokens/AnnotationDeclaration.js"(exports2, module2) {
@@ -6183,44 +6283,44 @@ var require_AnnotationDeclaration = __commonJS({
 // tokens/AnnotationExpression.js
 var require_AnnotationExpression = __commonJS({
   "tokens/AnnotationExpression.js"(exports2, module2) {
-    module2.exports = function(ctx, stack, type) {
-      const args = stack.getArguments();
-      const name = stack.name;
-      switch (name.toLowerCase()) {
+    module2.exports = function(ctx2, stack, type) {
+      const args2 = stack.getArguments();
+      const name2 = stack.name;
+      switch (name2.toLowerCase()) {
         case "provider":
           const indexMap = ["className", "action", "method"];
-          const getItem = (name2) => {
-            let index = args.findIndex((item) => item.key === name2);
+          const getItem = (name3) => {
+            let index = args2.findIndex((item) => item.key === name3);
             if (index < 0) {
-              index = indexMap.indexOf(name2);
+              index = indexMap.indexOf(name3);
             }
-            return args[index];
+            return args2[index];
           };
           const moduleClass = getItem(indexMap[0]);
           const action = getItem(indexMap[1]);
           const method = getItem(indexMap[2]) || { value: "Get" };
           const providerModule = stack.getModuleById(moduleClass.value, true);
           if (!providerModule) {
-            ctx.error(`Class '${moduleClass.value}' is not exists.`);
+            ctx2.error(`Class '${moduleClass.value}' is not exists.`);
           } else {
             const member = providerModule.getMember(action.value);
             if (!member || member.modifier && member.modifier.value() !== "public") {
-              ctx.error(`Method '${moduleClass.value}::${action.value}' is not exists.`);
+              ctx2.error(`Method '${moduleClass.value}::${action.value}' is not exists.`);
             } else {
               const annotation = member.annotations.find((item) => method.value.toLowerCase() == item.name.toLowerCase());
               if (!annotation) {
-                ctx.error(`Router '${method.value}' method is not exists. in ${moduleClass.value}::${action.value}`);
+                ctx2.error(`Router '${method.value}' method is not exists. in ${moduleClass.value}::${action.value}`);
               } else {
-                ctx.compilation.setPolicy(2, providerModule);
+                ctx2.compilation.setPolicy(2, providerModule);
                 const params = annotation.getArguments();
-                const value = params[0] ? params[0].value : action.value;
-                const node = ctx.createNode(stack, "Literal");
-                if (value.charCodeAt(0) === 47) {
-                  node.value = value;
-                  node.raw = `"${value}"`;
+                const value2 = params[0] ? params[0].value : action.value;
+                const node = ctx2.createNode(stack, "Literal");
+                if (value2.charCodeAt(0) === 47) {
+                  node.value = value2;
+                  node.raw = `"${value2}"`;
                 } else {
-                  node.value = `/${providerModule.id.toLowerCase()}/${value}`;
-                  node.raw = `"/${providerModule.id.toLowerCase()}/${value}"`;
+                  node.value = `/${providerModule.id.toLowerCase()}/${value2}`;
+                  node.raw = `"/${providerModule.id.toLowerCase()}/${value2}"`;
                 }
                 return node;
               }
@@ -6230,7 +6330,7 @@ var require_AnnotationExpression = __commonJS({
         case "http":
           return null;
         default:
-          ctx.error(`The '${name}' annotations is not supported.`);
+          ctx2.error(`The '${name2}' annotations is not supported.`);
       }
       return null;
     };
@@ -6241,16 +6341,16 @@ var require_AnnotationExpression = __commonJS({
 var require_ArrayExpression = __commonJS({
   "tokens/ArrayExpression.js"(exports2, module2) {
     var _Array = require_Array();
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       let hasSpread = false;
       node.elements = stack.elements.map((stack2, index) => {
         let item = node.createToken(stack2);
         if (item && stack2.isSpreadElement) {
           hasSpread = true;
         } else {
-          if (ctx.isPassableReferenceExpress(stack2, stack2.type())) {
-            item = ctx.creaateAddressRefsNode(item);
+          if (ctx2.isPassableReferenceExpress(stack2, stack2.type())) {
+            item = ctx2.creaateAddressRefsNode(item);
           }
         }
         return item;
@@ -6259,7 +6359,7 @@ var require_ArrayExpression = __commonJS({
         if (node.elements.length === 1) {
           return node.elements[0];
         }
-        return _Array.concat(ctx, ctx.createArrayNode(), node.elements, true, false);
+        return _Array.concat(ctx2, ctx2.createArrayNode(), node.elements, true, false);
       }
       return node;
     };
@@ -6269,8 +6369,8 @@ var require_ArrayExpression = __commonJS({
 // tokens/ArrayPattern.js
 var require_ArrayPattern = __commonJS({
   "tokens/ArrayPattern.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.elements = stack.elements.map((item) => node.createToken(item));
       return node;
     };
@@ -6281,86 +6381,86 @@ var require_ArrayPattern = __commonJS({
 var require_FunctionExpression = __commonJS({
   "tokens/FunctionExpression.js"(exports2, module2) {
     var Token2 = require_Token();
-    function createInitNode(ctx, name, initValue, defaultValue, operator) {
-      return ctx.createStatementNode(ctx.createAssignmentNode(
-        name instanceof Token2 ? name : ctx.createIdentifierNode(name, null, true),
-        defaultValue ? ctx.createBinaryNode(
+    function createInitNode(ctx2, name2, initValue, defaultValue2, operator) {
+      return ctx2.createStatementNode(ctx2.createAssignmentNode(
+        name2 instanceof Token2 ? name2 : ctx2.createIdentifierNode(name2, null, true),
+        defaultValue2 ? ctx2.createBinaryNode(
           operator,
           initValue,
-          defaultValue
+          defaultValue2
         ) : initValue
       ));
     }
-    function createRefsMemberNode(ctx, object, property, computed = false) {
-      const node = ctx.createMemberNode([ctx.createIdentifierNode(object, null, true), typeof property === "number" ? ctx.createLiteralNode(property) : ctx.createIdentifierNode(property)]);
+    function createRefsMemberNode(ctx2, object, property, computed = false) {
+      const node = ctx2.createMemberNode([ctx2.createIdentifierNode(object, null, true), typeof property === "number" ? ctx2.createLiteralNode(property) : ctx2.createIdentifierNode(property)]);
       node.computed = computed;
       return node;
     }
-    function createParamNode(ctx, name, prefix) {
-      const node = ctx.createNode("ParamDeclarator");
-      node.argument = name instanceof Token2 ? name : ctx.createIdentifierNode(name, null, true);
+    function createParamNode(ctx2, name2, prefix) {
+      const node = ctx2.createNode("ParamDeclarator");
+      node.argument = name2 instanceof Token2 ? name2 : ctx2.createIdentifierNode(name2, null, true);
       node.prefix = prefix;
       node.argument.isVariable = true;
       return node;
     }
-    function createParamNodes(ctx, stack, params) {
+    function createParamNodes(ctx2, stack, params) {
       const before = [];
       const items = params.map((item, index) => {
         if (item.isObjectPattern) {
-          const sName = ctx.checkRefsName("_s", false, Token2.SCOPE_REFS_DOWN);
+          const sName = ctx2.checkRefsName("_s", false, Token2.SCOPE_REFS_DOWN);
           before.push(createInitNode(
-            ctx,
+            ctx2,
             sName,
-            ctx.createIdentifierNode(sName, null, true),
-            ctx.createNewNode(ctx.createIdentifierNode("\\stdClass"), []),
+            ctx2.createIdentifierNode(sName, null, true),
+            ctx2.createNewNode(ctx2.createIdentifierNode("\\stdClass"), []),
             "?:"
           ));
           item.properties.forEach((property) => {
             const key = property.key.value();
-            let defaultValue2 = null;
+            let defaultValue3 = null;
             if (property.hasInit) {
               const initStack = property.init.isAssignmentPattern ? property.init.right : property.init;
-              defaultValue2 = ctx.createToken(initStack);
+              defaultValue3 = ctx2.createToken(initStack);
             } else {
-              defaultValue2 = ctx.createLiteralNode(null);
+              defaultValue3 = ctx2.createLiteralNode(null);
             }
             before.push(createInitNode(
-              ctx,
+              ctx2,
               key,
-              createRefsMemberNode(ctx, sName, key),
-              defaultValue2,
+              createRefsMemberNode(ctx2, sName, key),
+              defaultValue3,
               "??"
             ));
           });
-          return createParamNode(ctx, sName, "object");
+          return createParamNode(ctx2, sName, "object");
         } else if (item.isArrayPattern) {
-          const sName = ctx.checkRefsName("_s", false, Token2.SCOPE_REFS_DOWN);
+          const sName = ctx2.checkRefsName("_s", false, Token2.SCOPE_REFS_DOWN);
           before.push(createInitNode(
-            ctx,
+            ctx2,
             sName,
-            ctx.createIdentifierNode(sName, null, true),
-            ctx.createArrayNode([]),
+            ctx2.createIdentifierNode(sName, null, true),
+            ctx2.createArrayNode([]),
             "?:"
           ));
           item.elements.forEach((property, index2) => {
             let key = null;
-            let defaultValue2 = null;
+            let defaultValue3 = null;
             if (property.isAssignmentPattern) {
               key = property.left.value();
-              defaultValue2 = ctx.createToken(property.right);
+              defaultValue3 = ctx2.createToken(property.right);
             } else {
               key = property.value();
-              defaultValue2 = ctx.createLiteralNode(null);
+              defaultValue3 = ctx2.createLiteralNode(null);
             }
             before.push(createInitNode(
-              ctx,
+              ctx2,
               key,
-              createRefsMemberNode(ctx, sName, index2, true),
-              defaultValue2,
+              createRefsMemberNode(ctx2, sName, index2, true),
+              defaultValue3,
               "??"
             ));
           });
-          return createParamNode(ctx, sName, "array");
+          return createParamNode(ctx2, sName, "array");
         }
         const oType = item.acceptType && item.acceptType.type();
         let acceptType = null;
@@ -6368,19 +6468,19 @@ var require_FunctionExpression = __commonJS({
           acceptType = stack.compiler.callUtils("getOriginType", oType);
         }
         let typeName = "";
-        let defaultValue = null;
+        let defaultValue2 = null;
         let nameNode = null;
         if (item.isAssignmentPattern) {
-          nameNode = ctx.createIdentifierNode(item.left.value(), item.left, true);
-          defaultValue = ctx.createToken(item.right);
+          nameNode = ctx2.createIdentifierNode(item.left.value(), item.left, true);
+          defaultValue2 = ctx2.createToken(item.right);
         } else if (item.question) {
-          nameNode = ctx.createToken(item);
-          defaultValue = ctx.createLiteralNode(null);
+          nameNode = ctx2.createToken(item);
+          defaultValue2 = ctx2.createLiteralNode(null);
         } else {
-          nameNode = ctx.createToken(item);
+          nameNode = ctx2.createToken(item);
         }
         if (acceptType && acceptType.isModule) {
-          const originType = ctx.builder.getAvailableOriginType(acceptType);
+          const originType = ctx2.builder.getAvailableOriginType(acceptType);
           if (originType === "String" || originType === "Array" || originType === "Object") {
             typeName = originType.toLowerCase();
           } else if (originType === "Function") {
@@ -6389,24 +6489,24 @@ var require_FunctionExpression = __commonJS({
             typeName = "bool";
           }
           if (!typeName && !originType) {
-            typeName = ctx.getModuleReferenceName(acceptType);
+            typeName = ctx2.getModuleReferenceName(acceptType);
           }
         }
         if (oType && !item.isRestElement && !oType.isGenericType) {
-          const isAddress = ctx.isAddressRefsType(oType, item);
+          const isAddress = ctx2.isAddressRefsType(oType, item);
           if (isAddress) {
-            nameNode = ctx.creaateAddressRefsNode(nameNode);
+            nameNode = ctx2.creaateAddressRefsNode(nameNode);
           }
         }
-        if (defaultValue) {
-          nameNode = ctx.createAssignmentNode(nameNode, defaultValue);
+        if (defaultValue2) {
+          nameNode = ctx2.createAssignmentNode(nameNode, defaultValue2);
         }
-        return createParamNode(ctx, nameNode, typeName);
+        return createParamNode(ctx2, nameNode, typeName);
       });
       return [items, before];
     }
-    module2.exports = function(ctx, stack, type) {
-      const node = ctx.createNode(stack, type);
+    module2.exports = function(ctx2, stack, type) {
+      const node = ctx2.createNode(stack, type);
       const [params, before] = createParamNodes(node, stack, stack.params);
       let block = node.createToken(stack.body);
       if (stack.expression && stack.expression.async || stack.async) {
@@ -6420,20 +6520,20 @@ var require_FunctionExpression = __commonJS({
           });
         }
         content.body = block;
-        const executer = node.createFunctionNode((ctx2) => {
-          const resolve = ctx2.createCalleeNode(ctx2.createIdentifierNode("resolve", null, true), [
-            ctx2.createCalleeNode(ctx2.createIdentifierNode("call_user_func"), [content])
+        const executer = node.createFunctionNode((ctx3) => {
+          const resolve = ctx3.createCalleeNode(ctx3.createIdentifierNode("resolve", null, true), [
+            ctx3.createCalleeNode(ctx3.createIdentifierNode("call_user_func"), [content])
           ]);
-          const reject = ctx2.createCalleeNode(ctx2.createIdentifierNode("reject", null, true), [
-            ctx2.createIdentifierNode("e", null, true)
+          const reject = ctx3.createCalleeNode(ctx3.createIdentifierNode("reject", null, true), [
+            ctx3.createIdentifierNode("e", null, true)
           ]);
-          const tryNode = ctx2.createNode("TryStatement");
-          tryNode.param = createParamNode(ctx2, "e", "\\Exception");
+          const tryNode = ctx3.createNode("TryStatement");
+          tryNode.param = createParamNode(ctx3, "e", "\\Exception");
           tryNode.block = node.createNode("BlockStatement");
-          tryNode.block.body = [ctx2.createStatementNode(resolve)];
+          tryNode.block.body = [ctx3.createStatementNode(resolve)];
           tryNode.handler = node.createNode("BlockStatement");
-          tryNode.handler.body = [ctx2.createStatementNode(reject)];
-          ctx2.body.push(tryNode);
+          tryNode.handler.body = [ctx3.createStatementNode(reject)];
+          ctx3.body.push(tryNode);
         }, [node.createIdentifierNode("resolve", null, true), node.createIdentifierNode("reject", null, true)]);
         if (params.length > 0) {
           executer.using = params.map((item) => {
@@ -6476,8 +6576,8 @@ var require_FunctionExpression = __commonJS({
 var require_ArrowFunctionExpression = __commonJS({
   "tokens/ArrowFunctionExpression.js"(exports2, module2) {
     var FunctionExpression = require_FunctionExpression();
-    module2.exports = function(ctx, stack, type) {
-      const node = FunctionExpression(ctx, stack, type);
+    module2.exports = function(ctx2, stack, type) {
+      const node = FunctionExpression(ctx2, stack, type);
       node.type = type;
       return node;
     };
@@ -6489,8 +6589,8 @@ var require_AssignmentExpression = __commonJS({
   "tokens/AssignmentExpression.js"(exports2, module2) {
     var Transform2 = require_Transform();
     var hasOwn = Object.prototype.hasOwnProperty;
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       const desc2 = stack.description();
       const module3 = stack.module;
       const isMember = stack.left.isMemberExpression;
@@ -6502,10 +6602,10 @@ var require_AssignmentExpression = __commonJS({
       var leftNode = null;
       var isReflect = false;
       if (isMember) {
-        const objectType = ctx.inferType(stack.left.object);
+        const objectType = ctx2.inferType(stack.left.object);
         if (desc2 && desc2.isStack && (desc2.isMethodSetterDefinition || desc2.parentStack.isPropertyDefinition)) {
           const property = stack.left.property.value();
-          let typename = ctx.builder.getAvailableOriginType(objectType) || objectType.toString();
+          let typename = ctx2.builder.getAvailableOriginType(objectType) || objectType.toString();
           if ((objectType.isUnionType || objectType.isIntersectionType) && desc2.module && desc2.module.isModule) {
             typename = desc2.module.id;
           }
@@ -6536,11 +6636,11 @@ var require_AssignmentExpression = __commonJS({
         }
         if (stack.left.computed) {
           const hasDynamic = desc2 && desc2.isComputeType && desc2.isPropertyExists();
-          if (!hasDynamic && !ctx.compiler.callUtils("isLiteralObjectType", objectType)) {
+          if (!hasDynamic && !ctx2.compiler.callUtils("isLiteralObjectType", objectType)) {
             isReflect = true;
           }
         } else if (desc2 && desc2.isAnyType) {
-          isReflect = !ctx.compiler.callUtils("isLiteralObjectType", objectType);
+          isReflect = !ctx2.compiler.callUtils("isLiteralObjectType", objectType);
         }
       }
       if (desc2 && !isReflect && stack.right) {
@@ -6585,12 +6685,12 @@ var require_AssignmentExpression = __commonJS({
             node.createIdentifierNode(node.getModuleReferenceName(Reflect2)),
             node.createIdentifierNode("get")
           ]);
-          const value = node.createCalleeNode(callee2, [
+          const value2 = node.createCalleeNode(callee2, [
             node.createCallReflectScopeNode(module3),
             node.createToken(stack.left.object),
             node.createCallReflectPropertyNode(stack.left)
           ], stack);
-          refsNode = node.createBinaryNode(operator, value, refsNode);
+          refsNode = node.createBinaryNode(operator, value2, refsNode);
         }
         const callee = node.createStaticMemberNode([
           node.createIdentifierNode(node.getModuleReferenceName(Reflect2)),
@@ -6631,8 +6731,8 @@ var require_AssignmentExpression = __commonJS({
 // tokens/AssignmentPattern.js
 var require_AssignmentPattern = __commonJS({
   "tokens/AssignmentPattern.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.left = node.createIdentifierNode(stack.left.value(), stack.left, true);
       node.right = node.createToken(stack.right);
       return node;
@@ -6643,8 +6743,8 @@ var require_AssignmentPattern = __commonJS({
 // tokens/AwaitExpression.js
 var require_AwaitExpression = __commonJS({
   "tokens/AwaitExpression.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       const promiseModule = node.builder.getGlobalModuleById("Promise");
       const promiseRefs = node.getModuleReferenceName(promiseModule);
       node.addDepend(promiseModule);
@@ -6673,87 +6773,87 @@ var require_BinaryExpression = __commonJS({
       "Object": "is_object",
       "Boolean": "is_bool"
     };
-    function createNode(ctx, stack) {
+    function createNode(ctx2, stack) {
       let maybeArrayRef = stack.isMemberExpression || stack.isCallExpression || stack.isIdentifier;
       if (maybeArrayRef) {
         if (stack.isIdentifier || stack.isMemberExpression) {
           const desc3 = stack.description();
           if (stack.compiler.callUtils("isTypeModule", desc3)) {
-            return ctx.createToken(stack);
+            return ctx2.createToken(stack);
           }
         }
-        const originType = ctx.builder.getAvailableOriginType(ctx.inferType(stack));
+        const originType = ctx2.builder.getAvailableOriginType(ctx2.inferType(stack));
         if (originType && originType.toLowerCase() === "array") {
           var desc2 = stack.description();
           if (stack.isIdentifier) {
-            return ctx.createArrayAddressRefsNode(desc2, stack.value());
+            return ctx2.createArrayAddressRefsNode(desc2, stack.value());
           } else {
-            const name = ctx.getDeclareRefsName(stack, "_RD");
-            const left = ctx.createIdentifierNode(name, null, true);
-            const right = ctx.creaateAddressRefsNode(ctx.createToken(stack));
-            ctx.insertNodeBlockContextAt(ctx.createAssignmentNode(left, right));
-            return ctx.createIdentifierNode(name, null, true);
+            const name2 = ctx2.getDeclareRefsName(stack, "_RD");
+            const left = ctx2.createIdentifierNode(name2, null, true);
+            const right = ctx2.creaateAddressRefsNode(ctx2.createToken(stack));
+            ctx2.insertNodeBlockContextAt(ctx2.createAssignmentNode(left, right));
+            return ctx2.createIdentifierNode(name2, null, true);
           }
         }
       }
-      return ctx.createToken(stack);
+      return ctx2.createToken(stack);
     }
-    module2.exports = function(ctx, stack) {
+    module2.exports = function(ctx2, stack) {
       var operator = stack.node.operator;
       if (operator === "is" || operator === "instanceof") {
         const type = stack.right.type();
-        const name = ctx.builder.getAvailableOriginType(type);
-        if (mapset[name]) {
-          return ctx.createCalleeNode(
-            ctx.createIdentifierNode(mapset[name]),
+        const name2 = ctx2.builder.getAvailableOriginType(type);
+        if (mapset[name2]) {
+          return ctx2.createCalleeNode(
+            ctx2.createIdentifierNode(mapset[name2]),
             [
-              ctx.createToken(stack.left)
+              ctx2.createToken(stack.left)
             ],
             stack
           );
         } else if (operator === "is") {
-          ctx.addDepend(type);
-          return ctx.createCalleeNode(
-            ctx.createIdentifierNode("is_a"),
+          ctx2.addDepend(type);
+          return ctx2.createCalleeNode(
+            ctx2.createIdentifierNode("is_a"),
             [
-              ctx.createToken(stack.left),
-              ctx.createToken(stack.right)
+              ctx2.createToken(stack.left),
+              ctx2.createToken(stack.right)
             ],
             stack
           );
         }
       }
       if (operator.charCodeAt(0) === 43) {
-        var leftType = ctx.inferType(stack.left);
-        var rightType = ctx.inferType(stack.right);
+        var leftType = ctx2.inferType(stack.left);
+        var rightType = ctx2.inferType(stack.right);
         var oLeftType = leftType;
         var oRightType = rightType;
         var isNumber = leftType.isLiteralType && rightType.isLiteralType;
         if (isNumber) {
-          leftType = ctx.builder.getAvailableOriginType(leftType);
-          rightType = ctx.builder.getAvailableOriginType(rightType);
+          leftType = ctx2.builder.getAvailableOriginType(leftType);
+          rightType = ctx2.builder.getAvailableOriginType(rightType);
           isNumber = leftType === "Number" && leftType === rightType;
         }
         if (!isNumber) {
           if (oLeftType.toString() === "string" || oRightType.toString() === "string") {
             operator = operator.length > 1 ? "." + operator.substr(1) : ".";
           } else {
-            ctx.addDepend(stack.getGlobalTypeById("System"));
-            return ctx.createCalleeNode(
-              ctx.createStaticMemberNode([
-                ctx.createIdentifierNode("System"),
-                ctx.createIdentifierNode("addition")
+            ctx2.addDepend(stack.getGlobalTypeById("System"));
+            return ctx2.createCalleeNode(
+              ctx2.createStaticMemberNode([
+                ctx2.createIdentifierNode("System"),
+                ctx2.createIdentifierNode("addition")
               ]),
               [
-                ctx.createToken(stack.left),
-                ctx.createToken(stack.right)
+                ctx2.createToken(stack.left),
+                ctx2.createToken(stack.right)
               ],
               stack
             );
           }
         }
       }
-      const node = ctx.createNode(stack);
+      const node = ctx2.createNode(stack);
       node.left = createNode(node, stack.left);
       node.right = createNode(node, stack.right);
       node.operator = operator;
@@ -6771,10 +6871,10 @@ var require_BinaryExpression = __commonJS({
 // tokens/BlockStatement.js
 var require_BlockStatement = __commonJS({
   "tokens/BlockStatement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.body = [];
-      ctx.body = node;
+      ctx2.body = node;
       for (let child of stack.body) {
         const token = node.createToken(child);
         if (token) {
@@ -6799,8 +6899,8 @@ var require_BlockStatement = __commonJS({
 // tokens/BreakStatement.js
 var require_BreakStatement = __commonJS({
   "tokens/BreakStatement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       var index = 0;
       if (stack.label) {
         const label = stack.label.value();
@@ -6829,41 +6929,41 @@ var require_CallExpression = __commonJS({
   "tokens/CallExpression.js"(exports2, module2) {
     var Transform2 = require_Transform();
     var Token2 = require_Token();
-    function createArgumentNodes(ctx, stack, arguments, declareParams) {
-      return arguments.map((item, index) => {
-        const node = ctx.createToken(item);
+    function createArgumentNodes(ctx2, stack, args2, declareParams) {
+      return args2.map((item, index) => {
+        const node = ctx2.createToken(item);
         if (declareParams && declareParams[index] && !item.isIdentifier) {
           const declareParam = declareParams[index];
           if (!(declareParam.isRestElement || declareParam.isObjectPattern || declareParam.isArrayPattern)) {
-            if (ctx.isAddressRefsType(declareParam.type())) {
-              const name = ctx.checkRefsName("arg");
-              ctx.insertNodeBlockContextAt(
-                ctx.createAssignmentNode(ctx.createIdentifierNode(name, null, true), node)
+            if (ctx2.isAddressRefsType(declareParam.type())) {
+              const name2 = ctx2.checkRefsName("arg");
+              ctx2.insertNodeBlockContextAt(
+                ctx2.createAssignmentNode(ctx2.createIdentifierNode(name2, null, true), node)
               );
-              return ctx.createIdentifierNode(name, null, true);
+              return ctx2.createIdentifierNode(name2, null, true);
             }
           }
         }
         return node;
       });
     }
-    function CallExpression(ctx, stack) {
+    function CallExpression(ctx2, stack) {
       const isMember = stack.callee.isMemberExpression;
       const desc2 = stack.doGetDeclareFunctionType(stack.callee.description());
       const module3 = stack.module;
       const declareParams = desc2 && desc2.params;
-      const node = ctx.createNode(stack);
-      const args = createArgumentNodes(node, stack, stack.arguments, declareParams);
+      const node = ctx2.createNode(stack);
+      const args2 = createArgumentNodes(node, stack, stack.arguments, declareParams);
       if (stack.callee.isFunctionExpression) {
         node.callee = node.createIdentifierNode("call_user_func");
-        node.arguments = [node.createToken(stack.callee)].concat(args);
+        node.arguments = [node.createToken(stack.callee)].concat(args2);
         return node;
       }
       if (!stack.callee.isSuperExpression) {
         const context = isMember ? stack.callee.object.getContext() : stack.callee.getContext();
-        let objectType = isMember ? ctx.inferType(stack.callee.object, context) : null;
+        let objectType = isMember ? ctx2.inferType(stack.callee.object, context) : null;
         if (objectType && objectType.isClassGenericType && objectType.inherit.isAliasType) {
-          objectType = ctx.inferType(objectType.inherit.inherit.type(), context);
+          objectType = ctx2.inferType(objectType.inherit.inherit.type(), context);
         }
         if (isMember && desc2 && !objectType.isNamespace) {
           if (desc2.isType && desc2.isAnyType) {
@@ -6888,35 +6988,35 @@ var require_CallExpression = __commonJS({
                 node.createClassRefsNode(module3),
                 target,
                 property,
-                args.length > 0 ? node.createArrayNode(args) : null
+                args2.length > 0 ? node.createArrayNode(args2) : null
               ],
               stack
             );
           } else if (desc2.isStack) {
-            let name = node.builder.getAvailableOriginType(objectType) || objectType.toString();
+            let name2 = node.builder.getAvailableOriginType(objectType) || objectType.toString();
             let descModule = null;
             if ((objectType.isUnionType || objectType.isIntersectionType) && (desc2.isMethodDefinition || desc2.isCallDefinition) && desc2.module && desc2.module.isModule) {
-              name = desc2.module.id;
+              name2 = desc2.module.id;
               descModule = desc2.module;
             }
             let newWrapObject = null;
             let isStringNewWrapObject = null;
             if (objectType.isInstanceofType && !objectType.isThisType) {
               const origin = objectType.inherit.type();
-              isStringNewWrapObject = origin === ctx.builder.getGlobalModuleById("String");
-              if (isStringNewWrapObject || origin === ctx.builder.getGlobalModuleById("Number") || origin === ctx.builder.getGlobalModuleById("Boolean")) {
+              isStringNewWrapObject = origin === ctx2.builder.getGlobalModuleById("String");
+              if (isStringNewWrapObject || origin === ctx2.builder.getGlobalModuleById("Number") || origin === ctx2.builder.getGlobalModuleById("Boolean")) {
                 newWrapObject = true;
               }
             }
-            if (Transform2.has(name)) {
-              const object = Transform2.get(name);
+            if (Transform2.has(name2)) {
+              const object = Transform2.get(name2);
               const key = stack.callee.property.value();
               if (Object.prototype.hasOwnProperty.call(object, key)) {
                 if (desc2.static) {
                   return object[key](
                     node,
                     null,
-                    args,
+                    args2,
                     true,
                     true
                   );
@@ -6928,7 +7028,7 @@ var require_CallExpression = __commonJS({
                   return object[key](
                     node,
                     callee,
-                    args,
+                    args2,
                     true,
                     false
                   );
@@ -6937,7 +7037,7 @@ var require_CallExpression = __commonJS({
             }
             if (!(desc2.isMethodDefinition || desc2.isCallDefinition)) {
               node.callee = node.createIdentifierNode("call_user_func");
-              node.arguments = [node.createToken(stack.callee)].concat(args);
+              node.arguments = [node.createToken(stack.callee)].concat(args2);
               return node;
             }
           }
@@ -6948,10 +7048,10 @@ var require_CallExpression = __commonJS({
             let target = node.createToken(stack.callee);
             if (!stack.callee.isIdentifier) {
               const refs = node.checkRefsName("ref");
-              ctx.insertNodeBlockContextAt(
-                ctx.createAssignmentNode(ctx.createIdentifierNode(refs, null, true), target)
+              ctx2.insertNodeBlockContextAt(
+                ctx2.createAssignmentNode(ctx2.createIdentifierNode(refs, null, true), target)
               );
-              target = ctx.createIdentifierNode(refs, null, true);
+              target = ctx2.createIdentifierNode(refs, null, true);
             }
             return node.createCalleeNode(
               node.createStaticMemberNode([
@@ -6961,7 +7061,7 @@ var require_CallExpression = __commonJS({
               [
                 node.createClassRefsNode(module3),
                 target,
-                args.length > 0 ? node.createArrayNode(args) : null
+                args2.length > 0 ? node.createArrayNode(args2) : null
               ],
               stack
             );
@@ -6972,18 +7072,18 @@ var require_CallExpression = __commonJS({
               return object[callee.value](
                 node,
                 callee,
-                args,
+                args2,
                 true,
                 false
               );
             }
-          } else if ((desc2.isCallDefinition || desc2.isType && desc2.isModule) && args.length === 1) {
-            const name = desc2.isCallDefinition && desc2.module ? desc2.module.id : node.builder.getAvailableOriginType(desc2) || desc2.toString();
-            if (name && Transform2.has(name)) {
-              const object = Transform2.get(name);
+          } else if ((desc2.isCallDefinition || desc2.isType && desc2.isModule) && args2.length === 1) {
+            const name2 = desc2.isCallDefinition && desc2.module ? desc2.module.id : node.builder.getAvailableOriginType(desc2) || desc2.toString();
+            if (name2 && Transform2.has(name2)) {
+              const object = Transform2.get(name2);
               return object.valueOf(
                 node,
-                args[0],
+                args2[0],
                 [],
                 true,
                 false
@@ -7003,7 +7103,7 @@ var require_CallExpression = __commonJS({
       } else {
         node.callee = node.createToken(stack.callee);
       }
-      node.arguments = args;
+      node.arguments = args2;
       return node;
     }
     module2.exports = CallExpression;
@@ -7014,8 +7114,8 @@ var require_CallExpression = __commonJS({
 var require_ClassDeclaration = __commonJS({
   "tokens/ClassDeclaration.js"(exports2, module2) {
     var ClassBuilder2 = require_ClassBuilder();
-    module2.exports = function(ctx, stack, type) {
-      return ClassBuilder2.createClassNode(stack, ctx, type);
+    module2.exports = function(ctx2, stack, type) {
+      return ClassBuilder2.createClassNode(stack, ctx2, type);
     };
   }
 });
@@ -7024,12 +7124,12 @@ var require_ClassDeclaration = __commonJS({
 var require_ConditionalExpression = __commonJS({
   "tokens/ConditionalExpression.js"(exports2, module2) {
     var AddressVariable = require_AddressVariable();
-    function createConditionalNode(ctx, stack) {
-      const node = ctx.createNode("IfStatement");
-      const result = ctx.getDeclareRefsName(stack, AddressVariable.REFS_NAME);
-      let consequent = ctx.createToken(stack.consequent);
-      let alternate = ctx.createToken(stack.alternate);
-      let assignName = ctx.getDeclareRefsName(stack, AddressVariable.REFS_INDEX);
+    function createConditionalNode(ctx2, stack) {
+      const node = ctx2.createNode("IfStatement");
+      const result = ctx2.getDeclareRefsName(stack, AddressVariable.REFS_NAME);
+      let consequent = ctx2.createToken(stack.consequent);
+      let alternate = ctx2.createToken(stack.alternate);
+      let assignName = ctx2.getDeclareRefsName(stack, AddressVariable.REFS_INDEX);
       const key0 = node.createAssignmentNode(
         node.createIdentifierNode(assignName, null, true),
         node.createLiteralNode(0)
@@ -7038,42 +7138,42 @@ var require_ConditionalExpression = __commonJS({
         node.createIdentifierNode(assignName, null, true),
         node.createLiteralNode(1)
       );
-      if (ctx.isPassableReferenceExpress(stack.consequent, ctx.inferType(stack.consequent))) {
-        consequent = ctx.creaateAddressRefsNode(consequent);
+      if (ctx2.isPassableReferenceExpress(stack.consequent, ctx2.inferType(stack.consequent))) {
+        consequent = ctx2.creaateAddressRefsNode(consequent);
       }
-      if (ctx.isPassableReferenceExpress(stack.alternate, ctx.inferType(stack.alternate))) {
-        alternate = ctx.creaateAddressRefsNode(alternate);
+      if (ctx2.isPassableReferenceExpress(stack.alternate, ctx2.inferType(stack.alternate))) {
+        alternate = ctx2.creaateAddressRefsNode(alternate);
       }
-      node.condition = ctx.createTransformBooleanTypeNode(stack.test);
-      node.consequent = ctx.createAssignmentNode(
+      node.condition = ctx2.createTransformBooleanTypeNode(stack.test);
+      node.consequent = ctx2.createAssignmentNode(
         node.createMemberNode([
           node.createIdentifierNode(result, null, true),
           key0
         ], null, true),
         consequent
       );
-      node.alternate = ctx.createAssignmentNode(
+      node.alternate = ctx2.createAssignmentNode(
         node.createMemberNode([
           node.createIdentifierNode(result, null, true),
           key1
         ], null, true),
         alternate
       );
-      ctx.insertNodeBlockContextAt(node);
+      ctx2.insertNodeBlockContextAt(node);
       return node.createMemberNode([
         node.createIdentifierNode(result, null, true),
         node.createIdentifierNode(assignName, null, true)
       ], null, true);
     }
-    function check(ctx, stack) {
+    function check(ctx2, stack) {
       if (stack.isConditionalExpression) {
-        return check(ctx, stack.consequent) || check(ctx, stack.alternate);
+        return check(ctx2, stack.consequent) || check(ctx2, stack.alternate);
       }
-      const type = ctx.inferType(stack);
-      return ctx.isAddressRefsType(type, stack);
+      const type = ctx2.inferType(stack);
+      return ctx2.isAddressRefsType(type, stack);
     }
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       if (check(node, stack)) {
         return createConditionalNode(node, stack);
       } else {
@@ -7089,8 +7189,8 @@ var require_ConditionalExpression = __commonJS({
 // tokens/ContinueStatement.js
 var require_ContinueStatement = __commonJS({
   "tokens/ContinueStatement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createToken(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createToken(stack);
       node.label = node.createToken(stack.label);
       return node;
     };
@@ -7100,8 +7200,8 @@ var require_ContinueStatement = __commonJS({
 // tokens/Declarator.js
 var require_Declarator = __commonJS({
   "tokens/Declarator.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack, "Identifier");
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack, "Identifier");
       node.value = node.raw = stack.value();
       node.isVariable = true;
       return node;
@@ -7113,29 +7213,29 @@ var require_Declarator = __commonJS({
 var require_DeclaratorDeclaration = __commonJS({
   "tokens/DeclaratorDeclaration.js"(exports2, module2) {
     var ClassBuilder2 = require_ClassBuilder();
-    module2.exports = function(ctx, stack, type) {
+    module2.exports = function(ctx2, stack, type) {
       const module3 = stack.module;
-      const polyfillModule = ctx.builder.getPolyfillModule(module3.getName());
+      const polyfillModule = ctx2.builder.getPolyfillModule(module3.getName());
       if (!polyfillModule) {
         return null;
       }
-      const node = new ClassBuilder2(stack, ctx, type);
+      const node = new ClassBuilder2(stack, ctx2, type);
       const content = polyfillModule.content;
       if (!node.checkSyntaxPresetForClass()) {
         return null;
       }
-      const ns = ctx.builder.getModuleNamespace(module3);
+      const ns = ctx2.builder.getModuleNamespace(module3);
       if (ns) {
         node.namespace = node.createIdentifierNode(ns);
       }
       node.key = node.createIdentifierNode(polyfillModule.export || module3.id);
       node.comment = polyfillModule.comment ? node.createChunkNode(polyfillModule.comment) : null;
-      polyfillModule.require.forEach((name) => {
-        const module4 = stack.getModuleById(name);
+      polyfillModule.require.forEach((name2) => {
+        const module4 = stack.getModuleById(name2);
         if (module4) {
           node.addDepend(module4);
         } else {
-          node.error(`the '${name}' dependency does not exist`);
+          node.error(`the '${name2}' dependency does not exist`);
         }
       });
       module3.extends.forEach((dep) => {
@@ -7154,8 +7254,8 @@ var require_DeclaratorDeclaration = __commonJS({
 // tokens/DoWhileStatement.js
 var require_DoWhileStatement = __commonJS({
   "tokens/DoWhileStatement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.condition = node.createTransformBooleanTypeNode(stack.condition);
       node.body = node.createToken(stack.body);
       return node;
@@ -7174,11 +7274,11 @@ var require_EmptyStatement = __commonJS({
 // tokens/EnumDeclaration.js
 var require_EnumDeclaration = __commonJS({
   "tokens/EnumDeclaration.js"(exports2, module2) {
-    function createStatementMember(ctx, members) {
+    function createStatementMember(ctx2, members) {
       const items = [];
       const values = [];
       members.forEach((item) => {
-        const node = ctx.createNode("PropertyDefinition");
+        const node = ctx2.createNode("PropertyDefinition");
         node.modifier = node.createIdentifierNode("public");
         node.kind = "const";
         node.key = node.createToken(item.key);
@@ -7190,7 +7290,7 @@ var require_EnumDeclaration = __commonJS({
           )
         ];
         items.push(node);
-        const caseNode = ctx.createNode("SwitchCase");
+        const caseNode = ctx2.createNode("SwitchCase");
         caseNode.condition = caseNode.createLiteralNode(item.init.value());
         caseNode.consequent = [
           caseNode.createReturnNode(caseNode.createLiteralNode(item.key.value()))
@@ -7200,9 +7300,9 @@ var require_EnumDeclaration = __commonJS({
       return [items, values];
     }
     var ClassBuilder2 = require_ClassBuilder();
-    module2.exports = function(ctx, stack, type) {
+    module2.exports = function(ctx2, stack, type) {
       if (stack.parentStack.isPackageDeclaration) {
-        const node = new ClassBuilder2(stack, ctx, "ClassDeclaration");
+        const node = new ClassBuilder2(stack, ctx2, "ClassDeclaration");
         const module3 = stack.module;
         if (node.isActiveForModule(module3.inherit)) {
           node.inherit = node.createIdentifierNode(node.getModuleReferenceName(module3.inherit));
@@ -7217,33 +7317,33 @@ var require_EnumDeclaration = __commonJS({
         node.createModuleAssets(module3);
         const [items, values] = createStatementMember(node, stack.properties);
         node.body.push(...items);
-        const mtehod = node.createMethodNode(node.createIdentifierNode("getLabelByValue"), (ctx2) => {
-          const node2 = ctx2.createNode("SwitchStatement");
+        const mtehod = node.createMethodNode(node.createIdentifierNode("getLabelByValue"), (ctx3) => {
+          const node2 = ctx3.createNode("SwitchStatement");
           node2.condition = node2.createIdentifierNode("value", null, true);
           node2.cases = values.map((item) => {
             item.parent = node2;
             return item;
           });
-          ctx2.body.push(node2);
+          ctx3.body.push(node2);
         }, [node.createIdentifierNode("value", null, true)]);
         mtehod.static = mtehod.createIdentifierNode("static");
         mtehod.modifier = mtehod.createIdentifierNode("public");
         node.body.push(mtehod);
         return node;
       } else {
-        const name = stack.value();
+        const name2 = stack.value();
         const keys = [];
         const values = [];
         stack.properties.forEach((item) => {
-          keys.push(ctx.createPropertyNode(ctx.createLiteralNode(item.key.value()), ctx.createLiteralNode(item.init.value())));
-          values.push(ctx.createPropertyNode(ctx.createLiteralNode(String(item.init.value())), ctx.createLiteralNode(item.key.value())));
+          keys.push(ctx2.createPropertyNode(ctx2.createLiteralNode(item.key.value()), ctx2.createLiteralNode(item.init.value())));
+          values.push(ctx2.createPropertyNode(ctx2.createLiteralNode(String(item.init.value())), ctx2.createLiteralNode(item.key.value())));
         });
-        const transform = ctx.createNode(stack, "TypeTransformExpression");
+        const transform = ctx2.createNode(stack, "TypeTransformExpression");
         transform.typeName = "object";
         transform.expression = transform.createObjectNode(values.concat(keys));
-        return ctx.createStatementNode(
-          ctx.createAssignmentNode(
-            ctx.createIdentifierNode(name, null, true),
+        return ctx2.createStatementNode(
+          ctx2.createAssignmentNode(
+            ctx2.createIdentifierNode(name2, null, true),
             transform
           )
         );
@@ -7255,8 +7355,8 @@ var require_EnumDeclaration = __commonJS({
 // tokens/EnumProperty.js
 var require_EnumProperty = __commonJS({
   "tokens/EnumProperty.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.key = node.createToken(stack.key);
       node.init = node.createToken(stack.init);
       return node;
@@ -7267,13 +7367,13 @@ var require_EnumProperty = __commonJS({
 // tokens/ExportAllDeclaration.js
 var require_ExportAllDeclaration = __commonJS({
   "tokens/ExportAllDeclaration.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.exported = node.createToken(stack.exported);
       const compilation = stack.getResolveCompilation();
       if (compilation && compilation.stack) {
         const resolve = stack.getResolveFile();
-        const source = ctx.builder.getModuleImportSource(resolve, stack.compilation.file);
+        const source = ctx2.builder.getModuleImportSource(resolve, stack.compilation.file);
         node.source = node.createLiteralNode(source);
         node.builder.make(compilation, compilation.stack);
       }
@@ -7285,8 +7385,8 @@ var require_ExportAllDeclaration = __commonJS({
 // tokens/ExportDefaultDeclaration.js
 var require_ExportDefaultDeclaration = __commonJS({
   "tokens/ExportDefaultDeclaration.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.declaration = node.createToken(stack.declaration);
       return node;
     };
@@ -7296,15 +7396,15 @@ var require_ExportDefaultDeclaration = __commonJS({
 // tokens/ExportNamedDeclaration.js
 var require_ExportNamedDeclaration = __commonJS({
   "tokens/ExportNamedDeclaration.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.specifiers = stack.specifiers ? stack.specifiers.map((item) => node.createToken(item)) : null;
       node.declaration = node.createToken(stack.declaration);
       if (stack.source) {
         const compilation = stack.getResolveCompilation();
         if (compilation) {
           const resolve = stack.getResolveFile();
-          const source = ctx.builder.getModuleImportSource(resolve, stack.compilation.file);
+          const source = ctx2.builder.getModuleImportSource(resolve, stack.compilation.file);
           node.source = node.createLiteralNode(source);
           node.builder.make(compilation, compilation.stack);
         }
@@ -7317,8 +7417,8 @@ var require_ExportNamedDeclaration = __commonJS({
 // tokens/ExportSpecifier.js
 var require_ExportSpecifier = __commonJS({
   "tokens/ExportSpecifier.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.exported = node.createIdentifierNode(stack.exported.value(), stack.exported);
       node.local = node.createToken(stack.local);
       return node;
@@ -7329,8 +7429,8 @@ var require_ExportSpecifier = __commonJS({
 // tokens/ExpressionStatement.js
 var require_ExpressionStatement = __commonJS({
   "tokens/ExpressionStatement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.expression = node.createToken(stack.expression);
       return node;
     };
@@ -7341,12 +7441,12 @@ var require_ExpressionStatement = __commonJS({
 var require_ForInStatement = __commonJS({
   "tokens/ForInStatement.js"(exports2, module2) {
     var Transform2 = require_Transform();
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.right = node.createToken(stack.right);
-      const type = ctx.inferType(stack.right);
+      const type = ctx2.inferType(stack.right);
       if (type.isAnyType || type.toString() === "string") {
-        node.right = Transform2.get("Object").keys(ctx, null, [node.right], true, false);
+        node.right = Transform2.get("Object").keys(ctx2, null, [node.right], true, false);
         node.value = node.createToken(stack.left);
       } else {
         node.left = node.createToken(stack.left);
@@ -7360,8 +7460,8 @@ var require_ForInStatement = __commonJS({
 // tokens/ForOfStatement.js
 var require_ForOfStatement = __commonJS({
   "tokens/ForOfStatement.js"(exports2, module2) {
-    function createConditionNode(ctx, obj, refs) {
-      const assignment = ctx.createNode("AssignmentPattern");
+    function createConditionNode(ctx2, obj, refs) {
+      const assignment = ctx2.createNode("AssignmentPattern");
       assignment.left = assignment.createIdentifierNode(refs, null, true);
       assignment.right = assignment.createTypeTransformNode("object", assignment.createCalleeNode(
         assignment.createMemberNode([
@@ -7370,16 +7470,16 @@ var require_ForOfStatement = __commonJS({
         ]),
         []
       ));
-      const init = ctx.createIdentifierNode(obj, null, true);
-      const next = ctx.createParenthesNode(assignment);
-      const done = ctx.createNode("UnaryExpression");
+      const init = ctx2.createIdentifierNode(obj, null, true);
+      const next = ctx2.createParenthesNode(assignment);
+      const done = ctx2.createNode("UnaryExpression");
       done.prefix = true;
       done.operator = "!";
-      done.argument = ctx.createMemberNode([
+      done.argument = ctx2.createMemberNode([
         assignment.createIdentifierNode(refs, null, true),
         assignment.createIdentifierNode("done")
       ]);
-      const logical = ctx.createNode("LogicalExpression");
+      const logical = ctx2.createNode("LogicalExpression");
       const left = logical.createNode("LogicalExpression");
       init.parent = logical.left;
       next.parent = logical.left;
@@ -7392,27 +7492,27 @@ var require_ForOfStatement = __commonJS({
       logical.right = done;
       return logical;
     }
-    function createAddressRefsNode(addressRefObject, ctx, desc2, value, stack) {
+    function createAddressRefsNode(addressRefObject, ctx2, desc2, value2, stack) {
       const index = addressRefObject.add(stack);
-      const name = addressRefObject.getName(desc2);
+      const name2 = addressRefObject.getName(desc2);
       const left = addressRefObject.createIndexName(desc2);
-      const key = ctx.createAssignmentNode(
-        ctx.createIdentifierNode(left, null, true),
-        ctx.createLiteralNode(index)
+      const key = ctx2.createAssignmentNode(
+        ctx2.createIdentifierNode(left, null, true),
+        ctx2.createLiteralNode(index)
       );
       key.computed = true;
-      ctx.addVariableRefs(stack, left);
-      return ctx.createAssignmentNode(
-        ctx.createIdentifierNode(name, null, true),
-        ctx.createObjectNode([
-          ctx.createPropertyNode(key, value)
+      ctx2.addVariableRefs(stack, left);
+      return ctx2.createAssignmentNode(
+        ctx2.createIdentifierNode(name2, null, true),
+        ctx2.createObjectNode([
+          ctx2.createPropertyNode(key, value2)
         ])
       );
     }
-    module2.exports = function(ctx, stack) {
-      var type = ctx.inferType(stack.right);
-      if (!(type.isLiteralArrayType || type.isTupleType || type === ctx.builder.getGlobalModuleById("array") || ctx.isArrayMappingType(stack.compiler.callUtils("getOriginType", type)))) {
-        const node2 = ctx.createNode(stack, "ForStatement");
+    module2.exports = function(ctx2, stack) {
+      var type = ctx2.inferType(stack.right);
+      if (!(type.isLiteralArrayType || type.isTupleType || type === ctx2.builder.getGlobalModuleById("array") || ctx2.isArrayMappingType(stack.compiler.callUtils("getOriginType", type)))) {
+        const node2 = ctx2.createNode(stack, "ForStatement");
         const SystemModule = node2.builder.getGlobalModuleById("System");
         const IteratorModule = node2.builder.getGlobalModuleById("Iterator");
         node2.addDepend(SystemModule);
@@ -7425,18 +7525,18 @@ var require_ForOfStatement = __commonJS({
           init.createIdentifierNode(obj, null, true),
           isIterableIteratorType ? init.createToken(stack.right) : init.createCalleeNode(
             init.createStaticMemberNode([
-              ctx.createIdentifierNode(node2.getModuleReferenceName(SystemModule)),
-              ctx.createIdentifierNode("getIterator")
+              ctx2.createIdentifierNode(node2.getModuleReferenceName(SystemModule)),
+              ctx2.createIdentifierNode("getIterator")
             ]),
             [
               init.createToken(stack.right)
             ]
           )
         );
-        const rewind = ctx.createCalleeNode(
-          ctx.createMemberNode([
-            ctx.createIdentifierNode(obj, null, true),
-            ctx.createIdentifierNode("rewind")
+        const rewind = ctx2.createCalleeNode(
+          ctx2.createMemberNode([
+            ctx2.createIdentifierNode(obj, null, true),
+            ctx2.createIdentifierNode("rewind")
           ])
         );
         var decl = init.declarations[0];
@@ -7484,7 +7584,7 @@ var require_ForOfStatement = __commonJS({
         }
         return node2;
       }
-      const node = ctx.createNode(stack);
+      const node = ctx2.createNode(stack);
       node.left = node.createToken(stack.left);
       node.right = node.createToken(stack.right);
       node.body = node.createToken(stack.body);
@@ -7496,8 +7596,8 @@ var require_ForOfStatement = __commonJS({
 // tokens/ForStatement.js
 var require_ForStatement = __commonJS({
   "tokens/ForStatement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.init = node.createToken(stack.init);
       node.condition = node.createToken(stack.condition);
       node.update = node.createToken(stack.update);
@@ -7511,8 +7611,8 @@ var require_ForStatement = __commonJS({
 var require_FunctionDeclaration = __commonJS({
   "tokens/FunctionDeclaration.js"(exports2, module2) {
     var FunctionExpression = require_FunctionExpression();
-    module2.exports = function(ctx, stack, type) {
-      const node = FunctionExpression(ctx, stack, type);
+    module2.exports = function(ctx2, stack, type) {
+      const node = FunctionExpression(ctx2, stack, type);
       if (type === "FunctionDeclaration") {
         node.type = "FunctionExpression";
         return node.createStatementNode(
@@ -7536,9 +7636,9 @@ var require_FunctionDeclaration = __commonJS({
 var require_Identifier = __commonJS({
   "tokens/Identifier.js"(exports2, module2) {
     var globals = ["String", "Number", "Boolean", "Object", "Array"];
-    module2.exports = function(ctx, stack) {
+    module2.exports = function(ctx2, stack) {
       if (!stack.parentStack.isMemberExpression && stack.value() === "arguments") {
-        return ctx.createCalleeNode(ctx.createIdentifierNode("func_get_args"));
+        return ctx2.createCalleeNode(ctx2.createIdentifierNode("func_get_args"));
       }
       let desc2 = null;
       if (stack.parentStack.isMemberExpression) {
@@ -7548,66 +7648,66 @@ var require_Identifier = __commonJS({
       } else {
         desc2 = stack.description();
       }
-      const builder = ctx.builder;
+      const builder = ctx2.builder;
       if (desc2 && (desc2.isPropertyDefinition || desc2.isMethodDefinition)) {
         const ownerModule = desc2.module;
         const isStatic = !!(desc2.static || ownerModule.static);
         const inMember = stack.parentStack.isMemberExpression;
         let propertyName = stack.value();
         if (!inMember && (desc2.isMethodGetterDefinition || desc2.isMethodSetterDefinition)) {
-          propertyName = ctx.getAccessorName(stack.value(), desc2, desc2.isMethodGetterDefinition ? "get" : "set");
+          propertyName = ctx2.getAccessorName(stack.value(), desc2, desc2.isMethodGetterDefinition ? "get" : "set");
         }
         let propertyNode = null;
         if (isStatic) {
-          propertyNode = ctx.createStaticMemberNode([
-            ctx.createIdentifierNode(builder.getModuleNamespace(ownerModule)),
-            ctx.createIdentifierNode(propertyName, stack)
+          propertyNode = ctx2.createStaticMemberNode([
+            ctx2.createIdentifierNode(builder.getModuleNamespace(ownerModule)),
+            ctx2.createIdentifierNode(propertyName, stack)
           ]);
         } else {
-          propertyNode = ctx.createMemberNode([
-            ctx.createThisNode(),
-            ctx.createIdentifierNode(propertyName, stack)
+          propertyNode = ctx2.createMemberNode([
+            ctx2.createThisNode(),
+            ctx2.createIdentifierNode(propertyName, stack)
           ]);
         }
         if (!inMember && !stack.parentStack.isAssignmentExpression && desc2.isMethodGetterDefinition) {
-          return ctx.createCalleeNode(propertyNode);
+          return ctx2.createCalleeNode(propertyNode);
         }
         return propertyNode;
       }
       if (stack.compiler.callUtils("isTypeModule", desc2)) {
-        ctx.addDepend(desc2);
+        ctx2.addDepend(desc2);
         if (stack.parentStack.isMemberExpression && stack.parentStack.object === stack || stack.parentStack.isNewExpression && !globals.includes(desc2.getName()) || stack.parentStack.isBinaryExpression && stack.parentStack.right === stack && stack.parentStack.node.operator === "instanceof") {
-          return ctx.createIdentifierNode(ctx.getModuleReferenceName(desc2), stack);
+          return ctx2.createIdentifierNode(ctx2.getModuleReferenceName(desc2), stack);
         } else {
-          return ctx.createClassRefsNode(desc2, stack);
+          return ctx2.createClassRefsNode(desc2, stack);
         }
       }
       var isDeclarator = desc2 && (desc2.isDeclarator || desc2.isProperty && (desc2.parentStack.isObjectPattern || desc2.parentStack.isObjectExpression));
       if (isDeclarator) {
         if (desc2.parentStack.isImportDeclaration) {
           const resolve = desc2.parentStack.getResolveFile();
-          const system = ctx.builder.getGlobalModuleById("System");
-          ctx.addDepend(system);
-          const node = ctx.createCalleeNode(
-            ctx.createStaticMemberNode([
-              ctx.createIdentifierNode(ctx.getModuleReferenceName(system)),
-              ctx.createIdentifierNode("getScopeVariable")
+          const system = ctx2.builder.getGlobalModuleById("System");
+          ctx2.addDepend(system);
+          const node = ctx2.createCalleeNode(
+            ctx2.createStaticMemberNode([
+              ctx2.createIdentifierNode(ctx2.getModuleReferenceName(system)),
+              ctx2.createIdentifierNode("getScopeVariable")
             ]),
             [
-              ctx.createLiteralNode(ctx.builder.createScopeId(stack.compilation, resolve)),
-              ctx.createLiteralNode(stack.value())
+              ctx2.createLiteralNode(ctx2.builder.createScopeId(stack.compilation, resolve)),
+              ctx2.createLiteralNode(stack.value())
             ]
           );
           return node;
         } else if (desc2.parentStack.isAnnotationDeclaration) {
           const annotation = desc2.parentStack;
-          const name = annotation.name.toLowerCase();
-          if (name === "require" || name === "import") {
+          const name2 = annotation.name.toLowerCase();
+          if (name2 === "require" || name2 === "import") {
             const argument = annotation.getArguments().find((item) => !!item.resolveFile);
-            return ctx.createLiteralNode(ctx.builder.getAssetFileReferenceName(ctx.module, argument.resolveFile), void 0, stack);
+            return ctx2.createLiteralNode(ctx2.builder.getAssetFileReferenceName(ctx2.module, argument.resolveFile), void 0, stack);
           }
         } else {
-          ctx.addVariableRefs(desc2);
+          ctx2.addVariableRefs(desc2);
         }
       } else if (desc2 && (desc2.isFunctionDeclaration || desc2.isDeclaratorVariable)) {
         isDeclarator = true;
@@ -7626,7 +7726,7 @@ var require_Identifier = __commonJS({
         }
       } else if (stack.parentStack.isJSXExpressionContainer && stack.scope.define(stack.value())) {
         if (desc2 && desc2.isIdentifier) {
-          ctx.addVariableRefs(desc2);
+          ctx2.addVariableRefs(desc2);
         }
         isDeclarator = true;
       }
@@ -7640,20 +7740,20 @@ var require_Identifier = __commonJS({
           isRefs = stack.parentStack.right === stack;
         }
         if (isRefs) {
-          const assignAddress = ctx.getAssignAddressRef(desc2);
+          const assignAddress = ctx2.getAssignAddressRef(desc2);
           if (assignAddress) {
-            const name = assignAddress.getName(desc2) || stack.value();
+            const name2 = assignAddress.getName(desc2) || stack.value();
             const index = assignAddress.createIndexName(desc2);
             if (index) {
-              return ctx.createMemberNode([
-                ctx.createIdentifierNode(name, null, true),
-                ctx.createIdentifierNode(index, null, true)
+              return ctx2.createMemberNode([
+                ctx2.createIdentifierNode(name2, null, true),
+                ctx2.createIdentifierNode(index, null, true)
               ], null, true);
             }
           }
         }
       }
-      return ctx.createIdentifierNode(stack.value(), stack, isDeclarator);
+      return ctx2.createIdentifierNode(stack.value(), stack, isDeclarator);
     };
   }
 });
@@ -7661,8 +7761,8 @@ var require_Identifier = __commonJS({
 // tokens/IfStatement.js
 var require_IfStatement = __commonJS({
   "tokens/IfStatement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.condition = node.createTransformBooleanTypeNode(stack.condition);
       node.consequent = node.createToken(stack.consequent);
       node.alternate = node.createToken(stack.alternate);
@@ -7674,39 +7774,39 @@ var require_IfStatement = __commonJS({
 // tokens/ImportDeclaration.js
 var require_ImportDeclaration = __commonJS({
   "tokens/ImportDeclaration.js"(exports2, module2) {
-    var path2 = require("path");
-    module2.exports = function(ctx, stack, type) {
+    var path3 = require("path");
+    module2.exports = function(ctx2, stack, type) {
       if (stack.source && stack.source.isLiteral) {
         const compilation = stack.getResolveCompilation();
         if (!compilation)
           return null;
         const resolve = stack.getResolveFile();
-        const info = path2.parse(resolve);
-        const source = ctx.builder.getModuleImportSource(resolve, ctx.module || stack.compilation.file);
-        const specifiers = stack.specifiers.map((item) => ctx.createToken(item));
-        ctx.builder.make(compilation, compilation.stack);
+        const info = path3.parse(resolve);
+        const source = ctx2.builder.getModuleImportSource(resolve, ctx2.module || stack.compilation.file);
+        const specifiers = stack.specifiers.map((item) => ctx2.createToken(item));
+        ctx2.builder.make(compilation, compilation.stack);
         if (specifiers.length > 0) {
           const namespaceSpecifier = specifiers.length === 1 && specifiers[0].type === "ImportNamespaceSpecifier" ? specifiers[0] : null;
           if (namespaceSpecifier) {
-            const node = ctx.createImportNode(source, [[namespaceSpecifier.local.value]], stack);
+            const node = ctx2.createImportNode(source, [[namespaceSpecifier.local.value]], stack);
             return node;
           } else {
-            let name = info.name.replace(/[.-]/g, "_");
+            let name2 = info.name.replace(/[.-]/g, "_");
             if (/^\d+/.test(info.name)) {
-              name = "_" + name;
+              name2 = "_" + name2;
             }
-            const refs = ctx.checkRefsName(name, true);
-            const node = ctx.createImportNode(source, [[refs]], stack);
-            const top = ctx.getTopBlockContext();
+            const refs = ctx2.checkRefsName(name2, true);
+            const node = ctx2.createImportNode(source, [[refs]], stack);
+            const top = ctx2.getTopBlockContext();
             const body = top.initBeforeBody || top.beforeBody || top.body;
             const isDefaultGlobal = specifiers.length === 1 && specifiers[0].type === "ImportDefaultSpecifier";
             specifiers.forEach((item) => {
-              let name2 = item.local.value;
+              let name3 = item.local.value;
               if (item.type === "ImportNamespaceSpecifier") {
                 body.push(
                   node.createStatementNode(
                     node.createAssignmentNode(
-                      node.createIdentifierNode(name2, null, true),
+                      node.createIdentifierNode(name3, null, true),
                       node.createIdentifierNode(refs, true, true)
                     )
                   )
@@ -7716,16 +7816,16 @@ var require_ImportDeclaration = __commonJS({
                 if (item.type !== "ImportDefaultSpecifier") {
                   imported = item.imported.value;
                 }
-                const system = ctx.builder.getGlobalModuleById("System");
-                ctx.addDepend(system);
+                const system = ctx2.builder.getGlobalModuleById("System");
+                ctx2.addDepend(system);
                 const registerScopeVariables = node.createCalleeNode(
                   node.createStaticMemberNode([
                     node.createIdentifierNode(node.getModuleReferenceName(system)),
                     node.createIdentifierNode("registerScopeVariables")
                   ]),
                   [
-                    node.createLiteralNode(ctx.builder.createScopeId(stack.compilation, resolve)),
-                    node.createLiteralNode(name2),
+                    node.createLiteralNode(ctx2.builder.createScopeId(stack.compilation, resolve)),
+                    node.createLiteralNode(name3),
                     isDefaultGlobal ? node.createIdentifierNode(refs, true, true) : node.createBinaryNode(
                       "??",
                       node.createMemberNode([
@@ -7746,20 +7846,20 @@ var require_ImportDeclaration = __commonJS({
             return node;
           }
         }
-        return ctx.createImportNode(source, specifiers, stack);
+        return ctx2.createImportNode(source, specifiers, stack);
       } else {
         const classModule = stack.description();
-        if (classModule && ctx.isActiveForModule(classModule)) {
+        if (classModule && ctx2.isActiveForModule(classModule)) {
           const compilation = classModule.compilation;
-          ctx.builder.buildForModule(compilation, compilation.stack, classModule);
-          const source = ctx.builder.getModuleImportSource(classModule, stack.compilation.file);
-          const node = ctx.createImportNode(source);
-          const name = stack.alias ? stack.alias.value() : classModule.id;
-          if (name !== classModule.id) {
+          ctx2.builder.buildForModule(compilation, compilation.stack, classModule);
+          const source = ctx2.builder.getModuleImportSource(classModule, stack.compilation.file);
+          const node = ctx2.createImportNode(source);
+          const name2 = stack.alias ? stack.alias.value() : classModule.id;
+          if (name2 !== classModule.id) {
             node.insertNodeBlockContextTop(
               node.createUsingStatementNode(
                 node.createImportSpecifierNode(
-                  name,
+                  name2,
                   node.getModuleReferenceName(classModule)
                 )
               )
@@ -7776,8 +7876,8 @@ var require_ImportDeclaration = __commonJS({
 // tokens/ImportDefaultSpecifier.js
 var require_ImportDefaultSpecifier = __commonJS({
   "tokens/ImportDefaultSpecifier.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.local = stack.local ? node.createToken(stack.local) : node.createIdentifierNode(stack.value(), stack);
       return node;
     };
@@ -7787,8 +7887,8 @@ var require_ImportDefaultSpecifier = __commonJS({
 // tokens/ImportExpression.js
 var require_ImportExpression = __commonJS({
   "tokens/ImportExpression.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.source = node.createToken(stack.source);
       return node;
     };
@@ -7798,8 +7898,8 @@ var require_ImportExpression = __commonJS({
 // tokens/ImportNamespaceSpecifier.js
 var require_ImportNamespaceSpecifier = __commonJS({
   "tokens/ImportNamespaceSpecifier.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.local = stack.local ? node.createToken(stack.local) : node.createIdentifierNode(stack.value(), stack);
       return node;
     };
@@ -7809,8 +7909,8 @@ var require_ImportNamespaceSpecifier = __commonJS({
 // tokens/ImportSpecifier.js
 var require_ImportSpecifier = __commonJS({
   "tokens/ImportSpecifier.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.imported = node.createIdentifierNode(stack.imported.value());
       node.local = stack.local ? node.createToken(stack.local) : node.createIdentifierNode(stack.value(), stack);
       return node;
@@ -7822,8 +7922,8 @@ var require_ImportSpecifier = __commonJS({
 var require_InterfaceDeclaration = __commonJS({
   "tokens/InterfaceDeclaration.js"(exports2, module2) {
     var ClassBuilder2 = require_ClassBuilder();
-    module2.exports = function(ctx, stack, type) {
-      return ClassBuilder2.createClassNode(stack, ctx, type);
+    module2.exports = function(ctx2, stack, type) {
+      return ClassBuilder2.createClassNode(stack, ctx2, type);
     };
   }
 });
@@ -7831,7 +7931,7 @@ var require_InterfaceDeclaration = __commonJS({
 // tokens/JSXAttribute.js
 var require_JSXAttribute = __commonJS({
   "tokens/JSXAttribute.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
+    module2.exports = function(ctx2, stack) {
       let ns = null;
       if (stack.hasNamespaced) {
         const xmlns = stack.getXmlNamespace();
@@ -7843,10 +7943,10 @@ var require_JSXAttribute = __commonJS({
           ns = ops.jsx.xmlns.default[nsStack.namespace.value()] || ns;
         }
       }
-      const node = ctx.createNode(stack);
+      const node = ctx2.createNode(stack);
       node.namespace = ns;
-      let name = ctx.createToken(stack.name);
-      let value = stack.value ? ctx.createToken(stack.value) : ctx.createLiteralNode(true);
+      let name2 = ctx2.createToken(stack.name);
+      let value2 = stack.value ? ctx2.createToken(stack.value) : ctx2.createLiteralNode(true);
       if (stack.isMemberProperty) {
         const eleClass = stack.jsxElement.getSubClassDescription();
         const propsDesc = stack.getAttributeDescription(eleClass);
@@ -7856,11 +7956,11 @@ var require_JSXAttribute = __commonJS({
           const [named] = annotation.getArguments();
           if (named) {
             if (named.isObjectPattern) {
-              name = named.extract[0].value;
+              name2 = named.extract[0].value;
             } else {
-              name = named.value;
+              name2 = named.value;
             }
-            name = ctx.createIdentifierNode(name);
+            name2 = ctx2.createIdentifierNode(name2);
           }
         }
       }
@@ -7872,7 +7972,7 @@ var require_JSXAttribute = __commonJS({
         }
         if (!has && stack.value.isJSXExpressionContainer) {
           if (stack.value.expression.isMemberExpression) {
-            const objectType = ctx.builder.getGlobalModuleById("Object");
+            const objectType = ctx2.builder.getGlobalModuleById("Object");
             has = objectType && objectType.is(stack.value.expression.object.type());
           }
         }
@@ -7880,8 +7980,8 @@ var require_JSXAttribute = __commonJS({
           stack.value.error(1e4, stack.value.value());
         }
       }
-      node.name = name;
-      node.value = value;
+      node.name = name2;
+      node.value = value2;
       return node;
     };
   }
@@ -7890,12 +7990,12 @@ var require_JSXAttribute = __commonJS({
 // tokens/JSXCdata.js
 var require_JSXCdata = __commonJS({
   "tokens/JSXCdata.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      let value = stack.value();
-      if (value) {
-        value = value.replace(/[\r\n]+/g, "").replace(/\u0022/g, '\\"');
-        if (value) {
-          return ctx.createLiteralNode(value);
+    module2.exports = function(ctx2, stack) {
+      let value2 = stack.value();
+      if (value2) {
+        value2 = value2.replace(/[\r\n]+/g, "").replace(/\u0022/g, '\\"');
+        if (value2) {
+          return ctx2.createLiteralNode(value2);
         }
       }
       return null;
@@ -7906,8 +8006,8 @@ var require_JSXCdata = __commonJS({
 // tokens/JSXClosingElement.js
 var require_JSXClosingElement = __commonJS({
   "tokens/JSXClosingElement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      return ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      return ctx2.createNode(stack);
     };
   }
 });
@@ -7915,8 +8015,8 @@ var require_JSXClosingElement = __commonJS({
 // tokens/JSXClosingFragment.js
 var require_JSXClosingFragment = __commonJS({
   "tokens/JSXClosingFragment.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      return ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      return ctx2.createNode(stack);
     };
   }
 });
@@ -7926,16 +8026,16 @@ var require_JSXElement = __commonJS({
   "tokens/JSXElement.js"(exports2, module2) {
     var JSXTransform2 = require_JSXTransform();
     var instances = /* @__PURE__ */ new Map();
-    function getTransform(root, ctx) {
+    function getTransform(root, ctx2) {
       if (instances.has(root)) {
         return instances.get(root);
       }
-      const obj = new JSXTransform2(root, ctx);
+      const obj = new JSXTransform2(root, ctx2);
       instances.set(root, obj);
       return obj;
     }
-    function JSXElement(ctx, stack) {
-      const obj = getTransform(stack, ctx);
+    function JSXElement(ctx2, stack) {
+      const obj = getTransform(stack, ctx2);
       return obj.create(stack);
     }
     JSXElement.getTransform = getTransform;
@@ -7946,7 +8046,7 @@ var require_JSXElement = __commonJS({
 // tokens/JSXEmptyExpression.js
 var require_JSXEmptyExpression = __commonJS({
   "tokens/JSXEmptyExpression.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
+    module2.exports = function(ctx2, stack) {
       return null;
     };
   }
@@ -7956,22 +8056,22 @@ var require_JSXEmptyExpression = __commonJS({
 var require_JSXExpressionContainer = __commonJS({
   "tokens/JSXExpressionContainer.js"(exports2, module2) {
     var JSXElement = require_JSXElement();
-    module2.exports = function(ctx, stack) {
+    module2.exports = function(ctx2, stack) {
       if (stack.parentStack.isSlot && stack.expression && !stack.expression.isJSXElement) {
-        const name = stack.parentStack.openingElement.name.value();
+        const name2 = stack.parentStack.openingElement.name.value();
         return JSXElement.createElementNode(
-          ctx,
-          ctx.createLiteralNode("span"),
-          ctx.createObjectNode([
-            ctx.createPropertyNode(
-              ctx.createIdentifier("slot"),
-              ctx.createLiteralNode(name)
+          ctx2,
+          ctx2.createLiteralNode("span"),
+          ctx2.createObjectNode([
+            ctx2.createPropertyNode(
+              ctx2.createIdentifier("slot"),
+              ctx2.createLiteralNode(name2)
             )
           ]),
-          ctx.createToken(stack.expression)
+          ctx2.createToken(stack.expression)
         );
       }
-      return ctx.createToken(stack.expression);
+      return ctx2.createToken(stack.expression);
     };
   }
 });
@@ -7979,8 +8079,8 @@ var require_JSXExpressionContainer = __commonJS({
 // tokens/JSXFragment.js
 var require_JSXFragment = __commonJS({
   "tokens/JSXFragment.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.children = stack.children.map((child) => node.createToken(child));
       return node;
     };
@@ -7990,8 +8090,8 @@ var require_JSXFragment = __commonJS({
 // tokens/JSXIdentifier.js
 var require_JSXIdentifier = __commonJS({
   "tokens/JSXIdentifier.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack, "Identifier");
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack, "Identifier");
       node.value = stack.value();
       node.raw = node.value;
       return node;
@@ -8002,8 +8102,8 @@ var require_JSXIdentifier = __commonJS({
 // tokens/JSXMemberExpression.js
 var require_JSXMemberExpression = __commonJS({
   "tokens/JSXMemberExpression.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.object = node.createToken(stack.object);
       node.property = node.createToken(stack.property);
       return node;
@@ -8014,8 +8114,8 @@ var require_JSXMemberExpression = __commonJS({
 // tokens/JSXNamespacedName.js
 var require_JSXNamespacedName = __commonJS({
   "tokens/JSXNamespacedName.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.namespace = node.createToken(stack.namespace);
       node.name = node.createToken(stack.name);
       const xmlns = stack.getXmlNamespace();
@@ -8035,8 +8135,8 @@ var require_JSXNamespacedName = __commonJS({
 // tokens/JSXOpeningElement.js
 var require_JSXOpeningElement = __commonJS({
   "tokens/JSXOpeningElement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.attributes = stack.attributes.map((attr) => node.createToken(attr));
       if (stack.parentStack.isComponent) {
         const desc2 = stack.parentStack.description();
@@ -8044,7 +8144,7 @@ var require_JSXOpeningElement = __commonJS({
           if (stack.hasNamespaced && desc2.isFragment) {
             node.name = node.createIdentifierNode(desc2.id, stack.name);
           } else {
-            node.name = node.createIdentifierNode(ctx.builder.getModuleReferenceName(desc2), stack.name);
+            node.name = node.createIdentifierNode(ctx2.builder.getModuleReferenceName(desc2), stack.name);
           }
         } else {
           node.name = node.createIdentifierNode(stack.name.value(), stack.name);
@@ -8060,8 +8160,8 @@ var require_JSXOpeningElement = __commonJS({
 // tokens/JSXOpeningFragment.js
 var require_JSXOpeningFragment = __commonJS({
   "tokens/JSXOpeningFragment.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      return ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      return ctx2.createNode(stack);
     };
   }
 });
@@ -8069,8 +8169,8 @@ var require_JSXOpeningFragment = __commonJS({
 // tokens/JSXScript.js
 var require_JSXScript = __commonJS({
   "tokens/JSXScript.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.openingElement = node.createToken(stack.openingElement);
       node.body = (stack.body || []).map((child) => node.createToken(child));
     };
@@ -8080,8 +8180,8 @@ var require_JSXScript = __commonJS({
 // tokens/JSXSpreadAttribute.js
 var require_JSXSpreadAttribute = __commonJS({
   "tokens/JSXSpreadAttribute.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.argument = node.createToken(stack.argument);
       return node;
     };
@@ -8091,7 +8191,7 @@ var require_JSXSpreadAttribute = __commonJS({
 // tokens/JSXStyle.js
 var require_JSXStyle = __commonJS({
   "tokens/JSXStyle.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
+    module2.exports = function(ctx2, stack) {
       return null;
     };
   }
@@ -8100,12 +8200,12 @@ var require_JSXStyle = __commonJS({
 // tokens/JSXText.js
 var require_JSXText = __commonJS({
   "tokens/JSXText.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      let value = stack.value();
-      if (value) {
-        value = value.replace(/[\r\n]+/g, "").replace(/\u0022/g, '\\"');
-        if (value) {
-          return ctx.createLiteralNode(value);
+    module2.exports = function(ctx2, stack) {
+      let value2 = stack.value();
+      if (value2) {
+        value2 = value2.replace(/[\r\n]+/g, "").replace(/\u0022/g, '\\"');
+        if (value2) {
+          return ctx2.createLiteralNode(value2);
         }
       }
       return null;
@@ -8116,8 +8216,8 @@ var require_JSXText = __commonJS({
 // tokens/LabeledStatement.js
 var require_LabeledStatement = __commonJS({
   "tokens/LabeledStatement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.label = node.createIdentifierNode(stack.label.value(), stack.label);
       node.body = node.createToken(stack.body);
       return node;
@@ -8128,8 +8228,8 @@ var require_LabeledStatement = __commonJS({
 // tokens/Literal.js
 var require_Literal = __commonJS({
   "tokens/Literal.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.raw = stack.raw();
       const code = node.raw.charCodeAt(0);
       if (code === 34 || code === 39) {
@@ -8142,7 +8242,7 @@ var require_Literal = __commonJS({
       }
       const type = stack.type();
       if (type.toString() === "regexp") {
-        ctx.addDepend(type.inherit);
+        ctx2.addDepend(type.inherit);
         let pattern = node.raw.trim();
         let index = node.raw.lastIndexOf("/");
         if (pattern.charCodeAt(0) !== 47 || !(index > 0)) {
@@ -8150,13 +8250,13 @@ var require_Literal = __commonJS({
         } else {
           let glog = pattern.slice(index + 1);
           pattern = pattern.slice(1, index);
-          const args = [pattern, glog].filter((item) => !!item);
-          const newNode = ctx.createNewNode(
-            ctx.createIdentifierNode(ctx.getModuleReferenceName(type.inherit)),
-            args.map((item) => ctx.createLiteralNode(item))
+          const args2 = [pattern, glog].filter((item) => !!item);
+          const newNode = ctx2.createNewNode(
+            ctx2.createIdentifierNode(ctx2.getModuleReferenceName(type.inherit)),
+            args2.map((item) => ctx2.createLiteralNode(item))
           );
           if (stack.parentStack.isMemberExpression) {
-            return ctx.createParenthesNode(newNode);
+            return ctx2.createParenthesNode(newNode);
           } else {
             return newNode;
           }
@@ -8180,18 +8280,18 @@ var require_LogicalExpression = __commonJS({
       }
       return stack.parentStack.isIfStatement || stack.parentStack.isWhileStatement || stack.parentStack.isArrowFunctionExpression || stack.parentStack.isForStatement || stack.parentStack.isBinaryExpression || stack.parentStack.isDoWhileStatement;
     }
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       const isAnd = stack.node.operator.charCodeAt(0) === 38;
       const isBoolean = isBooleanExpression(stack);
       if (!isBoolean) {
         const needRefs = !stack.parentStack.isSwitchCase;
-        const type = ctx.inferType(stack.left);
+        const type = ctx2.inferType(stack.left);
         const createRefs = !isAnd && !stack.left.isIdentifier;
         let refs = null;
         if (needRefs) {
-          let left = ctx.createToken(stack.left);
-          let right = ctx.createToken(stack.right);
+          let left = ctx2.createToken(stack.left);
+          let right = ctx2.createToken(stack.right);
           let condition = left;
           let isAddress = false;
           if (!isAnd && node.isPassableReferenceExpress(stack.left, type)) {
@@ -8213,7 +8313,7 @@ var require_LogicalExpression = __commonJS({
           if (isAddress) {
             left = node.creaateAddressRefsNode(left);
           }
-          if (node.isPassableReferenceExpress(stack.right, ctx.inferType(stack.right))) {
+          if (node.isPassableReferenceExpress(stack.right, ctx2.inferType(stack.right))) {
             right = node.creaateAddressRefsNode(right);
             isAddress = true;
           }
@@ -8232,14 +8332,14 @@ var require_LogicalExpression = __commonJS({
               node.createIdentifierNode(assignName, null, true),
               node.createLiteralNode(2)
             );
-            node.insertNodeBlockContextAt(ctx.createAssignmentNode(
+            node.insertNodeBlockContextAt(ctx2.createAssignmentNode(
               node.createMemberNode([
                 node.createIdentifierNode(result, null, true),
                 key0
               ], null, true),
               node.createLiteralNode(null)
             ));
-            let consequent = ctx.createAssignmentNode(
+            let consequent = ctx2.createAssignmentNode(
               node.createMemberNode([
                 node.createIdentifierNode(result, null, true),
                 key1
@@ -8249,7 +8349,7 @@ var require_LogicalExpression = __commonJS({
             let alternate = null;
             if (!isAnd) {
               alternate = consequent;
-              consequent = ctx.createAssignmentNode(
+              consequent = ctx2.createAssignmentNode(
                 node.createMemberNode([
                   node.createIdentifierNode(result, null, true),
                   key2
@@ -8297,28 +8397,28 @@ var require_LogicalExpression = __commonJS({
 var require_MemberExpression = __commonJS({
   "tokens/MemberExpression.js"(exports2, module2) {
     var Transform2 = require_Transform();
-    function trans(ctx, stack, description, aliasAnnotation, objectType) {
+    function trans(ctx2, stack, description, aliasAnnotation, objectType) {
       const type = objectType;
-      let name = ctx.builder.getAvailableOriginType(type) || type.toString();
+      let name2 = ctx2.builder.getAvailableOriginType(type) || type.toString();
       if (objectType && (objectType.isUnionType || objectType.isIntersectionType) && description && description.isMethodDefinition && description.module && description.module.isModule) {
-        name = description.module.id;
+        name2 = description.module.id;
       }
-      if (Transform2.has(name)) {
-        const object = Transform2.get(name);
+      if (Transform2.has(name2)) {
+        const object = Transform2.get(name2);
         const key = stack.computed ? "$computed" : stack.property.value();
         if (Object.prototype.hasOwnProperty.call(object, key)) {
           if (stack.computed) {
             return object[key](
-              ctx,
-              ctx.createToken(stack.object),
-              [ctx.createToken(stack.property)],
+              ctx2,
+              ctx2.createToken(stack.object),
+              [ctx2.createToken(stack.property)],
               false,
               false
             );
           }
           if (description.static) {
             return object[key](
-              ctx,
+              ctx2,
               null,
               [],
               false,
@@ -8326,8 +8426,8 @@ var require_MemberExpression = __commonJS({
             );
           } else {
             return object[key](
-              ctx,
-              ctx.createToken(stack.object),
+              ctx2,
+              ctx2.createToken(stack.object),
               [],
               false,
               false
@@ -8344,39 +8444,39 @@ var require_MemberExpression = __commonJS({
         return annotation.name.toLowerCase() === "alias";
       });
       if (result) {
-        const args = result.getArguments();
-        if (args[0])
-          return args[0].value;
+        const args2 = result.getArguments();
+        if (args2[0])
+          return args2[0].value;
       }
       return null;
     }
-    function MemberExpression(ctx, stack) {
+    function MemberExpression(ctx2, stack) {
       const module3 = stack.module;
       const description = stack.description();
       let computed = false;
       if (description && description.isModule && stack.compiler.callUtils("isTypeModule", description)) {
-        ctx.addDepend(description);
+        ctx2.addDepend(description);
         if (stack.parentStack.isMemberExpression || stack.parentStack.isNewExpression || stack.parentStack.isCallExpression) {
-          return ctx.createIdentifierNode(ctx.getModuleReferenceName(description, module3), stack);
+          return ctx2.createIdentifierNode(ctx2.getModuleReferenceName(description, module3), stack);
         } else {
-          return ctx.createClassRefsNode(description, stack);
+          return ctx2.createClassRefsNode(description, stack);
         }
       }
       var objCtx = stack.object.getContext();
-      var objectType = ctx.inferType(stack.object, objCtx);
+      var objectType = ctx2.inferType(stack.object, objCtx);
       var objectDescription = stack.object.description();
       var rawObjectType = objectType;
       var isWrapType = false;
       if (objectType.isClassGenericType && objectType.inherit.isAliasType) {
-        objectType = ctx.inferType(objectType.inherit.inherit.type(), objCtx);
+        objectType = ctx2.inferType(objectType.inherit.inherit.type(), objCtx);
         isWrapType = true;
       }
       if (objectType.isNamespace && !stack.parentStack.isMemberExpression) {
-        const mappingNs = ctx.builder.geMappingNamespace(stack.value());
+        const mappingNs = ctx2.builder.getMappingNamespace(stack.value());
         if (mappingNs !== null) {
-          return mappingNs ? ctx.createIdentifierNode(mappingNs + "\\" + stack.property.value(), stack.property) : ctx.createToken(stack.property);
+          return mappingNs ? ctx2.createIdentifierNode(mappingNs + "\\" + stack.property.value(), stack.property) : ctx2.createToken(stack.property);
         }
-        return ctx.createIdentifierNode("\\" + stack.value().replace(/\./g, "\\"));
+        return ctx2.createIdentifierNode("\\" + stack.value().replace(/\./g, "\\"));
       }
       if (description && description.isType && description.isAnyType) {
         let isReflect = !!objectType.isAnyType;
@@ -8386,16 +8486,16 @@ var require_MemberExpression = __commonJS({
         }
         if (isReflect) {
           const Reflect2 = stack.getGlobalTypeById("Reflect");
-          ctx.addDepend(Reflect2);
-          return ctx.createCalleeNode(
-            ctx.createStaticMemberNode([
-              ctx.createIdentifierNode(ctx.getModuleReferenceName(Reflect2)),
-              ctx.createIdentifierNode("get")
+          ctx2.addDepend(Reflect2);
+          return ctx2.createCalleeNode(
+            ctx2.createStaticMemberNode([
+              ctx2.createIdentifierNode(ctx2.getModuleReferenceName(Reflect2)),
+              ctx2.createIdentifierNode("get")
             ]),
             [
-              ctx.createClassRefsNode(module3),
-              ctx.createToken(stack.object),
-              stack.computed ? ctx.createToken(stack.property) : ctx.createLiteralNode(stack.property.value(), void 0, stack.property)
+              ctx2.createClassRefsNode(module3),
+              ctx2.createToken(stack.object),
+              stack.computed ? ctx2.createToken(stack.property) : ctx2.createLiteralNode(stack.property.value(), void 0, stack.property)
             ],
             stack
           );
@@ -8422,69 +8522,69 @@ var require_MemberExpression = __commonJS({
       let isMember = false;
       if (description && (description.isMethodGetterDefinition || description.isMethodSetterDefinition)) {
         aliasAnnotation = getAliasAnnotation(description);
-        const result = trans(ctx, stack, description, aliasAnnotation, objectType);
+        const result = trans(ctx2, stack, description, aliasAnnotation, objectType);
         if (result)
           return result;
         const members = [
-          ctx.createToken(stack.object),
-          ctx.createIdentifierNode(ctx.getAccessorName(aliasAnnotation || stack.property.value(), description, description.isMethodGetterDefinition ? "get" : "set"))
+          ctx2.createToken(stack.object),
+          ctx2.createIdentifierNode(ctx2.getAccessorName(aliasAnnotation || stack.property.value(), description, description.isMethodGetterDefinition ? "get" : "set"))
         ];
-        const callee = isStatic ? ctx.createStaticMemberNode(members, stack) : ctx.createMemberNode(members, stack);
-        return description.isMethodGetterDefinition ? ctx.createCalleeNode(callee, [], stack) : callee;
+        const callee = isStatic ? ctx2.createStaticMemberNode(members, stack) : ctx2.createMemberNode(members, stack);
+        return description.isMethodGetterDefinition ? ctx2.createCalleeNode(callee, [], stack) : callee;
       } else if (description && description.isMethodDefinition) {
         aliasAnnotation = getAliasAnnotation(description);
-        const result = trans(ctx, stack, description, aliasAnnotation, objectType);
+        const result = trans(ctx2, stack, description, aliasAnnotation, objectType);
         if (result)
           return result;
         if (!stack.parentStack.isCallExpression && !stack.parentStack.isMemberExpression) {
-          return ctx.createArrayNode([
-            ctx.createToken(stack.object),
-            ctx.createLiteralNode(aliasAnnotation || stack.property.value())
+          return ctx2.createArrayNode([
+            ctx2.createToken(stack.object),
+            ctx2.createLiteralNode(aliasAnnotation || stack.property.value())
           ]);
         }
         const pStack = stack.getParentStack((stack2) => !!(stack2.jsxElement || stack2.isBlockStatement || stack2.isCallExpression || stack2.isExpressionStatement));
         if (pStack && pStack.jsxElement) {
           const System = stack.getGlobalTypeById("System");
-          ctx.addDepend(System);
-          return ctx.createCalleeNode(
-            ctx.createStaticMemberNode([
-              ctx.createIdentifierNode(ctx.getModuleReferenceName(System)),
-              ctx.createIdentifierNode("bind")
+          ctx2.addDepend(System);
+          return ctx2.createCalleeNode(
+            ctx2.createStaticMemberNode([
+              ctx2.createIdentifierNode(ctx2.getModuleReferenceName(System)),
+              ctx2.createIdentifierNode("bind")
             ]),
             [
-              ctx.createArrayNode([
-                ctx.createToken(stack.object),
-                ctx.createLiteralNode(aliasAnnotation || stack.property.value(), void 0, stack.property)
+              ctx2.createArrayNode([
+                ctx2.createToken(stack.object),
+                ctx2.createLiteralNode(aliasAnnotation || stack.property.value(), void 0, stack.property)
               ]),
-              ctx.createThisNode()
+              ctx2.createThisNode()
             ]
           );
         }
         isMember = true;
       } else if (description && description.isPropertyDefinition) {
         aliasAnnotation = getAliasAnnotation(description);
-        const result = trans(ctx, stack, description, aliasAnnotation, objectType);
+        const result = trans(ctx2, stack, description, aliasAnnotation, objectType);
         if (result)
           return result;
         isMember = true;
       }
-      const node = ctx.createNode(stack);
+      const node = ctx2.createNode(stack);
       node.computed = computed;
       if (aliasAnnotation) {
         propertyNode = node.createIdentifierNode(aliasAnnotation, stack.property);
       }
       if (stack.computed) {
-        const result = trans(ctx, stack, description, aliasAnnotation, objectType);
+        const result = trans(ctx2, stack, description, aliasAnnotation, objectType);
         if (result)
           return result;
-        if (!isStatic && rawObjectType && ctx.isArrayAccessor(rawObjectType)) {
+        if (!isStatic && rawObjectType && ctx2.isArrayAccessor(rawObjectType)) {
           node.computed = true;
         } else if (rawObjectType) {
-          node.computed = !ctx.isObjectAccessor(rawObjectType);
+          node.computed = !ctx2.isObjectAccessor(rawObjectType);
         }
       } else if (stack.object.isNewExpression) {
         objectNode = node.createParenthesNode(node.createToken(stack.object));
-      } else if (!isStatic && rawObjectType && ctx.isArrayAccessor(rawObjectType)) {
+      } else if (!isStatic && rawObjectType && ctx2.isArrayAccessor(rawObjectType)) {
         node.computed = true;
         propertyNode = node.createLiteralNode(stack.property.value(), void 0, stack.property);
       }
@@ -8507,12 +8607,12 @@ var require_MemberExpression = __commonJS({
 var require_MethodDefinition = __commonJS({
   "tokens/MethodDefinition.js"(exports2, module2) {
     var FunctionDeclaration = require_FunctionDeclaration();
-    module2.exports = function(ctx, stack, type) {
-      const node = FunctionDeclaration(ctx, stack, type);
+    module2.exports = function(ctx2, stack, type) {
+      const node = FunctionDeclaration(ctx2, stack, type);
       node.async = stack.expression.async ? true : false;
-      node.static = stack.static ? ctx.createIdentifierNode("static") : null;
-      node.final = stack.final ? ctx.createIdentifierNode("final") : null;
-      node.modifier = ctx.createIdentifierNode(ctx.compiler.callUtils("getModifierValue", stack));
+      node.static = stack.static ? ctx2.createIdentifierNode("static") : null;
+      node.final = stack.final ? ctx2.createIdentifierNode("final") : null;
+      node.modifier = ctx2.createIdentifierNode(ctx2.compiler.callUtils("getModifierValue", stack));
       node.kind = "method";
       return node;
     };
@@ -8523,11 +8623,11 @@ var require_MethodDefinition = __commonJS({
 var require_MethodGetterDefinition = __commonJS({
   "tokens/MethodGetterDefinition.js"(exports2, module2) {
     var MethodDefinition = require_MethodDefinition();
-    module2.exports = module2.exports = function(ctx, stack, type) {
-      const node = MethodDefinition(ctx, stack, type);
+    module2.exports = module2.exports = function(ctx2, stack, type) {
+      const node = MethodDefinition(ctx2, stack, type);
       node.isAccessor = true;
       node.kind = "get";
-      node.key.value = ctx.getAccessorName(node.key.value, stack, "get");
+      node.key.value = ctx2.getAccessorName(node.key.value, stack, "get");
       return node;
     };
   }
@@ -8537,11 +8637,11 @@ var require_MethodGetterDefinition = __commonJS({
 var require_MethodSetterDefinition = __commonJS({
   "tokens/MethodSetterDefinition.js"(exports2, module2) {
     var MethodDefinition = require_MethodDefinition();
-    module2.exports = module2.exports = function(ctx, stack, type) {
-      const node = MethodDefinition(ctx, stack, type);
+    module2.exports = module2.exports = function(ctx2, stack, type) {
+      const node = MethodDefinition(ctx2, stack, type);
       node.isAccessor = true;
       node.kind = "set";
-      node.key.value = ctx.getAccessorName(node.key.value, stack, "set");
+      node.key.value = ctx2.getAccessorName(node.key.value, stack, "set");
       return node;
     };
   }
@@ -8551,25 +8651,25 @@ var require_MethodSetterDefinition = __commonJS({
 var require_NewExpression = __commonJS({
   "tokens/NewExpression.js"(exports2, module2) {
     var Transform2 = require_Transform();
-    function createArgumentNodes(ctx, stack, arguments, declareParams) {
-      return arguments.map((item, index) => {
-        const node = ctx.createToken(item);
+    function createArgumentNodes(ctx2, stack, args2, declareParams) {
+      return args2.map((item, index) => {
+        const node = ctx2.createToken(item);
         if (declareParams && declareParams[index] && !item.isIdentifier) {
           const declareParam = declareParams[index];
           if (!(declareParam.isRestElement || declareParam.isObjectPattern || declareParam.isArrayPattern)) {
-            if (ctx.isAddressRefsType(declareParam.type())) {
-              const name = ctx.checkRefsName("arg");
-              ctx.insertNodeBlockContextAt(
-                ctx.createAssignmentNode(ctx.createIdentifierNode(name, null, true), node)
+            if (ctx2.isAddressRefsType(declareParam.type())) {
+              const name2 = ctx2.checkRefsName("arg");
+              ctx2.insertNodeBlockContextAt(
+                ctx2.createAssignmentNode(ctx2.createIdentifierNode(name2, null, true), node)
               );
-              return ctx.createIdentifierNode(name, null, true);
+              return ctx2.createIdentifierNode(name2, null, true);
             }
           }
         }
         return node;
       });
     }
-    module2.exports = function(ctx, stack) {
+    module2.exports = function(ctx2, stack) {
       let type = stack.callee.type();
       let [classModule, desc2] = stack.getConstructMethod(type);
       let wrapType = null;
@@ -8579,38 +8679,38 @@ var require_NewExpression = __commonJS({
       if (type) {
         type = stack.compiler.callUtils("getOriginType", type);
         if (stack.compiler.callUtils("isTypeModule", type)) {
-          ctx.addDepend(type);
+          ctx2.addDepend(type);
         }
-        if (type === ctx.builder.getGlobalModuleById("Array")) {
+        if (type === ctx2.builder.getGlobalModuleById("Array")) {
           return Transform2.get("Array").of(
-            ctx,
+            ctx2,
             null,
-            createArgumentNodes(ctx, stack, stack.arguments, desc2 && desc2.params),
+            createArgumentNodes(ctx2, stack, stack.arguments, desc2 && desc2.params),
             true,
             false
           );
         }
-        if (type === ctx.builder.getGlobalModuleById("String")) {
+        if (type === ctx2.builder.getGlobalModuleById("String")) {
           wrapType = "String";
-        } else if (type === ctx.builder.getGlobalModuleById("Number")) {
+        } else if (type === ctx2.builder.getGlobalModuleById("Number")) {
           wrapType = "Number";
-        } else if (type === ctx.builder.getGlobalModuleById("Boolean")) {
+        } else if (type === ctx2.builder.getGlobalModuleById("Boolean")) {
           wrapType = "Boolean";
-        } else if (type === ctx.builder.getGlobalModuleById("Object")) {
+        } else if (type === ctx2.builder.getGlobalModuleById("Object")) {
           wrapType = "Object";
         }
       }
       if (!type || !type.isModule || wrapType) {
         const Reflect2 = stack.getGlobalTypeById("Reflect");
-        const node2 = ctx.createNode(stack);
+        const node2 = ctx2.createNode(stack);
         node2.addDepend(Reflect2);
         let target = node2.createToken(stack.callee);
         if (!wrapType && !stack.callee.isIdentifier) {
           const refs = node2.checkRefsName("ref");
-          ctx.insertNodeBlockContextAt(
-            ctx.createAssignmentNode(ctx.createIdentifierNode(refs, null, true), target)
+          ctx2.insertNodeBlockContextAt(
+            ctx2.createAssignmentNode(ctx2.createIdentifierNode(refs, null, true), target)
           );
-          target = ctx.createIdentifierNode(refs, null, true);
+          target = ctx2.createIdentifierNode(refs, null, true);
         }
         return node2.createCalleeNode(
           node2.createStaticMemberNode([
@@ -8620,17 +8720,17 @@ var require_NewExpression = __commonJS({
           [
             stack.module ? node2.createClassRefsNode(stack.module) : node2.createLiteralNode(null),
             target,
-            node2.createArrayNode(createArgumentNodes(ctx, stack, stack.arguments || [], desc2 && desc2.params), stack)
+            node2.createArrayNode(createArgumentNodes(ctx2, stack, stack.arguments || [], desc2 && desc2.params), stack)
           ],
           stack
         );
       }
-      const node = ctx.createNode(stack);
+      const node = ctx2.createNode(stack);
       node.callee = node.createToken(stack.callee);
       if (stack.callee.isParenthesizedExpression) {
-        const name = ctx.checkRefsName("_refClass");
-        node.insertNodeBlockContextAt(ctx.createAssignmentNode(ctx.createIdentifierNode(name, null, true), node.callee.expression));
-        node.callee = ctx.createIdentifierNode(name, null, true);
+        const name2 = ctx2.checkRefsName("_refClass");
+        node.insertNodeBlockContextAt(ctx2.createAssignmentNode(ctx2.createIdentifierNode(name2, null, true), node.callee.expression));
+        node.callee = ctx2.createIdentifierNode(name2, null, true);
       }
       node.arguments = createArgumentNodes(node, stack, stack.arguments || [], desc2 && desc2.params);
       return node;
@@ -8642,23 +8742,23 @@ var require_NewExpression = __commonJS({
 var require_System = __commonJS({
   "transforms/System.js"(exports2, module2) {
     var methods = {
-      merge(ctx, object, args) {
-        const _System = ctx.builder.getGlobalModuleById("System");
-        ctx.addDepend(_System);
+      merge(ctx2, object, args2) {
+        const _System = ctx2.builder.getGlobalModuleById("System");
+        ctx2.addDepend(_System);
         let target = object;
         if (object.type !== "Identifier") {
-          const refs = ctx.checkRefsName("ref");
-          ctx.insertNodeBlockContextAt(
-            ctx.createAssignmentNode(ctx.createIdentifierNode(refs, null, true), object)
+          const refs = ctx2.checkRefsName("ref");
+          ctx2.insertNodeBlockContextAt(
+            ctx2.createAssignmentNode(ctx2.createIdentifierNode(refs, null, true), object)
           );
-          target = ctx.createIdentifierNode(refs, null, true);
+          target = ctx2.createIdentifierNode(refs, null, true);
         }
-        return ctx.createCalleeNode(
-          ctx.createStaticMemberNode([
-            ctx.createIdentifierNode(ctx.getModuleReferenceName(_System)),
-            ctx.createIdentifierNode("merge")
+        return ctx2.createCalleeNode(
+          ctx2.createStaticMemberNode([
+            ctx2.createIdentifierNode(ctx2.getModuleReferenceName(_System)),
+            ctx2.createIdentifierNode("merge")
           ]),
-          [target].concat(args)
+          [target].concat(args2)
         );
       }
     };
@@ -8670,8 +8770,8 @@ var require_System = __commonJS({
 var require_ObjectExpression = __commonJS({
   "tokens/ObjectExpression.js"(exports2, module2) {
     var _System = require_System();
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       let spreadIndex = [];
       node.properties = stack.properties.map((stack2, index) => {
         let item = node.createToken(stack2);
@@ -8685,7 +8785,7 @@ var require_ObjectExpression = __commonJS({
         let start = 0;
         let end = 0;
         while (end = spreadIndex.shift() && end > start) {
-          segs.push(ctx.createObjectNode(node.properties.slice(start, end)));
+          segs.push(ctx2.createObjectNode(node.properties.slice(start, end)));
           segs.push(node.properties[end]);
           start = end + 1;
         }
@@ -8693,10 +8793,10 @@ var require_ObjectExpression = __commonJS({
           if (node.properties.length === 1) {
             segs.push(node.properties[0]);
           } else {
-            segs.push(ctx.createObjectNode(node.properties.slice(start, node.properties.length)));
+            segs.push(ctx2.createObjectNode(node.properties.slice(start, node.properties.length)));
           }
         }
-        return _System.merge(ctx, ctx.createArrayNode(), segs);
+        return _System.merge(ctx2, ctx2.createArrayNode(), segs);
       }
       return node;
     };
@@ -8706,18 +8806,18 @@ var require_ObjectExpression = __commonJS({
 // tokens/ObjectPattern.js
 var require_ObjectPattern = __commonJS({
   "tokens/ObjectPattern.js"(exports2, module2) {
-    function createRefs(ctx, target, expression) {
-      const name = ctx.getDeclareRefsName(target, "S");
-      const refNode = ctx.createDeclarationNode("const", [
-        ctx.createDeclaratorNode(
-          ctx.createIdentifierNode(name),
-          ctx.createTypeTransformNode("object", expression)
+    function createRefs(ctx2, target, expression) {
+      const name2 = ctx2.getDeclareRefsName(target, "S");
+      const refNode = ctx2.createDeclarationNode("const", [
+        ctx2.createDeclaratorNode(
+          ctx2.createIdentifierNode(name2),
+          ctx2.createTypeTransformNode("object", expression)
         )
       ]);
-      ctx.insertNodeBlockContextAt(refNode);
+      ctx2.insertNodeBlockContextAt(refNode);
     }
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       const target = stack.parentStack.init;
       if (target) {
         if (!(target.isObjectExpression || target.isArrayExpression)) {
@@ -8733,8 +8833,8 @@ var require_ObjectPattern = __commonJS({
 // tokens/PackageDeclaration.js
 var require_PackageDeclaration = __commonJS({
   "tokens/PackageDeclaration.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.body = [];
       stack.body.forEach((item) => {
         if (item.isClassDeclaration || item.isDeclaratorDeclaration || item.isEnumDeclaration || item.isInterfaceDeclaration || item.isStructTableDeclaration) {
@@ -8749,14 +8849,14 @@ var require_PackageDeclaration = __commonJS({
 // tokens/ParenthesizedExpression.js
 var require_ParenthesizedExpression = __commonJS({
   "tokens/ParenthesizedExpression.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
+    module2.exports = function(ctx2, stack) {
       if (stack.parentStack.isExpressionStatement) {
-        return ctx.createToken(stack.expression);
+        return ctx2.createToken(stack.expression);
       }
       if (stack.expression.isCallExpression && stack.expression.callee.isFunctionExpression) {
-        return ctx.createToken(stack.expression);
+        return ctx2.createToken(stack.expression);
       }
-      const node = ctx.createNode(stack);
+      const node = ctx2.createNode(stack);
       node.expression = node.createToken(stack.expression);
       return node;
     };
@@ -8766,15 +8866,15 @@ var require_ParenthesizedExpression = __commonJS({
 // tokens/Program.js
 var require_Program = __commonJS({
   "tokens/Program.js"(exports2, module2) {
-    var path2 = require("path");
-    function createDependencies(stack, ctx, node, importExcludes) {
+    var path3 = require("path");
+    function createDependencies(stack, ctx2, node, importExcludes) {
       const imports = [];
       const using = [];
-      const plugin = ctx.plugin;
-      const builder = ctx.builder;
+      const plugin = ctx2.plugin;
+      const builder = ctx2.builder;
       const importFlag = plugin.options.import;
       const consistent = plugin.options.consistent;
-      const useFolderAsNamespace = plugin.options.resolve.useFolderAsNamespace;
+      const folderAsNamespace = plugin.options.folderAsNamespace;
       const usingExcludes = /* @__PURE__ */ new WeakSet();
       builder.getGlobalModules().forEach((module3) => {
         usingExcludes.add(module3);
@@ -8782,9 +8882,9 @@ var require_Program = __commonJS({
       const dependencies = node.getDependencies();
       const createUse = (depModule) => {
         if (!usingExcludes.has(depModule)) {
-          const name = builder.getModuleNamespace(depModule, depModule.id);
-          if (name) {
-            let local = name;
+          const name2 = builder.getModuleNamespace(depModule, depModule.id);
+          if (name2) {
+            let local = name2;
             let imported = void 0;
             using.push(node.createUsingStatementNode(
               node.createImportSpecifierNode(local, imported)
@@ -8801,10 +8901,10 @@ var require_Program = __commonJS({
                   const source = builder.getModuleImportSource(depModule, stack.compilation.file);
                   imports.push(node.createImportNode(source));
                 }
-              } else if (!(consistent || useFolderAsNamespace)) {
+              } else if (!(consistent || folderAsNamespace)) {
                 const source = builder.getFileRelativeOutputPath(depModule);
-                const name = builder.getModuleNamespace(depModule, depModule.id);
-                builder.addFileAndNamespaceMapping(source, name);
+                const name2 = builder.getModuleNamespace(depModule, depModule.id);
+                builder.addFileAndNamespaceMapping(source, name2);
               }
               createUse(depModule);
             } else if (node.isReferenceDeclaratorModule(depModule)) {
@@ -8815,8 +8915,8 @@ var require_Program = __commonJS({
       });
       return [imports, using];
     }
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.body = [];
       node.afterBody = [];
       node.imports = [];
@@ -8885,7 +8985,7 @@ var require_Program = __commonJS({
               }
             } else if (obj.specifiers && obj.specifiers.length > 0) {
               if (obj.source) {
-                const refs = obj.checkRefsName(path2.parse(obj.source.value).name, true);
+                const refs = obj.checkRefsName(path3.parse(obj.source.value).name, true);
                 insertImports.push(node.createImportNode(obj.source, [[refs]]));
                 obj.specifiers.forEach((specifier) => {
                   dataset.push(
@@ -8953,7 +9053,7 @@ var require_Program = __commonJS({
         }
       }
       if (!stack.compilation.mainModule && (stack.externals.length > 0 || stack.exports.length > 0)) {
-        const [imps, using] = createDependencies(stack, ctx, node, importExcludes);
+        const [imps, using] = createDependencies(stack, ctx2, node, importExcludes);
         insertImports.push(...imps);
         insertUsing.push(...using);
       }
@@ -8977,52 +9077,52 @@ var require_Program = __commonJS({
 // tokens/Property.js
 var require_Property = __commonJS({
   "tokens/Property.js"(exports2, module2) {
-    function getSpreadRefName(ctx, target) {
-      let name = ctx.getWasRefsName(target, "S");
-      if (!name) {
-        name = ctx.getDeclareRefsName(target, "S");
-        const refNode = ctx.createDeclarationNode("const", [
-          ctx.createDeclaratorNode(
-            ctx.createIdentifierNode(name),
-            ctx.createTypeTransformNode("object", ctx.createToken(target))
+    function getSpreadRefName(ctx2, target) {
+      let name2 = ctx2.getWasRefsName(target, "S");
+      if (!name2) {
+        name2 = ctx2.getDeclareRefsName(target, "S");
+        const refNode = ctx2.createDeclarationNode("const", [
+          ctx2.createDeclaratorNode(
+            ctx2.createIdentifierNode(name2),
+            ctx2.createTypeTransformNode("object", ctx2.createToken(target))
           )
         ]);
-        ctx.insertNodeBlockContextAt(refNode);
+        ctx2.insertNodeBlockContextAt(refNode);
       }
-      return ctx.createIdentifierNode(name, null, true);
+      return ctx2.createIdentifierNode(name2, null, true);
     }
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.computed = !!stack.computed;
       if (stack.parentStack.isObjectPattern) {
         const target = stack.parentStack.parentStack.init;
         let key = stack.value();
-        let name = null;
-        let value = null;
+        let name2 = null;
+        let value2 = null;
         if (stack.hasAssignmentPattern) {
-          value = node.createToken(stack.init.right);
-          name = stack.init.left.value();
+          value2 = node.createToken(stack.init.right);
+          name2 = stack.init.left.value();
         } else {
-          value = node.createLiteralNode(null);
-          name = stack.init.value();
+          value2 = node.createLiteralNode(null);
+          name2 = stack.init.value();
         }
         if (target.isObjectExpression || target.isArrayExpression) {
           const init = target.attribute(key);
           return node.createStatementNode(
             node.createAssignmentNode(
-              node.createIdentifierNode(name, null, true),
-              init ? node.createBinaryNode("??", node.createToken(init.init), init.init.isLiteral ? node.createLiteralNode(null) : value) : value
+              node.createIdentifierNode(name2, null, true),
+              init ? node.createBinaryNode("??", node.createToken(init.init), init.init.isLiteral ? node.createLiteralNode(null) : value2) : value2
             )
           );
         } else {
           const obj = getSpreadRefName(node, target);
           return node.createStatementNode(
             node.createAssignmentNode(
-              node.createIdentifierNode(name, null, true),
+              node.createIdentifierNode(name2, null, true),
               node.createBinaryNode("??", node.createMemberNode([
                 obj,
                 node.createIdentifierNode(key)
-              ], null), value)
+              ], null), value2)
             )
           );
         }
@@ -9036,19 +9136,19 @@ var require_Property = __commonJS({
         }
       }
       node.init = node.createToken(stack.init);
-      if (stack.hasInit && ctx.isPassableReferenceExpress(stack.init, stack.type())) {
+      if (stack.hasInit && ctx2.isPassableReferenceExpress(stack.init, stack.type())) {
         if (stack.init.isCallExpression || stack.init.isAwaitExpression) {
-          const name = ctx.getDeclareRefsName(stack.init, "R");
-          const refNode = ctx.createDeclarationNode("const", [
-            ctx.createDeclaratorNode(
-              ctx.createIdentifierNode(name),
-              ctx.creaateAddressRefsNode(node.init)
+          const name2 = ctx2.getDeclareRefsName(stack.init, "R");
+          const refNode = ctx2.createDeclarationNode("const", [
+            ctx2.createDeclaratorNode(
+              ctx2.createIdentifierNode(name2),
+              ctx2.creaateAddressRefsNode(node.init)
             )
           ]);
-          ctx.insertNodeBlockContextAt(refNode);
-          node.init = ctx.creaateAddressRefsNode(ctx.createIdentifierNode(name, null, true));
+          ctx2.insertNodeBlockContextAt(refNode);
+          node.init = ctx2.creaateAddressRefsNode(ctx2.createIdentifierNode(name2, null, true));
         } else {
-          node.init = ctx.creaateAddressRefsNode(node.init);
+          node.init = ctx2.creaateAddressRefsNode(node.init);
         }
       }
       return node;
@@ -9059,7 +9159,7 @@ var require_Property = __commonJS({
 // tokens/PropertyDefinition.js
 var require_PropertyDefinition = __commonJS({
   "tokens/PropertyDefinition.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
+    module2.exports = function(ctx2, stack) {
       const annotations = stack.annotations || [];
       var embeds = annotations.filter((item) => {
         return item.name.toLowerCase() === "embed";
@@ -9068,26 +9168,26 @@ var require_PropertyDefinition = __commonJS({
       if (embeds.length > 0) {
         var items = [];
         embeds.forEach((embed) => {
-          const args = embed.getArguments();
-          args.forEach((item) => {
+          const args2 = embed.getArguments();
+          args2.forEach((item) => {
             if (item.resolveFile) {
-              const value = ctx.builder.getAssetFileReferenceName(stack.module, item.resolveFile);
-              items.push(value);
+              const value2 = ctx2.builder.getAssetFileReferenceName(stack.module, item.resolveFile);
+              items.push(value2);
             }
           });
         });
-        init = items.length > 1 ? ctx.createArrayNode(items.map((value) => ctx.createLiteralNode(value))) : ctx.createLiteralNode(items[0]);
+        init = items.length > 1 ? ctx2.createArrayNode(items.map((value2) => ctx2.createLiteralNode(value2))) : ctx2.createLiteralNode(items[0]);
       }
-      const node = ctx.createNode(stack);
+      const node = ctx2.createNode(stack);
       node.declarations = (stack.declarations || []).map((item) => node.createToken(item));
-      node.modifier = ctx.createIdentifierNode(stack.compiler.callUtils("getModifierValue", stack));
+      node.modifier = ctx2.createIdentifierNode(stack.compiler.callUtils("getModifierValue", stack));
       if (stack.static && stack.kind === "const") {
         node.kind = stack.kind;
       } else if (stack.static) {
-        node.static = ctx.createIdentifierNode("static");
+        node.static = ctx2.createIdentifierNode("static");
       }
       node.key = node.declarations[0].id;
-      node.init = init || node.declarations[0].init || ctx.createLiteralNode(null);
+      node.init = init || node.declarations[0].init || ctx2.createLiteralNode(null);
       return node;
     };
   }
@@ -9096,8 +9196,8 @@ var require_PropertyDefinition = __commonJS({
 // tokens/RestElement.js
 var require_RestElement = __commonJS({
   "tokens/RestElement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.value = stack.value();
       node.raw = node.value;
       return node;
@@ -9108,8 +9208,8 @@ var require_RestElement = __commonJS({
 // tokens/ReturnStatement.js
 var require_ReturnStatement = __commonJS({
   "tokens/ReturnStatement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.argument = node.createToken(stack.argument);
       return node;
     };
@@ -9119,8 +9219,8 @@ var require_ReturnStatement = __commonJS({
 // tokens/SequenceExpression.js
 var require_SequenceExpression = __commonJS({
   "tokens/SequenceExpression.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.expressions = stack.expressions.map((item) => node.createToken(item));
       return node;
     };
@@ -9130,30 +9230,30 @@ var require_SequenceExpression = __commonJS({
 // tokens/SpreadElement.js
 var require_SpreadElement = __commonJS({
   "tokens/SpreadElement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
+    module2.exports = function(ctx2, stack) {
       if (stack.parentStack.isArrayExpression) {
         const type = stack.argument.type();
         const _Array = stack.getGlobalTypeById("Array");
         const _array = stack.getGlobalTypeById("array");
         if (type && (type.isLiteralArrayType || type === _Array || type === _array)) {
-          return ctx.createToken(stack.argument);
+          return ctx2.createToken(stack.argument);
         }
         const _System = stack.getGlobalTypeById("System");
-        ctx.addDepend(_System);
-        const node2 = ctx.createCalleeNode(
-          ctx.createStaticMemberNode([
-            ctx.getModuleReferenceName(_System),
-            ctx.createIdentifierNode("toArray")
+        ctx2.addDepend(_System);
+        const node2 = ctx2.createCalleeNode(
+          ctx2.createStaticMemberNode([
+            ctx2.getModuleReferenceName(_System),
+            ctx2.createIdentifierNode("toArray")
           ]),
           [
-            ctx.createToken(stack.argument)
+            ctx2.createToken(stack.argument)
           ]
         );
         return node2;
       } else if (stack.parentStack.isObjectExpression) {
-        return ctx.createToken(stack.argument);
+        return ctx2.createToken(stack.argument);
       }
-      const node = ctx.createNode(stack);
+      const node = ctx2.createNode(stack);
       node.argument = node.createToken(stack.argument);
       return node;
     };
@@ -9163,13 +9263,13 @@ var require_SpreadElement = __commonJS({
 // tokens/StructTableColumnDefinition.js
 var require_StructTableColumnDefinition = __commonJS({
   "tokens/StructTableColumnDefinition.js"(exports2, module2) {
-    function createNode(ctx, item) {
+    function createNode(ctx2, item) {
       if (!item)
         return null;
-      return item.isIdentifier ? ctx.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx.createLiteralNode(item.value()) : ctx.createToken(item);
+      return item.isIdentifier ? ctx2.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
     }
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.key = node.createIdentifierNode(stack.key.value(), stack.key);
       node.properties = [];
       const type = stack.typename ? node.createToken(stack.typename) : node.createIdentifierNode("varchar(255)");
@@ -9193,22 +9293,22 @@ var require_StructTableColumnDefinition = __commonJS({
 // tokens/StructTableDeclaration.js
 var require_StructTableDeclaration = __commonJS({
   "tokens/StructTableDeclaration.js"(exports2, module2) {
-    function createNode(ctx, item) {
+    function createNode(ctx2, item) {
       if (!item)
         return null;
-      return item.isIdentifier ? ctx.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx.createLiteralNode(item.value()) : ctx.createToken(item);
+      return item.isIdentifier ? ctx2.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
     }
-    function normalName(name) {
-      return name.replace(/([A-Z])/g, (a, b, i) => {
+    function normalName(name2) {
+      return name2.replace(/([A-Z])/g, (a, b, i) => {
         return i > 0 ? "_" + b.toLowerCase() : b.toLowerCase();
       });
     }
-    module2.exports = function(ctx, stack) {
-      const name = stack.module.getName();
-      if (ctx.builder.hasSqlTableNode(name)) {
+    module2.exports = function(ctx2, stack) {
+      const name2 = stack.module.getName();
+      if (ctx2.builder.hasSqlTableNode(name2)) {
         return null;
       }
-      const node = ctx.createNode(stack);
+      const node = ctx2.createNode(stack);
       node.id = node.createIdentifierNode(normalName(stack.id.value()), stack.id);
       node.properties = [];
       node.body = [];
@@ -9220,7 +9320,7 @@ var require_StructTableDeclaration = __commonJS({
           node.body.push(token);
         }
       });
-      node.builder.addSqlTableNode(name, node, stack);
+      node.builder.addSqlTableNode(name2, node, stack);
       return null;
     };
   }
@@ -9229,13 +9329,13 @@ var require_StructTableDeclaration = __commonJS({
 // tokens/StructTableKeyDefinition.js
 var require_StructTableKeyDefinition = __commonJS({
   "tokens/StructTableKeyDefinition.js"(exports2, module2) {
-    function createNode(ctx, item) {
+    function createNode(ctx2, item) {
       if (!item)
         return null;
-      return item.isIdentifier ? ctx.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx.createLiteralNode(item.value()) : ctx.createToken(item);
+      return item.isIdentifier ? ctx2.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
     }
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.key = createNode(node, stack.key);
       node.prefix = node.key.value === "primary" || node.key.value === "key" ? null : node.createIdentifierNode("key");
       node.local = node.createToken(stack.local);
@@ -9248,13 +9348,13 @@ var require_StructTableKeyDefinition = __commonJS({
 // tokens/StructTableMethodDefinition.js
 var require_StructTableMethodDefinition = __commonJS({
   "tokens/StructTableMethodDefinition.js"(exports2, module2) {
-    function createNode(ctx, item) {
+    function createNode(ctx2, item) {
       if (!item)
         return null;
-      return item.isIdentifier ? ctx.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx.createLiteralNode(item.value()) : ctx.createToken(item);
+      return item.isIdentifier ? ctx2.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
     }
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       const key = stack.key.isMemberExpression ? stack.key.property : stack.key;
       node.key = createNode(node, key);
       node.params = (stack.params || []).map((item) => createNode(node, item));
@@ -9266,13 +9366,13 @@ var require_StructTableMethodDefinition = __commonJS({
 // tokens/StructTablePropertyDefinition.js
 var require_StructTablePropertyDefinition = __commonJS({
   "tokens/StructTablePropertyDefinition.js"(exports2, module2) {
-    function createNode(ctx, item) {
+    function createNode(ctx2, item) {
       if (!item)
         return null;
-      return item.isIdentifier ? ctx.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx.createLiteralNode(item.value()) : ctx.createToken(item);
+      return item.isIdentifier ? ctx2.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
     }
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.assignment = !!stack.assignment;
       node.key = createNode(node, stack.key);
       node.init = createNode(node, stack.init);
@@ -9284,8 +9384,8 @@ var require_StructTablePropertyDefinition = __commonJS({
 // tokens/SuperExpression.js
 var require_SuperExpression = __commonJS({
   "tokens/SuperExpression.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.value = "parent";
       node.raw = "parent";
       return node;
@@ -9296,8 +9396,8 @@ var require_SuperExpression = __commonJS({
 // tokens/SwitchCase.js
 var require_SwitchCase = __commonJS({
   "tokens/SwitchCase.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.condition = node.createToken(stack.condition);
       if (node.condition && node.condition.type === "ConditionalExpression") {
         node.condition = node.createParenthesNode(node.condition);
@@ -9311,8 +9411,8 @@ var require_SwitchCase = __commonJS({
 // tokens/SwitchStatement.js
 var require_SwitchStatement = __commonJS({
   "tokens/SwitchStatement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.condition = node.createToken(stack.condition);
       node.cases = stack.cases.map((item) => node.createToken(item));
       return node;
@@ -9323,8 +9423,8 @@ var require_SwitchStatement = __commonJS({
 // tokens/TemplateElement.js
 var require_TemplateElement = __commonJS({
   "tokens/TemplateElement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.raw = stack.raw();
       node.value = node.raw;
       node.tail = stack.tail;
@@ -9336,8 +9436,8 @@ var require_TemplateElement = __commonJS({
 // tokens/TemplateLiteral.js
 var require_TemplateLiteral = __commonJS({
   "tokens/TemplateLiteral.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.quasis = stack.quasis.map((item) => node.createToken(item));
       node.expressions = stack.expressions.map((item) => node.createToken(item));
       return node;
@@ -9348,8 +9448,8 @@ var require_TemplateLiteral = __commonJS({
 // tokens/ThisExpression.js
 var require_ThisExpression = __commonJS({
   "tokens/ThisExpression.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createIdentifierNode("this", stack, true);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createIdentifierNode("this", stack, true);
       return node;
     };
   }
@@ -9358,9 +9458,9 @@ var require_ThisExpression = __commonJS({
 // tokens/ThrowStatement.js
 var require_ThrowStatement = __commonJS({
   "tokens/ThrowStatement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
-      node.argument = ctx.createToken(stack.argument);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
+      node.argument = ctx2.createToken(stack.argument);
       return node;
     };
   }
@@ -9369,19 +9469,19 @@ var require_ThrowStatement = __commonJS({
 // tokens/TryStatement.js
 var require_TryStatement = __commonJS({
   "tokens/TryStatement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.block = node.createToken(stack.block);
-      node.param = ctx.createNode("ParamDeclarator");
+      node.param = ctx2.createNode("ParamDeclarator");
       node.param.argument = node.createToken(stack.param);
       node.param.argument.isVariable = true;
       node.param.type = "ParamDeclarator";
       node.param.prefix = "\\Exception";
       const acceptType = stack.param.acceptType ? stack.param.acceptType.type() : null;
       if (acceptType && acceptType.isModule) {
-        const Throwable = ctx.builder.getGlobalModuleById("Throwable");
+        const Throwable = ctx2.builder.getGlobalModuleById("Throwable");
         if (Throwable && Throwable.type().is(acceptType)) {
-          node.param.prefix = ctx.getModuleReferenceName(acceptType);
+          node.param.prefix = ctx2.getModuleReferenceName(acceptType);
         }
       }
       node.handler = node.createToken(stack.handler);
@@ -9394,11 +9494,11 @@ var require_TryStatement = __commonJS({
 // tokens/TypeAssertExpression.js
 var require_TypeAssertExpression = __commonJS({
   "tokens/TypeAssertExpression.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
+    module2.exports = function(ctx2, stack) {
       if (stack.left.isParenthesizedExpression) {
-        return ctx.createToken(stack.left.expression);
+        return ctx2.createToken(stack.left.expression);
       }
-      return ctx.createToken(stack.left);
+      return ctx2.createToken(stack.left);
     };
   }
 });
@@ -9406,48 +9506,48 @@ var require_TypeAssertExpression = __commonJS({
 // tokens/TypeTransformExpression.js
 var require_TypeTransformExpression = __commonJS({
   "tokens/TypeTransformExpression.js"(exports2, module2) {
-    function createTransformNode(ctx, method, expression) {
-      return ctx.createCalleeNode(
-        ctx.createIdentifierNode(method),
-        [ctx.createToken(expression)]
+    function createTransformNode(ctx2, method, expression) {
+      return ctx2.createCalleeNode(
+        ctx2.createIdentifierNode(method),
+        [ctx2.createToken(expression)]
       );
     }
-    module2.exports = function(ctx, stack) {
+    module2.exports = function(ctx2, stack) {
       const type = stack.argument.type();
-      var name = null;
+      var name2 = null;
       if (type) {
-        const value = ctx.builder.getAvailableOriginType(type);
-        name = type.toString();
-        if (value === "Number") {
-          const method = name === "float" || name === "double" ? "floatval" : "intval";
-          return createTransformNode(ctx, method, stack.expression);
-        } else if (value === "String") {
-          return createTransformNode(ctx, "strval", stack.expression);
-        } else if (value === "Boolean") {
-          return createTransformNode(ctx, "boolval", stack.expression);
-        } else if (value === "RegExp") {
+        const value2 = ctx2.builder.getAvailableOriginType(type);
+        name2 = type.toString();
+        if (value2 === "Number") {
+          const method = name2 === "float" || name2 === "double" ? "floatval" : "intval";
+          return createTransformNode(ctx2, method, stack.expression);
+        } else if (value2 === "String") {
+          return createTransformNode(ctx2, "strval", stack.expression);
+        } else if (value2 === "Boolean") {
+          return createTransformNode(ctx2, "boolval", stack.expression);
+        } else if (value2 === "RegExp") {
           const regexp = stack.getGlobalTypeById("RegExp");
-          const refs = ctx.getModuleReferenceName(regexp);
-          ctx.addDepend(regexp);
-          const test = ctx.createBinaryNode("instanceof", ctx.createToken(stack.expression), ctx.createIdentifierNode(refs));
-          const consequent = ctx.createIdentifierNode(refs);
-          const alternate = ctx.createNewNode(
-            ctx.createIdentifierNode(refs),
+          const refs = ctx2.getModuleReferenceName(regexp);
+          ctx2.addDepend(regexp);
+          const test = ctx2.createBinaryNode("instanceof", ctx2.createToken(stack.expression), ctx2.createIdentifierNode(refs));
+          const consequent = ctx2.createIdentifierNode(refs);
+          const alternate = ctx2.createNewNode(
+            ctx2.createIdentifierNode(refs),
             [
-              ctx.createCalleeNode(ctx.createIdentifierNode("strval"), [ctx.createToken(stack.expression)])
+              ctx2.createCalleeNode(ctx2.createIdentifierNode("strval"), [ctx2.createToken(stack.expression)])
             ]
           );
-          return ctx.createParenthesNode(ctx.createConditionalNode(test, consequent, alternate));
-        } else if (value === "Function") {
-          return ctx.createToken(stack.expression);
-        } else if (value === "Array") {
-          name = "array";
-        } else if (value === "Object") {
-          name = "object";
+          return ctx2.createParenthesNode(ctx2.createConditionalNode(test, consequent, alternate));
+        } else if (value2 === "Function") {
+          return ctx2.createToken(stack.expression);
+        } else if (value2 === "Array") {
+          name2 = "array";
+        } else if (value2 === "Object") {
+          name2 = "object";
         }
       }
-      const node = ctx.createNode(stack);
-      node.typeName = name;
+      const node = ctx2.createNode(stack);
+      node.typeName = name2;
       node.expression = node.createToken(stack.expression);
       return node;
     };
@@ -9457,32 +9557,32 @@ var require_TypeTransformExpression = __commonJS({
 // tokens/UnaryExpression.js
 var require_UnaryExpression = __commonJS({
   "tokens/UnaryExpression.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
+    module2.exports = function(ctx2, stack) {
       const operator = stack.node.operator;
       const prefix = stack.node.prefix;
       if (operator === "delete" || operator === "typeof") {
         if (operator === "typeof") {
-          const systemModule = ctx.builder.getGlobalModuleById("System");
-          const promiseRefs = ctx.getModuleReferenceName(systemModule);
-          ctx.addDepend(systemModule);
-          return ctx.createCalleeNode(
-            ctx.createStaticMemberNode([
-              ctx.createIdentifierNode(promiseRefs),
-              ctx.createIdentifierNode("typeof", stack)
+          const systemModule = ctx2.builder.getGlobalModuleById("System");
+          const promiseRefs = ctx2.getModuleReferenceName(systemModule);
+          ctx2.addDepend(systemModule);
+          return ctx2.createCalleeNode(
+            ctx2.createStaticMemberNode([
+              ctx2.createIdentifierNode(promiseRefs),
+              ctx2.createIdentifierNode("typeof", stack)
             ]),
             [
-              ctx.createToken(stack.argument)
+              ctx2.createToken(stack.argument)
             ]
           );
         }
-        return ctx.createCalleeNode(
-          ctx.createIdentifierNode("unset", stack),
+        return ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("unset", stack),
           [
-            ctx.createToken(stack.argument)
+            ctx2.createToken(stack.argument)
           ]
         );
       }
-      const node = ctx.createNode(stack);
+      const node = ctx2.createNode(stack);
       if (operator.charCodeAt(0) === 33) {
         node.argument = node.createTransformBooleanTypeNode(stack.argument);
       } else {
@@ -9499,28 +9599,28 @@ var require_UnaryExpression = __commonJS({
 var require_UpdateExpression = __commonJS({
   "tokens/UpdateExpression.js"(exports2, module2) {
     var Transform2 = require_Transform();
-    function trans(ctx, stack, description, aliasAnnotation, objectType) {
+    function trans(ctx2, stack, description, aliasAnnotation, objectType) {
       const type = objectType;
-      let name = ctx.builder.getAvailableOriginType(type) || type.toString();
+      let name2 = ctx2.builder.getAvailableOriginType(type) || type.toString();
       if (objectType && (objectType.isUnionType || objectType.isIntersectionType) && description && description.isMethodDefinition && description.module && description.module.isModule) {
-        name = desc.module.id;
+        name2 = desc.module.id;
       }
-      if (Transform2.has(name)) {
-        const object = Transform2.get(name);
+      if (Transform2.has(name2)) {
+        const object = Transform2.get(name2);
         const key = stack.computed ? "$computed" : stack.property.value();
         if (Object.prototype.hasOwnProperty.call(object, key)) {
           if (stack.computed) {
             return object[key](
-              ctx,
-              ctx.createToken(stack.object),
-              [ctx.createToken(stack.property)],
+              ctx2,
+              ctx2.createToken(stack.object),
+              [ctx2.createToken(stack.property)],
               false,
               false
             );
           }
           if (description.static) {
             return object[key](
-              ctx,
+              ctx2,
               null,
               [],
               false,
@@ -9528,8 +9628,8 @@ var require_UpdateExpression = __commonJS({
             );
           } else {
             return object[key](
-              ctx,
-              ctx.createToken(stack.object),
+              ctx2,
+              ctx2.createToken(stack.object),
               [],
               false,
               false
@@ -9546,14 +9646,14 @@ var require_UpdateExpression = __commonJS({
         return annotation.name.toLowerCase() === "alias";
       });
       if (result) {
-        const args = result.getArguments();
-        if (args[0])
-          return args[0].value;
+        const args2 = result.getArguments();
+        if (args2[0])
+          return args2[0].value;
       }
       return null;
     }
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       const operator = stack.node.operator;
       const prefix = stack.node.prefix;
       const isMember = stack.argument.isMemberExpression;
@@ -9597,7 +9697,7 @@ var require_UpdateExpression = __commonJS({
         } else if (desc2 && desc2.isMethodDefinition && desc2.isAccessor) {
           stack = stack.argument;
           var objectDescription = stack.object.description();
-          var objectType = ctx.inferType(stack.object);
+          var objectType = ctx2.inferType(stack.object);
           var isNewObject = !!stack.object.isNewExpression;
           var isStatic = stack.object.isSuperExpression || objectType.isClassType || !isNewObject && stack.compiler.callUtils("isClassType", objectDescription);
           const aliasAnnotation = getAliasAnnotation(desc2);
@@ -9615,8 +9715,8 @@ var require_UpdateExpression = __commonJS({
           const getCallee = isStatic ? node.createStaticMemberNode(getMember) : node.createMemberNode(getMember);
           const setCallee = isStatic ? node.createStaticMemberNode(setMember) : node.createMemberNode(setMember);
           if (stack.parentStack.parentStack.isExpressionStatement) {
-            const value = node.createBinaryNode(operator === "++" ? "+" : "-", node.createCalleeNode(getCallee), node.createLiteralNode(1));
-            return node.createCalleeNode(setCallee, [value]);
+            const value2 = node.createBinaryNode(operator === "++" ? "+" : "-", node.createCalleeNode(getCallee), node.createLiteralNode(1));
+            return node.createCalleeNode(setCallee, [value2]);
           } else {
             const System = stack.getGlobalTypeById("System");
             node.addDepend(System);
@@ -9651,8 +9751,8 @@ var require_UpdateExpression = __commonJS({
 // tokens/VariableDeclaration.js
 var require_VariableDeclaration = __commonJS({
   "tokens/VariableDeclaration.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.inFor = stack.flag;
       node.kind = stack.kind;
       node.declarations = stack.declarations.map((item) => {
@@ -9666,8 +9766,8 @@ var require_VariableDeclaration = __commonJS({
 // tokens/VariableDeclarator.js
 var require_VariableDeclarator = __commonJS({
   "tokens/VariableDeclarator.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.inFor = stack.parentStack.flag;
       if (stack.id.isIdentifier) {
         node.id = node.createIdentifierNode(stack.id.value(), stack.id);
@@ -9675,12 +9775,12 @@ var require_VariableDeclarator = __commonJS({
         node.id = node.createToken(stack.id);
       }
       if (stack.parentStack.isVariableDeclaration && stack.id.isIdentifier) {
-        const type = ctx.inferType(stack, stack.init && stack.init.getContext());
+        const type = ctx2.inferType(stack, stack.init && stack.init.getContext());
         if (node.isAddressRefsType(type, stack.init)) {
           if (node.hasCrossScopeAssignment(stack.assignItems, !!node.inFor)) {
             const address = node.addAssignAddressRef(stack, stack.init);
-            const name = stack.id.value();
-            address.setName(stack.description(), name);
+            const name2 = stack.id.value();
+            address.setName(stack.description(), name2);
             const left = address.createIndexName(stack.description());
             if (stack.init) {
               let init = node.createToken(stack.init);
@@ -9701,15 +9801,15 @@ var require_VariableDeclarator = __commonJS({
             }
           } else if (stack.init && node.isPassableReferenceExpress(stack.init)) {
             if (stack.parentStack.parentStack.isExportNamedDeclaration) {
-              const name = ctx.getDeclareRefsName(stack.init, "R");
-              const refNode = ctx.createDeclarationNode("const", [
-                ctx.createDeclaratorNode(
-                  ctx.createIdentifierNode(name),
-                  ctx.creaateAddressRefsNode(node.createToken(stack.init))
+              const name2 = ctx2.getDeclareRefsName(stack.init, "R");
+              const refNode = ctx2.createDeclarationNode("const", [
+                ctx2.createDeclaratorNode(
+                  ctx2.createIdentifierNode(name2),
+                  ctx2.creaateAddressRefsNode(node.createToken(stack.init))
                 )
               ]);
-              ctx.insertNodeBlockContextAt(refNode);
-              node.init = ctx.creaateAddressRefsNode(ctx.createIdentifierNode(name, null, true));
+              ctx2.insertNodeBlockContextAt(refNode);
+              node.init = ctx2.creaateAddressRefsNode(ctx2.createIdentifierNode(name2, null, true));
             } else {
               node.init = node.creaateAddressRefsNode(node.createToken(stack.init));
             }
@@ -9730,36 +9830,36 @@ var require_VariableDeclarator = __commonJS({
 // tokens/WhenStatement.js
 var require_WhenStatement = __commonJS({
   "tokens/WhenStatement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      ctx = ctx.createNode(stack);
-      const name = stack.condition.value();
-      const args = stack.condition.arguments.map((item, index) => {
-        let value = null;
+    module2.exports = function(ctx2, stack) {
+      ctx2 = ctx2.createNode(stack);
+      const name2 = stack.condition.value();
+      const args2 = stack.condition.arguments.map((item, index) => {
+        let value2 = null;
         let key = index;
         if (item.isAssignmentExpression) {
           key = item.left.value();
-          value = item.right.value();
+          value2 = item.right.value();
         } else {
-          value = item.value();
+          value2 = item.value();
         }
-        return { index, key, value, stack: item };
+        return { index, key, value: value2, stack: item };
       });
-      const expectRaw = args.find((item) => String(item.key).toLowerCase() === "expect");
+      const expectRaw = args2.find((item) => String(item.key).toLowerCase() === "expect");
       const expect = expectRaw ? String(expectRaw.value).trim() !== "false" : true;
       let result = false;
-      switch (name) {
+      switch (name2) {
         case "Runtime":
-          result = ctx.builder.isRuntime(args[0].value) === expect;
+          result = ctx2.builder.isRuntime(args2[0].value) === expect;
           break;
         case "Syntax":
-          result = ctx.builder.isSyntax(args[0].value) === expect;
+          result = ctx2.builder.isSyntax(args2[0].value) === expect;
           break;
         case "Env":
           {
-            const name2 = args.find((item) => String(item.key).toLowerCase() === "name") || args[0];
-            const value = args.find((item) => String(item.key).toLowerCase() === "value") || args[1];
-            if (name2 && value) {
-              result = ctx.builder.isEnv(name2.value, value.value) === expect;
+            const name3 = args2.find((item) => String(item.key).toLowerCase() === "name") || args2[0];
+            const value2 = args2.find((item) => String(item.key).toLowerCase() === "value") || args2[1];
+            if (name3 && value2) {
+              result = ctx2.builder.isEnv(name3.value, value2.value) === expect;
             } else {
               stack.condition.error(`Missing name or value arguments. the '${stack.condition.value()}' annotations.`);
             }
@@ -9767,15 +9867,15 @@ var require_WhenStatement = __commonJS({
           break;
         case "Version":
           {
-            const name2 = args.find((item) => String(item.key).toLowerCase() === "name") || args[0];
-            const version = args.find((item) => String(item.key).toLowerCase() === "version") || args[1];
-            const operator = args.find((item) => String(item.key).toLowerCase() === "operator") || args[2];
-            if (name2 && version) {
-              const args2 = [name2.value, version.value];
+            const name3 = args2.find((item) => String(item.key).toLowerCase() === "name") || args2[0];
+            const version = args2.find((item) => String(item.key).toLowerCase() === "version") || args2[1];
+            const operator = args2.find((item) => String(item.key).toLowerCase() === "operator") || args2[2];
+            if (name3 && version) {
+              const args3 = [name3.value, version.value];
               if (operator) {
-                args2.push(operator.value);
+                args3.push(operator.value);
               }
-              result = ctx.builder.isVersion.apply(ctx.builder, args2) === expect;
+              result = ctx2.builder.isVersion.apply(ctx2.builder, args3) === expect;
             } else {
               stack.condition.error(`Missing name or value arguments. the '${stack.condition.value()}' annotations.`);
             }
@@ -9783,7 +9883,7 @@ var require_WhenStatement = __commonJS({
           break;
         default:
       }
-      const node = ctx.createToken(result ? stack.consequent : stack.alternate);
+      const node = ctx2.createToken(result ? stack.consequent : stack.alternate);
       node && (node.isWhenStatement = true);
       return node;
     };
@@ -9793,8 +9893,8 @@ var require_WhenStatement = __commonJS({
 // tokens/WhileStatement.js
 var require_WhileStatement = __commonJS({
   "tokens/WhileStatement.js"(exports2, module2) {
-    module2.exports = function(ctx, stack) {
-      const node = ctx.createNode(stack);
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
       node.condition = node.createTransformBooleanTypeNode(stack.condition);
       node.body = node.createToken(stack.body);
       return node;
@@ -9911,7 +10011,7 @@ var require_package = __commonJS({
   "package.json"(exports2, module2) {
     module2.exports = {
       name: "es-php",
-      version: "0.4.0",
+      version: "0.4.1",
       description: "test",
       main: "dist/index.js",
       typings: "dist/types/typings.json",
@@ -9939,6 +10039,7 @@ var require_package = __commonJS({
       homepage: "https://github.com/51breeze/es-php#readme",
       dependencies: {
         "fs-extra": "^11.2.0",
+        "glob-path": "latest",
         lodash: "^4.17.21"
       },
       esconfig: {
@@ -9961,7 +10062,7 @@ var require_package = __commonJS({
 });
 
 // index.js
-var path = require("path");
+var path2 = require("path");
 var Builder = require_Builder();
 var Token = require_Token();
 var Polyfill = require_Polyfill();
@@ -9973,6 +10074,7 @@ var Transform = require_Transform();
 var JSXTransform = require_JSXTransform();
 var JSXClassBuilder = require_JSXClassBuilder();
 var Assets = require_Assets();
+var Glob2 = require_glob_path();
 var merge = require("lodash/merge");
 var modules = require_tokens();
 var defaultConfig = {
@@ -9982,7 +10084,6 @@ var defaultConfig = {
   useAbsolutePathImport: false,
   import: true,
   suffix: ".php",
-  ns: "es.core",
   context: {
     include: null,
     exclude: null,
@@ -9995,8 +10096,9 @@ var defaultConfig = {
       env: "prod"
     }
   },
-  metadata: {},
-  framework: "thinkphp6",
+  metadata: {
+    env: {}
+  },
   composer: null,
   consistent: true,
   assets: /\.(gif|png|jpeg|jpg|svg|bmp|icon|font|css|less|sass|js|mjs|mp4)$/i,
@@ -10012,18 +10114,15 @@ var defaultConfig = {
     }
   },
   resolve: {
-    useFolderAsNamespace: true,
-    publicPath: "public",
-    excludes: [],
-    disuse: {},
-    using: {},
-    mapping: {
-      folder: {},
-      route: {},
-      namespace: {}
-    }
+    usings: {},
+    folders: {},
+    routes: {},
+    namespaces: {}
   },
+  folderAsNamespace: true,
+  publicPath: "public",
   externals: [],
+  excludes: [],
   includes: []
 };
 var pkg = require_package();
@@ -10036,98 +10135,6 @@ function registerError(define, cn, en) {
     "\u7C7B(%s)\u547D\u540D\u7A7A\u95F4\u5FC5\u987B\u4E0E\u6587\u4EF6\u8DEF\u5F84\u4E00\u81F4",
     "The '%s' class namespace must be consistent with the file path"
   ]);
-}
-function replace(test, type) {
-  test = String(test).trim();
-  if (type === "namespace" || type === "disuse" || type === "using") {
-    return test.replace(/\./g, "/");
-  }
-  return test;
-}
-function makeConfig(object, type) {
-  if (Array.isArray(object)) {
-    object = object.map((item) => {
-      if (typeof item === "string") {
-        return {
-          test: replace(item, type),
-          raw: item.trim(),
-          value: ""
-        };
-      }
-      if (!item.test)
-        throw new Error(`Config the '${type}.item.test' property is not exists.`);
-      if (typeof item.test !== "string")
-        throw new Error(`Config the '${type}.item.rule' type must is string.`);
-      if (item.value && typeof item.value !== "string")
-        throw new Error(`Config the '${type}.item.value' type must is string.`);
-      item.raw = item.test.trim();
-      item.test = replace(item.test, type);
-      return item;
-    });
-  } else if (typeof object === "object") {
-    object = Object.keys(object).map((key) => {
-      let test = replace(key, type);
-      return {
-        test,
-        raw: key.trim(),
-        value: object[key]
-      };
-    });
-  }
-  if (!Array.isArray(object)) {
-    throw new Error(`Config the '${type}' cannot convert to an array`);
-  } else {
-    let explicit = true;
-    const map = {};
-    object.forEach((item) => {
-      map[item.raw] = item;
-      const vague = item.test.match(/\*/g);
-      item.vague = vague ? vague.length : 0;
-      if (vague)
-        explicit = false;
-      item.rawValue = item.value;
-      if (item.value && typeof item.value === "string") {
-        item.value = item.value.trim();
-        item.dynamic = item.value.includes("%");
-        const restIndex = item.value.lastIndexOf("%...");
-        if (restIndex > 0) {
-          if (!item.raw.includes("**")) {
-            throw new Error(`Config the '${item.raw}' rule needs to be specified '**'. because the remaining parameters are used in the matching value`);
-          }
-          if (item.value.length !== restIndex + 4) {
-            throw new Error(`Config remaining '%...' must be at the end in the '${item.rawValue}'.`);
-          }
-        }
-        if (type === "namespace") {
-          if (restIndex > 0) {
-            item.value = item.value.slice(0, -4);
-          }
-          item.segments = item.value.split(".").filter((v) => !!v);
-          if (restIndex > 0)
-            item.segments.push("%...");
-          if (!item.dynamic) {
-            item.value = item.value.replace(/\./g, "\\");
-          }
-        } else {
-          item.segments = item.value.split("/");
-        }
-      }
-    });
-    object.sort((a, b) => {
-      const a1 = a.test.split("/");
-      const b1 = b.test.split("/");
-      if (a1.length > b1.length)
-        return -1;
-      if (a.vague < b.vague)
-        return -1;
-      return 0;
-    });
-    return {
-      map,
-      explicit,
-      rules: object
-    };
-  }
 }
 var PluginEsPhp = class {
   static getPluginCoreModules() {
@@ -10149,28 +10156,57 @@ var PluginEsPhp = class {
   constructor(compiler, options) {
     this.compiler = compiler;
     this.options = merge({}, defaultConfig, options);
-    this.options.metadata.env = merge({}, compiler.options.env, this.options.env);
     this.generatedCodeMaps = generatedCodeMaps;
     this.name = pkg.name;
     this.version = pkg.version;
     this.platform = "server";
     if (!compiler.options.scanTypings) {
       compiler.loadTypes([
-        path.join(__dirname, "types", "index.d.es")
+        path2.join(__dirname, "types", "index.d.es")
       ], {
         scope: "es-php",
         inherits: []
       });
     }
-    const resolve = this.options.resolve;
-    const mapping = resolve.mapping;
-    mapping.namespace = makeConfig(mapping.namespace, "namespace");
-    mapping.folder = makeConfig(mapping.folder, "folder");
-    mapping.route = makeConfig(mapping.route, "route");
-    resolve.disuse = makeConfig(resolve.disuse, "disuse");
-    resolve.using = makeConfig(resolve.using, "using");
     registerError(compiler.diagnostic.defineError, compiler.diagnostic.LANG_CN, compiler.diagnostic.LANG_EN);
     this._builders = /* @__PURE__ */ new Map();
+    this.glob = new Glob2();
+    this.addGlobRule();
+  }
+  addGlobRule() {
+    const resolve = this.options.resolve;
+    Object.keys(resolve.namespaces).forEach((key) => {
+      this.glob.addRule(key, resolve.namespaces[key], 0, "namespaces");
+    });
+    Object.keys(resolve.folders).forEach((key) => {
+      this.glob.addRule(key, resolve.folders[key], 0, "folders");
+    });
+    Object.keys(resolve.routes).forEach((key) => {
+      this.glob.addRule(key, resolve.routes[key], 0, "routes");
+    });
+    const trueCallback = () => true;
+    if (Array.isArray(resolve.usings)) {
+      resolve.usings.forEach((key) => {
+        this.glob.addRule(key, trueCallback, 0, "usings");
+      });
+    } else {
+      Object.keys(resolve.usings).forEach((key) => {
+        if (typeof resolve.usings[key] === "function") {
+          this.glob.addRule(key, resolve.usings[key], 0, "usings");
+        } else {
+          throw new TypeError(`options.resolve.usings the '${key}' rule, should assignmented a function`);
+        }
+      });
+    }
+  }
+  resolveSourcePresetFlag(id2, group) {
+    return !!this.glob.dest(id2, { group, failValue: false });
+  }
+  resolveSourceId(id2, group, delimiter2 = "/") {
+    if (group === "namespaces" || group === "usings") {
+      delimiter2 = "\\";
+    }
+    return this.glob.dest(id2, { group, delimiter: delimiter2, failValue: null });
   }
   getGeneratedCodeByFile(file) {
     return this.generatedCodeMaps.get(file);
@@ -10178,8 +10214,8 @@ var PluginEsPhp = class {
   getGeneratedSourceMapByFile(file) {
     return null;
   }
-  getTokenNode(name) {
-    return modules.get(name);
+  getTokenNode(name2) {
+    return modules.get(name2);
   }
   start(compilation, done) {
     const builder = this.getBuilder(compilation);

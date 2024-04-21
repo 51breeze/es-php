@@ -1,6 +1,6 @@
 const Transform = require("../core/Transform");
-function createArgumentNodes(ctx, stack, arguments, declareParams){
-    return arguments.map( (item,index)=>{
+function createArgumentNodes(ctx, stack, args, declareParams){
+    return args.map( (item,index)=>{
         const node = ctx.createToken(item)
         if( declareParams && declareParams[index] && !item.isIdentifier ){
             const declareParam = declareParams[index];

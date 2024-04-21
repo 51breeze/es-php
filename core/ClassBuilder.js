@@ -212,22 +212,24 @@ class ClassBuilder extends Token{
                     path = args[0].value.trim();
                 }
                 if( path.charCodeAt(0) === 64 ){
-                    this.builder.addRouterConfig(this.module, method, path, action, []);
+                    const routePath = this.builder.getModuleMappingRoute(path, {method, params, action, path, annotation, module:this.module});
+                    this.builder.addRouterConfig(this.module, method, routePath, action, params);
                 }else if( path.charCodeAt(0) === 47 ){
-                    this.builder.addRouterConfig(this.module, method, path, action, params);
+                    const routePath = this.builder.getModuleMappingRoute(path, {method, params, action, path, annotation, module:this.module});
+                    this.builder.addRouterConfig(this.module, method, routePath, action, params);
                 }else{
-                    const prefix = this.builder.getModuleMappingRoute( this.module , {method:action,classname:this.module.id}) || this.module.getName('/');
-                    this.builder.addRouterConfig(this.module, method, prefix+'/'+path, action, params);
+                    const routePath = this.builder.getModuleMappingRoute(this.module.getName('/')+'/'+path, {method, params, action, path, annotation, module:this.module});
+                    this.builder.addRouterConfig(this.module, method, routePath, action, params);
                 }
             }else if( this.builder.resolveModuleTypeName(this.module) ==='controller' ){
                 const method = 'any';
                 const action = memeberStack.key.value();
-                const prefix = this.builder.getModuleMappingRoute( this.module , {method:action,classname:this.module.id}) || this.module.getName('/');
                 const params = memeberStack.params.map( item=>{
                     const required = !(item.question || item.isAssignmentPattern);
                     return {name:item.value(),required}
                 });
-                this.builder.addRouterConfig(this.module, method, prefix+'/'+action, action, params);
+                const routePath = this.builder.getModuleMappingRoute(this.module.getName('/')+'/'+action, {method, params, action, path:null, annotation:null, module:this.module});
+                this.builder.addRouterConfig(this.module, method, routePath, action, params);
             }
         }
         return node;
@@ -312,7 +314,7 @@ class ClassBuilder extends Token{
         }
         const importFlag = this.plugin.options.import;
         const consistent = this.plugin.options.consistent;
-        const useFolderAsNamespace = this.plugin.options.resolve.useFolderAsNamespace;
+        const folderAsNamespace = this.plugin.options.folderAsNamespace;
         const usingExcludes = this.builder.getGlobalModules();
         const createUse=(depModule)=>{
             if( !usingExcludes.includes(depModule) ){
@@ -339,14 +341,14 @@ class ClassBuilder extends Token{
                             const source = this.builder.getModuleImportSource(depModule, module);
                             this.imports.push( this.createImportDeclaration(source) );
                         }
-                    }else if( !(consistent||useFolderAsNamespace) ){
+                    }else if( !(consistent||folderAsNamespace) ){
                         const source = this.builder.getFileRelativeOutputPath(depModule);
                         const name = this.builder.getModuleNamespace(depModule, depModule.id);
                         this.builder.addFileAndNamespaceMapping(source, name);
                     }
                     createUse( depModule );
                 }else if( this.isReferenceDeclaratorModule(depModule, module) ){
-                    createUse( depModule );
+                    createUse(depModule);
                 }
             }
         });

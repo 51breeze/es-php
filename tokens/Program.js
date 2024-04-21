@@ -8,7 +8,7 @@ function createDependencies(stack, ctx, node, importExcludes){
     const builder = ctx.builder;
     const importFlag = plugin.options.import;
     const consistent = plugin.options.consistent;
-    const useFolderAsNamespace = plugin.options.resolve.useFolderAsNamespace;
+    const folderAsNamespace = plugin.options.folderAsNamespace;
     const usingExcludes = new WeakSet();
     builder.getGlobalModules().forEach( module=>{
         usingExcludes.add(module);
@@ -37,7 +37,7 @@ function createDependencies(stack, ctx, node, importExcludes){
                             const source = builder.getModuleImportSource(depModule, stack.compilation.file);
                             imports.push( node.createImportNode(source) );
                         }
-                    }else if( !(consistent||useFolderAsNamespace) ){
+                    }else if( !(consistent||folderAsNamespace) ){
                         const source = builder.getFileRelativeOutputPath(depModule);
                         const name = builder.getModuleNamespace(depModule, depModule.id);
                         builder.addFileAndNamespaceMapping(source, name);

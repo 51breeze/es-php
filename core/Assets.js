@@ -124,7 +124,7 @@ class Asset{
 
     getOutputFilePath(){
         if(this.assetOutputFile)return this.assetOutputFile;
-        const publicPath = (this.context.plugin.options.resolve.publicPath || '').trim();
+        const publicPath = (this.context.plugin.options.publicPath || '').trim();
         let folder = this.getFolder();
         if( publicPath && !PATH.isAbsolute(folder)){
             folder = PATH.join(publicPath,folder);
