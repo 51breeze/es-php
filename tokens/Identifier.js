@@ -10,10 +10,10 @@ module.exports = function(ctx,stack){
     let desc = null;
     if( stack.parentStack.isMemberExpression ) {
         if( stack.parentStack.object === stack ){
-            desc = stack.description();
+            desc = stack.descriptor();
         }
     }else{
-        desc = stack.description();
+        desc = stack.descriptor();
     }
 
     const builder = ctx.builder;

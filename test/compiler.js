@@ -41,7 +41,7 @@ class Creator {
             const compiler = this.compiler;
             await compiler.initialize();
             await compiler.loadTypes([
-                'types/index.d.es',
+               'types/php.d.es',
             ], {scope:'es-php'});
             let compilation = null;
             try{

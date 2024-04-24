@@ -56,12 +56,19 @@ module.exports = function(ctx,stack){
         const node = ctx.createNode( stack );
         node.addDepend( Reflect );
         let target = node.createToken(stack.callee);
+        
+
         if(!wrapType && !stack.callee.isIdentifier ){
             const refs = node.checkRefsName('ref');
             ctx.insertNodeBlockContextAt(
                 ctx.createAssignmentNode( ctx.createIdentifierNode(refs, null, true), target )
             );
             target = ctx.createIdentifierNode(refs, null, true);
+        }else if(stack.callee.isIdentifier){
+            const refDesc = stack.descriptor();
+            if(!refDesc || !refDesc.isDeclarator){
+                target = ctx.createLiteralNode(stack.callee.raw())
+            }
         }
         return node.createCalleeNode(
             node.createStaticMemberNode([

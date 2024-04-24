@@ -6,11 +6,13 @@ import config,{top} from 'config';
 
 import gl from 'g.config.es';
 
+import table.Address;
 
 public class StartTest extends Base
 {
     private var items = [];
     private var list  = [];
+    private var addData:Address;
 
 
     @Main
@@ -393,7 +395,7 @@ public class StartTest extends Base
     testEnum(){
         this.assertEquals(0, Types.ADDRESS );
         this.assertEquals(1, Types.NAME );
-
+        
         enum Type {
             address=5,
             name

@@ -671,7 +671,9 @@ declare function fread(stream:any,length:int): string|false
  * @param resource $context [optional]
  * @return resource|false a file pointer resource on success, or false on error.
  */
-declare function fopen(filename:string,mode:string,use_include_path:boolean = false,context:Resource=null)
+declare function fopen(filename:string,mode:FileMode,use_include_path:boolean = false,context:Resource=null)
+
+declare type FileMode = 'r'|'r+'|'w'|'w+'|'a'|'a+'|'x'|'x+'|'c'|'c+'|'e';
 
 /**
  * Output all remaining data on a file pointer

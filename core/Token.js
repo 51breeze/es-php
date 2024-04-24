@@ -601,6 +601,18 @@ class Token extends events.EventEmitter {
 
     isArrayAccessor(type){
         if(!type)return false;
+        if(type.isUnionType){
+            if(type.elements.length===1){
+                return this.isArrayAccessor(type.elements[0].type());
+            }
+            return type.elements.every(type=>{
+                type = type.type();
+                if(type.isNullableType)return true;
+                return this.isArrayAccessor(type)
+            })
+        }else if(type.isIntersectionType){
+            return [type.left, type.right].every(type=>this.isArrayAccessor(type.type()))
+        }
         if( type.isInstanceofType ){
             return false;
         }else if(type.isLiteralObjectType || type.isLiteralType || type.isLiteralArrayType || type.isTupleType){
@@ -627,6 +639,18 @@ class Token extends events.EventEmitter {
 
     isObjectAccessor(type){
         if(!type)return false;
+        if(type.isUnionType){
+            if(type.elements.length===1){
+                return this.isObjectAccessor(type.elements[0].type());
+            }
+            return type.elements.every(type=>{
+                type = type.type();
+                if(type.isNullableType)return true;
+                return this.isObjectAccessor(type)
+            })
+        }else if(type.isIntersectionType){
+            return [type.left, type.right].every(type=>this.isObjectAccessor(type.type()))
+        }
         if( type.isInstanceofType ){
             return true;
         }

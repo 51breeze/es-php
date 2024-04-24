@@ -16,10 +16,7 @@ const config = {
       resolveFrom: 'cwd',
       globbyOptions:{
         ignore:[
-          './types/php.array.d.es',
-          './types/php.constant.d.es',
           './types/php.d.es',
-          './types/spl.d.es',
         ],
       },
       assets: {

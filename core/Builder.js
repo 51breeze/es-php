@@ -84,7 +84,7 @@ class Builder extends Token{
     }
 
     addRouterConfig(module, method, path, action, params){
-        const outputFolder = this.getModuleMappingFolder(module, 'router');
+        const outputFolder = this.resolveSourceFileMappingPath(PATH.dirname(module.file)+'/'+module.id+'.route','folders')
         if(!outputFolder)return;
         const className = this.getModuleNamespace(module, module.id, false);
         this.getRouterInstance().addItem( PATH.join(this.getOutputPath(), outputFolder), className, action, path, method, params);
@@ -367,6 +367,7 @@ class Builder extends Token{
 
     isNeedBuild(module, ctxModule){
         if(!module || !this.compiler.callUtils('isTypeModule', module))return false;
+        if(module.isStructTable)return true;
         if( !this.isActiveForModule(module, ctxModule) )return false;
         if( !this.isPluginInContext(module) ){
             return false;
@@ -691,7 +692,7 @@ class Builder extends Token{
         if(module.isDeclaratorModule){
             const polyfill = this.getPolyfillModule(module.getName());
             if( polyfill ){
-                assignment = polyfill.namespace ? polyfill.namespace.replace(/\./g, '/') : '';
+                assignment = (polyfill.namespace ? polyfill.namespace : '').replace(/[\\\\.]/g, '/');
                 ns = [assignment, polyfill.export || module.id].filter(Boolean).join('/');
             }else{
                 ns = module.getName('/');
@@ -728,13 +729,15 @@ class Builder extends Token{
         return this.plugin.resolveSourceId(id, 'namespaces')
     }
 
-    getModuleMappingRoute(id, data={}){
-        return this.plugin.resolveSourceId(id, 'routes', data)
+    getModuleMappingRoute(module, data={}){
+        if(!module || !module.isModule)return data.path;
+        const id = PATH.dirname(module.file) +'/'+ module.id + '.format';
+        data.group = 'routes';
+        return this.plugin.resolveSourceId(id, data) || data.path;
     }
 
     resolveSourceFileMappingPath(file, type='folders'){
-        file = PATH.isAbsolute( file ) ? PATH.relative(this.compiler.workspace, file) : file;
-        return this.plugin.resolveSourceId(this.compiler.normalizePath(file), type)
+        return this.plugin.resolveSourceId(file, type)
     }
 
     getOutputRelativePath(module,context){
@@ -905,7 +908,7 @@ class Builder extends Token{
                 }
             } 
         };
-        (this.compilation.imports || []).forEach( add );
+        (this.compilation.stack.imports || []).forEach( add );
         (this.compilation.externals || []).forEach( add );
         this.crateAssetItems(null, dataset, assets, externals, this.compilation);
         return Array.from( dataset.values() );
@@ -978,9 +981,24 @@ class Builder extends Token{
     isImportExclude(source){
         const excludes = this.plugin.options.excludes;
         if( excludes && excludes.length > 0 ){
-            const isModule = typeof source !== 'string' && source.isModule ? true : false;
-            source = String(isModule ? source.getName() : source);
-            if( excludes.some( rule=>rule instanceof RegExp ? rule.test(source) : source === rule ) ){
+            let file = source;
+            let className = '';
+            let test = (rule)=>{
+                if(rule===file||rule===className)return true;
+                if(rule instanceof RegExp){
+                    if(rule.test(file))return true;
+                    return className ? rule.test(className) : false;
+                }
+                return false;
+            }
+            if(typeof source !== 'string'){
+                file = '';
+                if(source.isModule){
+                    file = source.file;
+                    className = source.getName('/');
+                }
+            }
+            if(excludes.some(test)){
                 return true;
             }
         }

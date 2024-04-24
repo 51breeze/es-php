@@ -211,16 +211,29 @@ class ClassBuilder extends Token{
                 }else if(args[0] && args[0].value){
                     path = args[0].value.trim();
                 }
+
+                let routePath = path;
                 if( path.charCodeAt(0) === 64 ){
-                    const routePath = this.builder.getModuleMappingRoute(path, {method, params, action, path, annotation, module:this.module});
-                    this.builder.addRouterConfig(this.module, method, routePath, action, params);
+                  
                 }else if( path.charCodeAt(0) === 47 ){
-                    const routePath = this.builder.getModuleMappingRoute(path, {method, params, action, path, annotation, module:this.module});
-                    this.builder.addRouterConfig(this.module, method, routePath, action, params);
+                   
                 }else{
-                    const routePath = this.builder.getModuleMappingRoute(this.module.getName('/')+'/'+path, {method, params, action, path, annotation, module:this.module});
-                    this.builder.addRouterConfig(this.module, method, routePath, action, params);
+                    routePath = this.module.getName('/')+'/'+path;
                 }
+                routePath = this.builder.getModuleMappingRoute(
+                    this.module,
+                    {
+                        method,
+                        params,
+                        action,
+                        path:routePath,
+                        annotation,
+                        className:this.module.getName(),
+                        module:this.module
+                    }
+                );
+                this.builder.addRouterConfig(this.module, method, routePath, action, params);
+
             }else if( this.builder.resolveModuleTypeName(this.module) ==='controller' ){
                 const method = 'any';
                 const action = memeberStack.key.value();
@@ -228,7 +241,18 @@ class ClassBuilder extends Token{
                     const required = !(item.question || item.isAssignmentPattern);
                     return {name:item.value(),required}
                 });
-                const routePath = this.builder.getModuleMappingRoute(this.module.getName('/')+'/'+action, {method, params, action, path:null, annotation:null, module:this.module});
+                const routePath = this.builder.getModuleMappingRoute(
+                    this.module,
+                    {
+                        method,
+                        params,
+                        action,
+                        path:this.module.getName('/')+'/'+action,
+                        annotation:null,
+                        className:this.module.getName(),
+                        module:this.module
+                    }
+                );
                 this.builder.addRouterConfig(this.module, method, routePath, action, params);
             }
         }

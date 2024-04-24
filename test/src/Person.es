@@ -42,6 +42,7 @@ public class Person<T> extends TestCase implements IT
        var bssd:number = -22.366
         this.target.address();
         this.personName;
+        dirname(__DIR__)
         return "sssss";
     }
 

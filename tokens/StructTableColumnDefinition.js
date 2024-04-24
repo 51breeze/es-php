@@ -8,7 +8,7 @@ function createNode(ctx, item){
 }
 module.exports = function(ctx, stack){
     const node = ctx.createNode(stack);
-    node.key = node.createIdentifierNode(stack.key.value(), stack.key);
+    node.key = node.createIdentifierNode( '`'+stack.key.value()+'`', stack.key);
     node.properties = [];
     const type = stack.typename ? node.createToken(stack.typename) : node.createIdentifierNode('varchar(255)');
     const unsigned = stack.unsigned ? node.createIdentifierNode('unsigned') : null;

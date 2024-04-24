@@ -1574,6 +1574,19 @@ var require_Token = __commonJS({
       isArrayAccessor(type) {
         if (!type)
           return false;
+        if (type.isUnionType) {
+          if (type.elements.length === 1) {
+            return this.isArrayAccessor(type.elements[0].type());
+          }
+          return type.elements.every((type2) => {
+            type2 = type2.type();
+            if (type2.isNullableType)
+              return true;
+            return this.isArrayAccessor(type2);
+          });
+        } else if (type.isIntersectionType) {
+          return [type.left, type.right].every((type2) => this.isArrayAccessor(type2.type()));
+        }
         if (type.isInstanceofType) {
           return false;
         } else if (type.isLiteralObjectType || type.isLiteralType || type.isLiteralArrayType || type.isTupleType) {
@@ -1600,6 +1613,19 @@ var require_Token = __commonJS({
       isObjectAccessor(type) {
         if (!type)
           return false;
+        if (type.isUnionType) {
+          if (type.elements.length === 1) {
+            return this.isObjectAccessor(type.elements[0].type());
+          }
+          return type.elements.every((type2) => {
+            type2 = type2.type();
+            if (type2.isNullableType)
+              return true;
+            return this.isObjectAccessor(type2);
+          });
+        } else if (type.isIntersectionType) {
+          return [type.left, type.right].every((type2) => this.isObjectAccessor(type2.type()));
+        }
         if (type.isInstanceofType) {
           return true;
         }
@@ -2307,8 +2333,7 @@ var require_Assets = __commonJS({
       getFolder() {
         if (this.folder)
           return this.folder;
-        const mapping = this.context.plugin.options.resolve.mapping.folder;
-        return this.folder = this.context.resolveSourceFileMappingPath(this.file, mapping, "asset") || PATH.dirname(this.file);
+        return this.folder = this.context.resolveSourceFileMappingPath(this.file) || ".";
       }
       getAssetFilePath() {
         return this.file;
@@ -2441,7 +2466,7 @@ var require_Builder = __commonJS({
         }
       }
       addRouterConfig(module3, method, path3, action, params) {
-        const outputFolder = this.getModuleMappingFolder(module3, "router");
+        const outputFolder = this.resolveSourceFileMappingPath(PATH.dirname(module3.file) + "/" + module3.id + ".route", "folders");
         if (!outputFolder)
           return;
         const className = this.getModuleNamespace(module3, module3.id, false);
@@ -2704,6 +2729,8 @@ var require_Builder = __commonJS({
       isNeedBuild(module3, ctxModule) {
         if (!module3 || !this.compiler.callUtils("isTypeModule", module3))
           return false;
+        if (module3.isStructTable)
+          return true;
         if (!this.isActiveForModule(module3, ctxModule))
           return false;
         if (!this.isPluginInContext(module3)) {
@@ -3014,7 +3041,7 @@ var require_Builder = __commonJS({
         if (module3.isDeclaratorModule) {
           const polyfill = this.getPolyfillModule(module3.getName());
           if (polyfill) {
-            assignment = polyfill.namespace ? polyfill.namespace.replace(/\./g, "/") : "";
+            assignment = (polyfill.namespace ? polyfill.namespace : "").replace(/[\\\\.]/g, "/");
             ns = [assignment, polyfill.export || module3.id].filter(Boolean).join("/");
           } else {
             ns = module3.getName("/");
@@ -3047,12 +3074,15 @@ var require_Builder = __commonJS({
       getMappingNamespace(id2) {
         return this.plugin.resolveSourceId(id2, "namespaces");
       }
-      getModuleMappingRoute(id2, data2 = {}) {
-        return this.plugin.resolveSourceId(id2, "routes", data2);
+      getModuleMappingRoute(module3, data2 = {}) {
+        if (!module3 || !module3.isModule)
+          return data2.path;
+        const id2 = PATH.dirname(module3.file) + "/" + module3.id + ".format";
+        data2.group = "routes";
+        return this.plugin.resolveSourceId(id2, data2) || data2.path;
       }
       resolveSourceFileMappingPath(file, type = "folders") {
-        file = PATH.isAbsolute(file) ? PATH.relative(this.compiler.workspace, file) : file;
-        return this.plugin.resolveSourceId(this.compiler.normalizePath(file), type);
+        return this.plugin.resolveSourceId(file, type);
       }
       getOutputRelativePath(module3, context) {
         const contextPath = this.getOutputAbsolutePath(context);
@@ -3208,7 +3238,7 @@ var require_Builder = __commonJS({
             }
           }
         };
-        (this.compilation.imports || []).forEach(add);
+        (this.compilation.stack.imports || []).forEach(add);
         (this.compilation.externals || []).forEach(add);
         this.crateAssetItems(null, dataset, assets, externals, this.compilation);
         return Array.from(dataset.values());
@@ -3276,9 +3306,26 @@ var require_Builder = __commonJS({
       isImportExclude(source) {
         const excludes = this.plugin.options.excludes;
         if (excludes && excludes.length > 0) {
-          const isModule = typeof source !== "string" && source.isModule ? true : false;
-          source = String(isModule ? source.getName() : source);
-          if (excludes.some((rule2) => rule2 instanceof RegExp ? rule2.test(source) : source === rule2)) {
+          let file = source;
+          let className = "";
+          let test = (rule2) => {
+            if (rule2 === file || rule2 === className)
+              return true;
+            if (rule2 instanceof RegExp) {
+              if (rule2.test(file))
+                return true;
+              return className ? rule2.test(className) : false;
+            }
+            return false;
+          };
+          if (typeof source !== "string") {
+            file = "";
+            if (source.isModule) {
+              file = source.file;
+              className = source.getName("/");
+            }
+          }
+          if (excludes.some(test)) {
             return true;
           }
         }
@@ -3545,16 +3592,25 @@ var require_ClassBuilder = __commonJS({
             } else if (args2[0] && args2[0].value) {
               path3 = args2[0].value.trim();
             }
+            let routePath = path3;
             if (path3.charCodeAt(0) === 64) {
-              const routePath = this.builder.getModuleMappingRoute(path3, { method, params, action, path: path3, annotation, module: this.module });
-              this.builder.addRouterConfig(this.module, method, routePath, action, params);
             } else if (path3.charCodeAt(0) === 47) {
-              const routePath = this.builder.getModuleMappingRoute(path3, { method, params, action, path: path3, annotation, module: this.module });
-              this.builder.addRouterConfig(this.module, method, routePath, action, params);
             } else {
-              const routePath = this.builder.getModuleMappingRoute(this.module.getName("/") + "/" + path3, { method, params, action, path: path3, annotation, module: this.module });
-              this.builder.addRouterConfig(this.module, method, routePath, action, params);
+              routePath = this.module.getName("/") + "/" + path3;
             }
+            routePath = this.builder.getModuleMappingRoute(
+              this.module,
+              {
+                method,
+                params,
+                action,
+                path: routePath,
+                annotation,
+                className: this.module.getName(),
+                module: this.module
+              }
+            );
+            this.builder.addRouterConfig(this.module, method, routePath, action, params);
           } else if (this.builder.resolveModuleTypeName(this.module) === "controller") {
             const method = "any";
             const action = memeberStack.key.value();
@@ -3562,7 +3618,18 @@ var require_ClassBuilder = __commonJS({
               const required = !(item.question || item.isAssignmentPattern);
               return { name: item.value(), required };
             });
-            const routePath = this.builder.getModuleMappingRoute(this.module.getName("/") + "/" + action, { method, params, action, path: null, annotation: null, module: this.module });
+            const routePath = this.builder.getModuleMappingRoute(
+              this.module,
+              {
+                method,
+                params,
+                action,
+                path: this.module.getName("/") + "/" + action,
+                annotation: null,
+                className: this.module.getName(),
+                module: this.module
+              }
+            );
             this.builder.addRouterConfig(this.module, method, routePath, action, params);
           }
         }
@@ -5946,7 +6013,7 @@ var require_JSXTransform = __commonJS({
 var require_glob_path = __commonJS({
   "node_modules/glob-path/index.js"(exports, module) {
     var path = require("path");
-    var slashDelimitRegexp = /(?<!\\)[\/]+/;
+    var slashSplitterRegexp = /(?<!\\)[\/]+/;
     var keyScheme = Symbol("scheme");
     var Glob = class {
       #rules = [];
@@ -5966,15 +6033,36 @@ var require_glob_path = __commonJS({
           this.addRule(key, data2[key], 0, group, data2);
         });
       }
+      addRuleGroup(pattern, target, group, data2 = {}) {
+        this.addRule(pattern, target, 0, group, data2);
+      }
       addRule(pattern, target, priority = 0, group = null, data2 = {}) {
         let type = pattern instanceof RegExp ? "regexp" : typeof pattern;
         let method = typeof target;
         let segments = [];
         let asterisks = 0;
+        let protocol = null;
+        let suffix = null;
         if (type === "string") {
           pattern = pattern.trim();
-          segments = pattern.replace(/^\/|\/$/).split(slashDelimitRegexp);
+          let pos = pattern.indexOf(":///");
+          if (pos > 0) {
+            protocol = pattern.substring(0, pos);
+            pattern = pattern.substring(pos + 4);
+          }
+          segments = pattern.replace(/^\/|\/$/).split(slashSplitterRegexp);
           asterisks = (pattern.match(/(?<!\\)\*/g) || []).length;
+          let last = segments[segments.length - 1];
+          let rPos = last.lastIndexOf(".");
+          if (rPos > 0 && last.includes("*")) {
+            let lPos = last.indexOf(".");
+            if (lPos !== rPos) {
+              const pattern2 = last.replace(/\./g, "\\.").replace(/[\*]+/g, () => {
+                return "(.*?)";
+              });
+              suffix = new RegExp("^" + pattern2 + "$");
+            }
+          }
           if (pattern.includes("****")) {
             if (segments.length > 1) {
               throw new TypeError(`Glob the '****' full match pattern cannot have separator.`);
@@ -6001,7 +6089,9 @@ var require_glob_path = __commonJS({
         }
         this.#rules.push({
           pattern,
+          suffix,
           target,
+          protocol,
           segments,
           asterisks,
           priority,
@@ -6067,7 +6157,9 @@ var require_glob_path = __commonJS({
         });
         this.#initialized = true;
       }
-      matchRule(paths, segments, basename2, extname2, globs = []) {
+      matchRule(rule2, segments, basename2, extname2, globs = []) {
+        let paths = rule2.segments;
+        let suffix = rule2.suffix;
         let len = paths.length - 1;
         let base = paths[len];
         let globPos = -1;
@@ -6079,12 +6171,18 @@ var require_glob_path = __commonJS({
           return true;
         }
         if (base !== "***") {
-          if (extname2 && !(base.endsWith(extname2) || base.endsWith(".*"))) {
-            return false;
-          } else if (basename2 !== base && !base.startsWith("*")) {
-            return false;
-          } else if (base.includes(".") && !extname2) {
-            return false;
+          if (suffix) {
+            if (!suffix.test(basename2 + (extname2 || ""))) {
+              return false;
+            }
+          } else {
+            if (extname2 && !(base.endsWith(extname2) || base.endsWith(".*"))) {
+              return false;
+            } else if (basename2 !== base && !base.startsWith("*")) {
+              return false;
+            } else if (base.includes(".") && !extname2) {
+              return false;
+            }
           }
         }
         const push = (end) => {
@@ -6145,7 +6243,13 @@ var require_glob_path = __commonJS({
         if (!excludes && this.#cache.hasOwnProperty(key)) {
           return this.#cache[key];
         }
-        let segments = normalId.split(slashDelimitRegexp);
+        let pos = normalId.indexOf(":///");
+        let protocol = null;
+        if (pos > 0) {
+          protocol = normalId.substring(0, pos);
+          normalId = normalId.substring(pos + 4);
+        }
+        let segments = normalId.split(slashSplitterRegexp);
         let basename2 = segments[segments.length - 1];
         let dotAt = basename2.lastIndexOf(".");
         let result = null;
@@ -6166,6 +6270,9 @@ var require_glob_path = __commonJS({
           if (group && rule2.group && rule2.group !== group) {
             continue;
           }
+          if (rule2.protocol !== protocol) {
+            continue;
+          }
           if (rule2.type === "function") {
             if (rule2.pattern(id2, ctx2, rule2)) {
               result = rule2;
@@ -6179,7 +6286,7 @@ var require_glob_path = __commonJS({
           } else if (rule2.pattern === id2 || rule2.pattern === normalId) {
             result = rule2;
             break;
-          } else if (this.matchRule(rule2.segments, segments, basename2, extname2, globs)) {
+          } else if (this.matchRule(rule2, segments, basename2, extname2, globs)) {
             result = rule2;
             break;
           }
@@ -6191,6 +6298,7 @@ var require_glob_path = __commonJS({
           extname: extname2,
           args: args2,
           globs,
+          protocol,
           id: id2,
           normalId,
           rule: result,
@@ -7643,10 +7751,10 @@ var require_Identifier = __commonJS({
       let desc2 = null;
       if (stack.parentStack.isMemberExpression) {
         if (stack.parentStack.object === stack) {
-          desc2 = stack.description();
+          desc2 = stack.descriptor();
         }
       } else {
-        desc2 = stack.description();
+        desc2 = stack.descriptor();
       }
       const builder = ctx2.builder;
       if (desc2 && (desc2.isPropertyDefinition || desc2.isMethodDefinition)) {
@@ -8452,7 +8560,7 @@ var require_MemberExpression = __commonJS({
     }
     function MemberExpression(ctx2, stack) {
       const module3 = stack.module;
-      const description = stack.description();
+      const description = stack.descriptor();
       let computed = false;
       if (description && description.isModule && stack.compiler.callUtils("isTypeModule", description)) {
         ctx2.addDepend(description);
@@ -8464,7 +8572,7 @@ var require_MemberExpression = __commonJS({
       }
       var objCtx = stack.object.getContext();
       var objectType = ctx2.inferType(stack.object, objCtx);
-      var objectDescription = stack.object.description();
+      var objectDescription = stack.object.descriptor();
       var rawObjectType = objectType;
       var isWrapType = false;
       if (objectType.isClassGenericType && objectType.inherit.isAliasType) {
@@ -8582,11 +8690,12 @@ var require_MemberExpression = __commonJS({
         } else if (rawObjectType) {
           node.computed = !ctx2.isObjectAccessor(rawObjectType);
         }
-      } else if (stack.object.isNewExpression) {
-        objectNode = node.createParenthesNode(node.createToken(stack.object));
       } else if (!isStatic && rawObjectType && ctx2.isArrayAccessor(rawObjectType)) {
         node.computed = true;
         propertyNode = node.createLiteralNode(stack.property.value(), void 0, stack.property);
+      }
+      if (stack.object.isNewExpression) {
+        objectNode = node.createParenthesNode(node.createToken(stack.object));
       }
       node.object = objectNode || node.createToken(stack.object);
       node.property = propertyNode || node.createToken(stack.property);
@@ -8711,6 +8820,11 @@ var require_NewExpression = __commonJS({
             ctx2.createAssignmentNode(ctx2.createIdentifierNode(refs, null, true), target)
           );
           target = ctx2.createIdentifierNode(refs, null, true);
+        } else if (stack.callee.isIdentifier) {
+          const refDesc = stack.descriptor();
+          if (!refDesc || !refDesc.isDeclarator) {
+            target = ctx2.createLiteralNode(stack.callee.raw());
+          }
         }
         return node2.createCalleeNode(
           node2.createStaticMemberNode([
@@ -9270,7 +9384,7 @@ var require_StructTableColumnDefinition = __commonJS({
     }
     module2.exports = function(ctx2, stack) {
       const node = ctx2.createNode(stack);
-      node.key = node.createIdentifierNode(stack.key.value(), stack.key);
+      node.key = node.createIdentifierNode("`" + stack.key.value() + "`", stack.key);
       node.properties = [];
       const type = stack.typename ? node.createToken(stack.typename) : node.createIdentifierNode("varchar(255)");
       const unsigned = stack.unsigned ? node.createIdentifierNode("unsigned") : null;
@@ -9309,7 +9423,7 @@ var require_StructTableDeclaration = __commonJS({
         return null;
       }
       const node = ctx2.createNode(stack);
-      node.id = node.createIdentifierNode(normalName(stack.id.value()), stack.id);
+      node.id = node.createIdentifierNode("`" + normalName(stack.id.value()) + "`", stack.id);
       node.properties = [];
       node.body = [];
       stack.body.forEach((item) => {
@@ -9337,7 +9451,8 @@ var require_StructTableKeyDefinition = __commonJS({
     module2.exports = function(ctx2, stack) {
       const node = ctx2.createNode(stack);
       node.key = createNode(node, stack.key);
-      node.prefix = node.key.value === "primary" || node.key.value === "key" ? null : node.createIdentifierNode("key");
+      const key = stack.key.value().toLowerCase();
+      node.prefix = key === "primary" || key === "key" ? null : node.createIdentifierNode("key");
       node.local = node.createToken(stack.local);
       node.properties = (stack.properties || []).map((item) => createNode(node, item));
       return node;
@@ -9348,16 +9463,23 @@ var require_StructTableKeyDefinition = __commonJS({
 // tokens/StructTableMethodDefinition.js
 var require_StructTableMethodDefinition = __commonJS({
   "tokens/StructTableMethodDefinition.js"(exports2, module2) {
-    function createNode(ctx2, item) {
+    function createNode(ctx2, item, isKey = false, toLower = false) {
       if (!item)
         return null;
-      return item.isIdentifier ? ctx2.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
+      if (item.isIdentifier) {
+        let value2 = item.value();
+        if (toLower)
+          value2 = value2.toLowerCase();
+        return ctx2.createIdentifierNode(isKey ? "`" + value2 + "`" : value2, item);
+      }
+      return item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
     }
     module2.exports = function(ctx2, stack) {
       const node = ctx2.createNode(stack);
       const key = stack.key.isMemberExpression ? stack.key.property : stack.key;
-      node.key = createNode(node, key);
-      node.params = (stack.params || []).map((item) => createNode(node, item));
+      node.key = createNode(node, key, false, true);
+      const isKey = stack.parentStack.isStructTableKeyDefinition;
+      node.params = (stack.params || []).map((item) => createNode(node, item, isKey));
       return node;
     };
   }
@@ -10075,7 +10197,7 @@ var JSXTransform = require_JSXTransform();
 var JSXClassBuilder = require_JSXClassBuilder();
 var Assets = require_Assets();
 var Glob2 = require_glob_path();
-var merge = require("lodash/merge");
+var mergeWith = require("lodash/mergeWith");
 var modules = require_tokens();
 var defaultConfig = {
   target: 7,
@@ -10136,6 +10258,20 @@ function registerError(define, cn, en) {
     "The '%s' class namespace must be consistent with the file path"
   ]);
 }
+function merge(...args2) {
+  return mergeWith(...args2, (objValue, srcValue) => {
+    if (Array.isArray(objValue) && Array.isArray(srcValue)) {
+      if (srcValue[0] === null)
+        return srcValue.slice(1);
+      srcValue.forEach((value2) => {
+        if (!objValue.includes(value2)) {
+          objValue.push(value2);
+        }
+      });
+      return objValue;
+    }
+  });
+}
 var PluginEsPhp = class {
   static getPluginCoreModules() {
     return {
@@ -10160,14 +10296,6 @@ var PluginEsPhp = class {
     this.name = pkg.name;
     this.version = pkg.version;
     this.platform = "server";
-    if (!compiler.options.scanTypings) {
-      compiler.loadTypes([
-        path2.join(__dirname, "types", "index.d.es")
-      ], {
-        scope: "es-php",
-        inherits: []
-      });
-    }
     registerError(compiler.diagnostic.defineError, compiler.diagnostic.LANG_CN, compiler.diagnostic.LANG_EN);
     this._builders = /* @__PURE__ */ new Map();
     this.glob = new Glob2();
@@ -10176,23 +10304,35 @@ var PluginEsPhp = class {
   addGlobRule() {
     const resolve = this.options.resolve;
     Object.keys(resolve.namespaces).forEach((key) => {
-      this.glob.addRule(key, resolve.namespaces[key], 0, "namespaces");
+      this.glob.addRuleGroup(key, resolve.namespaces[key], "namespaces");
     });
     Object.keys(resolve.folders).forEach((key) => {
-      this.glob.addRule(key, resolve.folders[key], 0, "folders");
+      this.glob.addRuleGroup(key, resolve.folders[key], "folders");
     });
     Object.keys(resolve.routes).forEach((key) => {
-      this.glob.addRule(key, resolve.routes[key], 0, "routes");
+      this.glob.addRuleGroup(key, resolve.routes[key], "routes");
     });
     const trueCallback = () => true;
     if (Array.isArray(resolve.usings)) {
       resolve.usings.forEach((key) => {
-        this.glob.addRule(key, trueCallback, 0, "usings");
+        if (typeof key === "object") {
+          if (key.test === void 0 || key.value === void 0) {
+            throw new TypeError(`options.resolve.usings the each rule item should is {test:'rule', value:true} object`);
+          } else {
+            if (typeof key.value === "function") {
+              this.glob.addRuleGroup(key.test, key.value, "usings");
+            } else {
+              this.glob.addRuleGroup(key.test, () => key.value, "usings");
+            }
+          }
+        } else {
+          this.glob.addRuleGroup(key, trueCallback, "usings");
+        }
       });
     } else {
       Object.keys(resolve.usings).forEach((key) => {
         if (typeof resolve.usings[key] === "function") {
-          this.glob.addRule(key, resolve.usings[key], 0, "usings");
+          this.glob.addRuleGroup(key, resolve.usings[key], "usings");
         } else {
           throw new TypeError(`options.resolve.usings the '${key}' rule, should assignmented a function`);
         }
@@ -10206,7 +10346,11 @@ var PluginEsPhp = class {
     if (group === "namespaces" || group === "usings") {
       delimiter2 = "\\";
     }
-    return this.glob.dest(id2, { group, delimiter: delimiter2, failValue: null });
+    let data2 = { group, delimiter: delimiter2, failValue: null };
+    if (typeof group === "object") {
+      data2 = group;
+    }
+    return this.glob.dest(id2, data2);
   }
   getGeneratedCodeByFile(file) {
     return this.generatedCodeMaps.get(file);

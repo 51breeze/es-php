@@ -160,8 +160,7 @@ class Asset{
 
     getFolder(){
         if(this.folder)return this.folder;
-        const mapping = this.context.plugin.options.resolve.mapping.folder;
-        return this.folder = this.context.resolveSourceFileMappingPath(this.file, mapping, 'asset') || PATH.dirname(this.file);
+        return this.folder = this.context.resolveSourceFileMappingPath(this.file) || '.';
     }
 
     getAssetFilePath(){

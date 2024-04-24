@@ -19,7 +19,7 @@ module.exports = function(ctx, stack){
         return null;
     }
     const node = ctx.createNode(stack);
-    node.id = node.createIdentifierNode( normalName(stack.id.value()), stack.id);
+    node.id = node.createIdentifierNode( '`'+normalName(stack.id.value())+'`', stack.id);
     node.properties = [];
     node.body = [];
     stack.body.forEach( item=>{

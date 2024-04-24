@@ -237,3 +237,9 @@ declare const __DIR__= '';
  * @link https://php.net/manual/en/language.constants.predefined.php
  */
 declare const __NAMESPACE__= '';
+
+
+declare function require(path:string):any;
+declare function require_once(path:string):any;
+declare function include(path:string):any;
+declare function include_once(path:string):any;

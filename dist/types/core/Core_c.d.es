@@ -4,8 +4,8 @@
  * Created by typecasting to object.
  * @link https://php.net/manual/en/reserved.classes.php
  */
-declare class stdClass extends Object{
-    [key:string]:any;
+declare interface stdClass{
+   new():ObjectProtector<{[key:string]:any}>;
 };
 
 /**

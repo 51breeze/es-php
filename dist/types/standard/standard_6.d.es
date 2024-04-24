@@ -92,7 +92,7 @@ declare function stream_select(read?:RMD<array>,write?:RMD<array>,except?:RMD<ar
  * </p>
  * @return resource A stream context resource.
  */
-declare function stream_context_create(options?:array,params?:array):Resource
+declare function stream_context_create(options?:ArrayMappingType<array> | ArrayMappingType<string>[],params?:array):Resource
 
 /**
  * Set parameters for a stream/wrapper/context

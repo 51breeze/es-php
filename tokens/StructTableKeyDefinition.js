@@ -9,7 +9,8 @@ function createNode(ctx, item){
 module.exports = function(ctx, stack){
     const node = ctx.createNode(stack);
     node.key = createNode(node,stack.key);
-    node.prefix = node.key.value ==='primary' || node.key.value ==='key' ? null : node.createIdentifierNode('key');
+    const key = stack.key.value().toLowerCase();
+    node.prefix = key==='primary' || key==='key' ? null : node.createIdentifierNode('key');
     node.local = node.createToken(stack.local);
     node.properties = (stack.properties||[]).map( item=>createNode(node, item) );
     return node;

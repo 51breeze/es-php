@@ -11,8 +11,7 @@ const JSXTransform = require('./core/JSXTransform');
 const JSXClassBuilder = require('./core/JSXClassBuilder');
 const Assets = require('./core/Assets');
 const Glob = require('glob-path');
-
-const merge = require("lodash/merge");
+const mergeWith = require("lodash/mergeWith");
 const modules = require("./tokens/index.js");
 const defaultConfig ={
     target:7,
@@ -75,6 +74,20 @@ function registerError(define, cn, en){
     ]);
 }
 
+function merge(...args){
+    return mergeWith(...args,(objValue, srcValue)=>{
+        if(Array.isArray(objValue) && Array.isArray(srcValue)){
+            if(srcValue[0]===null)return srcValue.slice(1);
+            srcValue.forEach( value=>{
+                if( !objValue.includes(value) ){
+                    objValue.push(value)
+                }
+            })
+            return objValue;
+        }
+   });
+}
+
 class PluginEsPhp{
 
     static getPluginCoreModules(){
@@ -101,14 +114,6 @@ class PluginEsPhp{
         this.name = pkg.name;
         this.version = pkg.version;
         this.platform = 'server';
-        if( !compiler.options.scanTypings ){
-            compiler.loadTypes([
-                path.join(__dirname,'types','index.d.es')
-            ],{
-                scope:'es-php',
-                inherits:[]
-            });
-        }
         registerError(compiler.diagnostic.defineError, compiler.diagnostic.LANG_CN, compiler.diagnostic.LANG_EN );
         this._builders = new Map();
         this.glob=new Glob();
@@ -118,26 +123,38 @@ class PluginEsPhp{
     addGlobRule(){
         const resolve = this.options.resolve;
         Object.keys(resolve.namespaces).forEach( key=>{
-            this.glob.addRule(key, resolve.namespaces[key], 0, 'namespaces');
+            this.glob.addRuleGroup(key, resolve.namespaces[key],'namespaces');
         });
 
         Object.keys(resolve.folders).forEach( key=>{
-            this.glob.addRule(key, resolve.folders[key], 0, 'folders');
+            this.glob.addRuleGroup(key, resolve.folders[key], 'folders');
         });
 
         Object.keys(resolve.routes).forEach( key=>{
-            this.glob.addRule(key, resolve.routes[key], 0, 'routes');
+            this.glob.addRuleGroup(key, resolve.routes[key], 'routes');
         });
 
         const trueCallback=()=>true;
         if(Array.isArray(resolve.usings)){
             resolve.usings.forEach( key=>{
-                this.glob.addRule(key, trueCallback, 0, 'usings');
+                if(typeof key ==='object'){
+                    if(key.test === void 0 || key.value === void 0){
+                        throw new TypeError(`options.resolve.usings the each rule item should is {test:'rule', value:true} object`)
+                    }else{
+                        if(typeof key.value === 'function'){
+                            this.glob.addRuleGroup(key.test, key.value, 'usings');
+                        }else{
+                            this.glob.addRuleGroup(key.test, ()=>key.value, 'usings');
+                        }
+                    }
+                }else{
+                    this.glob.addRuleGroup(key, trueCallback, 'usings');
+                }
             });
         }else{
             Object.keys(resolve.usings).forEach( key=>{
                 if(typeof resolve.usings[key] ==='function'){
-                    this.glob.addRule(key, resolve.usings[key], 0, 'usings');
+                    this.glob.addRuleGroup(key, resolve.usings[key], 'usings');
                 }else{
                     throw new TypeError(`options.resolve.usings the '${key}' rule, should assignmented a function`)
                 }
@@ -146,14 +163,18 @@ class PluginEsPhp{
     }
 
     resolveSourcePresetFlag(id, group){
-        return !!this.glob.dest(id, {group, failValue:false});
+        return !!this.glob.dest(id, {group,failValue:false});
     }
 
     resolveSourceId(id, group, delimiter='/'){
         if( group==='namespaces' || group==='usings'){
             delimiter = '\\';
         }
-        return this.glob.dest(id, {group, delimiter, failValue:null});
+        let data = {group, delimiter, failValue:null};
+        if(typeof group ==='object'){
+            data = group;
+        }
+        return this.glob.dest(id, data);
     }
 
     getGeneratedCodeByFile(file){

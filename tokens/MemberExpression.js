@@ -78,7 +78,7 @@ function getAliasAnnotation(desc){
 
 function MemberExpression(ctx,stack){
     const module = stack.module;
-    const description = stack.description();
+    const description = stack.descriptor();
     let computed = false;
     if( description && description.isModule && stack.compiler.callUtils("isTypeModule",description) ){
         ctx.addDepend( description );
@@ -91,7 +91,7 @@ function MemberExpression(ctx,stack){
 
     var objCtx = stack.object.getContext();
     var objectType = ctx.inferType(stack.object, objCtx);
-    var objectDescription = stack.object.description();
+    var objectDescription = stack.object.descriptor();
     var rawObjectType = objectType;
     var isWrapType = false;
     if( objectType.isClassGenericType && objectType.inherit.isAliasType ){
@@ -231,11 +231,13 @@ function MemberExpression(ctx,stack){
             //const propertyType = stack.property.type( objCtx );
             //node.computed = isDynamicProperty(stack, objectType, propertyType );
         }
-    }else if( stack.object.isNewExpression ){
-        objectNode = node.createParenthesNode( node.createToken( stack.object ) );
-    }else if( !isStatic && rawObjectType && ctx.isArrayAccessor(rawObjectType) /*check(objectType)*/ ){
+    }else if( !isStatic && rawObjectType && ctx.isArrayAccessor(rawObjectType) /*check(objectType)*/){
         node.computed = true;
         propertyNode = node.createLiteralNode(stack.property.value(), void 0,  stack.property);
+    }
+
+    if( stack.object.isNewExpression ){
+        objectNode = node.createParenthesNode( node.createToken( stack.object ) );
     }
 
     node.object = objectNode || node.createToken( stack.object );
