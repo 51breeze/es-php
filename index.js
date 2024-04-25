@@ -54,7 +54,7 @@ const defaultConfig ={
         folders:{
             "*.global":"escore",
         },
-        routes:{},
+        formats:{},
         namespaces:{},
     },
     folderAsNamespace:true,
@@ -132,8 +132,8 @@ class PluginEsPhp{
             this.glob.addRuleGroup(key, resolve.folders[key], 'folders');
         });
 
-        Object.keys(resolve.routes).forEach( key=>{
-            this.glob.addRuleGroup(key, resolve.routes[key], 'routes');
+        Object.keys(resolve.formats).forEach( key=>{
+            this.glob.addRuleGroup(key, resolve.routes[key], 'formats');
         });
 
         const trueCallback=()=>true;

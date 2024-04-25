@@ -731,8 +731,8 @@ class Builder extends Token{
 
     getModuleMappingRoute(module, data={}){
         if(!module || !module.isModule)return data.path;
-        const id = PATH.dirname(module.file) +'/'+ module.id + '.format';
-        data.group = 'routes';
+        const id = PATH.dirname(module.file) +'/'+ module.id + '.route';
+        data.group = 'formats';
         return this.plugin.resolveSourceId(id, data) || data.path;
     }
 
