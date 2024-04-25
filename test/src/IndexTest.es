@@ -734,7 +734,7 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator<an
         this.assertEquals(14, n );
 
         const list:RMD<array>[] = [];
-        const map:ArrayMappingType<RMD<array>> = {};
+        const map:ArrayMapping<RMD<array>> = {};
         for(let item988 of list){
 
             map[ item988['id'] as string ] = item988;
@@ -750,7 +750,7 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator<an
         }
 
         var bssdd:RMD<any>[] = [];
-        const mapss:ArrayMappingType<RMD<any>> = {};
+        const mapss:ArrayMapping<RMD<any>> = {};
         for(let item988 of bssdd){
             mapss[ '1' ] = item988;
             item988 = [];

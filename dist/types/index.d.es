@@ -14,9 +14,9 @@ declare interface ArrayMapping<T=any> extends Array<T>{
     [key:number]:T
 }
 
-declare type ScalarValueType = string | number | boolean | null;
+declare type ScalarValue = string | number | boolean | null;
 
-declare type TableColumnValueType = string | number | null;
+declare type TableColumnValue = string | number | null;
 
 //引用内存地址类型
 declare type RMD<T> = T;
