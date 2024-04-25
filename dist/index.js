@@ -6025,7 +6025,7 @@ var require_glob_path = __commonJS({
       }
       addExts(data2 = {}) {
         Object.keys(data2).forEach((key) => {
-          this.#extensions[key] = data2[key];
+          this.addExt(key, data2[key]);
         });
       }
       addRules(rules, group = null, data2 = {}) {
@@ -6043,12 +6043,18 @@ var require_glob_path = __commonJS({
         let asterisks = 0;
         let protocol = null;
         let suffix = null;
+        let prefix = false;
+        let full = false;
         if (type === "string") {
           pattern = pattern.trim();
           let pos = pattern.indexOf(":///");
           if (pos > 0) {
             protocol = pattern.substring(0, pos);
             pattern = pattern.substring(pos + 4);
+          }
+          if (pattern.charCodeAt(0) === 94) {
+            prefix = true;
+            pattern = pattern.substring(1);
           }
           segments = pattern.replace(/^\/|\/$/).split(slashSplitterRegexp);
           asterisks = (pattern.match(/(?<!\\)\*/g) || []).length;
@@ -6067,11 +6073,13 @@ var require_glob_path = __commonJS({
             if (segments.length > 1) {
               throw new TypeError(`Glob the '****' full match pattern cannot have separator.`);
             }
+            full = true;
           } else if (pattern.includes("***")) {
             const at = pattern.indexOf("***");
             if (at < pattern.length - 3) {
               throw new TypeError(`Glob the '***' full match pattern should is at the pattern ends.`);
             }
+            full = true;
           } else if (/\*\*\.\w+$/.test(pattern)) {
             throw new TypeError(`Glob the '**.ext' file match pattern should have a separator between the two asterisks. as the '*/*.ext'`);
           } else if (/\*{4,}/.test(pattern)) {
@@ -6090,6 +6098,7 @@ var require_glob_path = __commonJS({
         this.#rules.push({
           pattern,
           suffix,
+          prefix,
           target,
           protocol,
           segments,
@@ -6097,22 +6106,23 @@ var require_glob_path = __commonJS({
           priority,
           group,
           type,
+          full,
           method,
           data: data2,
-          setValue(prefix, name2, value2) {
+          setValue(prefix2, name2, value2) {
             if (arguments.length === 2) {
-              return data2[prefix] = name2;
+              return data2[prefix2] = name2;
             } else if (arguments.length === 3) {
-              let dataset = data2[prefix] || (data2[prefix] = {});
+              let dataset = data2[prefix2] || (data2[prefix2] = {});
               return dataset[name2] = value2;
             }
             return false;
           },
-          getValue(prefix, name2 = null) {
+          getValue(prefix2, name2 = null) {
             if (arguments.length === 1) {
-              return data2[prefix];
+              return data2[prefix2];
             }
-            let dataset = data2[prefix] || (data2[prefix] = {});
+            let dataset = data2[prefix2] || (data2[prefix2] = {});
             return dataset[name2];
           }
         });
@@ -6147,6 +6157,9 @@ var require_glob_path = __commonJS({
             return 1;
           let a1 = a.segments.length;
           let b1 = b.segments.length;
+          if (a.full && !b.full) {
+            return 1;
+          }
           if (a1 > b1)
             return -1;
           if (a1 < b1)
@@ -6169,6 +6182,14 @@ var require_glob_path = __commonJS({
         if (base === "****") {
           globs.push(segments.slice(0, -1));
           return true;
+        }
+        if (!rule2.prefix && !paths[0].startsWith("*") && segments[0] !== paths[0]) {
+          const matchAt = segments.indexOf(paths[0]);
+          if (matchAt < 0) {
+            return false;
+          } else {
+            segments = segments.slice(matchAt);
+          }
         }
         if (base !== "***") {
           if (suffix) {
@@ -6235,9 +6256,16 @@ var require_glob_path = __commonJS({
         if (!this.#initialized) {
           this.#init();
         }
-        let normalId = String(id2).trim().replace(/\\/g, "/").replace(/^\/|\/$/);
-        let group = ctx2.group;
-        let extname2 = ctx2.extname || this.#extensions[group] || null;
+        id2 = String(id2).trim();
+        let group = ctx2.group || null;
+        let gPos = id2.lastIndexOf("::");
+        if (gPos > 0) {
+          group = id2.substring(gPos + 2);
+          id2 = id2.substring(0, gPos);
+        }
+        let normalId = id2.replace(/\\/g, "/").replace(/^\/|\/$/g, "");
+        let extname2 = ctx2.extname || group && this.#extensions[group] || null;
+        let extreal2 = "";
         let delimiter2 = ctx2.delimiter || "/";
         let key = [normalId, String(group), delimiter2, String(extname2)].join(":");
         if (!excludes && this.#cache.hasOwnProperty(key)) {
@@ -6255,8 +6283,9 @@ var require_glob_path = __commonJS({
         let result = null;
         let globs = [];
         if (dotAt >= 0) {
+          extreal2 = basename2.slice(dotAt);
           if (!extname2) {
-            extname2 = basename2.slice(dotAt);
+            extname2 = extreal2;
           }
           basename2 = basename2.substring(0, dotAt);
         }
@@ -6267,7 +6296,7 @@ var require_glob_path = __commonJS({
             if (Array.isArray(excludes) && excludes.includes(rule2))
               continue;
           }
-          if (group && rule2.group && rule2.group !== group) {
+          if (rule2.group !== group) {
             continue;
           }
           if (rule2.protocol !== protocol) {
@@ -6296,6 +6325,7 @@ var require_glob_path = __commonJS({
           segments,
           basename: basename2,
           extname: extname2,
+          extreal: extreal2,
           args: args2,
           globs,
           protocol,
@@ -6313,7 +6343,7 @@ var require_glob_path = __commonJS({
         const defaultValue = ctx.failValue !== void 0 ? ctx.failValue : false;
         if (!scheme || !scheme.rule || scheme[keyScheme] !== true)
           return defaultValue;
-        const { basename, extname, rule, args, value, id } = scheme;
+        const { basename, extname, rule, args, value, id, extreal } = scheme;
         if (!rule.target) {
           return rule.target;
         }
@@ -6344,22 +6374,29 @@ var require_glob_path = __commonJS({
               return args.join("/");
             }
           }
-          if (name.startsWith("globs")) {
+          const isExpr = name.charCodeAt(0) === 96 && name.charCodeAt(name.length - 1) === 96;
+          if (isExpr) {
+            name = name.slice(1, -1);
+          }
+          if (isExpr || name.startsWith("globs")) {
             try {
               let _globs = eval(`(${name.replace(/\bglobs\b/g, "scheme.globs")})`);
               _globs = Array.isArray(_globs) ? _globs.flat() : [_globs];
               return _globs.join("/");
             } catch (e) {
-              throw new ReferenceError(`${name} expression invalid`);
+              console.log(e);
+              throw new ReferenceError(`\`${name}\` expression invalid`);
             }
           } else if (name === "basename") {
-            return `${basename}${extname || ""}`;
-          } else if (name === "filename") {
             return basename;
+          } else if (name === "filename") {
+            return `${basename}${extname || ""}`;
           } else if (name === "extname") {
             return (extname || "").substring(1);
           } else if (name === "ext") {
             return extname || "";
+          } else if (name === "extreal") {
+            return extreal || "";
           } else if (/-?\d+/.test(name)) {
             if (name[0] === "-") {
               name = args.length - Number(name.substring(1));
@@ -10237,7 +10274,9 @@ var defaultConfig = {
   },
   resolve: {
     usings: {},
-    folders: {},
+    folders: {
+      "*.global": "escore"
+    },
     routes: {},
     namespaces: {}
   },

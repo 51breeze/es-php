@@ -51,7 +51,9 @@ const defaultConfig ={
     },
     resolve:{
         usings:{},
-        folders:{},
+        folders:{
+            "*.global":"escore",
+        },
         routes:{},
         namespaces:{},
     },

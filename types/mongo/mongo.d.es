@@ -97,7 +97,7 @@ declare class MongoClient
      *         </ul>
      * @throws MongoConnectionException
      */
-    constructor(server:string,options?:ArrayMappingType,driver_options?:ArrayMappingType)
+    constructor(server:string,options?:ArrayMapping,driver_options?:ArrayMapping)
 
     /**
      * (PECL mongo &gt;= 1.3.0)<br/>

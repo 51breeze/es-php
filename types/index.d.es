@@ -1,15 +1,15 @@
-declare var _SERVER:ArrayMappingType<any>;
-declare var _GET:ArrayMappingType<any>;
-declare var _POST:ArrayMappingType<any>;
-declare var _FILES:ArrayMappingType<any>;
-declare var _REQUEST:ArrayMappingType<any>;
-declare var _SESSION:ArrayMappingType<any>;
-declare var _ENV:ArrayMappingType<any>;
-declare var _COOKIE:ArrayMappingType<any>;
+declare var _SERVER:ArrayMapping<any>;
+declare var _GET:ArrayMapping<any>;
+declare var _POST:ArrayMapping<any>;
+declare var _FILES:ArrayMapping<any>;
+declare var _REQUEST:ArrayMapping<any>;
+declare var _SESSION:ArrayMapping<any>;
+declare var _ENV:ArrayMapping<any>;
+declare var _COOKIE:ArrayMapping<any>;
 
 declare interface Resource{}
 
-declare interface ArrayMappingType<T=any> extends Array<T>{
+declare interface ArrayMapping<T=any> extends Array<T>{
     [key:string]:T
     [key:number]:T
 }
