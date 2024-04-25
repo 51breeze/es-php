@@ -124,7 +124,9 @@ class Builder extends Token{
     }
 
     emitSql(){
-        const file  = PATH.join(this.getOutputPath(),  'app.sql');
+        this.resolveSourceFileMappingPath
+        let file  = PATH.join(this.getOutputPath(),  'app.sql');
+        file = this.plugin.resolveSourceId(this.compiler.normalizePath(file), 'folders') || file;
         this.emitFile(file,sqlInstance.toString());
     }
 
@@ -731,9 +733,9 @@ class Builder extends Token{
 
     getModuleMappingRoute(module, data={}){
         if(!module || !module.isModule)return data.path;
-        const id = PATH.dirname(module.file) +'/'+ module.id + '.route';
+        const id = data.path +'/'+ PATH.basename(module.file, PATH.extname(module.file)) + '.route';
         data.group = 'formats';
-        return this.plugin.resolveSourceId(id, data) || data.path;
+        return this.plugin.resolveSourceId(id.replace(/^[\/]+/,''), data) || data.path;
     }
 
     resolveSourceFileMappingPath(file, type='folders'){

@@ -133,7 +133,7 @@ class PluginEsPhp{
         });
 
         Object.keys(resolve.formats).forEach( key=>{
-            this.glob.addRuleGroup(key, resolve.routes[key], 'formats');
+            this.glob.addRuleGroup(key, resolve.formats[key], 'formats');
         });
 
         const trueCallback=()=>true;

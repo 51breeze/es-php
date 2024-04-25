@@ -3077,9 +3077,9 @@ var require_Builder = __commonJS({
       getModuleMappingRoute(module3, data2 = {}) {
         if (!module3 || !module3.isModule)
           return data2.path;
-        const id2 = PATH.dirname(module3.file) + "/" + module3.id + ".route";
+        const id2 = data2.path + "/" + PATH.basename(module3.file, PATH.extname(module3.file)) + ".route";
         data2.group = "formats";
-        return this.plugin.resolveSourceId(id2, data2) || data2.path;
+        return this.plugin.resolveSourceId(id2.replace(/^[\/]+/, ""), data2) || data2.path;
       }
       resolveSourceFileMappingPath(file, type = "folders") {
         return this.plugin.resolveSourceId(file, type);
@@ -3605,9 +3605,7 @@ var require_ClassBuilder = __commonJS({
                 params,
                 action,
                 path: routePath,
-                annotation,
-                className: this.module.getName(),
-                module: this.module
+                className: this.module.getName()
               }
             );
             this.builder.addRouterConfig(this.module, method, routePath, action, params);
@@ -3625,9 +3623,7 @@ var require_ClassBuilder = __commonJS({
                 params,
                 action,
                 path: this.module.getName("/") + "/" + action,
-                annotation: null,
-                className: this.module.getName(),
-                module: this.module
+                className: this.module.getName()
               }
             );
             this.builder.addRouterConfig(this.module, method, routePath, action, params);
@@ -6321,6 +6317,10 @@ var require_glob_path = __commonJS({
           }
         }
         const args2 = result ? globs.flat() : [];
+        const old = this.#cache[key];
+        if (!result && old) {
+          return old;
+        }
         return this.#cache[key] = {
           segments,
           basename: basename2,
@@ -6347,20 +6347,27 @@ var require_glob_path = __commonJS({
         if (!rule.target) {
           return rule.target;
         }
-        if (value) {
+        if (value && scheme.cache !== false) {
           return value;
         }
         if (rule.method) {
           let _result = rule.target(id, scheme, ctx, this);
-          let _scheme = scheme;
-          let _excludes = [rule];
-          while (_result === void 0) {
-            _scheme = this.scheme(_scheme.id, ctx, _excludes);
-            if (_scheme && _scheme.rule) {
-              _excludes.push(_scheme.rule);
-              _result = this.parse(_scheme, ctx);
-            } else {
-              break;
+          if (_result === void 0) {
+            let _scheme = scheme;
+            let _excludes = [rule];
+            let _records = new WeakSet([_scheme]);
+            while (_result === void 0) {
+              _scheme = this.scheme(_scheme.id, ctx, _excludes);
+              if (_records.has(_scheme)) {
+                break;
+              }
+              _records.add(_scheme);
+              if (_scheme && _scheme.rule) {
+                _excludes.push(_scheme.rule);
+                _result = this.parse(_scheme, ctx);
+              } else {
+                break;
+              }
             }
           }
           return scheme.value = _result;
@@ -10349,7 +10356,7 @@ var PluginEsPhp = class {
       this.glob.addRuleGroup(key, resolve.folders[key], "folders");
     });
     Object.keys(resolve.formats).forEach((key) => {
-      this.glob.addRuleGroup(key, resolve.routes[key], "formats");
+      this.glob.addRuleGroup(key, resolve.formats[key], "formats");
     });
     const trueCallback = () => true;
     if (Array.isArray(resolve.usings)) {

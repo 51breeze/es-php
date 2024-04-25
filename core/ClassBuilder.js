@@ -227,9 +227,7 @@ class ClassBuilder extends Token{
                         params,
                         action,
                         path:routePath,
-                        annotation,
                         className:this.module.getName(),
-                        module:this.module
                     }
                 );
                 this.builder.addRouterConfig(this.module, method, routePath, action, params);
@@ -248,9 +246,7 @@ class ClassBuilder extends Token{
                         params,
                         action,
                         path:this.module.getName('/')+'/'+action,
-                        annotation:null,
                         className:this.module.getName(),
-                        module:this.module
                     }
                 );
                 this.builder.addRouterConfig(this.module, method, routePath, action, params);
