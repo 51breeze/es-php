@@ -2505,7 +2505,9 @@ var require_Builder = __commonJS({
         }
       }
       emitSql() {
-        const file = PATH.join(this.getOutputPath(), "app.sql");
+        let file = "app.sql";
+        let folder = this.plugin.resolveSourceId(file, "folders") || ".";
+        file = PATH.isAbsolute(folder) ? PATH.join(folder, file) : PATH.join(this.getOutputPath(), folder, file);
         this.emitFile(file, sqlInstance.toString());
       }
       getOutputPath() {
