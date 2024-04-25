@@ -6149,10 +6149,8 @@ var require_glob_path = __commonJS({
             return -1;
           if (b.type === "regexp" || b.type === "function")
             return 1;
-          if (a.asterisks === 0)
+          if (a.prefix && a.asterisks === 0)
             return -1;
-          if (b.asterisks === 0)
-            return 1;
           let a1 = a.segments.length;
           let b1 = b.segments.length;
           if (a.full && !b.full) {
@@ -6175,8 +6173,6 @@ var require_glob_path = __commonJS({
         let base = paths[len];
         let globPos = -1;
         globs.length = 0;
-        if (segments.length < len)
-          return false;
         if (base === "****") {
           globs.push(segments.slice(0, -1));
           return true;
@@ -6189,7 +6185,9 @@ var require_glob_path = __commonJS({
             segments = segments.slice(matchAt);
           }
         }
-        if (base !== "***") {
+        if (segments.length < paths.length)
+          return false;
+        if (base !== "***" && segments[segments.length - 1] !== base) {
           if (suffix) {
             if (!suffix.test(basename2 + (extname2 || ""))) {
               return false;
@@ -6204,6 +6202,11 @@ var require_glob_path = __commonJS({
             }
           }
         }
+        if (paths.length === 1)
+          return true;
+        if (segments.length > paths.length && !(paths.includes("**") || paths.includes("***"))) {
+          return false;
+        }
         const push = (end) => {
           if (globPos >= 0) {
             globs.push(segments.slice(globPos, end));
@@ -6212,7 +6215,8 @@ var require_glob_path = __commonJS({
         };
         let offset = 0;
         let at = 0;
-        for (let i = 0; i < len; i++) {
+        let i = 0;
+        for (; i < len; i++) {
           let segment = paths[i];
           at = offset + i;
           if (segment === segments[at]) {
@@ -6239,11 +6243,7 @@ var require_glob_path = __commonJS({
           return false;
         }
         push(-1);
-        if (base === "*") {
-          at++;
-          if (at < segments.length - 1)
-            return false;
-        } else if (base === "**" || base === "***") {
+        if (base === "**" || base === "***") {
           at++;
           globPos = at;
           push(-1);
