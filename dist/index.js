@@ -3077,8 +3077,8 @@ var require_Builder = __commonJS({
       getModuleMappingRoute(module3, data2 = {}) {
         if (!module3 || !module3.isModule)
           return data2.path;
-        const id2 = PATH.dirname(module3.file) + "/" + module3.id + ".format";
-        data2.group = "routes";
+        const id2 = PATH.dirname(module3.file) + "/" + module3.id + ".route";
+        data2.group = "formats";
         return this.plugin.resolveSourceId(id2, data2) || data2.path;
       }
       resolveSourceFileMappingPath(file, type = "folders") {
@@ -10277,7 +10277,7 @@ var defaultConfig = {
     folders: {
       "*.global": "escore"
     },
-    routes: {},
+    formats: {},
     namespaces: {}
   },
   folderAsNamespace: true,
@@ -10348,8 +10348,8 @@ var PluginEsPhp = class {
     Object.keys(resolve.folders).forEach((key) => {
       this.glob.addRuleGroup(key, resolve.folders[key], "folders");
     });
-    Object.keys(resolve.routes).forEach((key) => {
-      this.glob.addRuleGroup(key, resolve.routes[key], "routes");
+    Object.keys(resolve.formats).forEach((key) => {
+      this.glob.addRuleGroup(key, resolve.routes[key], "formats");
     });
     const trueCallback = () => true;
     if (Array.isArray(resolve.usings)) {
