@@ -656,13 +656,6 @@ class Builder extends Token{
         return this.plugin.resolveSourceId(id, 'namespaces')
     }
 
-    getModuleMappingRoute(module, data={}){
-        if(!module || !module.isModule)return data.path;
-        const id = data.path +'/'+ PATH.basename(module.file, PATH.extname(module.file)) + '.route';
-        data.group = 'formats';
-        return this.plugin.resolveSourceId(id.replace(/^[\/]+/,''), data) || data.path;
-    }
-
     resolveSourceFileMappingPath(file, type='folders'){
         return this.plugin.resolveSourceId(file, type)
     }

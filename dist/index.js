@@ -2965,13 +2965,6 @@ var require_Builder = __commonJS({
       getMappingNamespace(id2) {
         return this.plugin.resolveSourceId(id2, "namespaces");
       }
-      getModuleMappingRoute(module3, data2 = {}) {
-        if (!module3 || !module3.isModule)
-          return data2.path;
-        const id2 = data2.path + "/" + PATH.basename(module3.file, PATH.extname(module3.file)) + ".route";
-        data2.group = "formats";
-        return this.plugin.resolveSourceId(id2.replace(/^[\/]+/, ""), data2) || data2.path;
-      }
       resolveSourceFileMappingPath(file, type = "folders") {
         return this.plugin.resolveSourceId(file, type);
       }
@@ -10169,9 +10162,7 @@ var defaultConfig = {
     folders: {
       "*.global": "escore"
     },
-    formats: {},
-    namespaces: {},
-    types: {}
+    namespaces: {}
   },
   folderAsNamespace: true,
   publicPath: "public",
@@ -10240,12 +10231,6 @@ var PluginEsPhp = class {
     });
     Object.keys(resolve.folders).forEach((key) => {
       this.glob.addRuleGroup(key, resolve.folders[key], "folders");
-    });
-    Object.keys(resolve.formats).forEach((key) => {
-      this.glob.addRuleGroup(key, resolve.formats[key], "formats");
-    });
-    Object.keys(resolve.types).forEach((key) => {
-      this.glob.addRuleGroup(key, resolve.types[key], "types");
     });
     const trueCallback = () => true;
     if (Array.isArray(resolve.usings)) {
