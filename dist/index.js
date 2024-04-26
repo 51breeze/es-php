@@ -2087,61 +2087,6 @@ var require_Polyfill = __commonJS({
   }
 });
 
-// core/Router.js
-var require_Router = __commonJS({
-  "core/Router.js"(exports2, module2) {
-    var Router2 = class {
-      constructor() {
-        this.dataset = /* @__PURE__ */ new Map();
-        this.cached = {};
-        this.builder = null;
-      }
-      getFileObject(file) {
-        var object = this.dataset.get(file);
-        if (!object) {
-          object = { file, items: [], change: false };
-          this.dataset.set(file, object);
-        }
-        return object;
-      }
-      addItem(file, className, action, path3, method, params) {
-        while (path3.charCodeAt(0) === 47) {
-          path3 = path3.substring(1);
-        }
-        const item = { className, action, path: path3, method, params };
-        const cacheKey = [path3].concat((params || []).map((item2) => item2.name)).join("-");
-        const cacheValue = [className, "::", action, "/", cacheKey, ":", method].join("");
-        const old = this.cached[cacheKey];
-        if (old) {
-          if (old === cacheValue)
-            return true;
-          if (!old.includes(className))
-            return false;
-        }
-        const object = this.getFileObject(file);
-        object.items.push(item);
-        object.change = true;
-        this.cached[cacheKey] = cacheValue;
-      }
-      create(filename = "route.php") {
-        const dataset = [];
-        this.dataset.forEach((object) => {
-          if (object.change) {
-            dataset.push(this.make(object, filename));
-          }
-        });
-        return dataset;
-      }
-      make(object) {
-        const filename = "route.php";
-        object.change = false;
-        return { file: filename, content: null };
-      }
-    };
-    module2.exports = Router2;
-  }
-});
-
 // core/Sql.js
 var require_Sql = __commonJS({
   "core/Sql.js"(exports2, module2) {
@@ -2366,12 +2311,19 @@ var require_Assets = __commonJS({
           });
         }));
         Promise.all(queues).then((results) => {
-          if (done && results.length === queues.length) {
-            const errors = results.filter((error) => !!error);
-            done(errors.length > 0 ? errors : null);
-          }
+          const errors = results.filter((error) => !!error);
+          done(errors.length > 0 ? errors : null);
         }).catch((e) => {
           done(e);
+        });
+      }
+      async emitAsync() {
+        return await new Promise((resolve, reject) => {
+          try {
+            this.emit(resolve);
+          } catch (e) {
+            reject(e);
+          }
         });
       }
       create(resolve, source, local, module3) {
@@ -2400,7 +2352,6 @@ var require_Builder = __commonJS({
     var Token2 = require_Token();
     var Polyfill2 = require_Polyfill();
     var PATH = require("path");
-    var Router2 = require_Router();
     var Sql2 = require_Sql();
     var staticAssets = require_Assets();
     var moduleDependencies = /* @__PURE__ */ new Map();
@@ -2409,13 +2360,10 @@ var require_Builder = __commonJS({
     var createAstStackCached = /* @__PURE__ */ new WeakSet();
     var composerDependencies = /* @__PURE__ */ new Map();
     var outputAbsolutePathCached = /* @__PURE__ */ new Map();
-    var resolveModuleTypeCached = /* @__PURE__ */ new Map();
     var fileAndNamespaceMappingCached = /* @__PURE__ */ new Map();
-    var routerInstance = new Router2();
     var sqlInstance = new Sql2();
     var fileContextScopes = /* @__PURE__ */ new Map();
-    var privateKey = Symbol("key");
-    var _Builder = class extends Token2 {
+    var Builder2 = class extends Token2 {
       constructor(compilation) {
         super(null);
         this.scope = compilation.scope;
@@ -2430,7 +2378,6 @@ var require_Builder = __commonJS({
         this.fileContextScopes = fileContextScopes;
         staticAssets.setContext(this);
         sqlInstance.builder = this;
-        routerInstance.builder = this;
         this.esSuffix = new RegExp(this.compiler.options.suffix.replace(".", "\\") + "$", "i");
         this.checkRuntimeCache = /* @__PURE__ */ new Map();
         this.checkPluginContextCache = /* @__PURE__ */ new Map();
@@ -2458,19 +2405,12 @@ var require_Builder = __commonJS({
         return sqlInstance.has(id2);
       }
       getRouterInstance() {
-        return routerInstance;
+        return null;
       }
       addFileAndNamespaceMapping(file, namespace) {
         if (namespace && file) {
           fileAndNamespaceMappingCached.set(file, namespace);
         }
-      }
-      addRouterConfig(module3, method, path3, action, params) {
-        const outputFolder = this.resolveSourceFileMappingPath(PATH.dirname(module3.file) + "/" + module3.id + ".route", "folders");
-        if (!outputFolder)
-          return;
-        const className = this.getModuleNamespace(module3, module3.id, false);
-        this.getRouterInstance().addItem(PATH.join(this.getOutputPath(), outputFolder), className, action, path3, method, params);
       }
       addDependencyForComposer(identifier, version, env = "prod") {
         composerDependencies.set(identifier, { name: identifier, version, env });
@@ -2491,7 +2431,7 @@ var require_Builder = __commonJS({
           this.emitFile(jsonFile, JSON.stringify(object));
         }
       }
-      emitManifest() {
+      async emitManifest() {
         if (fileAndNamespaceMappingCached.size > 0) {
           const items = [];
           const root = this.plugin.options.resolve.mapping.folder.root;
@@ -2504,11 +2444,17 @@ var require_Builder = __commonJS({
 ];`);
         }
       }
-      emitSql() {
+      async emitSql() {
         let file = "app.sql";
         let folder = this.plugin.resolveSourceId(file, "folders") || ".";
         file = PATH.isAbsolute(folder) ? PATH.join(folder, file) : PATH.join(this.getOutputPath(), folder, file);
         this.emitFile(file, sqlInstance.toString());
+      }
+      async emitAssets() {
+        const error = await this.staticAssets.emitAsync();
+        if (error) {
+          console.error(error);
+        }
       }
       getOutputPath() {
         const value2 = this.__outputPath;
@@ -2518,9 +2464,6 @@ var require_Builder = __commonJS({
       }
       getComposerPath() {
         return this.compiler.pathAbsolute(this.plugin.options.composer || this.plugin.options.output || this.compiler.options.output);
-      }
-      emitAssets() {
-        staticAssets.emit(this.getOutputPath());
       }
       emitContent(file, content, output = null) {
         this.plugin.generatedCodeMaps.set(file, content);
@@ -2621,6 +2564,8 @@ var require_Builder = __commonJS({
           }
         }));
       }
+      async buildAfter() {
+      }
       async start(done) {
         try {
           const compilation = this.compilation;
@@ -2644,15 +2589,12 @@ var require_Builder = __commonJS({
           this.buildModules.forEach((module3) => {
             module3.compilation.completed(this.plugin, true);
           });
-          this.getRouterInstance().create().forEach((item) => {
-            this.emitFile(item.file, item.content);
-          });
-          this.emitSql();
-          this.emitManifest();
-          staticAssets.emit((error) => {
-            compilation.completed(this.plugin, true);
-            done(error ? error : null);
-          });
+          compilation.completed(this.plugin, true);
+          await this.buildAfter();
+          await this.emitSql();
+          await this.emitManifest();
+          await this.emitAssets();
+          done();
         } catch (e) {
           done(e);
         }
@@ -2675,15 +2617,12 @@ var require_Builder = __commonJS({
             this.make(compilation, compilation.stack, Array.from(compilation.modules.values()).shift());
           }
           await this.buildIncludes();
-          this.getRouterInstance().create().forEach((item) => {
-            this.emitFile(item.file, item.content);
-          });
-          this.emitSql();
-          this.emitManifest();
-          staticAssets.emit((error) => {
-            compilation.completed(this.plugin, true);
-            done(error ? error : null);
-          });
+          await this.emitSql();
+          await this.emitManifest();
+          const error = await this.emitAssets();
+          compilation.completed(this.plugin, true);
+          await this.buildAfter();
+          done(error);
         } catch (e) {
           done(e);
         }
@@ -2965,56 +2904,6 @@ var require_Builder = __commonJS({
         filepath = this.compiler.normalizePath(filepath);
         outputAbsolutePathCached.set(module3, filepath);
         return filepath;
-      }
-      resolveModuleType(module3) {
-        if (resolveModuleTypeCached.has(module3)) {
-          return resolveModuleTypeCached.get(module3);
-        }
-        let resolve = null;
-        this.compilation.stack.findAnnotation(module3, (annotation) => {
-          if (annotation.name.toLowerCase() === "define") {
-            const args2 = annotation.getArguments();
-            if (args2[0] && String(args2[0].key).toLowerCase() === "type") {
-              return resolve = args2[0].value;
-            }
-          }
-          return false;
-        });
-        switch (resolve) {
-          case "controller":
-            resolveModuleTypeCached.set(module3, _Builder.MODULE_TYPE_CONTROLLER);
-            break;
-          case "model":
-            resolveModuleTypeCached.set(module3, _Builder.MODULE_TYPE_MODEL);
-            break;
-          case "asset":
-            resolveModuleTypeCached.set(module3, _Builder.MODULE_TYPE_ASSET);
-            break;
-          case "config":
-            resolveModuleTypeCached.set(module3, _Builder.MODULE_TYPE_CONFIG);
-            break;
-          case "lang":
-            resolveModuleTypeCached.set(module3, _Builder.MODULE_TYPE_LANG);
-            break;
-          default:
-            resolveModuleTypeCached.set(module3, _Builder.MODULE_TYPE_UNKNOWN);
-        }
-        return resolveModuleTypeCached.get(module3);
-      }
-      resolveModuleTypeName(module3) {
-        switch (this.resolveModuleType(module3)) {
-          case _Builder.MODULE_TYPE_CONTROLLER:
-            return "controller";
-          case _Builder.MODULE_TYPE_MODEL:
-            return "model";
-          case _Builder.MODULE_TYPE_ASSET:
-            return "asset";
-          case _Builder.MODULE_TYPE_CONFIG:
-            return "config";
-          case _Builder.MODULE_TYPE_LANG:
-            return "lang";
-        }
-        return "*";
       }
       getSourceFileMappingFolder(file) {
         return this.resolveSourceFileMappingPath(file, "folders");
@@ -3380,7 +3269,6 @@ var require_Builder = __commonJS({
         });
       }
     };
-    var Builder2 = _Builder;
     __publicField(Builder2, "MODULE_TYPE_CONTROLLER", 1);
     __publicField(Builder2, "MODULE_TYPE_MODEL", 2);
     __publicField(Builder2, "MODULE_TYPE_ASSET", 3);
@@ -3395,7 +3283,6 @@ var require_Builder = __commonJS({
 var require_ClassBuilder = __commonJS({
   "core/ClassBuilder.js"(exports2, module2) {
     var Token2 = require_Token();
-    var RouteMethods = ["router", "get", "post", "put", "delete", "option"];
     var ClassBuilder2 = class extends Token2 {
       static createClassNode(stack, ctx2, type) {
         const obj = new ClassBuilder2(stack, ctx2, type);
@@ -3572,66 +3459,7 @@ var require_ClassBuilder = __commonJS({
         }
       }
       createClassMemeberNode(memeberStack) {
-        const node = this.createToken(memeberStack);
-        if (memeberStack.isMethodDefinition && !memeberStack.isAccessor && !memeberStack.isConstructor && node && memeberStack.compiler.callUtils("isModifierPublic", memeberStack)) {
-          const annotation = memeberStack.annotations.find((annotation2) => {
-            return RouteMethods.includes(annotation2.name.toLowerCase());
-          });
-          if (annotation) {
-            const args2 = annotation.getArguments();
-            const action = memeberStack.key.value();
-            const params = memeberStack.params.map((item) => {
-              const required = !(item.question || item.isAssignmentPattern);
-              return { name: item.value(), required };
-            });
-            let method = annotation.name.toLowerCase();
-            let path3 = action;
-            if (method === "router") {
-              method = args2[0] && args2[0].value ? args2[0].value : "get";
-              if (args2[1] && args2[1].value) {
-                path3 = args2[1].value.trim();
-              }
-            } else if (args2[0] && args2[0].value) {
-              path3 = args2[0].value.trim();
-            }
-            let routePath = path3;
-            if (path3.charCodeAt(0) === 64) {
-            } else if (path3.charCodeAt(0) === 47) {
-            } else {
-              routePath = this.module.getName("/") + "/" + path3;
-            }
-            routePath = this.builder.getModuleMappingRoute(
-              this.module,
-              {
-                method,
-                params,
-                action,
-                path: routePath,
-                className: this.module.getName()
-              }
-            );
-            this.builder.addRouterConfig(this.module, method, routePath, action, params);
-          } else if (this.builder.resolveModuleTypeName(this.module) === "controller") {
-            const method = "any";
-            const action = memeberStack.key.value();
-            const params = memeberStack.params.map((item) => {
-              const required = !(item.question || item.isAssignmentPattern);
-              return { name: item.value(), required };
-            });
-            const routePath = this.builder.getModuleMappingRoute(
-              this.module,
-              {
-                method,
-                params,
-                action,
-                path: this.module.getName("/") + "/" + action,
-                className: this.module.getName()
-              }
-            );
-            this.builder.addRouterConfig(this.module, method, routePath, action, params);
-          }
-        }
-        return node;
+        return this.createToken(memeberStack);
       }
       createDefaultConstructMethod(methodName, initProperties, params = []) {
         const inherit = this.inherit;
@@ -3810,6 +3638,61 @@ var require_Constant = __commonJS({
       BUILD_IMPORT_PATH_ABSOLUTE: 1,
       BUILD_IMPORT_PATH_RELATIVE: 2
     };
+  }
+});
+
+// core/Router.js
+var require_Router = __commonJS({
+  "core/Router.js"(exports2, module2) {
+    var Router2 = class {
+      constructor() {
+        this.dataset = /* @__PURE__ */ new Map();
+        this.cached = {};
+        this.builder = null;
+      }
+      getFileObject(file) {
+        var object = this.dataset.get(file);
+        if (!object) {
+          object = { file, items: [], change: false };
+          this.dataset.set(file, object);
+        }
+        return object;
+      }
+      addItem(file, className, action, path3, method, params) {
+        while (path3.charCodeAt(0) === 47) {
+          path3 = path3.substring(1);
+        }
+        const item = { className, action, path: path3, method, params };
+        const cacheKey = [path3].concat((params || []).map((item2) => item2.name)).join("-");
+        const cacheValue = [className, "::", action, "/", cacheKey, ":", method].join("");
+        const old = this.cached[cacheKey];
+        if (old) {
+          if (old === cacheValue)
+            return true;
+          if (!old.includes(className))
+            return false;
+        }
+        const object = this.getFileObject(file);
+        object.items.push(item);
+        object.change = true;
+        this.cached[cacheKey] = cacheValue;
+      }
+      create(filename = "route.php") {
+        const dataset = [];
+        this.dataset.forEach((object) => {
+          if (object.change) {
+            dataset.push(this.make(object, filename));
+          }
+        });
+        return dataset;
+      }
+      make(object) {
+        const filename = "route.php";
+        object.change = false;
+        return { file: filename, content: null };
+      }
+    };
+    module2.exports = Router2;
   }
 });
 
@@ -7267,8 +7150,8 @@ var require_CallExpression = __commonJS({
 // tokens/ClassDeclaration.js
 var require_ClassDeclaration = __commonJS({
   "tokens/ClassDeclaration.js"(exports2, module2) {
-    var ClassBuilder2 = require_ClassBuilder();
     module2.exports = function(ctx2, stack, type) {
+      const ClassBuilder2 = ctx2.plugin.getClassModuleBuilder();
       return ClassBuilder2.createClassNode(stack, ctx2, type);
     };
   }
@@ -7366,8 +7249,8 @@ var require_Declarator = __commonJS({
 // tokens/DeclaratorDeclaration.js
 var require_DeclaratorDeclaration = __commonJS({
   "tokens/DeclaratorDeclaration.js"(exports2, module2) {
-    var ClassBuilder2 = require_ClassBuilder();
     module2.exports = function(ctx2, stack, type) {
+      const ClassBuilder2 = ctx2.plugin.getClassModuleBuilder();
       const module3 = stack.module;
       const polyfillModule = ctx2.builder.getPolyfillModule(module3.getName());
       if (!polyfillModule) {
@@ -7453,8 +7336,8 @@ var require_EnumDeclaration = __commonJS({
       });
       return [items, values];
     }
-    var ClassBuilder2 = require_ClassBuilder();
     module2.exports = function(ctx2, stack, type) {
+      const ClassBuilder2 = ctx2.plugin.getClassModuleBuilder();
       if (stack.parentStack.isPackageDeclaration) {
         const node = new ClassBuilder2(stack, ctx2, "ClassDeclaration");
         const module3 = stack.module;
@@ -8075,8 +7958,8 @@ var require_ImportSpecifier = __commonJS({
 // tokens/InterfaceDeclaration.js
 var require_InterfaceDeclaration = __commonJS({
   "tokens/InterfaceDeclaration.js"(exports2, module2) {
-    var ClassBuilder2 = require_ClassBuilder();
     module2.exports = function(ctx2, stack, type) {
+      const ClassBuilder2 = ctx2.plugin.getClassModuleBuilder();
       return ClassBuilder2.createClassNode(stack, ctx2, type);
     };
   }
@@ -10179,7 +10062,7 @@ var require_package = __commonJS({
   "package.json"(exports2, module2) {
     module2.exports = {
       name: "es-php",
-      version: "0.4.1",
+      version: "0.4.2",
       description: "test",
       main: "dist/index.js",
       typings: "dist/types/typings.json",
@@ -10287,7 +10170,8 @@ var defaultConfig = {
       "*.global": "escore"
     },
     formats: {},
-    namespaces: {}
+    namespaces: {},
+    types: {}
   },
   folderAsNamespace: true,
   publicPath: "public",
@@ -10360,6 +10244,9 @@ var PluginEsPhp = class {
     Object.keys(resolve.formats).forEach((key) => {
       this.glob.addRuleGroup(key, resolve.formats[key], "formats");
     });
+    Object.keys(resolve.types).forEach((key) => {
+      this.glob.addRuleGroup(key, resolve.types[key], "types");
+    });
     const trueCallback = () => true;
     if (Array.isArray(resolve.usings)) {
       resolve.usings.forEach((key) => {
@@ -10408,6 +10295,9 @@ var PluginEsPhp = class {
   }
   getTokenNode(name2) {
     return modules.get(name2);
+  }
+  getClassModuleBuilder() {
+    return ClassBuilder;
   }
   start(compilation, done) {
     const builder = this.getBuilder(compilation);

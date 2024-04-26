@@ -201,13 +201,21 @@ class Assets{
             });
         }));
         Promise.all(queues).then( (results)=>{
-            if(done && results.length === queues.length){
-                const errors = results.filter( error=>!!error );
-                done( errors.length>0 ? errors : null );
-            }
+            const errors = results.filter( error=>!!error );
+            done( errors.length>0 ? errors : null );
         }).catch( e=>{
             done(e);
         });
+    }
+
+    async emitAsync(){
+        return await new Promise((resolve, reject)=>{
+            try{
+                this.emit(resolve)
+            }catch(e){
+                reject(e);
+            }
+        })
     }
 
     create(resolve, source, local, module){

@@ -4,7 +4,6 @@ const Generator = require("./Generator");
 const Token = require("./Token");
 const Polyfill = require("./Polyfill");
 const PATH = require("path");
-const Router = require("./Router");
 const Sql = require("./Sql");
 const staticAssets = require("./Assets");
 const moduleDependencies = new Map();
@@ -13,13 +12,9 @@ const namespaceMap=new Map();
 const createAstStackCached = new WeakSet();
 const composerDependencies = new Map();
 const outputAbsolutePathCached = new Map();
-const resolveModuleTypeCached = new Map();
 const fileAndNamespaceMappingCached = new Map();
-const routerInstance  = new Router();
 const sqlInstance  = new Sql();
 const fileContextScopes = new Map();
-const privateKey = Symbol('key');
-const hasOwn = Object.prototype.hasOwnProperty;
 class Builder extends Token{
 
     static MODULE_TYPE_CONTROLLER = 1;
@@ -43,7 +38,6 @@ class Builder extends Token{
         this.fileContextScopes = fileContextScopes;
         staticAssets.setContext(this);
         sqlInstance.builder = this;
-        routerInstance.builder = this;
         this.esSuffix = new RegExp( this.compiler.options.suffix.replace('.','\\')+'$', 'i' );
         this.checkRuntimeCache = new Map();
         this.checkPluginContextCache = new Map();
@@ -74,20 +68,13 @@ class Builder extends Token{
     }
 
     getRouterInstance(){
-        return routerInstance;
+        return null
     }
 
     addFileAndNamespaceMapping(file, namespace){
         if( namespace && file ){
             fileAndNamespaceMappingCached.set(file, namespace);
         }
-    }
-
-    addRouterConfig(module, method, path, action, params){
-        const outputFolder = this.resolveSourceFileMappingPath(PATH.dirname(module.file)+'/'+module.id+'.route','folders')
-        if(!outputFolder)return;
-        const className = this.getModuleNamespace(module, module.id, false);
-        this.getRouterInstance().addItem( PATH.join(this.getOutputPath(), outputFolder), className, action, path, method, params);
     }
 
     addDependencyForComposer(identifier, version, env='prod'){
@@ -111,7 +98,7 @@ class Builder extends Token{
         }
     }
 
-    emitManifest(){
+    async emitManifest(){
         if( fileAndNamespaceMappingCached.size > 0 ){
             const items = [];
             const root = this.plugin.options.resolve.mapping.folder.root;
@@ -123,11 +110,18 @@ class Builder extends Token{
         }
     }
 
-    emitSql(){
+    async emitSql(){
         let file = 'app.sql';
         let folder = this.plugin.resolveSourceId(file, 'folders') || '.';
         file = PATH.isAbsolute(folder) ? PATH.join(folder,file) : PATH.join(this.getOutputPath(), folder, file);
         this.emitFile(file,sqlInstance.toString());
+    }
+
+    async emitAssets(){
+        const error = await this.staticAssets.emitAsync();
+        if(error){
+            console.error(error);
+        }
     }
 
     getOutputPath(){
@@ -138,10 +132,6 @@ class Builder extends Token{
 
     getComposerPath(){
         return this.compiler.pathAbsolute( this.plugin.options.composer || this.plugin.options.output || this.compiler.options.output );
-    }
-
-    emitAssets(){
-       staticAssets.emit( this.getOutputPath() );
     }
 
     emitContent(file, content, output=null){
@@ -244,6 +234,8 @@ class Builder extends Token{
         }));
     }
 
+    async buildAfter(){}
+
     async start( done ){
         try{
             const compilation = this.compilation;
@@ -265,21 +257,15 @@ class Builder extends Token{
             }
 
             await this.buildIncludes();
-
             this.buildModules.forEach(module=>{
                 module.compilation.completed(this.plugin,true);
             });
-
-            this.getRouterInstance().create().forEach( item=>{
-                this.emitFile(item.file, item.content);
-            });
-            this.emitSql();
-            this.emitManifest();
-            staticAssets.emit( (error)=>{
-                compilation.completed(this.plugin,true);
-                done( error ? error : null );
-            });
-
+            compilation.completed(this.plugin,true);
+            await this.buildAfter();
+            await this.emitSql();
+            await this.emitManifest();
+            await this.emitAssets();
+            done();
         }catch(e){
             done(e);
         }
@@ -304,19 +290,12 @@ class Builder extends Token{
             }
 
             await this.buildIncludes();
-
-            this.getRouterInstance().create().forEach( item=>{
-                this.emitFile(item.file, item.content);
-            });
-
-            this.emitSql();
-            this.emitManifest();
-
-            staticAssets.emit( (error)=>{
-                compilation.completed(this.plugin,true);
-                done( error ? error : null );
-            });
-
+            await this.emitSql();
+            await this.emitManifest();
+            const error = await this.emitAssets();
+            compilation.completed(this.plugin,true);
+            await this.buildAfter();
+            done(error);
         }catch(e){
             done(e);
         }
@@ -610,60 +589,6 @@ class Builder extends Token{
         filepath = this.compiler.normalizePath(filepath);
         outputAbsolutePathCached.set(module,filepath);
         return filepath;
-    }
-
-    resolveModuleType(module){
-        if( resolveModuleTypeCached.has( module ) ){
-            return resolveModuleTypeCached.get( module );
-        }
-
-        let resolve = null;
-        this.compilation.stack.findAnnotation(module, (annotation)=>{
-            if( annotation.name.toLowerCase()==='define' ){
-                const args = annotation.getArguments();
-                if(args[0] && String(args[0].key).toLowerCase() === 'type'){
-                    return resolve = args[0].value;
-                }
-            }
-            return false;
-        });
-
-        switch( resolve ){
-            case 'controller' : 
-                resolveModuleTypeCached.set( module, Builder.MODULE_TYPE_CONTROLLER );
-                break;
-            case 'model' : 
-                resolveModuleTypeCached.set( module, Builder.MODULE_TYPE_MODEL );
-                break;
-            case 'asset' : 
-                resolveModuleTypeCached.set( module, Builder.MODULE_TYPE_ASSET );
-                break;
-            case 'config' : 
-                resolveModuleTypeCached.set( module, Builder.MODULE_TYPE_CONFIG );
-                break;
-            case 'lang' : 
-                resolveModuleTypeCached.set( module, Builder.MODULE_TYPE_LANG );
-                break;
-            default :
-                resolveModuleTypeCached.set( module, Builder.MODULE_TYPE_UNKNOWN );
-        }
-        return resolveModuleTypeCached.get( module );
-    }
-
-    resolveModuleTypeName(module){
-        switch( this.resolveModuleType(module) ){
-            case Builder.MODULE_TYPE_CONTROLLER :
-                return 'controller';
-            case Builder.MODULE_TYPE_MODEL :
-                return 'model';
-            case Builder.MODULE_TYPE_ASSET :
-                return 'asset';
-            case Builder.MODULE_TYPE_CONFIG :
-                return 'config';
-            case Builder.MODULE_TYPE_LANG :
-                return 'lang';
-        }
-        return '*';
     }
 
     getSourceFileMappingFolder(file){ 

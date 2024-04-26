@@ -25,9 +25,9 @@ function createStatementMember(ctx, members){
     return [items, values];
 }
 
-const ClassBuilder = require("../core/ClassBuilder");
 module.exports = function(ctx,stack,type){
 
+    const ClassBuilder = ctx.plugin.getClassModuleBuilder();
     if( stack.parentStack.isPackageDeclaration ){
         const node = new ClassBuilder(stack, ctx, 'ClassDeclaration');
         const module = stack.module;

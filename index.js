@@ -56,6 +56,7 @@ const defaultConfig ={
         },
         formats:{},
         namespaces:{},
+        types:{},
     },
     folderAsNamespace:true,
     publicPath:'public',
@@ -136,6 +137,10 @@ class PluginEsPhp{
             this.glob.addRuleGroup(key, resolve.formats[key], 'formats');
         });
 
+        Object.keys(resolve.types).forEach( key=>{
+            this.glob.addRuleGroup(key, resolve.types[key], 'types');
+        });
+
         const trueCallback=()=>true;
         if(Array.isArray(resolve.usings)){
             resolve.usings.forEach( key=>{
@@ -189,6 +194,10 @@ class PluginEsPhp{
 
     getTokenNode(name){
         return modules.get(name);
+    }
+
+    getClassModuleBuilder(){
+        return ClassBuilder;
     }
 
     start(compilation, done){
