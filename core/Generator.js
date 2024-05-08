@@ -285,6 +285,9 @@ class Generator{
                 }
                 this.withSemicolon();
             break;
+            case "ChainExpression":
+                this.make(token.expression);
+            break;
             case "DoWhileStatement" :
                 this.newLine();
                 this.withString('do');

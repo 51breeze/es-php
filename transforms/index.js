@@ -14,5 +14,6 @@ modules.set("Math",require('./Math.js'));
 modules.set("Number",require('./Number.js'));
 modules.set("Object",require('./Object.js'));
 modules.set("String",require('./String.js'));
+modules.set("System",require('./System.js'));
 modules.set("Uint",require('./Uint.js'));
 module.exports=modules;

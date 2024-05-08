@@ -107,6 +107,8 @@ function MemberExpression(ctx,stack){
         return ctx.createIdentifierNode( '\\'+stack.value().replace(/\./g,'\\') );
     }
 
+    
+
     if( description && description.isType && description.isAnyType ){
         let isReflect = !!objectType.isAnyType;
         const hasDynamic = description.isComputeType && description.isPropertyExists();
@@ -218,6 +220,7 @@ function MemberExpression(ctx,stack){
 
     const node = ctx.createNode(stack);
     node.computed = computed;
+    node.optional = stack.optional;
     if( aliasAnnotation ){
         propertyNode = node.createIdentifierNode( aliasAnnotation, stack.property);
     }
@@ -245,11 +248,8 @@ function MemberExpression(ctx,stack){
     node.isStatic = isStatic;
 
     if( node.computed || !isMember ){
-        let pStack = stack.parentStack;
-        // while( pStack.isLogicalExpression || pStack.isUnaryExpression ){
-        //     pStack = pStack.parentStack;
-        // }
-        if( !(pStack.isMemberExpression||pStack.isCallExpression||pStack.isNewExpression||pStack.isAssignmentExpression) ){
+        let pStack = stack.getParentStack(p=>!p.isMemberExpression);
+        if( !(pStack.isCallExpression||pStack.isNewExpression||pStack.isAssignmentExpression||pStack.isChainExpression) ){
             return node.createBinaryNode('??', node, node.createLiteralNode(null) );
         }
     }

@@ -1,6 +1,6 @@
 const Transform = require('../core/Transform');
 const hasOwn = Object.prototype.hasOwnProperty;
-module.exports = function(ctx,stack){
+function createNode(ctx,stack){
     const node = ctx.createNode( stack );
     const desc = stack.description();
     const module = stack.module;
@@ -148,4 +148,22 @@ module.exports = function(ctx,stack){
         refsNode.parent = node;
         return node;
     }
+}
+
+module.exports = function(ctx,stack){
+    const node = createNode(ctx,stack)
+    let operator = stack.operator;
+    if( operator === '??=' ){
+        const test = ctx.createCalleeNode(
+            ctx.createIdentifierNode('!isset'),
+            [
+                ctx.createToken(stack.left)
+            ],
+            stack
+        );
+
+        node.operator = '=';
+        return ctx.createConditionalNode(test, node, ctx.createLiteralNode(null));
+    }
+    return node;
 }

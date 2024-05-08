@@ -3,8 +3,18 @@ const globals =['String','Number','Boolean','Object','Array'];
 
 module.exports = function(ctx,stack){
 
-    if( !stack.parentStack.isMemberExpression && stack.value() ==="arguments" ){
-        return ctx.createCalleeNode( ctx.createIdentifierNode('func_get_args') );
+    if( !stack.parentStack.isMemberExpression){
+        let isRefs = true;
+        if(stack.parentStack.isCallExpression || stack.parentStack.isNewExpression){
+            isRefs = stack.parentStack.callee !== stack;
+        }
+        if(isRefs){
+            if(stack.value() ==="arguments"){
+                return ctx.createCalleeNode( ctx.createIdentifierNode('func_get_args') );
+            }else if(stack.value() ==="undefined"){
+                return ctx.createLiteralNode(null);
+            }
+        }
     }
     
     let desc = null;

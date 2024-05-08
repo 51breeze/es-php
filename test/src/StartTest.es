@@ -433,6 +433,73 @@ public class StartTest extends Base
         this.assertEquals('{"name":"test"}', JSON.stringify(obj));
     }
 
+    testChian(){
+        const obj = {
+            index:1,
+            test(){
+                return true
+            },
+            child:{
+                1:'own',
+                name:'string',
+                child:{
+                    name:'zh'
+                }
+            }
+        }
+
+        
+        assertEquals( void 0 , obj.child2?.name )
+        assertEquals( void 0 , obj.test2?.() )
+
+        obj.index2 ??= 'index two';
+        assertEquals('index two', obj.index2 ?? null );
+
+        assertEquals(null, obj.index3 ?? null );
+
+        obj.index ??= 2;
+        assertEquals(1, obj.index );
+
+        assertEquals( 'zh' , obj.child?.child?.name );
+        assertEquals( 'zh' , obj.child?.child?.name ?? 'null' );
+        assertEquals( 'null' , obj.child?.chil?.name ?? 'null' );
+        assertEquals( void 0 , obj.chil?.child?.name );
+        assertEquals( false , obj.chil?.child?.name ?? false );
+
+        let x = 0;
+        assertEquals( void 0 , obj.chil?.[++x] )
+        assertEquals( 0 , x )
+
+        assertEquals('own', obj.child?.[++x] )
+        assertEquals(1, x )
+
+        assertEquals('own', obj.child?.[x++] )
+        assertEquals(2, x )
+
+        const obj2 = new stdClass();
+        obj2.name = 123;
+        assertEquals(123, obj2.name )
+
+        obj2.child = {
+            test:123,
+            child:{
+                age:30
+            }
+        }
+        
+        assertEquals(123, obj2.child.test )
+        assertEquals(30, obj2.child?.child?.age )
+        assertEquals(undefined, obj2.chil?.child?.age )
+
+        if(obj2 is stdClass){
+            assertEquals(123, obj2.name )
+            assertEquals(123, obj2.child?.test )
+            assertEquals(null, obj2.child?.name )
+            assertEquals(30, obj2.child.child.age )
+        }
+
+    }
+
     call(){
         return this;
     }

@@ -6,6 +6,7 @@
  */
 declare interface stdClass{
    new():ObjectProtector<{[key:string]:any}>;
+   [key:ObjectProtector<string>]:any;
 };
 
 /**

@@ -11,6 +11,7 @@ modules.set("BinaryExpression",require('./BinaryExpression.js'));
 modules.set("BlockStatement",require('./BlockStatement.js'));
 modules.set("BreakStatement",require('./BreakStatement.js'));
 modules.set("CallExpression",require('./CallExpression.js'));
+modules.set("ChainExpression",require('./ChainExpression.js'));
 modules.set("ClassDeclaration",require('./ClassDeclaration.js'));
 modules.set("ConditionalExpression",require('./ConditionalExpression.js'));
 modules.set("ContinueStatement",require('./ContinueStatement.js'));

@@ -22,6 +22,16 @@ module.exports = function(ctx,stack){
             ctx.createToken(stack.argument)
          ]
       );
+   }else if(operator==='void'){
+      if(stack.argument.isIdentifier || stack.argument.isLiteral){
+         return ctx.createLiteralNode(null);
+      }
+      return ctx.createParenthesNode(
+         ctx.createSequenceNode([
+            ctx.createToken(stack.argument),
+            ctx.createLiteralNode(null)
+         ]),
+      );
    }
 
    const node = ctx.createNode(stack);
