@@ -1,6 +1,6 @@
 {
   "name": "es-php",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "test",
   "main": "dist/index.js",
   "typings": "dist/types/typings.json",

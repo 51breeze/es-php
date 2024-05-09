@@ -10130,7 +10130,7 @@ var require_package = __commonJS({
   "package.json"(exports2, module2) {
     module2.exports = {
       name: "es-php",
-      version: "0.4.4",
+      version: "0.4.5",
       description: "test",
       main: "dist/index.js",
       typings: "dist/types/typings.json",
