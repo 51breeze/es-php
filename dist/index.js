@@ -289,6 +289,9 @@ var require_Generator = __commonJS({
             }
             this.withSemicolon();
             break;
+          case "ChainExpression":
+            this.make(token.expression);
+            break;
           case "DoWhileStatement":
             this.newLine();
             this.withString("do");
@@ -4982,6 +4985,34 @@ var require_String = __commonJS({
   }
 });
 
+// transforms/System.js
+var require_System = __commonJS({
+  "transforms/System.js"(exports2, module2) {
+    var methods = {
+      merge(ctx2, object, args2) {
+        const _System = ctx2.builder.getGlobalModuleById("System");
+        ctx2.addDepend(_System);
+        let target = object;
+        if (object.type !== "Identifier") {
+          const refs = ctx2.checkRefsName("ref");
+          ctx2.insertNodeBlockContextAt(
+            ctx2.createAssignmentNode(ctx2.createIdentifierNode(refs, null, true), object)
+          );
+          target = ctx2.createIdentifierNode(refs, null, true);
+        }
+        return ctx2.createCalleeNode(
+          ctx2.createStaticMemberNode([
+            ctx2.createIdentifierNode(ctx2.getModuleReferenceName(_System)),
+            ctx2.createIdentifierNode("merge")
+          ]),
+          [target].concat(args2)
+        );
+      }
+    };
+    module2.exports = methods;
+  }
+});
+
 // transforms/Uint.js
 var require_Uint = __commonJS({
   "transforms/Uint.js"(exports2, module2) {
@@ -5008,6 +5039,7 @@ var require_transforms = __commonJS({
     modules2.set("Number", require_Number());
     modules2.set("Object", require_Object());
     modules2.set("String", require_String());
+    modules2.set("System", require_System());
     modules2.set("Uint", require_Uint());
     module2.exports = modules2;
   }
@@ -6619,7 +6651,7 @@ var require_AssignmentExpression = __commonJS({
   "tokens/AssignmentExpression.js"(exports2, module2) {
     var Transform2 = require_Transform();
     var hasOwn = Object.prototype.hasOwnProperty;
-    module2.exports = function(ctx2, stack) {
+    function createNode(ctx2, stack) {
       const node = ctx2.createNode(stack);
       const desc2 = stack.description();
       const module3 = stack.module;
@@ -6754,6 +6786,22 @@ var require_AssignmentExpression = __commonJS({
         refsNode.parent = node;
         return node;
       }
+    }
+    module2.exports = function(ctx2, stack) {
+      const node = createNode(ctx2, stack);
+      let operator = stack.operator;
+      if (operator === "??=") {
+        const test = ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("!isset"),
+          [
+            ctx2.createToken(stack.left)
+          ],
+          stack
+        );
+        node.operator = "=";
+        return ctx2.createConditionalNode(test, node, ctx2.createLiteralNode(null));
+      }
+      return node;
     };
   }
 });
@@ -7137,6 +7185,39 @@ var require_CallExpression = __commonJS({
       return node;
     }
     module2.exports = CallExpression;
+  }
+});
+
+// tokens/ChainExpression.js
+var require_ChainExpression = __commonJS({
+  "tokens/ChainExpression.js"(exports2, module2) {
+    module2.exports = function(ctx2, stack) {
+      const node = ctx2.createNode(stack);
+      if (stack.expression.isCallExpression || stack.expression.isNewExpression) {
+        const test = ctx2.createCalleeNode(
+          ctx2.createIdentifierNode("isset"),
+          [
+            ctx2.createToken(stack.expression.callee)
+          ],
+          stack
+        );
+        node.expression = ctx2.createConditionalNode(test, ctx2.createToken(stack.expression), ctx2.createLiteralNode(null));
+      } else {
+        if (stack.expression.computed) {
+          const test = ctx2.createCalleeNode(
+            ctx2.createIdentifierNode("isset"),
+            [
+              ctx2.createToken(stack.expression.object)
+            ],
+            stack
+          );
+          node.expression = ctx2.createConditionalNode(test, ctx2.createToken(stack.expression), ctx2.createLiteralNode(null));
+        } else {
+          node.expression = ctx2.createBinaryNode("??", ctx2.createToken(stack.expression), ctx2.createLiteralNode(null));
+        }
+      }
+      return node;
+    };
   }
 });
 
@@ -7667,8 +7748,18 @@ var require_Identifier = __commonJS({
   "tokens/Identifier.js"(exports2, module2) {
     var globals = ["String", "Number", "Boolean", "Object", "Array"];
     module2.exports = function(ctx2, stack) {
-      if (!stack.parentStack.isMemberExpression && stack.value() === "arguments") {
-        return ctx2.createCalleeNode(ctx2.createIdentifierNode("func_get_args"));
+      if (!stack.parentStack.isMemberExpression) {
+        let isRefs = true;
+        if (stack.parentStack.isCallExpression || stack.parentStack.isNewExpression) {
+          isRefs = stack.parentStack.callee !== stack;
+        }
+        if (isRefs) {
+          if (stack.value() === "arguments") {
+            return ctx2.createCalleeNode(ctx2.createIdentifierNode("func_get_args"));
+          } else if (stack.value() === "undefined") {
+            return ctx2.createLiteralNode(null);
+          }
+        }
       }
       let desc2 = null;
       if (stack.parentStack.isMemberExpression) {
@@ -8600,6 +8691,7 @@ var require_MemberExpression = __commonJS({
       }
       const node = ctx2.createNode(stack);
       node.computed = computed;
+      node.optional = stack.optional;
       if (aliasAnnotation) {
         propertyNode = node.createIdentifierNode(aliasAnnotation, stack.property);
       }
@@ -8623,8 +8715,8 @@ var require_MemberExpression = __commonJS({
       node.property = propertyNode || node.createToken(stack.property);
       node.isStatic = isStatic;
       if (node.computed || !isMember) {
-        let pStack = stack.parentStack;
-        if (!(pStack.isMemberExpression || pStack.isCallExpression || pStack.isNewExpression || pStack.isAssignmentExpression)) {
+        let pStack = stack.getParentStack((p) => !p.isMemberExpression);
+        if (!(pStack.isCallExpression || pStack.isNewExpression || pStack.isAssignmentExpression || pStack.isChainExpression)) {
           return node.createBinaryNode("??", node, node.createLiteralNode(null));
         }
       }
@@ -8771,34 +8863,6 @@ var require_NewExpression = __commonJS({
       node.arguments = createArgumentNodes(node, stack, stack.arguments || [], desc2 && desc2.params);
       return node;
     };
-  }
-});
-
-// transforms/System.js
-var require_System = __commonJS({
-  "transforms/System.js"(exports2, module2) {
-    var methods = {
-      merge(ctx2, object, args2) {
-        const _System = ctx2.builder.getGlobalModuleById("System");
-        ctx2.addDepend(_System);
-        let target = object;
-        if (object.type !== "Identifier") {
-          const refs = ctx2.checkRefsName("ref");
-          ctx2.insertNodeBlockContextAt(
-            ctx2.createAssignmentNode(ctx2.createIdentifierNode(refs, null, true), object)
-          );
-          target = ctx2.createIdentifierNode(refs, null, true);
-        }
-        return ctx2.createCalleeNode(
-          ctx2.createStaticMemberNode([
-            ctx2.createIdentifierNode(ctx2.getModuleReferenceName(_System)),
-            ctx2.createIdentifierNode("merge")
-          ]),
-          [target].concat(args2)
-        );
-      }
-    };
-    module2.exports = methods;
   }
 });
 
@@ -9625,6 +9689,16 @@ var require_UnaryExpression = __commonJS({
             ctx2.createToken(stack.argument)
           ]
         );
+      } else if (operator === "void") {
+        if (stack.argument.isIdentifier || stack.argument.isLiteral) {
+          return ctx2.createLiteralNode(null);
+        }
+        return ctx2.createParenthesNode(
+          ctx2.createSequenceNode([
+            ctx2.createToken(stack.argument),
+            ctx2.createLiteralNode(null)
+          ])
+        );
       }
       const node = ctx2.createNode(stack);
       if (operator.charCodeAt(0) === 33) {
@@ -9962,6 +10036,7 @@ var require_tokens = __commonJS({
     modules2.set("BlockStatement", require_BlockStatement());
     modules2.set("BreakStatement", require_BreakStatement());
     modules2.set("CallExpression", require_CallExpression());
+    modules2.set("ChainExpression", require_ChainExpression());
     modules2.set("ClassDeclaration", require_ClassDeclaration());
     modules2.set("ConditionalExpression", require_ConditionalExpression());
     modules2.set("ContinueStatement", require_ContinueStatement());
@@ -10055,7 +10130,7 @@ var require_package = __commonJS({
   "package.json"(exports2, module2) {
     module2.exports = {
       name: "es-php",
-      version: "0.4.3",
+      version: "0.4.4",
       description: "test",
       main: "dist/index.js",
       typings: "dist/types/typings.json",

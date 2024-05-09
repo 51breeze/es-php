@@ -3,7 +3,7 @@
 
 if( !defined('NaN') )define('NaN', sqrt(-1));
 if( !defined('Infinity') )define('Infinity', 1e308 * 2);
-
+if( !defined('Infinity') )define('Infinity', 1e308 * 2);
 final class IterableIterator implements Iterator{
     private $target = null;
     private $index  = 0;
