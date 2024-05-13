@@ -252,6 +252,8 @@ final class Reflect{
             $reflect = new \ReflectionObject( $target );
         }
 
+        $name = strval($name);
+
         $type = 0;
         $method = null;
         //在实例对象中查找
@@ -482,8 +484,15 @@ final class Reflect{
             }else if($type===1){
                 return $method->getValue($target);
             }
-        }else if(method_exists($target, '__get') ){
-            return $target->__get( $name );
+        }else{
+            if(is_a($target, \ArrayAccess::class)) {
+                return $target[$name];
+            }else{
+                if(method_exists($target, '__get') ){
+                    return $target->__get($name);
+                }
+                return $target->{$name};
+            }
         }
         return null;
     }
@@ -525,8 +534,16 @@ final class Reflect{
                 return $value;
             }
             throw new \Error( $name." is not writeable.");
+        }else{
+            if(is_a($target, \ArrayAccess::class)) {
+                return $target[$name] = $value;
+            }else{
+                if(method_exists($target, '__set') ){
+                    return $target->__set($name, $value);
+                }
+                return $target->{$name} = $value;
+            }
         }
-        throw new \Error( $name." is not exists.");
     }
 
     /**

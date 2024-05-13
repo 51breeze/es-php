@@ -3260,7 +3260,7 @@ var require_Builder = __commonJS({
       getGlobalModules() {
         if (this._globalModules)
           return this._globalModules;
-        return this._globalModules = ["Array", "Object", "Boolean", "Math", "Number", "String", "Console"].map((name2) => {
+        return this._globalModules = ["Array", "Object", "Boolean", "Math", "Number", "String"].map((name2) => {
           return this.compilation.getGlobalTypeById(name2);
         });
       }
@@ -4039,9 +4039,9 @@ var require_Base64 = __commonJS({
   }
 });
 
-// transforms/Console.js
-var require_Console = __commonJS({
-  "transforms/Console.js"(exports2, module2) {
+// transforms/ConsoleInterface.js
+var require_ConsoleInterface = __commonJS({
+  "transforms/ConsoleInterface.js"(exports2, module2) {
     module2.exports = {
       log(ctx2, object, args2, called = false, isStatic = false) {
         const module3 = ctx2.builder.getGlobalModuleById("System");
@@ -5026,7 +5026,7 @@ var require_transforms = __commonJS({
     var modules2 = /* @__PURE__ */ new Map();
     modules2.set("Array", require_Array());
     modules2.set("Base64", require_Base64());
-    modules2.set("Console", require_Console());
+    modules2.set("ConsoleInterface", require_ConsoleInterface());
     modules2.set("Double", require_Double());
     modules2.set("Error", require_Error());
     modules2.set("Float", require_Float());
@@ -6653,7 +6653,7 @@ var require_AssignmentExpression = __commonJS({
     var hasOwn = Object.prototype.hasOwnProperty;
     function createNode(ctx2, stack) {
       const node = ctx2.createNode(stack);
-      const desc2 = stack.description();
+      let desc2 = stack.left.description();
       const module3 = stack.module;
       const isMember = stack.left.isMemberExpression;
       let operator = stack.operator;
@@ -6665,7 +6665,7 @@ var require_AssignmentExpression = __commonJS({
       var isReflect = false;
       if (isMember) {
         const objectType = ctx2.inferType(stack.left.object);
-        if (desc2 && desc2.isStack && (desc2.isMethodSetterDefinition || desc2.parentStack.isPropertyDefinition)) {
+        if (desc2 && desc2.isStack && (desc2.isMethodSetterDefinition || desc2.isPropertyDefinition)) {
           const property = stack.left.property.value();
           let typename = ctx2.builder.getAvailableOriginType(objectType) || objectType.toString();
           if ((objectType.isUnionType || objectType.isIntersectionType) && desc2.module && desc2.module.isModule) {
@@ -6697,7 +6697,10 @@ var require_AssignmentExpression = __commonJS({
           }
         }
         if (stack.left.computed) {
-          const hasDynamic = desc2 && desc2.isComputeType && desc2.isPropertyExists();
+          let hasDynamic = desc2 && desc2.isComputeType && desc2.isPropertyExists();
+          if (!hasDynamic && desc2 && (desc2.isProperty && desc2.computed || desc2.isPropertyDefinition && desc2.dynamic)) {
+            hasDynamic = true;
+          }
           if (!hasDynamic && !ctx2.compiler.callUtils("isLiteralObjectType", objectType)) {
             isReflect = true;
           }
@@ -8526,7 +8529,12 @@ var require_MemberExpression = __commonJS({
       }
       if (Transform2.has(name2)) {
         const object = Transform2.get(name2);
-        const key = stack.computed ? "$computed" : stack.property.value();
+        let key = stack.computed ? "$computed" : stack.property.value();
+        if (description && (description.isPropertyDefinition || description.isMethodDefinition)) {
+          if (description.value() === stack.property.value()) {
+            key = stack.property.value();
+          }
+        }
         if (Object.prototype.hasOwnProperty.call(object, key)) {
           if (stack.computed) {
             return object[key](
@@ -10130,7 +10138,7 @@ var require_package = __commonJS({
   "package.json"(exports2, module2) {
     module2.exports = {
       name: "es-php",
-      version: "0.4.5",
+      version: "0.4.6",
       description: "test",
       main: "dist/index.js",
       typings: "dist/types/typings.json",

@@ -2,7 +2,7 @@ const Transform = require('../core/Transform');
 const hasOwn = Object.prototype.hasOwnProperty;
 function createNode(ctx,stack){
     const node = ctx.createNode( stack );
-    const desc = stack.description();
+    let desc = stack.left.description();
     const module = stack.module;
     const isMember = stack.left.isMemberExpression;
     let operator = stack.operator;
@@ -15,7 +15,7 @@ function createNode(ctx,stack){
     var isReflect = false;
     if( isMember ){
         const objectType = ctx.inferType(stack.left.object);
-        if( desc && desc.isStack && (desc.isMethodSetterDefinition || desc.parentStack.isPropertyDefinition) ){
+        if( desc && desc.isStack && (desc.isMethodSetterDefinition || desc.isPropertyDefinition)){
             const property = stack.left.property.value();
             let typename = ctx.builder.getAvailableOriginType( objectType ) || objectType.toString();
             if( (objectType.isUnionType || objectType.isIntersectionType) && desc.module && desc.module.isModule ){
@@ -42,13 +42,17 @@ function createNode(ctx,stack){
                     }
                 }
             }
+
             if( hasOwn.call(map, typename) && hasOwn.call(map[typename], property) ){
                 return map[typename][property]();
             }
         }
 
         if( stack.left.computed ){
-            const hasDynamic = desc && desc.isComputeType && desc.isPropertyExists();
+            let hasDynamic = desc && desc.isComputeType && desc.isPropertyExists();
+            if(!hasDynamic && desc && (desc.isProperty && desc.computed || desc.isPropertyDefinition && desc.dynamic)){
+                hasDynamic = true
+            }
             if( !hasDynamic && !ctx.compiler.callUtils("isLiteralObjectType", objectType ) ){
                 isReflect = true;
             }

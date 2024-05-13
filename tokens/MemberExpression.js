@@ -1,6 +1,7 @@
 const Transform = require('../core/Transform');
 
 function trans(ctx, stack, description, aliasAnnotation, objectType){
+
     const type = objectType; //stack.object.type( stack.object.getContext() );
     let name = ctx.builder.getAvailableOriginType( type ) || type.toString();
     if( objectType && (objectType.isUnionType || objectType.isIntersectionType) && description && description.isMethodDefinition && description.module && description.module.isModule ){
@@ -8,7 +9,13 @@ function trans(ctx, stack, description, aliasAnnotation, objectType){
     }
     if( Transform.has(name) ){
         const object = Transform.get(name);
-        const key = stack.computed ? '$computed' : stack.property.value();
+        let key = stack.computed ? '$computed' : stack.property.value();
+        if(description && (description.isPropertyDefinition || description.isMethodDefinition)){
+            if(description.value() === stack.property.value()){
+                key = stack.property.value()
+            }
+        }
+
         if( Object.prototype.hasOwnProperty.call(object, key) ){
             if( stack.computed ){
                 return object[key](
@@ -107,8 +114,6 @@ function MemberExpression(ctx,stack){
         return ctx.createIdentifierNode( '\\'+stack.value().replace(/\./g,'\\') );
     }
 
-    
-
     if( description && description.isType && description.isAnyType ){
         let isReflect = !!objectType.isAnyType;
         const hasDynamic = description.isComputeType && description.isPropertyExists();
@@ -191,7 +196,7 @@ function MemberExpression(ctx,stack){
             );
         }
         isMember = true;
-    }else if( description && description.isPropertyDefinition ){
+    }else if( description && description.isPropertyDefinition){
         aliasAnnotation = getAliasAnnotation(description);
         const result = trans(ctx, stack, description, aliasAnnotation, objectType);
         if( result )return result;

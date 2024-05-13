@@ -249,10 +249,9 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator<an
         }
         this.assertEquals( [1,2,3], array3);
 
-        var o5 = (array)o3;
-        var ot = [1,2,3];
+        var ot = [1,2,3,4,5];
         ot["length"] = 3;
-        this.assertEquals( ot, o5);
+        this.assertEquals( ot, array3);
 
         var o4 = 'abcdefg';
         var array4 = [];

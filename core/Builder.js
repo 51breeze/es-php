@@ -970,7 +970,7 @@ class Builder extends Token{
 
     getGlobalModules(){
         if(this._globalModules)return this._globalModules;
-        return this._globalModules = ['Array','Object','Boolean','Math','Number','String','Console'].map( name=>{
+        return this._globalModules = ['Array','Object','Boolean','Math','Number','String'].map( name=>{
             return this.compilation.getGlobalTypeById(name);
         });
     }
