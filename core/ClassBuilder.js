@@ -47,8 +47,9 @@ class ClassBuilder extends Token{
         var mainModule = module;
         var internalModules = null;
         if( multiModule && this.compilation.modules.size > 1){
-            internalModules = Array.from( this.compilation.modules.values() );
-            mainModule = internalModules.shift();
+            mainModule = this.compilation.mainModule;
+            internalModules = Array.from( this.compilation.modules.values() ).filter( m=>m !== mainModule );
+           
         }
 
         if( mainModule === module ){
@@ -118,8 +119,12 @@ class ClassBuilder extends Token{
         }).map( item=>this.createIdentifierNode( this.getModuleReferenceName( item ) ) )
 
         this.createClassMemebers(stack);
-        if( !this.construct && this.initProperties.length > 0){
-            this.construct = this.createDefaultConstructMethod('__construct', this.initProperties);
+        if(this.initProperties.length > 0){
+            if(!this.construct){
+                this.construct = this.createDefaultConstructMethod('__construct', this.initProperties);
+            }else{
+                this.construct.body.body.push( ...this.initProperties );
+            }
         }
         this.checkConstructMethod();
         return this;

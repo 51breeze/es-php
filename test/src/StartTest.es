@@ -10,7 +10,7 @@ import table.Address;
 
 import Assets;
 
-@Embed(Imgs='./Person.es');
+//@Embed(Imgs='./Person.es');
 
 public class StartTest extends Base
 {
@@ -18,9 +18,16 @@ public class StartTest extends Base
     private var list  = [];
     private var addData:Address;
 
+    @Embed('./Person.es');
+    static imsgs:string
+
     @Main
     public static main(){
        const d = Person;
+    }
+
+    constructor(){
+        super();
     }
 
     testArray(){

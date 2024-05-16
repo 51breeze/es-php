@@ -21,9 +21,10 @@ VirtualModule.createVModule((module)=>{
     const data = {};
     staticAssets.getAssets().forEach( asset=>{
         const item = {};
+        const content = asset.getContent();
         item.path=asset.getResourcePath();
-        if(asset.content){
-            item.content = asset.content.replace(/(?<!\\)\u0027/g,"\\'")
+        if(content){
+            item.content = content.replace(/(?<!\\)\u0027/g,"\\'")
         }
         data[asset.getResourceId()]=item;
     });
@@ -849,7 +850,7 @@ class Builder extends Token{
     getAssetFileReferenceName(module, file){
         const asset = staticAssets.getAsset(file);
         if( asset ){
-            return asset.getOutputFilePath();
+            return asset.getResourcePath();
         }
         return '';
     }

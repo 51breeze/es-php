@@ -57,6 +57,7 @@ module.exports = function(ctx,stack){
     node.body = [];
     node.afterBody = [];
     node.imports = [];
+    node.beforeExternals = [];
     stack.body.forEach( item=>{
         if( stack.isJSXProgram || item.isClassDeclaration || item.isDeclaratorDeclaration || 
             item.isStructTableDeclaration || 
@@ -65,6 +66,8 @@ module.exports = function(ctx,stack){
         }
     });
 
+    node.body.push( ...node.beforeExternals );
+    
     const externalImports = [];
     const insertImports = [];
     const insertUsing = [];
@@ -219,5 +222,6 @@ module.exports = function(ctx,stack){
     node.body.push( ...node.afterBody );
     delete node.afterBody;
     delete node.imports;
+    delete node.beforeExternals;
     return node;
 }

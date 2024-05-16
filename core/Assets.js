@@ -1,188 +1,116 @@
 const PATH= require('path');
 const crypto = require('crypto');
-const merge = require("lodash/merge");
 const fs = require("fs-extra");
-const suffixMaps = {
-    '.less':'.css',
-    '.sacc':'.css',
-    '.scss':'.css',
-}
 class Asset{
-    constructor(file, source, local, module, context){
-        this.file = file;
-        this.source = source;
+
+    #baseDir = '';
+    #outDir = '';
+    #resolveDir = '';
+    #dist = null;
+    #format = '[name]-[hash][ext]';
+    #content = '';
+    #filename = '';
+    #extname = '';
+    #file = '';
+    #source = '';
+    #hash = null;
+    #change = true;
+
+    constructor(file, source, local, module){
+        this.#file = file;
+        this.#source = source;
         this.local = local;
         this.module = module;
-        this.context = context;
         this.compilation = module && module.isModule && module.compilation ? module.compilation : module;
-        this.content = '';
-        this.change = true;
-        this.format = '[name]-[hash][ext]';
-        this.extname = '';
-        this.dist = null;
-        this.emitHook = null;
         if(file){
             const ext = PATH.extname(file);
             if(ext){
-                this.extname = ext;
+                this.#extname = ext;
             }
         }
     }
 
+    setAttr(name, value){
+        if(name==='baseDir'){
+            this.#baseDir = value;
+        }
+        else if(name==='outDir'){
+            this.#outDir = value;
+        }
+        else if(name==='resolveDir'){
+            this.#resolveDir = value;
+        }
+        else if(name==='dist'){
+            this.#dist = value;
+        }
+    }
+
     emit(done){
-        if( this.change ){
-            this.change = false;
-            const output = this.context.getOutputPath();
-            const file = PATH.join(output,this.getOutputFilePath());
-            fs.mkdirSync(PATH.dirname(file), {recursive: true});
-            const ext = this.getExt();
-            if( ext ==='.less'){
-                this.lessCompile(done, file);
-            }else if( ext ==='.sass' || ext ==='.scss'){
-                this.sassCompile(done, file);
-            }else{
-                if( this.content ){
-                    fs.writeFileSync(file, this.content); 
-                }else if( fs.existsSync(this.file) ){
-                    fs.copyFileSync(this.file, file);
-                }
-                if(done)done();
+        if( this.#change ){
+            this.#change = false;
+            const filename = this.getResourcePath();
+            const distFile = PATH.isAbsolute(filename) ? filename :  PATH.join(this.#baseDir, filename);
+            fs.mkdirSync(PATH.dirname(distFile), {recursive: true});
+            if( this.content ){
+                fs.writeFileSync(file, this.#content); 
+            }else if( fs.existsSync(this.#file) ){
+                fs.copyFileSync(this.#file, file);
+            }
+            if(done){
+                done();
             }
         } 
     }
 
     unlink(){
-        const output = this.context.getOutputPath();
-        const file = PATH.join(output,this.getOutputFilePath());
-        if(fs.existsSync(file)){
-            fs.unlinkSync(file);
-        }
-    }
-
-    lessCompile(done, filename){
-        const less = require('less');
-        const options = merge({filename:this.file}, this.context.plugin.options.lessOptions);
-        const content = this.content || fs.readFileSync(this.file).toString();
-        less.render(content,options,(e, output)=>{
-            if( e ){
-                done( e );
-            }else{
-                fs.writeFile(filename, output.css, done);
-            }
-        });
-    }
-
-    sassCompile(done, filename){
-        const sass = require('node-sass');
-        const options = merge({}, this.context.plugin.options.sassOptions);
-        const content = this.content || fs.readFileSync(this.file).toString();
-        options.file = this.file;
-        options.data = content;
-        sass.render(options,(e, output)=>{
-            if( e ){
-                done( e );
-            }else{
-                fs.writeFile(filename, output.css, done);
-            }
-        });
-    }
-
-    jsCompile(done, filename){
-        try{
-            const rollup = require('rollup');
-            const options = merge({
-                input:{
-                    plugins:[],
-                    watch:false,
-                }, 
-                output:{
-                    format:'cjs'
-                },
-            }, this.context.plugin.options.rollupOptions);
-            const plugins = [
-                'rollup-plugin-node-resolve',
-                'rollup-plugin-commonjs'
-            ].map( nam=>{
-                try{
-                    const file = require.resolve( nam );
-                    const plugin = require( file );
-                    return plugin();
-                }catch(e){
-
-                    return null;
-                }
-            }).filter( plugin =>plugin && !options.input.plugins.some(item=>{
-                return item.name === plugin.name;
-            }));
-            options.input.plugins.push( ...plugins );
-            options.input.input = this.content || this.file;
-            options.output.file = filename;
-            rollup.rollup(options.input).then( bundle=>{
-                bundle.write( options.output ).finally(done);
-            }).catch(done)
-        }catch(e){
-            done(e);
+        const output = this.#baseDir;
+        const distFile = PATH.join(output,this.getResourcePath());
+        if(fs.existsSync(distFile)){
+            fs.unlinkSync(distFile);
         }
     }
 
     setContent(content){
-        if( content !== this.content ){
-            this.change = true;
-            this.content = content;
+        if( content !== this.#content ){
+            this.#change = true;
+            this.#content = content;
         }
+    }
+
+    getContent(){
+        return this.#content;
     }
 
     getExt(){
-        return this.extname;
+        return this.#extname;
     }
 
     getBaseDir(){
-        return this.context.getOutputPath();
+        return this.#baseDir;
     }
 
     getOutputDir(){
-        return this.context.getPublicPath();
+        return this.#outDir;
     }
 
-    getOutputFilePath(){
-        if(this.assetOutputFile)return this.assetOutputFile;
-        const publicPath = this.context.getPublicPath();
-        let folder = this.getFolder();
-        if(publicPath && !PATH.isAbsolute(folder)){
-            folder = PATH.join(publicPath,folder);
-        }
-        const ext = this.getExt();
-        const data = {
-            name:this.getFilename(),
-            hash:this.getHash(),
-            ext:suffixMaps[ext] || ext
-        }
-        let file = this.format.replace(/\[(\w+)\]/g,(_,name)=>{
-            return data[name] || '';
-        });
-        file = PATH.join(folder, file);
-        return this.assetOutputFile = this.context.compiler.normalizePath( PATH.isAbsolute(file) ? PATH.relative(this.context.getOutputPath(),file) : file );
+    getResolveDir(){
+        return this.#resolveDir;
     }
 
     getFilename(){
-        if(this.filename)return this.filename;
+        if(this.#filename)return this.#filename;
         let name = this.module ? this.module.id : ''
-        if( PATH.isAbsolute(this.file) ){
-            name = PATH.basename(this.file, PATH.extname(this.file))
+        if( PATH.isAbsolute(this.#file) ){
+            name = PATH.basename(this.#file, PATH.extname(this.#file))
         }else{
-            name = PATH.extname(this.file).slice(1)
+            name = PATH.extname(this.#file).slice(1)
         }
-        return this.filename = String(name).toLowerCase();
+        return this.#filename = String(name).toLowerCase();
     }
 
     getHash(){
-        if(this.hash)return this.hash;
-        return this.hash = crypto.createHash('md5').update(this.file||this.content).digest('hex').substring(0,8);
-    }
-
-    getFolder(){
-        if(this.folder)return this.folder;
-        return this.folder = this.context.resolveSourceFileMappingPath(this.file) || '.';
+        if(this.#hash)return this.#hash;
+        return this.#hash = crypto.createHash('md5').update(this.#file||this.#content).digest('hex').substring(0,8);
     }
 
     getResourceId(){
@@ -190,18 +118,37 @@ class Asset{
     }
 
     getResourcePath(){
-        return this.dist || this.getOutputFilePath();
+        if(this.#dist){
+            return this.#dist;
+        }
+        const outDir = this.#outDir;
+        let folder = this.#resolveDir || '.';
+        if(outDir && !PATH.isAbsolute(folder)){
+            folder = PATH.join(outDir,folder);
+        }
+        const ext = this.getExt();
+        const data = {
+            name:this.getFilename(),
+            hash:this.getHash(),
+            ext:ext
+        }
+        let file = this.#format.replace(/\[(\w+)\]/g,(_,name)=>{
+            return data[name] || '';
+        });
+        file = PATH.join(folder, file);
+        file = PATH.isAbsolute(file) ? PATH.relative(this.#baseDir,file) : file;
+        return this.#dist = file.replace(/\\/g, '/');
     }
 
     getAssetFilePath(){
-       return this.file;
+       return this.#file;
     }
 
     toString(){
-        if( this.content ){
-            return this.content;
-        }else if( fs.existsSync(this.file) ){
-            return fs.readFileSync( this.file ).toString();
+        if( this.#content ){
+            return this.#content;
+        }else if( fs.existsSync(this.#file) ){
+            return fs.readFileSync( this.#file ).toString();
         }
         return '';
     }
@@ -276,7 +223,10 @@ class Assets{
 
     create(resolve, source, local, module, builder){
         if( !this.dataset.has(resolve) ){
-            const asset = new Asset(resolve, source, local, module, builder);
+            const asset = new Asset(resolve, source, local, module);
+            asset.setAttr('baseDir', builder.getOutputPath());
+            asset.setAttr('outDir', builder.getPublicPath());
+            asset.setAttr('resolveDir', builder.resolveSourceFileMappingPath(resolve));
             this.dataset.set(resolve, asset);
             const compilation = asset.compilation;
             if(compilation && !this.cache.has(compilation)){
