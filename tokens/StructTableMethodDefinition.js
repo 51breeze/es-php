@@ -10,7 +10,7 @@ function createNode(ctx, item, isKey=false, toLower=false){
 module.exports = function(ctx, stack){
     const node = ctx.createNode(stack);
     const key = stack.key.isMemberExpression ? stack.key.property : stack.key;
-    node.key = createNode(node, key, false, true);
+    node.key = createNode(node, key, false);
     const isKey = stack.parentStack.isStructTableKeyDefinition;
     node.params = (stack.params||[]).map( item=>createNode(node, item, isKey) );
     return node;

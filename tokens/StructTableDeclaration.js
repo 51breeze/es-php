@@ -1,7 +1,7 @@
 function createNode(ctx, item){
     if(!item)return null;
     return item.isIdentifier ? 
-    ctx.createIdentifierNode(item.value().toLowerCase(), item) : 
+    ctx.createIdentifierNode(item.value(), item) : 
     item.isLiteral ? 
     ctx.createLiteralNode(item.value()) : 
     ctx.createToken(item);
@@ -14,8 +14,7 @@ function normalName( name ){
 }
 
 module.exports = function(ctx, stack){
-    const name = stack.module.getName();
-    if( ctx.builder.hasSqlTableNode(name) ){
+    if(ctx.builder.hasSqlTableNode(stack.module)){
         return null;
     }
     const node = ctx.createNode(stack);
@@ -30,6 +29,6 @@ module.exports = function(ctx, stack){
             node.body.push(token);
         }
     });
-    node.builder.addSqlTableNode(name, node, stack);
+    node.builder.addSqlTableNode(stack.module, node, stack);
     return null;
 };

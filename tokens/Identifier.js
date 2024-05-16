@@ -85,10 +85,26 @@ module.exports = function(ctx,stack){
         }else if( desc.parentStack.isAnnotationDeclaration ){
             const annotation = desc.parentStack;
             const name = annotation.name.toLowerCase();
-            if( name ==='require' || name==="import"){
+            if(name ==='require' || name==="import" || name==='embed'){
                 const argument = annotation.getArguments().find( item=>!!item.resolveFile );
-                return ctx.createLiteralNode( ctx.builder.getAssetFileReferenceName(ctx.module, argument.resolveFile), void 0, stack);
+                if(argument){
+                    const asset = ctx.builder.getAsset(argument.resolveFile);
+                    if(asset){
+                        const Assets = ctx.builder.getVirtualModule('asset.Assets');
+                        ctx.addDepend(Assets);
+                        return ctx.createCalleeNode(
+                            ctx.createStaticMemberNode([
+                                ctx.createIdentifierNode(ctx.getModuleReferenceName(Assets)),
+                                ctx.createIdentifierNode("get")
+                            ]),
+                            [
+                                ctx.createLiteralNode(asset.getResourceId())
+                            ],
+                        );
+                    }
+                }
             }
+            return ctx.createLiteralNode(null);
         }else{
             ctx.addVariableRefs( desc );
         }

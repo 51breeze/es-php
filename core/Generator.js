@@ -664,7 +664,7 @@ class Generator{
             break;
             case "TemplateElement" :
                 this.withString("'");
-                this.withString( token.value.replace(/\u0027/g,"\\'") );
+                this.withString( token.value.replace(/(?<!\\)\u0027/g,"\\'") );
                 this.withString("'");
             break;
             case "TemplateLiteral" :
@@ -791,6 +791,7 @@ class Generator{
                 this.withParenthesR();
             break;
             case "StructTablePropertyDefinition" :
+                this.withString(' ');
                 this.make( token.key );
                 if( token.init ){
                     if( token.assignment ){

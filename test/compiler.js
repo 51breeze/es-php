@@ -42,6 +42,7 @@ class Creator {
             await compiler.initialize();
             await compiler.loadTypes([
                'types/php.d.es',
+               //'types/Assets.d.es',
             ], {scope:'es-php'});
             let compilation = null;
             try{

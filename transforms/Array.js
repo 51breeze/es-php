@@ -22,8 +22,17 @@ function createObjectNodeRefs(ctx, object, name){
     return object;
 }
 
-function createCommonCalledNode(name, ctx, object, args, called=true){
+function createCommonCalledNode(name, ctx, object, args, called=true, checkRefs=false){
     if(!called)return createMethodFunctionNode(ctx,name);
+
+    if(checkRefs && object && object.type==='ArrayExpression'){
+        const refs = ctx.checkRefsName('ref');
+        ctx.insertNodeBlockContextAt(
+            ctx.createAssignmentNode( ctx.createIdentifierNode(refs, null, true), object )
+        );
+        object = ctx.createIdentifierNode(refs, null, true);
+    }
+
     const obj = createObjectNodeRefs(ctx, object, name );
     return ctx.createCalleeNode(
         ctx.createIdentifierNode(name),
@@ -61,15 +70,15 @@ const methods = {
     },
 
     push(ctx, object, args, called=false, isStatic=false){
-        return createCommonCalledNode('array_push', ctx, object, args, called);
+        return createCommonCalledNode('array_push', ctx, object, args, called, true);
     },
 
     unshift(ctx, object, args, called=false, isStatic=false){
-        return createCommonCalledNode('array_unshift', ctx, object, args, called);
+        return createCommonCalledNode('array_unshift', ctx, object, args, called, true);
     },
 
     pop(ctx, object, args, called=false, isStatic=false){
-        return createCommonCalledNode('array_pop', ctx, object, args, called);
+        return createCommonCalledNode('array_pop', ctx, object, args, called, true);
     },
 
     shift(ctx, object, args, called=false, isStatic=false){
@@ -80,7 +89,7 @@ const methods = {
         if( args.length > 3 ){
             args = args.slice(0,2).concat( ctx.createArrayNode( args.slice(2) ) );
         }
-        return createCommonCalledNode('array_splice', ctx, object, args, called);
+        return createCommonCalledNode('array_splice', ctx, object, args, called, true);
     },
 
     slice(ctx, object, args, called=false, isStatic=false){
@@ -203,7 +212,7 @@ const methods = {
         const module = ctx.builder.getGlobalModuleById('Array');
         ctx.addDepend( module );
         const name = ctx.builder.getModuleNamespace( module, 'es_array_sort');
-        return createCommonCalledNode(name, ctx, object, args, called);
+        return createCommonCalledNode(name, ctx, object, args, called, true);
     },
 
     join(ctx, object, args, called=false, isStatic=false){

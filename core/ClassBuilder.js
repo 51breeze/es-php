@@ -1,4 +1,6 @@
 const Token = require("./Token");
+const staticAssets = require("./Assets");
+
 class ClassBuilder extends Token{
 
     static createClassNode(stack, ctx, type){
@@ -131,6 +133,7 @@ class ClassBuilder extends Token{
         const cache2 = new Map();
         stack.body.forEach( item=> {
             const child = this.createClassMemeberNode(item);
+            if(!child)return;
             const isStatic = !!(stack.static || child.static);
             const refs  = isStatic ? this.methods : this.members;
             this.createAnnotations(child, item, isStatic);
@@ -250,9 +253,9 @@ class ClassBuilder extends Token{
                         if( this.plugin.options.assets.test(source) ){
                             if(item.specifiers && item.specifiers.length > 0){
                                 const local = item.specifiers[0].value();
-                                this.builder.staticAssets.create(source, item.source.value(), local, module);
+                                staticAssets.create(source, item.source.value(), local, module, this.builder);
                             }else{
-                                this.builder.staticAssets.create(source, item.source.value(), null, module);
+                                staticAssets.create(source, item.source.value(), null, module, this.builder);
                             }
                         } 
                     }
@@ -274,11 +277,11 @@ class ClassBuilder extends Token{
             if( !usingExcludes.includes(depModule) ){
                 const name = this.builder.getModuleNamespace(depModule, depModule.id);
                 if( name ){
-                    let local = name;
-                    let imported = void 0;
-                    if( module.importAlias && module.importAlias.has(depModule) ){
-                        imported = name;
-                        local = module.importAlias.get(depModule);
+                    let local = this.builder.getModuleUsingAliasName(depModule, module);
+                    let imported = name;
+                    if( !local ){
+                        imported = void 0;
+                        local = name
                     }
                     this.using.push(this.createUsingStatementNode( 
                         this.createImportSpecifierNode(local, imported )
@@ -298,7 +301,7 @@ class ClassBuilder extends Token{
                     }else if( !(consistent||folderAsNamespace) ){
                         const source = this.builder.getFileRelativeOutputPath(depModule);
                         const name = this.builder.getModuleNamespace(depModule, depModule.id);
-                        this.builder.addFileAndNamespaceMapping(source, name);
+                        this.builder.addFileAndNamespaceMapping(source, name, module);
                     }
                     createUse( depModule );
                 }else if( this.isReferenceDeclaratorModule(depModule, module) ){

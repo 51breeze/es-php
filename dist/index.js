@@ -8,6 +8,19 @@ var __publicField = (obj, key, value2) => {
   __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value2);
   return value2;
 };
+var __accessCheck = (obj, member, msg) => {
+  if (!member.has(obj))
+    throw TypeError("Cannot " + msg);
+};
+var __privateGet = (obj, member, getter) => {
+  __accessCheck(obj, member, "read from private field");
+  return getter ? getter.call(obj) : member.get(obj);
+};
+var __privateAdd = (obj, member, value2) => {
+  if (member.has(obj))
+    throw TypeError("Cannot add the same private member more than once");
+  member instanceof WeakSet ? member.add(obj) : member.set(obj, value2);
+};
 
 // core/Generator.js
 var require_Generator = __commonJS({
@@ -662,7 +675,7 @@ var require_Generator = __commonJS({
             break;
           case "TemplateElement":
             this.withString("'");
-            this.withString(token.value.replace(/\u0027/g, "\\'"));
+            this.withString(token.value.replace(/(?<!\\)\u0027/g, "\\'"));
             this.withString("'");
             break;
           case "TemplateLiteral":
@@ -793,6 +806,7 @@ var require_Generator = __commonJS({
             this.withParenthesR();
             break;
           case "StructTablePropertyDefinition":
+            this.withString(" ");
             this.make(token.key);
             if (token.init) {
               if (token.assignment) {
@@ -2002,13 +2016,13 @@ var require_Token = __commonJS({
 // core/Polyfill.js
 var require_Polyfill = __commonJS({
   "core/Polyfill.js"(exports2, module2) {
-    var fs = require("fs");
+    var fs2 = require("fs");
     var path3 = require("path");
     var modules2 = /* @__PURE__ */ new Map();
     var dirname = true ? path3.join(__dirname, "polyfills") : path3.join(__dirname, "../", "polyfill");
     var parseModule = (modules3, file, name2) => {
       const info = path3.parse(name2);
-      let content = fs.readFileSync(file).toString();
+      let content = fs2.readFileSync(file).toString();
       let exportName = info.name;
       let require2 = [];
       let namespace = null;
@@ -2070,13 +2084,13 @@ var require_Polyfill = __commonJS({
       });
     };
     function createEveryModule(modules3, dirname2) {
-      if (!fs.existsSync(dirname2))
+      if (!fs2.existsSync(dirname2))
         return;
-      fs.readdirSync(dirname2).forEach((filename) => {
+      fs2.readdirSync(dirname2).forEach((filename) => {
         const filepath = path3.join(dirname2, filename);
-        if (fs.statSync(filepath).isFile()) {
+        if (fs2.statSync(filepath).isFile()) {
           parseModule(modules3, filepath, filename);
-        } else if (fs.statSync(filepath).isDirectory()) {
+        } else if (fs2.statSync(filepath).isDirectory()) {
           createEveryModule(modules3, filepath);
         }
       });
@@ -2090,34 +2104,306 @@ var require_Polyfill = __commonJS({
   }
 });
 
+// core/VirtualModule.js
+var require_VirtualModule = __commonJS({
+  "core/VirtualModule.js"(exports2, module2) {
+    function createVirtualModule(callback, id2, ns = "", file = "") {
+      id2 = "__" + id2;
+      file = file || id2 + ".php";
+      if (ns) {
+        file = ns.replaceAll(".", "/") + "/" + id2 + ".php";
+      }
+      return {
+        isModule: true,
+        isVirtualModule: true,
+        id: id2,
+        ns,
+        nsId: "",
+        file,
+        using: false,
+        outpath: null,
+        context: null,
+        emitFile: () => null,
+        async make() {
+          const content = await callback(this, this.context);
+          return this.emitFile(content);
+        },
+        getName(delimiter2 = ".") {
+          if (delimiter2 !== ".") {
+            if (ns) {
+              return ns.replaceAll(".", delimiter2) + delimiter2 + id2;
+            }
+          }
+          if (ns)
+            return ns + "." + id2;
+          return id2;
+        }
+      };
+    }
+    var virtualization = {};
+    module2.exports = {
+      createVModule(makeHook, id2, ns, file) {
+        const key = ns ? ns + "." + id2 : id2;
+        return virtualization[key] = createVirtualModule(makeHook, id2, ns, file);
+      },
+      getVModule(id2) {
+        return virtualization[id2];
+      }
+    };
+  }
+});
+
 // core/Sql.js
 var require_Sql = __commonJS({
   "core/Sql.js"(exports2, module2) {
     var Generator = require_Generator();
-    var Sql2 = class {
+    var Table = class {
+      constructor(module3, node, stack) {
+        this.module = module3;
+        this.node = node;
+        this.stack = stack;
+        this.file = stack.file;
+        this.content = null;
+      }
+      toString() {
+        if (this.content === null) {
+          const gen = new Generator(this.file);
+          gen.make(this.node);
+          return this.content = gen ? gen.toString() : "";
+        }
+        return this.content;
+      }
+    };
+    var _instance;
+    var _Sql = class {
+      static add(module3, node, stack) {
+        __privateGet(_Sql, _instance).add(module3, node, stack);
+      }
+      static emit() {
+        return __privateGet(_Sql, _instance).emit();
+      }
+      static del(module3) {
+        return __privateGet(_Sql, _instance).del(module3);
+      }
+      static has(module3) {
+        return __privateGet(_Sql, _instance).has(module3);
+      }
+      static isEmpty() {
+        return !(__privateGet(_Sql, _instance).dataset.size > 0);
+      }
+      static get tables() {
+        return Array.from(__privateGet(_Sql, _instance).dataset.values());
+      }
+      static get instance() {
+        return __privateGet(_Sql, _instance);
+      }
       constructor() {
         this.dataset = /* @__PURE__ */ new Map();
-        this.builder = null;
+        this.changed = false;
+        this.content = "";
+        this.cache = /* @__PURE__ */ new WeakSet();
       }
-      addTable(file, node, stack) {
-        this.dataset.set(file, { node, stack });
+      add(module3, node, stack) {
+        if (this.has(module3))
+          return;
+        this.changed = true;
+        const compilation = stack.compilation;
+        if (!this.cache.has(compilation)) {
+          this.cache.add(compilation);
+          compilation.once("onClear", () => {
+            this.dataset.forEach((table, module4) => {
+              if (compilation === table.stack.compilation) {
+                this.changed = true;
+                this.dataset.delete(module4);
+              }
+            });
+          });
+        }
+        this.dataset.set(module3, new Table(module3, node, stack));
       }
-      has(file) {
-        return this.dataset.has(file);
+      has(module3) {
+        return this.dataset.has(module3);
+      }
+      del(module3) {
+        this.changed = true;
+        return this.dataset.del(module3);
+      }
+      emit() {
+        if (this.changed) {
+          this.content = this.toString();
+          this.changed = false;
+        }
+        return this.content;
       }
       toString() {
         const dataset = [];
-        this.dataset.forEach((object) => {
-          const gen = new Generator(object.stack.file);
-          gen.builder = this.builder;
-          gen.make(object.node);
-          const code = gen ? gen.toString() : "";
-          dataset.push(code);
+        this.dataset.forEach((table) => {
+          dataset.push(table.toString());
         });
         return dataset.join("\r\n");
       }
     };
+    var Sql2 = _Sql;
+    _instance = new WeakMap();
+    __privateAdd(Sql2, _instance, new _Sql());
     module2.exports = Sql2;
+  }
+});
+
+// core/Manifest.js
+var require_Manifest = __commonJS({
+  "core/Manifest.js"(exports2, module2) {
+    var _instance;
+    var _Manifest = class {
+      static add(module3, file, namespace) {
+        __privateGet(_Manifest, _instance).add(module3, file, namespace);
+      }
+      static emit() {
+        return __privateGet(_Manifest, _instance).emit();
+      }
+      static has(file) {
+        return __privateGet(_Manifest, _instance).has(file);
+      }
+      static del(file) {
+        return __privateGet(_Manifest, _instance).del(file);
+      }
+      static isEmpty() {
+        return !(__privateGet(_Manifest, _instance).dataset.size > 0);
+      }
+      static get instance() {
+        return __privateGet(_Manifest, _instance);
+      }
+      constructor() {
+        this.dataset = /* @__PURE__ */ new Map();
+        this.changed = false;
+        this.content = "";
+        this.cache = /* @__PURE__ */ new WeakSet();
+      }
+      add(module3, file, namespace) {
+        this.changed = true;
+        this.dataset.set(file, [module3, file, namespace]);
+        const compilation = module3.compilation;
+        if (!this.cache.has(compilation)) {
+          this.cache.add(compilation);
+          compilation.once("onClear", () => {
+            this.dataset.forEach(([module4], key) => {
+              if (compilation === module4.compilation) {
+                this.changed = true;
+                this.dataset.delete(key);
+              }
+            });
+          });
+        }
+      }
+      has(file) {
+        return this.dataset.has(file);
+      }
+      del(file) {
+        return this.dataset.delete(file);
+      }
+      emit() {
+        if (this.changed) {
+          this.content = this.toString();
+          this.changed = false;
+        }
+        return this.content;
+      }
+      toString() {
+        if (this.dataset.size > 0) {
+          const items = [];
+          const cache = /* @__PURE__ */ Object.create(null);
+          this.dataset.forEach(([b, file, ns]) => {
+            if (!cache[ns]) {
+              cache[ns] = true;
+              items.push(`'${ns}'=>'${file}'`);
+            }
+          });
+          return `return [\r
+	${items.join(",\r\n	")}\r
+];`;
+        }
+        return `return []`;
+      }
+    };
+    var Manifest = _Manifest;
+    _instance = new WeakMap();
+    __privateAdd(Manifest, _instance, new _Manifest());
+    module2.exports = Manifest;
+  }
+});
+
+// core/Composer.js
+var require_Composer = __commonJS({
+  "core/Composer.js"(exports2, module2) {
+    var _instance;
+    var _Composer = class {
+      static add(builder, name2, version, env = "dev") {
+        __privateGet(_Composer, _instance).add(builder, name2, version, env = "dev");
+      }
+      static emit() {
+        return __privateGet(_Composer, _instance).emit();
+      }
+      static del(compilation) {
+        this.changed = true;
+        return __privateGet(_Composer, _instance).dataset.delete(compilation);
+      }
+      static isEmpty() {
+        return !(__privateGet(_Composer, _instance).dataset.size > 0);
+      }
+      static make(object) {
+        return __privateGet(_Composer, _instance).make(object);
+      }
+      static get instance() {
+        return __privateGet(_Composer, _instance);
+      }
+      constructor() {
+        this.dataset = /* @__PURE__ */ new Map();
+        this.changed = false;
+        this.content = "";
+        this.cache = /* @__PURE__ */ new WeakSet();
+      }
+      add(builder, name2, version, env = "prod") {
+        const compilation = builder.compilation;
+        let object = this.dataset.get(compilation);
+        if (!object) {
+          this.dataset.set(compilation, object = /* @__PURE__ */ Object.create(null));
+        }
+        object[name2 + ":" + env] = { name: name2, version, env };
+        this.changed = true;
+        if (!this.cache.has(compilation)) {
+          this.cache.add(compilation);
+          compilation.once("onCompilationClear", () => {
+            this.changed = true;
+            this.dataset.delete(compilation);
+          });
+        }
+      }
+      emit() {
+        if (this.changed) {
+          this.content = this.toString();
+          this.changed = false;
+        }
+        return this.content;
+      }
+      make(object) {
+        object = object || /* @__PURE__ */ Object.create(null);
+        Array.from(this.dataset.values()).map((item) => item.values()).flat().forEach((item) => {
+          const { name: name2, version, env } = item;
+          const key = env === "prod" ? "require" : "require-dev";
+          const data2 = object[key] || (object[key] = /* @__PURE__ */ Object.create(null));
+          data2[name2] = version;
+        });
+        return object;
+      }
+      toString() {
+        const object = make();
+        return JSON.stringify(object);
+      }
+    };
+    var Composer = _Composer;
+    _instance = new WeakMap();
+    __privateAdd(Composer, _instance, new _Composer());
+    module2.exports = Composer;
   }
 });
 
@@ -2127,7 +2413,7 @@ var require_Assets = __commonJS({
     var PATH = require("path");
     var crypto = require("crypto");
     var merge2 = require("lodash/merge");
-    var fs = require("fs-extra");
+    var fs2 = require("fs-extra");
     var suffixMaps = {
       ".less": ".css",
       ".sacc": ".css",
@@ -2140,10 +2426,13 @@ var require_Assets = __commonJS({
         this.local = local;
         this.module = module3;
         this.context = context;
+        this.compilation = module3 && module3.isModule && module3.compilation ? module3.compilation : module3;
         this.content = "";
         this.change = true;
         this.format = "[name]-[hash][ext]";
         this.extname = "";
+        this.dist = null;
+        this.emitHook = null;
         if (file) {
           const ext = PATH.extname(file);
           if (ext) {
@@ -2156,82 +2445,91 @@ var require_Assets = __commonJS({
           this.change = false;
           const output = this.context.getOutputPath();
           const file = PATH.join(output, this.getOutputFilePath());
-          fs.mkdirSync(PATH.dirname(file), { recursive: true });
+          fs2.mkdirSync(PATH.dirname(file), { recursive: true });
           const ext = this.getExt();
           if (ext === ".less") {
             this.lessCompile(done, file);
-          } else if (ext === ".sass") {
+          } else if (ext === ".sass" || ext === ".scss") {
             this.sassCompile(done, file);
-          } else if (ext === ".js" || ext === ".es") {
-            this.jsCompile(done, file);
           } else {
             if (this.content) {
-              fs.writeFileSync(file, this.content);
-            } else if (fs.existsSync(this.file)) {
-              fs.copyFileSync(this.file, file);
+              fs2.writeFileSync(file, this.content);
+            } else if (fs2.existsSync(this.file)) {
+              fs2.copyFileSync(this.file, file);
             }
             if (done)
               done();
           }
         }
       }
+      unlink() {
+        const output = this.context.getOutputPath();
+        const file = PATH.join(output, this.getOutputFilePath());
+        if (fs2.existsSync(file)) {
+          fs2.unlinkSync(file);
+        }
+      }
       lessCompile(done, filename) {
         const less = require("less");
         const options = merge2({ filename: this.file }, this.context.plugin.options.lessOptions);
-        const content = this.content || fs.readFileSync(this.file).toString();
+        const content = this.content || fs2.readFileSync(this.file).toString();
         less.render(content, options, (e, output) => {
           if (e) {
             done(e);
           } else {
-            fs.writeFile(filename, output.css, done);
+            fs2.writeFile(filename, output.css, done);
           }
         });
       }
       sassCompile(done, filename) {
         const sass = require("node-sass");
         const options = merge2({}, this.context.plugin.options.sassOptions);
-        const content = this.content || fs.readFileSync(this.file).toString();
+        const content = this.content || fs2.readFileSync(this.file).toString();
         options.file = this.file;
         options.data = content;
         sass.render(options, (e, output) => {
           if (e) {
             done(e);
           } else {
-            fs.writeFile(filename, output.css, done);
+            fs2.writeFile(filename, output.css, done);
           }
         });
       }
       jsCompile(done, filename) {
-        const rollup = require("rollup");
-        const options = merge2({
-          input: {
-            plugins: [],
-            watch: false
-          },
-          output: {
-            format: "cjs"
-          }
-        }, this.context.plugin.options.rollupOptions);
-        const plugins = [
-          "rollup-plugin-node-resolve",
-          "rollup-plugin-commonjs"
-        ].map((nam) => {
-          try {
-            const file = require.resolve(nam);
-            const plugin = require(file);
-            return plugin();
-          } catch (e) {
-            return null;
-          }
-        }).filter((plugin) => plugin && !options.input.plugins.some((item) => {
-          return item.name === plugin.name;
-        }));
-        options.input.plugins.push(...plugins);
-        options.input.input = this.content || this.file;
-        options.output.file = filename;
-        rollup.rollup(options.input).then((bundle) => {
-          bundle.write(options.output).finally(done);
-        }).catch(done);
+        try {
+          const rollup = require("rollup");
+          const options = merge2({
+            input: {
+              plugins: [],
+              watch: false
+            },
+            output: {
+              format: "cjs"
+            }
+          }, this.context.plugin.options.rollupOptions);
+          const plugins = [
+            "rollup-plugin-node-resolve",
+            "rollup-plugin-commonjs"
+          ].map((nam) => {
+            try {
+              const file = require.resolve(nam);
+              const plugin = require(file);
+              return plugin();
+            } catch (e) {
+              return null;
+            }
+          }).filter((plugin) => plugin && !options.input.plugins.some((item) => {
+            return item.name === plugin.name;
+          }));
+          options.input.plugins.push(...plugins);
+          options.input.input = this.content || this.file;
+          options.output.file = filename;
+          rollup.rollup(options.input).then((bundle) => {
+            bundle.write(options.output).finally(done);
+          }).catch(done);
+        } catch (e) {
+          done(e);
+        }
       }
       setContent(content) {
         if (content !== this.content) {
@@ -2242,10 +2540,16 @@ var require_Assets = __commonJS({
       getExt() {
         return this.extname;
       }
+      getBaseDir() {
+        return this.context.getOutputPath();
+      }
+      getOutputDir() {
+        return this.context.getPublicPath();
+      }
       getOutputFilePath() {
         if (this.assetOutputFile)
           return this.assetOutputFile;
-        const publicPath = (this.context.plugin.options.publicPath || "").trim();
+        const publicPath = this.context.getPublicPath();
         let folder = this.getFolder();
         if (publicPath && !PATH.isAbsolute(folder)) {
           folder = PATH.join(publicPath, folder);
@@ -2276,12 +2580,18 @@ var require_Assets = __commonJS({
       getHash() {
         if (this.hash)
           return this.hash;
-        return this.hash = crypto.createHash("md5").update(this.file).digest("hex").substring(0, 8);
+        return this.hash = crypto.createHash("md5").update(this.file || this.content).digest("hex").substring(0, 8);
       }
       getFolder() {
         if (this.folder)
           return this.folder;
         return this.folder = this.context.resolveSourceFileMappingPath(this.file) || ".";
+      }
+      getResourceId() {
+        return this.getHash();
+      }
+      getResourcePath() {
+        return this.dist || this.getOutputFilePath();
       }
       getAssetFilePath() {
         return this.file;
@@ -2289,19 +2599,38 @@ var require_Assets = __commonJS({
       toString() {
         if (this.content) {
           return this.content;
-        } else if (fs.existsSync(this.file)) {
-          return fs.readFileSync(this.file).toString();
+        } else if (fs2.existsSync(this.file)) {
+          return fs2.readFileSync(this.file).toString();
         }
         return "";
       }
     };
-    var Assets2 = class {
+    var _instance;
+    var _Assets = class {
+      static create(resolve, source, local, module3, builder) {
+        return __privateGet(_Assets, _instance).create(resolve, source, local, module3, builder);
+      }
+      static getAsset(resolve) {
+        return __privateGet(_Assets, _instance).getAsset(resolve);
+      }
+      static getAssets() {
+        return __privateGet(_Assets, _instance).getAssets();
+      }
+      static has(file) {
+        return __privateGet(_Assets, _instance).has(file);
+      }
+      static del(file) {
+        return __privateGet(_Assets, _instance).del(file);
+      }
+      static isEmpty() {
+        return !(__privateGet(_Assets, _instance).dataset.size > 0);
+      }
+      static get instance() {
+        return __privateGet(_Assets, _instance);
+      }
       constructor() {
         this.dataset = /* @__PURE__ */ new Map();
-        this.context = null;
-      }
-      setContext(ctx2) {
-        this.context = ctx2;
+        this.cache = /* @__PURE__ */ new WeakSet();
       }
       emit(done) {
         const queues = Array.from(this.dataset.values()).filter((asset) => asset.change).map((asset) => new Promise((resolve, reject) => {
@@ -2320,7 +2649,7 @@ var require_Assets = __commonJS({
           done(e);
         });
       }
-      async emitAsync() {
+      async emitAsync(publicPath) {
         return await new Promise((resolve, reject) => {
           try {
             this.emit(resolve);
@@ -2329,11 +2658,21 @@ var require_Assets = __commonJS({
           }
         });
       }
-      create(resolve, source, local, module3) {
+      create(resolve, source, local, module3, builder) {
         if (!this.dataset.has(resolve)) {
-          const asset = new Asset(resolve, source, local, module3);
-          asset.context = this.context;
+          const asset = new Asset(resolve, source, local, module3, builder);
           this.dataset.set(resolve, asset);
+          const compilation = asset.compilation;
+          if (compilation && !this.cache.has(compilation)) {
+            this.cache.add(compilation);
+            compilation.once("onClear", () => {
+              this.dataset.forEach((asset2, resolve2) => {
+                if (asset2.compilation === compilation) {
+                  this.dataset.delete(resolve2);
+                }
+              });
+            });
+          }
           return asset;
         }
         return this.dataset.get(resolve);
@@ -2341,31 +2680,78 @@ var require_Assets = __commonJS({
       getAsset(resolve) {
         return this.dataset.get(resolve);
       }
+      getAssets() {
+        return Array.from(this.dataset.values());
+      }
     };
-    module2.exports = new Assets2();
+    var Assets2 = _Assets;
+    _instance = new WeakMap();
+    __privateAdd(Assets2, _instance, new _Assets());
+    module2.exports = Assets2;
   }
 });
 
 // core/Builder.js
 var require_Builder = __commonJS({
   "core/Builder.js"(exports2, module2) {
-    var fs = require("fs-extra");
+    var fs2 = require("fs-extra");
     var crypto = require("crypto");
     var Generator = require_Generator();
     var Token2 = require_Token();
     var Polyfill2 = require_Polyfill();
+    var VirtualModule2 = require_VirtualModule();
     var PATH = require("path");
     var Sql2 = require_Sql();
+    var Manifest = require_Manifest();
+    var Composer = require_Composer();
     var staticAssets = require_Assets();
     var moduleDependencies = /* @__PURE__ */ new Map();
     var moduleIdMap = /* @__PURE__ */ new Map();
     var namespaceMap = /* @__PURE__ */ new Map();
     var createAstStackCached = /* @__PURE__ */ new WeakSet();
-    var composerDependencies = /* @__PURE__ */ new Map();
     var outputAbsolutePathCached = /* @__PURE__ */ new Map();
-    var fileAndNamespaceMappingCached = /* @__PURE__ */ new Map();
-    var sqlInstance = new Sql2();
     var fileContextScopes = /* @__PURE__ */ new Map();
+    var uniqueFileRecords = /* @__PURE__ */ new Map();
+    VirtualModule2.createVModule((module3) => {
+      const data2 = {};
+      staticAssets.getAssets().forEach((asset) => {
+        const item = {};
+        item.path = asset.getResourcePath();
+        if (asset.content) {
+          item.content = asset.content.replace(/(?<!\\)\u0027/g, "\\'");
+        }
+        data2[asset.getResourceId()] = item;
+      });
+      const items = [];
+      Object.keys(data2).forEach((key) => {
+        const item = data2[key];
+        const properties = Object.keys(item).map((name2) => {
+          return `'${name2}'=>'${item[name2]}'`;
+        });
+        items.push(`'${key}'=>[
+				${properties.join(",\n				")}
+			]`);
+      });
+      const content = `[
+			${items.join(",\n			")}
+		]`;
+      const ns = module3.nsId ? `namespace ${module3.nsId};` : "";
+      const top = [];
+      if (ns)
+        top.push(ns);
+      return top.concat([
+        `class ${module3.id}{`,
+        `	static function get(string $id, string $name='path'){`,
+        `		$assets = static::getAssets();`,
+        `		return $assets[$id][$name] ?? null;`,
+        `	}`,
+        `	static function getAssets(){`,
+        `		static $assets=${content};`,
+        `		return $assets;`,
+        `	}`,
+        `}`
+      ]).join("\n");
+    }, "Assets", "asset");
     var Builder2 = class extends Token2 {
       constructor(compilation) {
         super(null);
@@ -2377,13 +2763,13 @@ var require_Builder = __commonJS({
         this.name = null;
         this.platform = null;
         this.buildModules = /* @__PURE__ */ new Set();
-        this.staticAssets = staticAssets;
         this.fileContextScopes = fileContextScopes;
-        staticAssets.setContext(this);
-        sqlInstance.builder = this;
         this.esSuffix = new RegExp(this.compiler.options.suffix.replace(".", "\\") + "$", "i");
         this.checkRuntimeCache = /* @__PURE__ */ new Map();
         this.checkPluginContextCache = /* @__PURE__ */ new Map();
+      }
+      getVirtualModule(name2) {
+        return VirtualModule2.getVModule(name2);
       }
       createScopeId(context, source) {
         if (!context || !source || !context.file)
@@ -2401,63 +2787,65 @@ var require_Builder = __commonJS({
       createHash(str) {
         return crypto.createHash("md5").update(str).digest("hex").substring(0, 8);
       }
-      addSqlTableNode(id2, node, stack) {
-        sqlInstance.addTable(id2, node, stack);
+      addSqlTableNode(module3, node, stack) {
+        Sql2.add(module3, node, stack);
       }
-      hasSqlTableNode(id2) {
-        return sqlInstance.has(id2);
+      hasSqlTableNode(module3) {
+        return Sql2.has(module3);
       }
       getRouterInstance() {
         return null;
       }
-      addFileAndNamespaceMapping(file, namespace) {
+      addFileAndNamespaceMapping(file, namespace, module3) {
         if (namespace && file) {
-          fileAndNamespaceMappingCached.set(file, namespace);
+          Manifest.add(module3, file, namespace);
         }
       }
-      addDependencyForComposer(identifier, version, env = "prod") {
-        composerDependencies.set(identifier, { name: identifier, version, env });
+      addDependencyForComposer(name2, version, env = "prod") {
+        Composer.add(this, name2, version, env);
       }
       emitPackageDependencies() {
-        const items = Array.from(composerDependencies.values());
-        const output = this.getComposerPath();
-        const jsonFile = PATH.join(output, "composer.json");
-        const object = fs.existsSync(jsonFile) ? require(jsonFile) : {};
-        items.forEach((item) => {
-          const key = item.env === "prod" ? "require-dev" : "require";
-          if (!Object.prototype.hasOwnProperty(object, key)) {
-            object[key] = {};
+        if (!Composer.isEmpty()) {
+          const output = this.getComposerPath();
+          const jsonFile = PATH.join(output, "composer.json");
+          const object = fs2.existsSync(jsonFile) ? require(jsonFile) : {};
+          Composer.make(object);
+          if (output) {
+            this.emitFile(jsonFile, JSON.stringify(object));
           }
-          object[key][item.name] = item.version;
-        });
-        if (output) {
-          this.emitFile(jsonFile, JSON.stringify(object));
         }
       }
       async emitManifest() {
-        if (fileAndNamespaceMappingCached.size > 0) {
-          const items = [];
-          const root = this.plugin.options.resolve.mapping.folder.root;
-          const file = PATH.isAbsolute(root) ? root : PATH.join(this.getOutputPath(), root, "manifest.php");
-          fileAndNamespaceMappingCached.forEach((ns, file2) => {
-            items.push(`'${ns}'=>'${file2}'`);
-          });
-          this.emitFile(file, `return [\r
-	${items.join(",\r\n	")}\r
-];`);
+        if (!Manifest.isEmpty()) {
+          let file = "manifest.php";
+          let folder = this.plugin.resolveSourceId("manifest.php", "folders") || ".";
+          file = PATH.isAbsolute(folder) ? PATH.join(folder, file) : PATH.join(this.getOutputPath(), folder, file);
+          this.emitFile(file, Manifest.emit());
         }
       }
       async emitSql() {
-        let file = "app.sql";
-        let folder = this.plugin.resolveSourceId(file, "folders") || ".";
-        file = PATH.isAbsolute(folder) ? PATH.join(folder, file) : PATH.join(this.getOutputPath(), folder, file);
-        this.emitFile(file, sqlInstance.toString());
+        if (!Sql2.isEmpty()) {
+          let file = "app.sql";
+          let folder = this.plugin.resolveSourceId(file, "folders") || ".";
+          file = PATH.isAbsolute(folder) ? PATH.join(folder, file) : PATH.join(this.getOutputPath(), folder, file);
+          this.emitFile(file, Sql2.emit());
+        }
       }
       async emitAssets() {
-        const error = await this.staticAssets.emitAsync();
+        const error = await staticAssets.instance.emitAsync(this.getPublicPath());
         if (error) {
           console.error(error);
         }
+      }
+      getPublicPath() {
+        const value2 = this.__publicPath;
+        if (value2)
+          return value2;
+        let publicPath = this.plugin.options.publicPath || "public";
+        if (!PATH.isAbsolute(publicPath)) {
+          publicPath = PATH.join(this.getOutputPath(), publicPath);
+        }
+        return this.__publicPath = this.compiler.normalizePath(publicPath);
       }
       getOutputPath() {
         const value2 = this.__outputPath;
@@ -2477,19 +2865,39 @@ var require_Builder = __commonJS({
       emitFile(file, content) {
         if (content === null)
           return;
-        fs.mkdirSync(PATH.dirname(file), { recursive: true });
+        fs2.mkdirSync(PATH.dirname(file), { recursive: true });
         if (file.endsWith(".php")) {
           if (this.plugin.options.strict) {
-            fs.writeFileSync(file, "<?php\r\ndeclare (strict_types = 1);\r\n" + content);
+            fs2.writeFileSync(file, "<?php\r\ndeclare (strict_types = 1);\r\n" + content);
           } else {
-            fs.writeFileSync(file, "<?php\r\n" + content);
+            fs2.writeFileSync(file, "<?php\r\n" + content);
           }
         } else {
-          fs.writeFileSync(file, content);
+          fs2.writeFileSync(file, content);
         }
       }
       emitCopyFile(from, to) {
-        fs.createReadStream(from).pipe(fs.createWriteStream(to));
+        fs2.createReadStream(from).pipe(fs2.createWriteStream(to));
+      }
+      buildForVirtualModule(module3, compilation) {
+        if (module3.using)
+          return;
+        module3.nsId = this.getModuleNamespace(module3);
+        module3.outpath = this.getOutputAbsolutePath(module3, compilation);
+        module3.context = this;
+        module3.using = true;
+        module3.emitFile = (content) => {
+          if (content) {
+            const file = `virtual:${module3.getName()}`;
+            const config = this.plugin.options;
+            this.emitContent(
+              file,
+              content,
+              config.emit ? module3.outpath : null
+            );
+          }
+        };
+        module3.make();
       }
       buildForModule(compilation, stack, module3) {
         if (!this.make(compilation, stack, module3))
@@ -2497,16 +2905,20 @@ var require_Builder = __commonJS({
         this.getDependencies(module3).forEach((depModule) => {
           if (this.isNeedBuild(depModule, module3) && !this.buildModules.has(depModule)) {
             this.buildModules.add(depModule);
-            const compilation2 = depModule.compilation;
-            if (depModule.isDeclaratorModule) {
-              const stack2 = compilation2.getStackByModule(depModule);
-              if (stack2) {
-                this.buildForModule(compilation2, stack2, depModule);
-              } else {
-                throw new Error(`Not found stack by '${depModule.getName()}'`);
-              }
+            if (depModule.isVirtualModule) {
+              this.buildForVirtualModule(depModule, compilation);
             } else {
-              this.buildForModule(compilation2, compilation2.stack, depModule);
+              const compilation2 = depModule.compilation;
+              if (depModule.isDeclaratorModule) {
+                const stack2 = compilation2.getStackByModule(depModule);
+                if (stack2) {
+                  this.buildForModule(compilation2, stack2, depModule);
+                } else {
+                  throw new Error(`Not found stack by '${depModule.getName()}'`);
+                }
+              } else {
+                this.buildForModule(compilation2, compilation2.stack, depModule);
+              }
             }
           }
         });
@@ -2517,8 +2929,8 @@ var require_Builder = __commonJS({
         const push = (file, readdir) => {
           if (!file)
             return;
-          if (fs.existsSync(file)) {
-            const stat = fs.statSync(file);
+          if (fs2.existsSync(file)) {
+            const stat = fs2.statSync(file);
             if (stat.isFile()) {
               files.push(file);
             } else if (readdir && stat.isDirectory()) {
@@ -2590,16 +3002,18 @@ var require_Builder = __commonJS({
           }
           await this.buildIncludes();
           this.buildModules.forEach((module3) => {
-            module3.compilation.completed(this.plugin, true);
+            if (!module3.isVirtualModule) {
+              module3.compilation.completed(this.plugin, true);
+            }
           });
           compilation.completed(this.plugin, true);
           await this.buildAfter();
           await this.emitSql();
           await this.emitManifest();
           await this.emitAssets();
-          done();
+          done(null, this);
         } catch (e) {
-          done(e);
+          done(e, this);
         }
       }
       async build(done) {
@@ -2617,7 +3031,7 @@ var require_Builder = __commonJS({
               }
             });
           } else {
-            this.make(compilation, compilation.stack, Array.from(compilation.modules.values()).shift());
+            this.make(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift());
           }
           await this.buildIncludes();
           await this.emitSql();
@@ -2625,12 +3039,14 @@ var require_Builder = __commonJS({
           const error = await this.emitAssets();
           compilation.completed(this.plugin, true);
           await this.buildAfter();
-          done(error);
+          done(error, this);
         } catch (e) {
-          done(e);
+          done(e, this);
         }
       }
       make(compilation, stack, module3) {
+        if (module3 && module3.isVirtualModule)
+          return false;
         if (createAstStackCached.has(stack))
           return false;
         createAstStackCached.add(stack);
@@ -2671,7 +3087,7 @@ var require_Builder = __commonJS({
         return true;
       }
       isNeedBuild(module3, ctxModule) {
-        if (!module3 || !this.compiler.callUtils("isTypeModule", module3))
+        if (!module3 || !(module3.isVirtualModule || this.compiler.callUtils("isTypeModule", module3)))
           return false;
         if (module3.isStructTable)
           return true;
@@ -2877,43 +3293,66 @@ var require_Builder = __commonJS({
         const workspace = config.workspace || this.compiler.workspace;
         const output = this.getOutputPath();
         const isStr = typeof module3 === "string";
+        const origin = isStr ? module3 : module3.file;
         if (!module3)
           return output;
         const folder = isStr ? this.getSourceFileMappingFolder(module3) : this.getModuleMappingFolder(module3);
-        if (!isStr && module3 && module3.isModule) {
+        let result = null;
+        if (!isStr && module3 && module3.isModule && !module3.isVirtualModule) {
           if (module3.isDeclaratorModule) {
             const polyfillModule = Polyfill2.modules.get(module3.getName());
             const filename = module3.id + suffix;
             if (polyfillModule) {
               return this.compiler.normalizePath(PATH.join(output, folder || polyfillModule.namespace, filename));
             }
-            return this.compiler.normalizePath(PATH.join(output, (folder ? folder : module3.getName("/")) + suffix));
+            result = this.compiler.normalizePath(PATH.join(output, (folder ? folder : module3.getName("/")) + suffix));
           } else if (module3.compilation.isDescriptorDocument()) {
-            return this.compiler.normalizePath(PATH.join(output, (folder ? folder : module3.getName("/")) + suffix));
+            result = this.compiler.normalizePath(PATH.join(output, (folder ? folder : module3.getName("/")) + suffix));
           }
         }
-        let filepath = "";
-        if (isStr) {
-          filepath = PATH.resolve(output, folder ? PATH.join(folder, PATH.parse(module3).name + suffix) : PATH.relative(workspace, module3));
-        } else if (module3 && module3.isModule && module3.compilation.modules.size === 1 && this.compiler.normalizePath(module3.file).includes(workspace)) {
-          filepath = PATH.resolve(output, folder ? PATH.join(folder, module3.id + suffix) : PATH.relative(workspace, module3.file));
-        } else if (module3 && module3.isModule) {
-          filepath = PATH.join(output, folder ? PATH.join(folder, module3.id + suffix) : module3.getName("/") + suffix);
+        if (result === null) {
+          let filepath = "";
+          if (isStr) {
+            filepath = PATH.resolve(output, folder ? PATH.join(folder, PATH.parse(module3).name + suffix) : PATH.relative(workspace, module3));
+          } else if (module3) {
+            if (module3.isVirtualModule) {
+              filepath = PATH.join(output, folder ? PATH.join(folder, module3.file) : module3.file);
+            } else if (module3.isModule && module3.compilation.modules.size === 1 && this.compiler.normalizePath(module3.file).includes(workspace)) {
+              filepath = PATH.resolve(output, folder ? PATH.join(folder, module3.id + suffix) : PATH.relative(workspace, module3.file));
+            } else if (module3.isModule) {
+              filepath = PATH.join(output, folder ? PATH.join(folder, module3.id + suffix) : module3.getName("/") + suffix);
+            }
+          }
+          const info = PATH.parse(filepath);
+          if (info.ext === ".es") {
+            filepath = PATH.join(info.dir, info.name + suffix);
+          }
+          filepath = this.compiler.normalizePath(filepath);
+          result = filepath;
         }
-        const info = PATH.parse(filepath);
-        if (info.ext === ".es") {
-          filepath = PATH.join(info.dir, info.name + suffix);
+        let old = uniqueFileRecords.get(result);
+        if (old && old !== origin) {
+          let index = 0;
+          let _info = PATH.parse(result);
+          while (index < 10) {
+            index++;
+            result = this.compiler.normalizePath(_info.dir + "/" + (_info.name + index) + _info.ext);
+            if (!uniqueFileRecords.has(result)) {
+              break;
+            }
+          }
+        } else {
+          uniqueFileRecords.set(result, origin);
         }
-        filepath = this.compiler.normalizePath(filepath);
-        outputAbsolutePathCached.set(module3, filepath);
-        return filepath;
+        outputAbsolutePathCached.set(module3, result);
+        return result;
       }
       getSourceFileMappingFolder(file) {
         return this.resolveSourceFileMappingPath(file, "folders");
       }
       getModuleMappingFolder(module3) {
         if (module3 && module3.isModule) {
-          let file = module3.compilation.file;
+          let file = module3.isVirtualModule ? module3.file : module3.compilation.file;
           if (module3.isDeclaratorModule) {
             file = module3.getName("/");
             const compilation = module3.compilation;
@@ -2998,9 +3437,9 @@ var require_Builder = __commonJS({
       }
       addDepend(depModule, ctxModule) {
         ctxModule = ctxModule || this.compilation;
-        if (!depModule.isModule || depModule === ctxModule)
+        if (!(depModule.isModule || depModule.isVirtualModule) || depModule === ctxModule)
           return;
-        if (!this.compiler.callUtils("isTypeModule", depModule))
+        if (!depModule.isVirtualModule && !this.compiler.callUtils("isTypeModule", depModule))
           return;
         var dataset = moduleDependencies.get(ctxModule);
         if (!dataset) {
@@ -3034,6 +3473,8 @@ var require_Builder = __commonJS({
         const isUsed = this.isUsed(depModule, ctxModule);
         if (!isUsed)
           return false;
+        if (depModule.isVirtualModule)
+          return true;
         if (depModule.isDeclaratorModule) {
           return !!this.getPolyfillModule(depModule.getName());
         } else {
@@ -3061,6 +3502,22 @@ var require_Builder = __commonJS({
         }
         return "";
       }
+      getAsset(file) {
+        return staticAssets.getAsset(file);
+      }
+      getModuleUsingAliasName(module3, context) {
+        if (!context || !context.isModule)
+          return null;
+        if (context.importAlias && context.importAlias.has(module3)) {
+          return context.importAlias.get(module3);
+        }
+        if (context.imports && context.imports.has(module3.id)) {
+          if (context.imports.get(module3.id) !== module3) {
+            return "__" + module3.getName("_");
+          }
+        }
+        return null;
+      }
       getModuleReferenceName(module3, context) {
         context = context || this.compilation;
         if (!module3)
@@ -3079,6 +3536,9 @@ var require_Builder = __commonJS({
             return context.importAlias.get(module3);
           }
           if (module3.required || context.imports && context.imports.has(module3.id)) {
+            if (context.imports.get(module3.id) !== module3) {
+              return "__" + module3.getName("_");
+            }
             return module3.id;
           }
           const deps = moduleDependencies.get(context);
@@ -3106,6 +3566,11 @@ var require_Builder = __commonJS({
             }
             return items.join("\\");
           }
+        } else if (module3.isVirtualModule && module3.ns) {
+          if (suffix) {
+            return module3.ns.split(".").concat(suffix).join("\\");
+          }
+          return module3.ns.split(".").join("\\");
         }
         return !imported && suffix ? "\\" + suffix : "";
       }
@@ -3119,9 +3584,9 @@ var require_Builder = __commonJS({
           if (this.plugin.options.assets.test(source)) {
             if (item.specifiers && item.specifiers.length > 0) {
               const local = item.specifiers[0].value();
-              this.staticAssets.create(source, item.source.value(), local);
+              staticAssets.create(source, item.source.value(), local, this.compilation, this);
             } else {
-              this.staticAssets.create(source, item.source.value(), null);
+              staticAssets.create(source, item.source.value(), null, this.compilation, this);
             }
           }
         };
@@ -3135,12 +3600,12 @@ var require_Builder = __commonJS({
           if (asset.file) {
             const external = externals && asset.file ? externals.find((name2) => asset.file.indexOf(name2) === 0) : null;
             if (!external) {
-              const object = staticAssets.create(asset.resolve, asset.file, asset.assign, module3 || context);
+              const object = staticAssets.create(asset.resolve, asset.file, asset.assign, module3 || context, this);
               dataset.add(object);
             }
           } else if (asset.type === "style") {
             const file = this.getModuleFile(module3 || context, asset.id, asset.type || "css", asset.resolve);
-            const object = staticAssets.create(file, null, null, module3 || context);
+            const object = staticAssets.create(file, null, null, module3 || context, this);
             object.setContent(asset.content);
             dataset.add(object);
           }
@@ -3159,7 +3624,7 @@ var require_Builder = __commonJS({
           this.crateAssetItems(module3, dataset, assets, externals);
         }
         if (compilation.modules.size > 1) {
-          if (Array.from(compilation.modules.values())[0] === module3) {
+          if (compilation.mainModule === module3) {
             this.crateAssetItems(module3, dataset, compilation.assets, externals);
           }
         } else {
@@ -3169,7 +3634,7 @@ var require_Builder = __commonJS({
         if (requires && requires.size > 0) {
           requires.forEach((item) => {
             const external = externals && item.from ? externals.find((name2) => item.from.indexOf(name2) === 0) : null;
-            const object = staticAssets.create(item.resolve, external || item.from, item.key, module3);
+            const object = staticAssets.create(item.resolve, external || item.from, item.key, module3, this);
             if (item.extract) {
               object.extract = true;
               object.local = item.name;
@@ -3279,6 +3744,7 @@ var require_Builder = __commonJS({
 var require_ClassBuilder = __commonJS({
   "core/ClassBuilder.js"(exports2, module2) {
     var Token2 = require_Token();
+    var staticAssets = require_Assets();
     var ClassBuilder2 = class extends Token2 {
       static createClassNode(stack, ctx2, type) {
         const obj = new ClassBuilder2(stack, ctx2, type);
@@ -3402,6 +3868,8 @@ var require_ClassBuilder = __commonJS({
         const cache2 = /* @__PURE__ */ new Map();
         stack.body.forEach((item) => {
           const child = this.createClassMemeberNode(item);
+          if (!child)
+            return;
           const isStatic = !!(stack.static || child.static);
           const refs = isStatic ? this.methods : this.members;
           this.createAnnotations(child, item, isStatic);
@@ -3515,9 +3983,9 @@ var require_ClassBuilder = __commonJS({
                 if (this.plugin.options.assets.test(source)) {
                   if (item.specifiers && item.specifiers.length > 0) {
                     const local = item.specifiers[0].value();
-                    this.builder.staticAssets.create(source, item.source.value(), local, module3);
+                    staticAssets.create(source, item.source.value(), local, module3, this.builder);
                   } else {
-                    this.builder.staticAssets.create(source, item.source.value(), null, module3);
+                    staticAssets.create(source, item.source.value(), null, module3, this.builder);
                   }
                 }
               }
@@ -3538,11 +4006,11 @@ var require_ClassBuilder = __commonJS({
           if (!usingExcludes.includes(depModule)) {
             const name2 = this.builder.getModuleNamespace(depModule, depModule.id);
             if (name2) {
-              let local = name2;
-              let imported = void 0;
-              if (module3.importAlias && module3.importAlias.has(depModule)) {
-                imported = name2;
-                local = module3.importAlias.get(depModule);
+              let local = this.builder.getModuleUsingAliasName(depModule, module3);
+              let imported = name2;
+              if (!local) {
+                imported = void 0;
+                local = name2;
               }
               this.using.push(this.createUsingStatementNode(
                 this.createImportSpecifierNode(local, imported)
@@ -3561,7 +4029,7 @@ var require_ClassBuilder = __commonJS({
               } else if (!(consistent || folderAsNamespace)) {
                 const source = this.builder.getFileRelativeOutputPath(depModule);
                 const name2 = this.builder.getModuleNamespace(depModule, depModule.id);
-                this.builder.addFileAndNamespaceMapping(source, name2);
+                this.builder.addFileAndNamespaceMapping(source, name2, module3);
               }
               createUse(depModule);
             } else if (this.isReferenceDeclaratorModule(depModule, module3)) {
@@ -3785,9 +4253,16 @@ var require_Array = __commonJS({
     function createObjectNodeRefs(ctx2, object, name2) {
       return object;
     }
-    function createCommonCalledNode(name2, ctx2, object, args2, called = true) {
+    function createCommonCalledNode(name2, ctx2, object, args2, called = true, checkRefs = false) {
       if (!called)
         return createMethodFunctionNode(ctx2, name2);
+      if (checkRefs && object && object.type === "ArrayExpression") {
+        const refs = ctx2.checkRefsName("ref");
+        ctx2.insertNodeBlockContextAt(
+          ctx2.createAssignmentNode(ctx2.createIdentifierNode(refs, null, true), object)
+        );
+        object = ctx2.createIdentifierNode(refs, null, true);
+      }
       const obj = createObjectNodeRefs(ctx2, object, name2);
       return ctx2.createCalleeNode(
         ctx2.createIdentifierNode(name2),
@@ -3820,13 +4295,13 @@ var require_Array = __commonJS({
         );
       },
       push(ctx2, object, args2, called = false, isStatic = false) {
-        return createCommonCalledNode("array_push", ctx2, object, args2, called);
+        return createCommonCalledNode("array_push", ctx2, object, args2, called, true);
       },
       unshift(ctx2, object, args2, called = false, isStatic = false) {
-        return createCommonCalledNode("array_unshift", ctx2, object, args2, called);
+        return createCommonCalledNode("array_unshift", ctx2, object, args2, called, true);
       },
       pop(ctx2, object, args2, called = false, isStatic = false) {
-        return createCommonCalledNode("array_pop", ctx2, object, args2, called);
+        return createCommonCalledNode("array_pop", ctx2, object, args2, called, true);
       },
       shift(ctx2, object, args2, called = false, isStatic = false) {
         return createCommonCalledNode("array_shift", ctx2, object, args2, called);
@@ -3835,7 +4310,7 @@ var require_Array = __commonJS({
         if (args2.length > 3) {
           args2 = args2.slice(0, 2).concat(ctx2.createArrayNode(args2.slice(2)));
         }
-        return createCommonCalledNode("array_splice", ctx2, object, args2, called);
+        return createCommonCalledNode("array_splice", ctx2, object, args2, called, true);
       },
       slice(ctx2, object, args2, called = false, isStatic = false) {
         return createCommonCalledNode("array_slice", ctx2, object, args2, called);
@@ -3940,7 +4415,7 @@ var require_Array = __commonJS({
         const module3 = ctx2.builder.getGlobalModuleById("Array");
         ctx2.addDepend(module3);
         const name2 = ctx2.builder.getModuleNamespace(module3, "es_array_sort");
-        return createCommonCalledNode(name2, ctx2, object, args2, called);
+        return createCommonCalledNode(name2, ctx2, object, args2, called, true);
       },
       join(ctx2, object, args2, called = false, isStatic = false) {
         if (!called)
@@ -7826,10 +8301,26 @@ var require_Identifier = __commonJS({
         } else if (desc2.parentStack.isAnnotationDeclaration) {
           const annotation = desc2.parentStack;
           const name2 = annotation.name.toLowerCase();
-          if (name2 === "require" || name2 === "import") {
+          if (name2 === "require" || name2 === "import" || name2 === "embed") {
             const argument = annotation.getArguments().find((item) => !!item.resolveFile);
-            return ctx2.createLiteralNode(ctx2.builder.getAssetFileReferenceName(ctx2.module, argument.resolveFile), void 0, stack);
+            if (argument) {
+              const asset = ctx2.builder.getAsset(argument.resolveFile);
+              if (asset) {
+                const Assets2 = ctx2.builder.getVirtualModule("asset.Assets");
+                ctx2.addDepend(Assets2);
+                return ctx2.createCalleeNode(
+                  ctx2.createStaticMemberNode([
+                    ctx2.createIdentifierNode(ctx2.getModuleReferenceName(Assets2)),
+                    ctx2.createIdentifierNode("get")
+                  ]),
+                  [
+                    ctx2.createLiteralNode(asset.getResourceId())
+                  ]
+                );
+              }
+            }
           }
+          return ctx2.createLiteralNode(null);
         } else {
           ctx2.addVariableRefs(desc2);
         }
@@ -9101,7 +9592,7 @@ var require_Program = __commonJS({
                       specifier.exported.value,
                       node.createBinaryNode(
                         "??",
-                        node.createMemberNode(node.createIdentifierNode(refs, null, true), specifier.local),
+                        node.createMemberNode([node.createIdentifierNode(refs, null, true), specifier.local]),
                         node.createLiteralNode(null)
                       )
                     )
@@ -9374,7 +9865,7 @@ var require_StructTableColumnDefinition = __commonJS({
     function createNode(ctx2, item) {
       if (!item)
         return null;
-      return item.isIdentifier ? ctx2.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
+      return item.isIdentifier ? ctx2.createIdentifierNode(item.value(), item) : item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
     }
     module2.exports = function(ctx2, stack) {
       const node = ctx2.createNode(stack);
@@ -9404,7 +9895,7 @@ var require_StructTableDeclaration = __commonJS({
     function createNode(ctx2, item) {
       if (!item)
         return null;
-      return item.isIdentifier ? ctx2.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
+      return item.isIdentifier ? ctx2.createIdentifierNode(item.value(), item) : item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
     }
     function normalName(name2) {
       return name2.replace(/([A-Z])/g, (a, b, i) => {
@@ -9412,8 +9903,7 @@ var require_StructTableDeclaration = __commonJS({
       });
     }
     module2.exports = function(ctx2, stack) {
-      const name2 = stack.module.getName();
-      if (ctx2.builder.hasSqlTableNode(name2)) {
+      if (ctx2.builder.hasSqlTableNode(stack.module)) {
         return null;
       }
       const node = ctx2.createNode(stack);
@@ -9428,7 +9918,7 @@ var require_StructTableDeclaration = __commonJS({
           node.body.push(token);
         }
       });
-      node.builder.addSqlTableNode(name2, node, stack);
+      node.builder.addSqlTableNode(stack.module, node, stack);
       return null;
     };
   }
@@ -9440,7 +9930,7 @@ var require_StructTableKeyDefinition = __commonJS({
     function createNode(ctx2, item) {
       if (!item)
         return null;
-      return item.isIdentifier ? ctx2.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
+      return item.isIdentifier ? ctx2.createIdentifierNode(item.value(), item) : item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
     }
     module2.exports = function(ctx2, stack) {
       const node = ctx2.createNode(stack);
@@ -9471,7 +9961,7 @@ var require_StructTableMethodDefinition = __commonJS({
     module2.exports = function(ctx2, stack) {
       const node = ctx2.createNode(stack);
       const key = stack.key.isMemberExpression ? stack.key.property : stack.key;
-      node.key = createNode(node, key, false, true);
+      node.key = createNode(node, key, false);
       const isKey = stack.parentStack.isStructTableKeyDefinition;
       node.params = (stack.params || []).map((item) => createNode(node, item, isKey));
       return node;
@@ -9485,7 +9975,7 @@ var require_StructTablePropertyDefinition = __commonJS({
     function createNode(ctx2, item) {
       if (!item)
         return null;
-      return item.isIdentifier ? ctx2.createIdentifierNode(item.value().toLowerCase(), item) : item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
+      return item.isIdentifier ? ctx2.createIdentifierNode(item.value(), item) : item.isLiteral ? ctx2.createLiteralNode(item.value()) : ctx2.createToken(item);
     }
     module2.exports = function(ctx2, stack) {
       const node = ctx2.createNode(stack);
@@ -10171,6 +10661,7 @@ var require_package = __commonJS({
       },
       esconfig: {
         scope: "es-php",
+        types: ["types/Asstes.d.es"],
         inherits: []
       },
       devDependencies: {
@@ -10190,6 +10681,7 @@ var require_package = __commonJS({
 
 // index.js
 var path2 = require("path");
+var fs = require("fs-extra");
 var Builder = require_Builder();
 var Token = require_Token();
 var Polyfill = require_Polyfill();
@@ -10204,6 +10696,7 @@ var Assets = require_Assets();
 var Glob2 = require_glob_path();
 var mergeWith = require("lodash/mergeWith");
 var modules = require_tokens();
+var VirtualModule = require_VirtualModule();
 var defaultConfig = {
   target: 7,
   strict: true,
@@ -10228,7 +10721,11 @@ var defaultConfig = {
   },
   composer: null,
   consistent: true,
-  assets: /\.(gif|png|jpeg|jpg|svg|bmp|icon|font|css|less|sass|js|mjs|mp4)$/i,
+  assets: /\.(gif|png|jpeg|jpg|svg|bmp|icon|font|css|less|sass|scss|js|mjs|cjs|vue|ts)$/i,
+  bundle: {
+    enable: false,
+    extensions: [".js", ".mjs", ".cjs", ".vue", ".es", ".ts"]
+  },
   lessOptions: {},
   sassOptions: {},
   rollupOptions: {
@@ -10292,9 +10789,11 @@ var PluginEsPhp = class {
       JSXTransform,
       JSXClassBuilder,
       Assets,
-      Merge: merge
+      Merge: merge,
+      VirtualModule
     };
   }
+  #builders = /* @__PURE__ */ new Map();
   constructor(compiler, options) {
     this.compiler = compiler;
     this.options = merge({}, defaultConfig, options);
@@ -10303,9 +10802,11 @@ var PluginEsPhp = class {
     this.version = pkg.version;
     this.platform = "server";
     registerError(compiler.diagnostic.defineError, compiler.diagnostic.LANG_CN, compiler.diagnostic.LANG_EN);
-    this._builders = /* @__PURE__ */ new Map();
     this.glob = new Glob2();
     this.addGlobRule();
+    compiler.on("onChanged", (compilation) => {
+      this.#builders.delete(compilation);
+    });
   }
   addGlobRule() {
     const resolve = this.options.resolve;
@@ -10367,25 +10868,67 @@ var PluginEsPhp = class {
   getClassModuleBuilder() {
     return ClassBuilder;
   }
-  start(compilation, done) {
+  getAssets() {
+    return Assets.getAssets();
+  }
+  getVirtualModule(id2) {
+    return VirtualModule.getVModule(id2);
+  }
+  async start(compilation, done = () => null) {
     const builder = this.getBuilder(compilation);
-    builder.start(done);
+    await builder.start(done);
     return builder;
   }
-  build(compilation, done) {
+  async build(compilation, done = () => null) {
     const builder = this.getBuilder(compilation);
-    builder.build(done);
+    await builder.build(done);
     return builder;
+  }
+  async batch(compilations) {
+    if (!Array.isArray(compilations)) {
+      throw new Error("compilations is not array");
+    }
+    const len = compilations.length - 1;
+    await Promise.allSettled(compilations.map(async (compilation, index) => {
+      await compilation.ready();
+      const builder = this.getBuilder(compilation);
+      if (compilation.isDescriptorDocument()) {
+        compilation.modules.forEach((module2) => {
+          const stack = compilation.getStackByModule(module2);
+          if (stack) {
+            builder.buildForModule(compilation, stack, module2);
+          }
+        });
+      } else {
+        if (compilation.isCompilationGroup) {
+          compilation.children.forEach((compilation2) => {
+            builder.buildForModule(compilation2, compilation2.stack, compilation2.mainModule);
+          });
+        } else {
+          builder.buildForModule(compilation, compilation.stack, compilation.mainModule);
+        }
+      }
+      await builder.buildAfter();
+      if (index === len) {
+        await builder.buildIncludes();
+        await builder.emitSql();
+        await builder.emitManifest();
+        await builder.emitAssets();
+      }
+    }));
+    const Assets2 = this.getVirtualModule("asset.Assets");
+    if (Assets2.using) {
+      await Assets2.make();
+    }
   }
   getBuilder(compilation, builderFactory = Builder) {
-    let builder = this._builders.get(compilation);
+    let builder = this.#builders.get(compilation);
     if (builder)
       return builder;
     builder = new builderFactory(compilation);
     builder.name = this.name;
     builder.platform = this.platform;
     builder.plugin = this;
-    this._builders.set(compilation, builder);
     return builder;
   }
   toString() {

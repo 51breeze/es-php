@@ -33,6 +33,7 @@
   },
   "esconfig": {
     "scope": "es-php",
+    "types": ["types/Asstes.d.es"],
     "inherits": []
   },
   "devDependencies": {

@@ -14,10 +14,13 @@ class Asset{
         this.local = local;
         this.module = module;
         this.context = context;
+        this.compilation = module && module.isModule && module.compilation ? module.compilation : module;
         this.content = '';
         this.change = true;
         this.format = '[name]-[hash][ext]';
         this.extname = '';
+        this.dist = null;
+        this.emitHook = null;
         if(file){
             const ext = PATH.extname(file);
             if(ext){
@@ -30,15 +33,13 @@ class Asset{
         if( this.change ){
             this.change = false;
             const output = this.context.getOutputPath();
-            const file = PATH.join(output, this.getOutputFilePath());
+            const file = PATH.join(output,this.getOutputFilePath());
             fs.mkdirSync(PATH.dirname(file), {recursive: true});
             const ext = this.getExt();
             if( ext ==='.less'){
                 this.lessCompile(done, file);
-            }else if( ext ==='.sass'){
+            }else if( ext ==='.sass' || ext ==='.scss'){
                 this.sassCompile(done, file);
-            }else if( ext ==='.js' || ext ==='.es' ){
-                this.jsCompile(done, file);
             }else{
                 if( this.content ){
                     fs.writeFileSync(file, this.content); 
@@ -48,6 +49,14 @@ class Asset{
                 if(done)done();
             }
         } 
+    }
+
+    unlink(){
+        const output = this.context.getOutputPath();
+        const file = PATH.join(output,this.getOutputFilePath());
+        if(fs.existsSync(file)){
+            fs.unlinkSync(file);
+        }
     }
 
     lessCompile(done, filename){
@@ -79,36 +88,41 @@ class Asset{
     }
 
     jsCompile(done, filename){
-        const rollup = require('rollup');
-        const options = merge({
-            input:{
-                plugins:[],
-                watch:false,
-            }, 
-            output:{
-                format:'cjs'
-            },
-        }, this.context.plugin.options.rollupOptions);
-        const plugins = [
-            'rollup-plugin-node-resolve',
-            'rollup-plugin-commonjs'
-        ].map( nam=>{
-            try{
-                const file = require.resolve( nam );
-                const plugin = require( file );
-                return plugin();
-            }catch(e){
-                return null;
-            }
-        }).filter( plugin =>plugin && !options.input.plugins.some(item=>{
-            return item.name === plugin.name;
-        }));
-        options.input.plugins.push( ...plugins );
-        options.input.input = this.content || this.file;
-        options.output.file = filename;
-        rollup.rollup(options.input).then( bundle=>{
-            bundle.write( options.output ).finally(done);
-        }).catch( done );
+        try{
+            const rollup = require('rollup');
+            const options = merge({
+                input:{
+                    plugins:[],
+                    watch:false,
+                }, 
+                output:{
+                    format:'cjs'
+                },
+            }, this.context.plugin.options.rollupOptions);
+            const plugins = [
+                'rollup-plugin-node-resolve',
+                'rollup-plugin-commonjs'
+            ].map( nam=>{
+                try{
+                    const file = require.resolve( nam );
+                    const plugin = require( file );
+                    return plugin();
+                }catch(e){
+
+                    return null;
+                }
+            }).filter( plugin =>plugin && !options.input.plugins.some(item=>{
+                return item.name === plugin.name;
+            }));
+            options.input.plugins.push( ...plugins );
+            options.input.input = this.content || this.file;
+            options.output.file = filename;
+            rollup.rollup(options.input).then( bundle=>{
+                bundle.write( options.output ).finally(done);
+            }).catch(done)
+        }catch(e){
+            done(e);
+        }
     }
 
     setContent(content){
@@ -122,11 +136,19 @@ class Asset{
         return this.extname;
     }
 
+    getBaseDir(){
+        return this.context.getOutputPath();
+    }
+
+    getOutputDir(){
+        return this.context.getPublicPath();
+    }
+
     getOutputFilePath(){
         if(this.assetOutputFile)return this.assetOutputFile;
-        const publicPath = (this.context.plugin.options.publicPath || '').trim();
+        const publicPath = this.context.getPublicPath();
         let folder = this.getFolder();
-        if( publicPath && !PATH.isAbsolute(folder)){
+        if(publicPath && !PATH.isAbsolute(folder)){
             folder = PATH.join(publicPath,folder);
         }
         const ext = this.getExt();
@@ -155,12 +177,20 @@ class Asset{
 
     getHash(){
         if(this.hash)return this.hash;
-        return this.hash = crypto.createHash('md5').update(this.file).digest('hex').substring(0,8);
+        return this.hash = crypto.createHash('md5').update(this.file||this.content).digest('hex').substring(0,8);
     }
 
     getFolder(){
         if(this.folder)return this.folder;
         return this.folder = this.context.resolveSourceFileMappingPath(this.file) || '.';
+    }
+
+    getResourceId(){
+        return this.getHash();
+    }
+
+    getResourcePath(){
+        return this.dist || this.getOutputFilePath();
     }
 
     getAssetFilePath(){
@@ -179,13 +209,39 @@ class Asset{
 
 class Assets{
 
-    constructor(){
-        this.dataset = new Map();
-        this.context = null;
+    static #instance = new Assets()
+
+    static create(resolve, source, local, module, builder){
+        return Assets.#instance.create(resolve, source, local, module, builder)
     }
 
-    setContext( ctx ){
-        this.context = ctx;
+    static getAsset(resolve){
+        return Assets.#instance.getAsset(resolve);
+    }
+
+    static getAssets(){
+        return Assets.#instance.getAssets();
+    }
+
+    static has(file){
+        return Assets.#instance.has(file);
+    }
+
+    static del(file){
+        return Assets.#instance.del(file);
+    }
+
+    static isEmpty(){
+        return !(Assets.#instance.dataset.size > 0)
+    }
+
+    static get instance(){
+        return Assets.#instance;
+    }
+
+    constructor(){
+        this.dataset = new Map();
+        this.cache = new WeakSet();
     }
 
     emit(done){
@@ -208,7 +264,7 @@ class Assets{
         });
     }
 
-    async emitAsync(){
+    async emitAsync(publicPath){
         return await new Promise((resolve, reject)=>{
             try{
                 this.emit(resolve)
@@ -218,11 +274,21 @@ class Assets{
         })
     }
 
-    create(resolve, source, local, module){
+    create(resolve, source, local, module, builder){
         if( !this.dataset.has(resolve) ){
-            const asset = new Asset(resolve, source, local, module);
-            asset.context = this.context;
+            const asset = new Asset(resolve, source, local, module, builder);
             this.dataset.set(resolve, asset);
+            const compilation = asset.compilation;
+            if(compilation && !this.cache.has(compilation)){
+                this.cache.add(compilation);
+                compilation.once('onClear',()=>{
+                    this.dataset.forEach( (asset, resolve)=>{
+                        if(asset.compilation === compilation){
+                            this.dataset.delete(resolve);
+                        }
+                    });
+                });
+            }
             return asset;
         }
         return this.dataset.get(resolve);
@@ -231,7 +297,11 @@ class Assets{
     getAsset(resolve){
         return this.dataset.get(resolve);
     }
+
+    getAssets(){
+        return Array.from( this.dataset.values() )
+    }
 }
 
 
-module.exports = new Assets();
+module.exports = Assets;

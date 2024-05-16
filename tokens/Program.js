@@ -133,7 +133,7 @@ module.exports = function(ctx,stack){
                                     specifier.exported.value,  
                                     node.createBinaryNode(
                                         '??', 
-                                        node.createMemberNode( node.createIdentifierNode(refs,null,true), specifier.local),
+                                        node.createMemberNode([node.createIdentifierNode(refs,null,true), specifier.local]),
                                         node.createLiteralNode(null) 
                                     )
                                 )

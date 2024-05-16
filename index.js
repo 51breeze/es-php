@@ -1,4 +1,5 @@
 const path = require("path");
+const fs = require("fs-extra");
 const Builder = require("./core/Builder");
 const Token = require('./core/Token');
 const Polyfill = require('./core/Polyfill');
@@ -13,6 +14,8 @@ const Assets = require('./core/Assets');
 const Glob = require('glob-path');
 const mergeWith = require("lodash/mergeWith");
 const modules = require("./tokens/index.js");
+const VirtualModule = require("./core/VirtualModule");
+
 const defaultConfig ={
     target:7,
     strict:true,
@@ -37,7 +40,11 @@ const defaultConfig ={
     },
     composer:null,
     consistent:true,
-    assets:/\.(gif|png|jpeg|jpg|svg|bmp|icon|font|css|less|sass|js|mjs|mp4)$/i,
+    assets:/\.(gif|png|jpeg|jpg|svg|bmp|icon|font|css|less|sass|scss|js|mjs|cjs|vue|ts)$/i,
+    bundle:{
+        enable:false,
+        extensions:['.js','.mjs','.cjs','.vue','.es','.ts'],
+    },
     lessOptions:{},
     sassOptions:{},
     rollupOptions:{
@@ -104,9 +111,12 @@ class PluginEsPhp{
             JSXTransform,
             JSXClassBuilder,
             Assets,
-            Merge:merge
+            Merge:merge,
+            VirtualModule
         };
     }
+
+    #builders = new Map();
 
     constructor(compiler,options){
         this.compiler = compiler;
@@ -116,9 +126,11 @@ class PluginEsPhp{
         this.version = pkg.version;
         this.platform = 'server';
         registerError(compiler.diagnostic.defineError, compiler.diagnostic.LANG_CN, compiler.diagnostic.LANG_EN );
-        this._builders = new Map();
         this.glob=new Glob();
         this.addGlobRule();
+        compiler.on('onChanged', (compilation)=>{
+            this.#builders.delete(compilation);
+        });
     }
 
     addGlobRule(){
@@ -190,26 +202,71 @@ class PluginEsPhp{
         return ClassBuilder;
     }
 
-    start(compilation, done){
+    getAssets(){
+        return Assets.getAssets();
+    }
+
+    getVirtualModule(id){
+        return VirtualModule.getVModule(id);
+    }
+
+    async start(compilation, done=()=>null){
         const builder = this.getBuilder( compilation );
-        builder.start(done);
+        await builder.start(done);
         return builder;
     }
 
-    build(compilation, done){
-        const builder = this.getBuilder( compilation );
-        builder.build(done);
+    async build(compilation, done=()=>null){
+        const builder = this.getBuilder(compilation);
+        await builder.build(done);
         return builder;
-    } 
+    }
 
-    getBuilder( compilation, builderFactory=Builder ){
-        let builder = this._builders.get(compilation);
-        if( builder )return builder;
+    async batch(compilations){
+        if(!Array.isArray(compilations)){
+            throw new Error('compilations is not array')
+        }
+        const len = compilations.length-1;
+        await Promise.allSettled(compilations.map( async (compilation,index)=>{
+            await compilation.ready();
+            const builder = this.getBuilder(compilation)
+            if( compilation.isDescriptorDocument() ){
+                compilation.modules.forEach( module=>{
+                    const stack = compilation.getStackByModule(module);
+                    if(stack){
+                        builder.buildForModule(compilation, stack, module);
+                    }
+                })
+            }else{
+                if( compilation.isCompilationGroup ){
+                    compilation.children.forEach( compilation=>{
+                        builder.buildForModule(compilation, compilation.stack, compilation.mainModule);
+                    });
+                }else{
+                    builder.buildForModule(compilation, compilation.stack, compilation.mainModule);
+                }
+            }
+            await builder.buildAfter();
+            if(index === len){
+                await builder.buildIncludes();
+                await builder.emitSql();
+                await builder.emitManifest();
+                await builder.emitAssets();
+            }
+        }));
+        const Assets = this.getVirtualModule('asset.Assets');
+        if(Assets.using){
+            await Assets.make();
+        }
+    }
+
+    getBuilder(compilation, builderFactory=Builder ){
+        let builder = this.#builders.get(compilation);
+        if(builder)return builder;
         builder = new builderFactory(compilation);
         builder.name = this.name;
         builder.platform = this.platform;
         builder.plugin = this;
-        this._builders.set(compilation,builder);
         return builder;
     }
 

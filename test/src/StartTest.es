@@ -8,21 +8,22 @@ import gl from 'g.config.es';
 
 import table.Address;
 
+import Assets;
+
+@Embed(Imgs='./Person.es');
+
 public class StartTest extends Base
 {
     private var items = [];
     private var list  = [];
     private var addData:Address;
 
-
     @Main
     public static main(){
        const d = Person;
-       console.log(d);
     }
 
     testArray(){
-
         var items = this.items; 
         var flag  = true;
         if( flag ){

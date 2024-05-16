@@ -3,18 +3,57 @@ const crypto = require('crypto');
 const Generator = require("./Generator");
 const Token = require("./Token");
 const Polyfill = require("./Polyfill");
+const VirtualModule = require("./VirtualModule");
 const PATH = require("path");
 const Sql = require("./Sql");
+const Manifest = require("./Manifest");
+const Composer = require("./Composer");
 const staticAssets = require("./Assets");
 const moduleDependencies = new Map();
 const moduleIdMap=new Map();
 const namespaceMap=new Map();
 const createAstStackCached = new WeakSet();
-const composerDependencies = new Map();
 const outputAbsolutePathCached = new Map();
-const fileAndNamespaceMappingCached = new Map();
-const sqlInstance  = new Sql();
 const fileContextScopes = new Map();
+const uniqueFileRecords = new Map();
+
+VirtualModule.createVModule((module)=>{
+    const data = {};
+    staticAssets.getAssets().forEach( asset=>{
+        const item = {};
+        item.path=asset.getResourcePath();
+        if(asset.content){
+            item.content = asset.content.replace(/(?<!\\)\u0027/g,"\\'")
+        }
+        data[asset.getResourceId()]=item;
+    });
+    const items = [];
+    Object.keys(data).forEach((key)=>{
+        const item = data[key];
+        const properties = Object.keys(item).map(name=>{
+            return `'${name}'=>'${item[name]}'`
+        });
+        items.push(`'${key}'=>[\n\t\t\t\t${properties.join(',\n\t\t\t\t')}\n\t\t\t]`)
+    });
+    const content = `[\n\t\t\t${items.join(',\n\t\t\t')}\n\t\t]`;
+    const ns = module.nsId ? `namespace ${module.nsId};` : '';
+    const top = [];
+    if(ns)top.push(ns);
+    return top.concat([
+        `class ${module.id}{`,
+        `\tstatic function get(string $id, string $name='path'){`,
+        `\t\t$assets = static::getAssets();`,
+        `\t\treturn $assets[$id][$name] ?? null;`,
+        `\t}`,
+        `\tstatic function getAssets(){`,
+        `\t\tstatic $assets=${content};`,
+        `\t\treturn $assets;`,
+        `\t}`,
+        `}`
+    ]).join('\n');
+
+},'Assets', 'asset');
+
 class Builder extends Token{
 
     static MODULE_TYPE_CONTROLLER = 1;
@@ -34,13 +73,14 @@ class Builder extends Token{
         this.name = null;
         this.platform = null;
         this.buildModules = new Set();
-        this.staticAssets = staticAssets;
         this.fileContextScopes = fileContextScopes;
-        staticAssets.setContext(this);
-        sqlInstance.builder = this;
         this.esSuffix = new RegExp( this.compiler.options.suffix.replace('.','\\')+'$', 'i' );
         this.checkRuntimeCache = new Map();
         this.checkPluginContextCache = new Map();
+    }
+
+    getVirtualModule(name){
+        return VirtualModule.getVModule(name);
     }
 
     createScopeId(context, source ){
@@ -59,69 +99,73 @@ class Builder extends Token{
         return crypto.createHash('md5').update(str).digest('hex').substring(0,8);
     }
 
-    addSqlTableNode(id, node, stack){
-        sqlInstance.addTable(id,node,stack);
+    addSqlTableNode(module, node, stack){
+        Sql.add(module, node, stack);
     }
 
-    hasSqlTableNode(id){
-        return sqlInstance.has(id);
+    hasSqlTableNode(module){
+        return Sql.has(module);
     }
 
     getRouterInstance(){
         return null
     }
 
-    addFileAndNamespaceMapping(file, namespace){
+    addFileAndNamespaceMapping(file, namespace, module){
         if( namespace && file ){
-            fileAndNamespaceMappingCached.set(file, namespace);
+            Manifest.add(module, file, namespace);
         }
     }
 
-    addDependencyForComposer(identifier, version, env='prod'){
-        composerDependencies.set(identifier, {name:identifier, version, env});
+    addDependencyForComposer(name, version, env='prod'){
+        Composer.add(this, name, version, env);
     }
 
     emitPackageDependencies(){
-        const items = Array.from( composerDependencies.values() );
-        const output = this.getComposerPath();
-        const jsonFile = PATH.join(output, 'composer.json');
-        const object = fs.existsSync( jsonFile ) ? require( jsonFile ) : {};
-        items.forEach( item=>{
-            const key = item.env ==='prod' ? 'require-dev' : 'require';
-            if( !Object.prototype.hasOwnProperty(object, key) ){
-                object[ key ] = {};
+        if(!Composer.isEmpty()){
+            const output = this.getComposerPath();
+            const jsonFile = PATH.join(output, 'composer.json');
+            const object = fs.existsSync( jsonFile ) ? require( jsonFile ) : {};
+            Composer.make(object);
+            if( output ){
+                this.emitFile(jsonFile , JSON.stringify(object) );
             }
-            object[key][item.name] = item.version;
-        });
-        if( output ){
-            this.emitFile( jsonFile , JSON.stringify(object) );
         }
     }
 
     async emitManifest(){
-        if( fileAndNamespaceMappingCached.size > 0 ){
-            const items = [];
-            const root = this.plugin.options.resolve.mapping.folder.root;
-            const file  = PATH.isAbsolute(root) ? root : PATH.join(this.getOutputPath(), root, 'manifest.php');
-            fileAndNamespaceMappingCached.forEach( (ns,file)=>{
-                items.push(`'${ns}'=>'${file}'`)
-            });
-            this.emitFile( file , `return [\r\n\t${items.join(',\r\n\t')}\r\n];`);
+        if(!Manifest.isEmpty()){
+            let file = 'manifest.php';
+            let folder = this.plugin.resolveSourceId('manifest.php', 'folders') || '.';
+            file  = PATH.isAbsolute(folder) ? PATH.join(folder,file) : PATH.join(this.getOutputPath(), folder, file);
+            this.emitFile(file, Manifest.emit());
         }
     }
 
     async emitSql(){
-        let file = 'app.sql';
-        let folder = this.plugin.resolveSourceId(file, 'folders') || '.';
-        file = PATH.isAbsolute(folder) ? PATH.join(folder,file) : PATH.join(this.getOutputPath(), folder, file);
-        this.emitFile(file,sqlInstance.toString());
+        if(!Sql.isEmpty()){
+            let file = 'app.sql';
+            let folder = this.plugin.resolveSourceId(file, 'folders') || '.';
+            file = PATH.isAbsolute(folder) ? PATH.join(folder,file) : PATH.join(this.getOutputPath(), folder, file);
+            this.emitFile(file,Sql.emit());
+        }
     }
 
     async emitAssets(){
-        const error = await this.staticAssets.emitAsync();
+        const error = await staticAssets.instance.emitAsync(this.getPublicPath());
         if(error){
             console.error(error);
         }
+    }
+
+    getPublicPath(){
+        const value = this.__publicPath;
+        if(value)return value;
+        let publicPath = this.plugin.options.publicPath || 'public';
+        if( !PATH.isAbsolute(publicPath) ){
+            publicPath = PATH.join(this.getOutputPath(), publicPath)
+        }
+        return this.__publicPath = this.compiler.normalizePath(publicPath);
     }
 
     getOutputPath(){
@@ -157,23 +201,47 @@ class Builder extends Token{
 
     emitCopyFile(from, to){
         fs.createReadStream(from).pipe( fs.createWriteStream(to) );
+    } 
+
+    buildForVirtualModule(module, compilation){
+        if(module.using)return;
+        module.nsId = this.getModuleNamespace(module);
+        module.outpath = this.getOutputAbsolutePath(module, compilation);
+        module.context = this;
+        module.using = true;
+        module.emitFile = (content)=>{
+            if( content ){
+                const file = `virtual:${module.getName()}`;
+                const config = this.plugin.options;
+                this.emitContent(
+                    file, 
+                    content,  
+                    config.emit ? module.outpath : null
+                );
+            }
+        }
+        module.make();
     }
 
     buildForModule(compilation, stack, module){
-        if( !this.make(compilation, stack, module) )return;
+        if(!this.make(compilation, stack, module))return;
         this.getDependencies(module).forEach( depModule=>{
             if( this.isNeedBuild(depModule, module) && !this.buildModules.has(depModule) ){
                 this.buildModules.add(depModule);
-                const compilation = depModule.compilation;
-                if( depModule.isDeclaratorModule ){
-                    const stack = compilation.getStackByModule(depModule);
-                    if( stack ){
-                        this.buildForModule( compilation, stack, depModule );
-                    }else{
-                        throw new Error(`Not found stack by '${depModule.getName()}'`);
-                    }
+                if(depModule.isVirtualModule){
+                    this.buildForVirtualModule(depModule, compilation);
                 }else{
-                    this.buildForModule(compilation, compilation.stack, depModule);
+                    const compilation = depModule.compilation;
+                    if( depModule.isDeclaratorModule ){
+                        const stack = compilation.getStackByModule(depModule);
+                        if( stack ){
+                            this.buildForModule( compilation, stack, depModule );
+                        }else{
+                            throw new Error(`Not found stack by '${depModule.getName()}'`);
+                        }
+                    }else{
+                        this.buildForModule(compilation, compilation.stack, depModule);
+                    }
                 }
             }
         });
@@ -258,16 +326,18 @@ class Builder extends Token{
 
             await this.buildIncludes();
             this.buildModules.forEach(module=>{
-                module.compilation.completed(this.plugin,true);
+                if(!module.isVirtualModule){
+                    module.compilation.completed(this.plugin,true);
+                }
             });
             compilation.completed(this.plugin,true);
             await this.buildAfter();
             await this.emitSql();
             await this.emitManifest();
             await this.emitAssets();
-            done();
+            done(null, this);
         }catch(e){
-            done(e);
+            done(e, this);
         }
     }
 
@@ -286,7 +356,7 @@ class Builder extends Token{
                     }
                 });
             }else{
-                this.make(compilation, compilation.stack, Array.from(compilation.modules.values()).shift() );
+                this.make(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift() );
             }
 
             await this.buildIncludes();
@@ -295,16 +365,16 @@ class Builder extends Token{
             const error = await this.emitAssets();
             compilation.completed(this.plugin,true);
             await this.buildAfter();
-            done(error);
+            done(error, this);
         }catch(e){
-            done(e);
+            done(e, this);
         }
     }
 
     make(compilation, stack, module){
+        if(module && module.isVirtualModule)return false;
         if(createAstStackCached.has(stack))return false;
         createAstStackCached.add( stack );
-
         const config = this.plugin.options;
         const isRoot = compilation.stack === stack;
         if( isRoot ){
@@ -347,7 +417,7 @@ class Builder extends Token{
     }
 
     isNeedBuild(module, ctxModule){
-        if(!module || !this.compiler.callUtils('isTypeModule', module))return false;
+        if(!module || !(module.isVirtualModule || this.compiler.callUtils('isTypeModule', module)))return false;
         if(module.isStructTable)return true;
         if( !this.isActiveForModule(module, ctxModule) )return false;
         if( !this.isPluginInContext(module) ){
@@ -560,35 +630,59 @@ class Builder extends Token{
         const workspace = config.workspace || this.compiler.workspace;
         const output = this.getOutputPath();
         const isStr = typeof module === "string";
+        const origin = isStr ? module : module.file;
         if( !module )return output;
         const folder = isStr ? this.getSourceFileMappingFolder(module) : this.getModuleMappingFolder(module);
-        if( !isStr && module && module.isModule ){
+        let result = null;
+        if( !isStr && module && module.isModule && !module.isVirtualModule){
             if( module.isDeclaratorModule ){
                 const polyfillModule = Polyfill.modules.get( module.getName() );
                 const filename = module.id+suffix;
                 if( polyfillModule ){
                     return this.compiler.normalizePath( PATH.join(output,(folder||polyfillModule.namespace),filename) );
                 }
-                return this.compiler.normalizePath( PATH.join(output, (folder ? folder : module.getName("/"))+suffix) );
+                result = this.compiler.normalizePath( PATH.join(output, (folder ? folder : module.getName("/"))+suffix) );
             }else if( module.compilation.isDescriptorDocument() ){
-                return this.compiler.normalizePath( PATH.join(output, (folder ? folder : module.getName("/"))+suffix) );
+                result = this.compiler.normalizePath( PATH.join(output, (folder ? folder : module.getName("/"))+suffix) );
             }
         }
-        let filepath = '';
-        if( isStr ){
-            filepath = PATH.resolve(output, folder ? PATH.join(folder, PATH.parse(module).name+suffix) : PATH.relative( workspace, module ) );
-        }else if( module && module.isModule && module.compilation.modules.size===1 && this.compiler.normalizePath(module.file).includes(workspace) ){
-            filepath = PATH.resolve(output, folder ? PATH.join(folder, module.id+suffix) : PATH.relative( workspace, module.file ) );
-        }else if(module && module.isModule){
-            filepath = PATH.join(output, folder ? PATH.join(folder, module.id+suffix) : module.getName("/")+suffix );
+        if( result === null ){
+            let filepath = '';
+            if( isStr ){
+                filepath = PATH.resolve(output, folder ? PATH.join(folder, PATH.parse(module).name+suffix) : PATH.relative( workspace, module ) );
+            }else if(module){
+                if(module.isVirtualModule){
+                    filepath = PATH.join(output, folder ? PATH.join(folder, module.file) : module.file );
+                }else if( module.isModule && module.compilation.modules.size===1 && this.compiler.normalizePath(module.file).includes(workspace) ){
+                    filepath = PATH.resolve(output, folder ? PATH.join(folder, module.id+suffix) : PATH.relative(workspace, module.file) );
+                }else if(module.isModule){
+                    filepath = PATH.join(output, folder ? PATH.join(folder, module.id+suffix) : module.getName("/")+suffix );
+                }
+            }
+            const info = PATH.parse(filepath);
+            if( info.ext === '.es' ){
+                filepath = PATH.join(info.dir, info.name+suffix);
+            }
+            filepath = this.compiler.normalizePath(filepath);
+            result = filepath;
         }
-        const info = PATH.parse(filepath);
-        if( info.ext === '.es' ){
-            filepath = PATH.join(info.dir, info.name+suffix);
+
+        let old = uniqueFileRecords.get(result);
+        if(old && old !== origin){
+            let index = 0;
+            let _info = PATH.parse(result);
+            while(index<10){
+                index++;
+                result = this.compiler.normalizePath(_info.dir +'/'+ (_info.name+index) + _info.ext);
+                if(!uniqueFileRecords.has(result)){
+                    break;
+                }
+            }
+        }else{
+            uniqueFileRecords.set(result, origin);
         }
-        filepath = this.compiler.normalizePath(filepath);
-        outputAbsolutePathCached.set(module,filepath);
-        return filepath;
+        outputAbsolutePathCached.set(module,result);
+        return result;
     }
 
     getSourceFileMappingFolder(file){ 
@@ -597,7 +691,7 @@ class Builder extends Token{
 
     getModuleMappingFolder(module){
         if( module && module.isModule ){
-            let file = module.compilation.file;
+            let file = module.isVirtualModule ? module.file : module.compilation.file;
             if( module.isDeclaratorModule ){
                 file = module.getName('/');
                 const compilation = module.compilation;
@@ -692,8 +786,8 @@ class Builder extends Token{
 
     addDepend( depModule, ctxModule ){
         ctxModule = ctxModule || this.compilation;
-        if( !depModule.isModule || depModule === ctxModule )return;
-        if( !this.compiler.callUtils("isTypeModule", depModule) )return;
+        if( !(depModule.isModule || depModule.isVirtualModule) || depModule === ctxModule )return;
+        if(!depModule.isVirtualModule && !this.compiler.callUtils("isTypeModule", depModule) )return;
         var dataset = moduleDependencies.get(ctxModule);
         if( !dataset ){
             moduleDependencies.set( ctxModule, dataset = new Set() );
@@ -728,8 +822,9 @@ class Builder extends Token{
         }
         const isUsed = this.isUsed(depModule, ctxModule);
         if(!isUsed)return false;
+        if(depModule.isVirtualModule)return true;
         if(depModule.isDeclaratorModule){
-            return !!this.getPolyfillModule( depModule.getName() );
+            return !!this.getPolyfillModule(depModule.getName());
         }else{
             return !this.compiler.callUtils("checkDepend", ctxModule, depModule);
         }
@@ -759,6 +854,23 @@ class Builder extends Token{
         return '';
     }
 
+    getAsset(file){
+        return staticAssets.getAsset(file);
+    }
+
+    getModuleUsingAliasName(module,context){
+        if(!context || !context.isModule)return null;
+        if(context.importAlias && context.importAlias.has(module) ){
+            return context.importAlias.get(module);
+        }
+        if(context.imports && context.imports.has(module.id)){
+            if(context.imports.get(module.id) !== module){
+                return '__'+module.getName('_');
+            } 
+        }
+        return null;
+    }
+
     getModuleReferenceName(module,context){
         context = context || this.compilation;
         if( !module )return null;
@@ -779,6 +891,9 @@ class Builder extends Token{
             }
 
             if( module.required || context.imports && context.imports.has( module.id ) ){
+                if(context.imports.get( module.id ) !== module ){
+                   return '__'+module.getName('_');
+                }
                 return module.id;
             }
 
@@ -786,7 +901,6 @@ class Builder extends Token{
             if( deps && deps.has(module) ){
                 return module.id;
             }
-
         }
         return this.getModuleNamespace(module, module.id, false);
     }
@@ -808,6 +922,11 @@ class Builder extends Token{
                 }
                 return items.join('\\');
             }
+        }else if(module.isVirtualModule && module.ns){
+            if(suffix){
+                return module.ns.split('.').concat(suffix).join('\\');
+            }
+            return module.ns.split('.').join('\\');
         }
         return !imported && suffix ? '\\'+suffix : '';
     }
@@ -822,9 +941,9 @@ class Builder extends Token{
             if( this.plugin.options.assets.test(source) ){
                 if(item.specifiers && item.specifiers.length > 0){
                     const local = item.specifiers[0].value();
-                    this.staticAssets.create(source, item.source.value(), local);
+                    staticAssets.create(source, item.source.value(), local, this.compilation, this);
                 }else{
-                    this.staticAssets.create(source, item.source.value(), null);
+                    staticAssets.create(source, item.source.value(), null, this.compilation, this);
                 }
             } 
         };
@@ -839,12 +958,12 @@ class Builder extends Token{
             if( asset.file ){
                 const external = externals && asset.file ? externals.find( name=>asset.file.indexOf(name)===0 ) : null;
                 if( !external ){
-                    const object = staticAssets.create(asset.resolve, asset.file, asset.assign, module||context);
+                    const object = staticAssets.create(asset.resolve, asset.file, asset.assign, module||context, this);
                     dataset.add(object);
                 }
             }else if( asset.type ==="style" ){
                 const file = this.getModuleFile(module||context, asset.id, asset.type||'css', asset.resolve);
-                const object = staticAssets.create(file, null, null, module||context);
+                const object = staticAssets.create(file, null, null, module||context, this);
                 object.setContent(asset.content);
                 dataset.add(object);
             }
@@ -863,7 +982,7 @@ class Builder extends Token{
            this.crateAssetItems(module, dataset , assets, externals);
         }
         if( compilation.modules.size > 1 ){
-            if( Array.from( compilation.modules.values() )[0] === module ){
+            if( compilation.mainModule === module ){
                 this.crateAssetItems(module, dataset, compilation.assets, externals);
             }
         }else{
@@ -874,7 +993,7 @@ class Builder extends Token{
         if( requires && requires.size > 0 ){
             requires.forEach( item=>{
                 const external = externals && item.from ? externals.find( name=>item.from.indexOf(name)===0 ) : null;
-                const object = staticAssets.create(item.resolve, external || item.from, item.key, module);
+                const object = staticAssets.create(item.resolve, external || item.from, item.key, module, this);
                 if( item.extract ){
                     object.extract = true;
                     object.local = item.name;

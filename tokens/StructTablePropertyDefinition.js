@@ -1,7 +1,7 @@
 function createNode(ctx, item){
     if(!item)return null;
     return item.isIdentifier ? 
-    ctx.createIdentifierNode(item.value().toLowerCase(), item) : 
+    ctx.createIdentifierNode(item.value(), item) : 
     item.isLiteral ? 
     ctx.createLiteralNode(item.value()) : 
     ctx.createToken(item);
