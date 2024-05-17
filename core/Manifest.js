@@ -39,7 +39,7 @@ class Manifest{
         const compilation = module.compilation;
         if(!this.cache.has(compilation)){
             this.cache.add(compilation);
-            compilation.once('onClear',()=>{
+            compilation.on('onClear',()=>{
                 this.dataset.forEach( ([module], key)=>{
                     if(compilation === module.compilation){
                         this.changed = true;

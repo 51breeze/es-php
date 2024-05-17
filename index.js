@@ -43,7 +43,9 @@ const defaultConfig ={
     assets:/\.(gif|png|jpeg|jpg|svg|bmp|icon|font|css|less|sass|scss|js|mjs|cjs|vue|ts)$/i,
     bundle:{
         enable:false,
-        extensions:['.js','.mjs','.cjs','.vue','.es','.ts'],
+        extensions:['.js','.mjs','.cjs','.vue','.es','.ts','.sass','.scss','.less'],
+        plugins:[],
+        esbuildOptions:{}
     },
     lessOptions:{},
     sassOptions:{},

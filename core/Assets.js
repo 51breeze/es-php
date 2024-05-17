@@ -30,6 +30,14 @@ class Asset{
         }
     }
 
+    get change(){
+        return this.#change;
+    }
+
+    get source(){
+        return this.#source;
+    }
+
     setAttr(name, value){
         if(name==='baseDir'){
             this.#baseDir = value;
@@ -41,6 +49,7 @@ class Asset{
             this.#resolveDir = value;
         }
         else if(name==='dist'){
+            this.#change = true;
             this.#dist = value;
         }
     }
@@ -50,11 +59,13 @@ class Asset{
             this.#change = false;
             const filename = this.getResourcePath();
             const distFile = PATH.isAbsolute(filename) ? filename :  PATH.join(this.#baseDir, filename);
-            fs.mkdirSync(PATH.dirname(distFile), {recursive: true});
+            if( !fs.existsSync(PATH.dirname(distFile)) ){
+                fs.mkdirSync(PATH.dirname(distFile), {recursive: true});
+            }
             if( this.content ){
-                fs.writeFileSync(file, this.#content); 
+                fs.writeFileSync(distFile, this.#content); 
             }else if( fs.existsSync(this.#file) ){
-                fs.copyFileSync(this.#file, file);
+                fs.copyFileSync(this.#file, distFile);
             }
             if(done){
                 done();
@@ -63,8 +74,8 @@ class Asset{
     }
 
     unlink(){
-        const output = this.#baseDir;
-        const distFile = PATH.join(output,this.getResourcePath());
+        const filename = this.getResourcePath();
+        const distFile = PATH.isAbsolute(filename) ? filename :  PATH.join(this.#baseDir, filename);
         if(fs.existsSync(distFile)){
             fs.unlinkSync(distFile);
         }
@@ -121,6 +132,15 @@ class Asset{
         if(this.#dist){
             return this.#dist;
         }
+        let file = this.getAbsoluteResourcePath();
+        file = PATH.relative(this.#baseDir,file).replace(/\\/g, '/');
+        return this.#dist = file;
+    }
+
+    getAbsoluteResourcePath(){
+        if(this._absoluteResourcePath){
+            return this._absoluteResourcePath;
+        }
         const outDir = this.#outDir;
         let folder = this.#resolveDir || '.';
         if(outDir && !PATH.isAbsolute(folder)){
@@ -136,8 +156,10 @@ class Asset{
             return data[name] || '';
         });
         file = PATH.join(folder, file);
-        file = PATH.isAbsolute(file) ? PATH.relative(this.#baseDir,file) : file;
-        return this.#dist = file.replace(/\\/g, '/');
+        file = !PATH.isAbsolute(file) ? PATH.join(this.#baseDir,file) : file;
+        file = file.replace(/\\/g, '/');
+        this._absoluteResourcePath = file;
+        return file;
     }
 
     getAssetFilePath(){
@@ -231,10 +253,14 @@ class Assets{
             const compilation = asset.compilation;
             if(compilation && !this.cache.has(compilation)){
                 this.cache.add(compilation);
-                compilation.once('onClear',()=>{
+                compilation.on('onClear',()=>{
                     this.dataset.forEach( (asset, resolve)=>{
                         if(asset.compilation === compilation){
-                            this.dataset.delete(resolve);
+                            const asset = this.dataset.get(resolve);
+                            if(asset){
+                                asset.unlink();
+                                this.dataset.delete(resolve);
+                            }
                         }
                     });
                 });

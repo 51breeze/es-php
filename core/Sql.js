@@ -63,7 +63,7 @@ class Sql{
         const compilation = stack.compilation;
         if(!this.cache.has(compilation)){
             this.cache.add(compilation);
-            compilation.once('onClear',()=>{
+            compilation.on('onClear',()=>{
                 this.dataset.forEach( (table, module)=>{
                     if(compilation === table.stack.compilation){
                         this.changed = true;

@@ -2210,7 +2210,7 @@ var require_Sql = __commonJS({
         const compilation = stack.compilation;
         if (!this.cache.has(compilation)) {
           this.cache.add(compilation);
-          compilation.once("onClear", () => {
+          compilation.on("onClear", () => {
             this.dataset.forEach((table, module4) => {
               if (compilation === table.stack.compilation) {
                 this.changed = true;
@@ -2285,7 +2285,7 @@ var require_Manifest = __commonJS({
         const compilation = module3.compilation;
         if (!this.cache.has(compilation)) {
           this.cache.add(compilation);
-          compilation.once("onClear", () => {
+          compilation.on("onClear", () => {
             this.dataset.forEach(([module4], key) => {
               if (compilation === module4.compilation) {
                 this.changed = true;
@@ -2412,195 +2412,156 @@ var require_Assets = __commonJS({
   "core/Assets.js"(exports2, module2) {
     var PATH = require("path");
     var crypto = require("crypto");
-    var merge2 = require("lodash/merge");
     var fs2 = require("fs-extra");
-    var suffixMaps = {
-      ".less": ".css",
-      ".sacc": ".css",
-      ".scss": ".css"
-    };
     var Asset = class {
-      constructor(file, source, local, module3, context) {
-        this.file = file;
-        this.source = source;
+      #baseDir = "";
+      #outDir = "";
+      #resolveDir = "";
+      #dist = null;
+      #format = "[name]-[hash][ext]";
+      #content = "";
+      #filename = "";
+      #extname = "";
+      #file = "";
+      #source = "";
+      #hash = null;
+      #change = true;
+      constructor(file, source, local, module3) {
+        this.#file = file;
+        this.#source = source;
         this.local = local;
         this.module = module3;
-        this.context = context;
         this.compilation = module3 && module3.isModule && module3.compilation ? module3.compilation : module3;
-        this.content = "";
-        this.change = true;
-        this.format = "[name]-[hash][ext]";
-        this.extname = "";
-        this.dist = null;
-        this.emitHook = null;
         if (file) {
           const ext = PATH.extname(file);
           if (ext) {
-            this.extname = ext;
+            this.#extname = ext;
           }
         }
       }
+      get change() {
+        return this.#change;
+      }
+      get source() {
+        return this.#source;
+      }
+      setAttr(name2, value2) {
+        if (name2 === "baseDir") {
+          this.#baseDir = value2;
+        } else if (name2 === "outDir") {
+          this.#outDir = value2;
+        } else if (name2 === "resolveDir") {
+          this.#resolveDir = value2;
+        } else if (name2 === "dist") {
+          this.#change = true;
+          this.#dist = value2;
+        }
+      }
       emit(done) {
-        if (this.change) {
-          this.change = false;
-          const output = this.context.getOutputPath();
-          const file = PATH.join(output, this.getOutputFilePath());
-          fs2.mkdirSync(PATH.dirname(file), { recursive: true });
-          const ext = this.getExt();
-          if (ext === ".less") {
-            this.lessCompile(done, file);
-          } else if (ext === ".sass" || ext === ".scss") {
-            this.sassCompile(done, file);
-          } else {
-            if (this.content) {
-              fs2.writeFileSync(file, this.content);
-            } else if (fs2.existsSync(this.file)) {
-              fs2.copyFileSync(this.file, file);
-            }
-            if (done)
-              done();
+        if (this.#change) {
+          this.#change = false;
+          const filename = this.getResourcePath();
+          const distFile = PATH.isAbsolute(filename) ? filename : PATH.join(this.#baseDir, filename);
+          if (!fs2.existsSync(PATH.dirname(distFile))) {
+            fs2.mkdirSync(PATH.dirname(distFile), { recursive: true });
+          }
+          if (this.content) {
+            fs2.writeFileSync(distFile, this.#content);
+          } else if (fs2.existsSync(this.#file)) {
+            fs2.copyFileSync(this.#file, distFile);
+          }
+          if (done) {
+            done();
           }
         }
       }
       unlink() {
-        const output = this.context.getOutputPath();
-        const file = PATH.join(output, this.getOutputFilePath());
-        if (fs2.existsSync(file)) {
-          fs2.unlinkSync(file);
-        }
-      }
-      lessCompile(done, filename) {
-        const less = require("less");
-        const options = merge2({ filename: this.file }, this.context.plugin.options.lessOptions);
-        const content = this.content || fs2.readFileSync(this.file).toString();
-        less.render(content, options, (e, output) => {
-          if (e) {
-            done(e);
-          } else {
-            fs2.writeFile(filename, output.css, done);
-          }
-        });
-      }
-      sassCompile(done, filename) {
-        const sass = require("node-sass");
-        const options = merge2({}, this.context.plugin.options.sassOptions);
-        const content = this.content || fs2.readFileSync(this.file).toString();
-        options.file = this.file;
-        options.data = content;
-        sass.render(options, (e, output) => {
-          if (e) {
-            done(e);
-          } else {
-            fs2.writeFile(filename, output.css, done);
-          }
-        });
-      }
-      jsCompile(done, filename) {
-        try {
-          const rollup = require("rollup");
-          const options = merge2({
-            input: {
-              plugins: [],
-              watch: false
-            },
-            output: {
-              format: "cjs"
-            }
-          }, this.context.plugin.options.rollupOptions);
-          const plugins = [
-            "rollup-plugin-node-resolve",
-            "rollup-plugin-commonjs"
-          ].map((nam) => {
-            try {
-              const file = require.resolve(nam);
-              const plugin = require(file);
-              return plugin();
-            } catch (e) {
-              return null;
-            }
-          }).filter((plugin) => plugin && !options.input.plugins.some((item) => {
-            return item.name === plugin.name;
-          }));
-          options.input.plugins.push(...plugins);
-          options.input.input = this.content || this.file;
-          options.output.file = filename;
-          rollup.rollup(options.input).then((bundle) => {
-            bundle.write(options.output).finally(done);
-          }).catch(done);
-        } catch (e) {
-          done(e);
+        const filename = this.getResourcePath();
+        const distFile = PATH.isAbsolute(filename) ? filename : PATH.join(this.#baseDir, filename);
+        if (fs2.existsSync(distFile)) {
+          fs2.unlinkSync(distFile);
         }
       }
       setContent(content) {
-        if (content !== this.content) {
-          this.change = true;
-          this.content = content;
+        if (content !== this.#content) {
+          this.#change = true;
+          this.#content = content;
         }
+      }
+      getContent() {
+        return this.#content;
       }
       getExt() {
-        return this.extname;
+        return this.#extname;
       }
       getBaseDir() {
-        return this.context.getOutputPath();
+        return this.#baseDir;
       }
       getOutputDir() {
-        return this.context.getPublicPath();
+        return this.#outDir;
       }
-      getOutputFilePath() {
-        if (this.assetOutputFile)
-          return this.assetOutputFile;
-        const publicPath = this.context.getPublicPath();
-        let folder = this.getFolder();
-        if (publicPath && !PATH.isAbsolute(folder)) {
-          folder = PATH.join(publicPath, folder);
-        }
-        const ext = this.getExt();
-        const data2 = {
-          name: this.getFilename(),
-          hash: this.getHash(),
-          ext: suffixMaps[ext] || ext
-        };
-        let file = this.format.replace(/\[(\w+)\]/g, (_2, name2) => {
-          return data2[name2] || "";
-        });
-        file = PATH.join(folder, file);
-        return this.assetOutputFile = this.context.compiler.normalizePath(PATH.isAbsolute(file) ? PATH.relative(this.context.getOutputPath(), file) : file);
+      getResolveDir() {
+        return this.#resolveDir;
       }
       getFilename() {
-        if (this.filename)
-          return this.filename;
+        if (this.#filename)
+          return this.#filename;
         let name2 = this.module ? this.module.id : "";
-        if (PATH.isAbsolute(this.file)) {
-          name2 = PATH.basename(this.file, PATH.extname(this.file));
+        if (PATH.isAbsolute(this.#file)) {
+          name2 = PATH.basename(this.#file, PATH.extname(this.#file));
         } else {
-          name2 = PATH.extname(this.file).slice(1);
+          name2 = PATH.extname(this.#file).slice(1);
         }
-        return this.filename = String(name2).toLowerCase();
+        return this.#filename = String(name2).toLowerCase();
       }
       getHash() {
-        if (this.hash)
-          return this.hash;
-        return this.hash = crypto.createHash("md5").update(this.file || this.content).digest("hex").substring(0, 8);
-      }
-      getFolder() {
-        if (this.folder)
-          return this.folder;
-        return this.folder = this.context.resolveSourceFileMappingPath(this.file) || ".";
+        if (this.#hash)
+          return this.#hash;
+        return this.#hash = crypto.createHash("md5").update(this.#file || this.#content).digest("hex").substring(0, 8);
       }
       getResourceId() {
         return this.getHash();
       }
       getResourcePath() {
-        return this.dist || this.getOutputFilePath();
+        if (this.#dist) {
+          return this.#dist;
+        }
+        let file = this.getAbsoluteResourcePath();
+        file = PATH.relative(this.#baseDir, file).replace(/\\/g, "/");
+        return this.#dist = file;
+      }
+      getAbsoluteResourcePath() {
+        if (this._absoluteResourcePath) {
+          return this._absoluteResourcePath;
+        }
+        const outDir = this.#outDir;
+        let folder = this.#resolveDir || ".";
+        if (outDir && !PATH.isAbsolute(folder)) {
+          folder = PATH.join(outDir, folder);
+        }
+        const ext = this.getExt();
+        const data2 = {
+          name: this.getFilename(),
+          hash: this.getHash(),
+          ext
+        };
+        let file = this.#format.replace(/\[(\w+)\]/g, (_2, name2) => {
+          return data2[name2] || "";
+        });
+        file = PATH.join(folder, file);
+        file = !PATH.isAbsolute(file) ? PATH.join(this.#baseDir, file) : file;
+        file = file.replace(/\\/g, "/");
+        this._absoluteResourcePath = file;
+        return file;
       }
       getAssetFilePath() {
-        return this.file;
+        return this.#file;
       }
       toString() {
-        if (this.content) {
-          return this.content;
-        } else if (fs2.existsSync(this.file)) {
-          return fs2.readFileSync(this.file).toString();
+        if (this.#content) {
+          return this.#content;
+        } else if (fs2.existsSync(this.#file)) {
+          return fs2.readFileSync(this.#file).toString();
         }
         return "";
       }
@@ -2660,15 +2621,22 @@ var require_Assets = __commonJS({
       }
       create(resolve, source, local, module3, builder) {
         if (!this.dataset.has(resolve)) {
-          const asset = new Asset(resolve, source, local, module3, builder);
+          const asset = new Asset(resolve, source, local, module3);
+          asset.setAttr("baseDir", builder.getOutputPath());
+          asset.setAttr("outDir", builder.getPublicPath());
+          asset.setAttr("resolveDir", builder.resolveSourceFileMappingPath(resolve));
           this.dataset.set(resolve, asset);
           const compilation = asset.compilation;
           if (compilation && !this.cache.has(compilation)) {
             this.cache.add(compilation);
-            compilation.once("onClear", () => {
+            compilation.on("onClear", () => {
               this.dataset.forEach((asset2, resolve2) => {
                 if (asset2.compilation === compilation) {
-                  this.dataset.delete(resolve2);
+                  const asset3 = this.dataset.get(resolve2);
+                  if (asset3) {
+                    asset3.unlink();
+                    this.dataset.delete(resolve2);
+                  }
                 }
               });
             });
@@ -2716,9 +2684,10 @@ var require_Builder = __commonJS({
       const data2 = {};
       staticAssets.getAssets().forEach((asset) => {
         const item = {};
+        const content2 = asset.getContent();
         item.path = asset.getResourcePath();
-        if (asset.content) {
-          item.content = asset.content.replace(/(?<!\\)\u0027/g, "\\'");
+        if (content2) {
+          item.content = content2.replace(/(?<!\\)\u0027/g, "\\'");
         }
         data2[asset.getResourceId()] = item;
       });
@@ -3498,7 +3467,7 @@ var require_Builder = __commonJS({
       getAssetFileReferenceName(module3, file) {
         const asset = staticAssets.getAsset(file);
         if (asset) {
-          return asset.getOutputFilePath();
+          return asset.getResourcePath();
         }
         return "";
       }
@@ -3788,8 +3757,8 @@ var require_ClassBuilder = __commonJS({
         var mainModule = module3;
         var internalModules = null;
         if (multiModule && this.compilation.modules.size > 1) {
-          internalModules = Array.from(this.compilation.modules.values());
-          mainModule = internalModules.shift();
+          mainModule = this.compilation.mainModule;
+          internalModules = Array.from(this.compilation.modules.values()).filter((m) => m !== mainModule);
         }
         if (mainModule === module3) {
           if (this.plugin.options.consistent && !module3.file.includes(module3.getName("/"))) {
@@ -3853,8 +3822,12 @@ var require_ClassBuilder = __commonJS({
           return false;
         }).map((item) => this.createIdentifierNode(this.getModuleReferenceName(item)));
         this.createClassMemebers(stack);
-        if (!this.construct && this.initProperties.length > 0) {
-          this.construct = this.createDefaultConstructMethod("__construct", this.initProperties);
+        if (this.initProperties.length > 0) {
+          if (!this.construct) {
+            this.construct = this.createDefaultConstructMethod("__construct", this.initProperties);
+          } else {
+            this.construct.body.body.push(...this.initProperties);
+          }
         }
         this.checkConstructMethod();
         return this;
@@ -9519,11 +9492,13 @@ var require_Program = __commonJS({
       node.body = [];
       node.afterBody = [];
       node.imports = [];
+      node.beforeExternals = [];
       stack.body.forEach((item) => {
         if (stack.isJSXProgram || item.isClassDeclaration || item.isDeclaratorDeclaration || item.isStructTableDeclaration || item.isEnumDeclaration || item.isInterfaceDeclaration || item.isPackageDeclaration) {
           node.body.push(node.createToken(item));
         }
       });
+      node.body.push(...node.beforeExternals);
       const externalImports = [];
       const insertImports = [];
       const insertUsing = [];
@@ -9668,6 +9643,7 @@ var require_Program = __commonJS({
       node.body.push(...node.afterBody);
       delete node.afterBody;
       delete node.imports;
+      delete node.beforeExternals;
       return node;
     };
   }
@@ -9764,23 +9740,56 @@ var require_PropertyDefinition = __commonJS({
         return item.name.toLowerCase() === "embed";
       });
       var init = null;
+      var hasEmbed = false;
       if (embeds.length > 0) {
         var items = [];
         embeds.forEach((embed) => {
           const args2 = embed.getArguments();
           args2.forEach((item) => {
             if (item.resolveFile) {
-              const value2 = ctx2.builder.getAssetFileReferenceName(stack.module, item.resolveFile);
-              items.push(value2);
+              const asset = ctx2.builder.getAsset(item.resolveFile);
+              if (asset) {
+                const Assets2 = ctx2.builder.getVirtualModule("asset.Assets");
+                ctx2.addDepend(Assets2);
+                const value3 = ctx2.createCalleeNode(
+                  ctx2.createStaticMemberNode([
+                    ctx2.createIdentifierNode(ctx2.getModuleReferenceName(Assets2)),
+                    ctx2.createIdentifierNode("get")
+                  ]),
+                  [
+                    ctx2.createLiteralNode(asset.getResourceId())
+                  ]
+                );
+                items.push(value3);
+              }
             }
           });
         });
-        init = items.length > 1 ? ctx2.createArrayNode(items.map((value2) => ctx2.createLiteralNode(value2))) : ctx2.createLiteralNode(items[0]);
+        const value2 = items.length > 1 ? ctx2.createArrayNode(items) : items[0];
+        if (stack.static) {
+          const program = ctx2.getParentByType("Program");
+          if (program && Array.isArray(program.afterBody)) {
+            const left = ctx2.createStaticMemberNode([
+              ctx2.createIdentifierNode(ctx2.getModuleReferenceName(stack.module)),
+              ctx2.createIdentifierNode(stack.value(), void 0, true)
+            ]);
+            program.beforeExternals.push(ctx2.createStatementNode(ctx2.createAssignmentNode(left, value2)));
+          }
+        } else {
+          const parent = ctx2.getParentByType("ClassDeclaration", true);
+          if (parent && Array.isArray(ctx2.initProperties)) {
+            const left = ctx2.createMemberNode([
+              ctx2.createIdentifierNode("this", void 0, true),
+              ctx2.createIdentifierNode(stack.value())
+            ]);
+            ctx2.initProperties.push(ctx2.createStatementNode(ctx2.createAssignmentNode(left, value2)));
+          }
+        }
       }
       const node = ctx2.createNode(stack);
       node.declarations = (stack.declarations || []).map((item) => node.createToken(item));
       node.modifier = ctx2.createIdentifierNode(stack.compiler.callUtils("getModifierValue", stack));
-      if (stack.static && stack.kind === "const") {
+      if (stack.static && stack.kind === "const" && !hasEmbed) {
         node.kind = stack.kind;
       } else if (stack.static) {
         node.static = ctx2.createIdentifierNode("static");
@@ -10661,7 +10670,6 @@ var require_package = __commonJS({
       },
       esconfig: {
         scope: "es-php",
-        types: ["types/Asstes.d.es"],
         inherits: []
       },
       devDependencies: {
@@ -10724,7 +10732,9 @@ var defaultConfig = {
   assets: /\.(gif|png|jpeg|jpg|svg|bmp|icon|font|css|less|sass|scss|js|mjs|cjs|vue|ts)$/i,
   bundle: {
     enable: false,
-    extensions: [".js", ".mjs", ".cjs", ".vue", ".es", ".ts"]
+    extensions: [".js", ".mjs", ".cjs", ".vue", ".es", ".ts", ".sass", ".scss", ".less"],
+    plugins: [],
+    esbuildOptions: {}
   },
   lessOptions: {},
   sassOptions: {},
