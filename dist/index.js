@@ -1822,10 +1822,10 @@ var require_Token = __commonJS({
         const scope = context && context.scope || this.scope;
         const fnScope = top ? scope.getScopeByType("top") : scope.getScopeByType("function");
         const key = fnScope ? fnScope : scope;
-        const cache = SCOPE_MAP;
-        var dataset = cache.get(key);
+        const cache2 = SCOPE_MAP;
+        var dataset = cache2.get(key);
         if (!dataset) {
-          cache.set(key, dataset = {
+          cache2.set(key, dataset = {
             scope,
             result: /* @__PURE__ */ new Set(),
             check(name3, scope2) {
@@ -1914,18 +1914,18 @@ var require_Token = __commonJS({
       getDeclareRefsName(desc2, name2, flags = _Token.SCOPE_REFS_DOWN | _Token.SCOPE_REFS_UP_FUN, initInvoke = null, context = null) {
         if (!desc2)
           return name2;
-        var cache = DECLARE_REFS.get(desc2);
-        if (!cache)
-          DECLARE_REFS.set(desc2, cache = {});
-        if (Object.prototype.hasOwnProperty.call(cache, name2)) {
-          return cache[name2];
+        var cache2 = DECLARE_REFS.get(desc2);
+        if (!cache2)
+          DECLARE_REFS.set(desc2, cache2 = {});
+        if (Object.prototype.hasOwnProperty.call(cache2, name2)) {
+          return cache2[name2];
         }
-        return cache[name2] = this.checkRefsName(name2, false, flags, context, initInvoke);
+        return cache2[name2] = this.checkRefsName(name2, false, flags, context, initInvoke);
       }
       getWasRefsName(desc2, name2) {
-        var cache = DECLARE_REFS.get(desc2);
-        if (cache) {
-          return cache[name2];
+        var cache2 = DECLARE_REFS.get(desc2);
+        if (cache2) {
+          return cache2[name2];
         }
         return null;
       }
@@ -2311,10 +2311,10 @@ var require_Manifest = __commonJS({
       toString() {
         if (this.dataset.size > 0) {
           const items = [];
-          const cache = /* @__PURE__ */ Object.create(null);
+          const cache2 = /* @__PURE__ */ Object.create(null);
           this.dataset.forEach(([b, file, ns]) => {
-            if (!cache[ns]) {
-              cache[ns] = true;
+            if (!cache2[ns]) {
+              cache2[ns] = true;
               items.push(`'${ns}'=>'${file}'`);
             }
           });
@@ -2868,31 +2868,44 @@ var require_Builder = __commonJS({
         };
         module3.make();
       }
-      buildForModule(compilation, stack, module3) {
-        if (!this.make(compilation, stack, module3))
+      buildForModule(compilation, stack, module3, cache2 = /* @__PURE__ */ new WeakSet()) {
+        if (!compilation)
           return;
+        if (module3) {
+          if (this.buildModules.has(module3)) {
+            return;
+          }
+          this.buildModules.add(module3);
+        }
+        if (cache2.has(module3 || compilation))
+          return;
+        cache2.add(module3 || compilation);
+        this.make(compilation, stack, module3);
         this.getDependencies(module3).forEach((depModule) => {
-          if (this.isNeedBuild(depModule, module3) && !this.buildModules.has(depModule)) {
-            this.buildModules.add(depModule);
+          if (this.isNeedBuild(depModule, module3)) {
             if (depModule.isVirtualModule) {
               this.buildForVirtualModule(depModule, compilation);
             } else {
-              const compilation2 = depModule.compilation;
+              const compi = depModule.compilation;
+              const builder = this.plugin.getBuilder(compi);
               if (depModule.isDeclaratorModule) {
-                const stack2 = compilation2.getStackByModule(depModule);
+                const stack2 = compi.getStackByModule(depModule);
                 if (stack2) {
-                  this.buildForModule(compilation2, stack2, depModule);
+                  builder.buildForModule(compi, stack2, depModule, cache2);
                 } else {
                   throw new Error(`Not found stack by '${depModule.getName()}'`);
                 }
               } else {
-                this.buildForModule(compilation2, compilation2.stack, depModule);
+                builder.buildForModule(compi, compi.stack, depModule, cache2);
               }
             }
           }
         });
       }
       async buildIncludes() {
+        if (this.__buildIncludes)
+          return;
+        this.__buildIncludes = true;
         const includes = this.plugin.options.includes || [];
         const files = [];
         const push = (file, readdir) => {
@@ -2926,23 +2939,23 @@ var require_Builder = __commonJS({
           if (!this.esSuffix.test(file))
             return;
           const compilation = await this.compiler.createCompilation(file, null, true);
-          if (compilation && !compilation.completed(this.plugin)) {
-            await compilation.parserAsync();
+          if (compilation) {
+            await compilation.ready();
+            const builder = this.plugin.getBuilder(compilation);
             if (compilation.isDescriptorDocument()) {
               compilation.modules.forEach((module3) => {
                 const stack = compilation.getStackByModule(module3);
                 if (stack) {
-                  this.buildForModule(compilation, stack, module3);
+                  builder.buildForModule(compilation, stack, module3);
                 }
               });
             } else {
               if (compilation.modules.size > 0) {
-                this.buildForModule(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift());
+                builder.buildForModule(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift());
               } else {
-                this.buildForModule(compilation, compilation.stack);
+                builder.buildForModule(compilation, compilation.stack);
               }
             }
-            compilation.completed(this.plugin, true);
           } else if (!compilation) {
             this.emitCopyFile(file, this.getOutputAbsolutePath(file));
           }
@@ -2963,58 +2976,56 @@ var require_Builder = __commonJS({
           } else {
             if (compilation.isCompilationGroup) {
               compilation.children.forEach((compilation2) => {
-                this.buildForModule(compilation2, compilation2.stack, compilation2.mainModule || Array.from(compilation2.modules.values()).shift());
+                const builder = this.plugin.getBuilder(compilation2);
+                builder.buildForModule(compilation2, compilation2.stack, compilation2.mainModule || Array.from(compilation2.modules.values()).shift());
               });
             } else {
               this.buildForModule(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift());
             }
           }
           await this.buildIncludes();
-          this.buildModules.forEach((module3) => {
-            if (!module3.isVirtualModule) {
-              module3.compilation.completed(this.plugin, true);
-            }
-          });
-          compilation.completed(this.plugin, true);
-          await this.buildAfter();
           await this.emitSql();
           await this.emitManifest();
           await this.emitAssets();
+          await this.buildAfter();
           done(null, this);
         } catch (e) {
           done(e, this);
         }
       }
       async build(done) {
-        const compilation = this.compilation;
-        if (compilation.completed(this.plugin)) {
-          return done(null, this);
+        if (this.__buildDone) {
+          done(null, this);
+          return;
         }
+        const compilation = this.compilation;
         try {
-          compilation.completed(this.plugin, false);
           if (compilation.isDescriptorDocument()) {
             compilation.modules.forEach((module3) => {
               const stack = compilation.getStackByModule(module3);
               if (stack) {
                 this.make(compilation, stack, module3);
+                this.buildModules.add(module3);
               }
             });
           } else {
-            this.make(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift());
+            const module3 = compilation.mainModule || Array.from(compilation.modules.values()).shift();
+            this.make(compilation, compilation.stack, module3);
+            this.buildModules.add(module3);
           }
           await this.buildIncludes();
           await this.emitSql();
           await this.emitManifest();
-          const error = await this.emitAssets();
-          compilation.completed(this.plugin, true);
+          await this.emitAssets();
           await this.buildAfter();
-          done(error, this);
+          this.__buildDone = true;
+          done(null, this);
         } catch (e) {
           done(e, this);
         }
       }
       make(compilation, stack, module3) {
-        if (module3 && module3.isVirtualModule)
+        if (!stack || module3 && module3.isVirtualModule)
           return false;
         if (createAstStackCached.has(stack))
           return false;
@@ -3046,10 +3057,12 @@ var require_Builder = __commonJS({
           return child.import === "reference";
         }).forEach((child) => {
           if (child !== compilation) {
+            const builder = this.plugin.getBuilder(child);
             if (child.modules.size > 0) {
-              this.make(child, child.stack, Array.from(child.modules.values()).shift());
+              const module4 = child.mainModule || Array.from(child.modules.values()).shift();
+              builder.make(child, child.stack, module4);
             } else {
-              this.make(child, child.stack);
+              builder.make(child, child.stack);
             }
           }
         });
@@ -10637,7 +10650,7 @@ var require_package = __commonJS({
   "package.json"(exports2, module2) {
     module2.exports = {
       name: "es-php",
-      version: "0.4.7",
+      version: "0.4.8",
       description: "test",
       main: "dist/index.js",
       typings: "dist/types/typings.json",
@@ -10785,6 +10798,10 @@ function merge(...args2) {
     }
   });
 }
+var cache = /* @__PURE__ */ Object.create(null);
+var getCache = (name2) => {
+  return cache[name2] || (cache[name2] = /* @__PURE__ */ new Map());
+};
 var PluginEsPhp = class {
   static getPluginCoreModules() {
     return {
@@ -10803,7 +10820,6 @@ var PluginEsPhp = class {
       VirtualModule
     };
   }
-  #builders = /* @__PURE__ */ new Map();
   constructor(compiler, options) {
     this.compiler = compiler;
     this.options = merge({}, defaultConfig, options);
@@ -10815,7 +10831,7 @@ var PluginEsPhp = class {
     this.glob = new Glob2();
     this.addGlobRule();
     compiler.on("onChanged", (compilation) => {
-      this.#builders.delete(compilation);
+      getCache(this.platform).delete(compilation);
     });
   }
   addGlobRule() {
@@ -10932,13 +10948,15 @@ var PluginEsPhp = class {
     }
   }
   getBuilder(compilation, builderFactory = Builder) {
-    let builder = this.#builders.get(compilation);
+    let dataset = getCache(this.platform);
+    let builder = dataset.get(compilation);
     if (builder)
       return builder;
     builder = new builderFactory(compilation);
     builder.name = this.name;
     builder.platform = this.platform;
     builder.plugin = this;
+    dataset.set(compilation, builder);
     return builder;
   }
   toString() {

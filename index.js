@@ -98,6 +98,11 @@ function merge(...args){
    });
 }
 
+const cache = Object.create(null);
+const getCache = (name)=>{
+    return cache[name] || (cache[name]=new Map());
+}
+
 class PluginEsPhp{
 
     static getPluginCoreModules(){
@@ -118,8 +123,6 @@ class PluginEsPhp{
         };
     }
 
-    #builders = new Map();
-
     constructor(compiler,options){
         this.compiler = compiler;
         this.options = merge({},defaultConfig, options);
@@ -131,7 +134,7 @@ class PluginEsPhp{
         this.glob=new Glob();
         this.addGlobRule();
         compiler.on('onChanged', (compilation)=>{
-            this.#builders.delete(compilation);
+            getCache(this.platform).delete(compilation);
         });
     }
 
@@ -263,12 +266,14 @@ class PluginEsPhp{
     }
 
     getBuilder(compilation, builderFactory=Builder ){
-        let builder = this.#builders.get(compilation);
+        let dataset = getCache(this.platform)
+        let builder = dataset.get(compilation);
         if(builder)return builder;
         builder = new builderFactory(compilation);
         builder.name = this.name;
         builder.platform = this.platform;
         builder.plugin = this;
+        dataset.set(compilation, builder);
         return builder;
     }
 

@@ -224,24 +224,35 @@ class Builder extends Token{
         module.make();
     }
 
-    buildForModule(compilation, stack, module){
-        if(!this.make(compilation, stack, module))return;
+    buildForModule(compilation, stack, module, cache=new WeakSet()){
+        if(!compilation)return;
+        if( module){
+            if(this.buildModules.has(module)){
+                return;
+            }
+            this.buildModules.add(module);
+        }
+
+        if(cache.has(module||compilation))return;
+        cache.add(module||compilation)
+
+        this.make(compilation, stack, module);
         this.getDependencies(module).forEach( depModule=>{
-            if( this.isNeedBuild(depModule, module) && !this.buildModules.has(depModule) ){
-                this.buildModules.add(depModule);
+            if( this.isNeedBuild(depModule, module) ){
                 if(depModule.isVirtualModule){
                     this.buildForVirtualModule(depModule, compilation);
                 }else{
-                    const compilation = depModule.compilation;
+                    const compi = depModule.compilation;
+                    const builder = this.plugin.getBuilder(compi);
                     if( depModule.isDeclaratorModule ){
-                        const stack = compilation.getStackByModule(depModule);
+                        const stack = compi.getStackByModule(depModule);
                         if( stack ){
-                            this.buildForModule( compilation, stack, depModule );
+                            builder.buildForModule( compi, stack, depModule, cache);
                         }else{
                             throw new Error(`Not found stack by '${depModule.getName()}'`);
                         }
                     }else{
-                        this.buildForModule(compilation, compilation.stack, depModule);
+                        builder.buildForModule(compi, compi.stack, depModule, cache);
                     }
                 }
             }
@@ -249,6 +260,8 @@ class Builder extends Token{
     }
 
     async buildIncludes(){
+        if(this.__buildIncludes)return;
+        this.__buildIncludes = true;
         const includes = this.plugin.options.includes || [];
         const files = [];
         const push = (file, readdir)=>{
@@ -280,23 +293,23 @@ class Builder extends Token{
         await Promise.allSettled(files.map( async file=>{
             if(!this.esSuffix.test( file ))return;
             const compilation = await this.compiler.createCompilation(file,null,true);
-            if( compilation && !compilation.completed(this.plugin) ){
-                await compilation.parserAsync();
+            if( compilation ){
+                await compilation.ready();
+                const builder = this.plugin.getBuilder(compilation);
                 if( compilation.isDescriptorDocument() ){
                     compilation.modules.forEach( module=>{
                         const stack = compilation.getStackByModule(module);
                         if(stack){
-                            this.buildForModule(compilation, stack, module);
+                            builder.buildForModule(compilation, stack, module);
                         }
                     });
                 }else{
                     if(compilation.modules.size>0){
-                        this.buildForModule(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift() );
+                        builder.buildForModule(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift() );
                     }else{
-                        this.buildForModule(compilation, compilation.stack );
+                        builder.buildForModule(compilation, compilation.stack );
                     }
                 }
-                compilation.completed(this.plugin,true);
             }else if(!compilation){
                 this.emitCopyFile(file, this.getOutputAbsolutePath(file) );
             }
@@ -318,7 +331,8 @@ class Builder extends Token{
             }else{
                 if( compilation.isCompilationGroup ){
                     compilation.children.forEach( compilation=>{
-                        this.buildForModule(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift() );
+                        const builder = this.plugin.getBuilder(compilation);
+                        builder.buildForModule(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift() );
                     });
                 }else{
                     this.buildForModule(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift() );
@@ -326,16 +340,10 @@ class Builder extends Token{
             }
 
             await this.buildIncludes();
-            this.buildModules.forEach(module=>{
-                if(!module.isVirtualModule){
-                    module.compilation.completed(this.plugin,true);
-                }
-            });
-            compilation.completed(this.plugin,true);
-            await this.buildAfter();
             await this.emitSql();
             await this.emitManifest();
             await this.emitAssets();
+            await this.buildAfter();
             done(null, this);
         }catch(e){
             done(e, this);
@@ -343,37 +351,39 @@ class Builder extends Token{
     }
 
     async build(done){
-        const compilation = this.compilation;
-        if( compilation.completed(this.plugin) ){
-            return done(null, this);
+        if(this.__buildDone){
+            done(null, this);
+            return;
         }
+        const compilation = this.compilation;
         try{
-            compilation.completed(this.plugin,false);
             if( compilation.isDescriptorDocument() ){
                 compilation.modules.forEach( module=>{
                     const stack = compilation.getStackByModule(module);
                     if(stack){
                         this.make(compilation, stack, module);
+                        this.buildModules.add(module);
                     }
                 });
             }else{
-                this.make(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift() );
+                const module = compilation.mainModule || Array.from(compilation.modules.values()).shift();
+                this.make(compilation, compilation.stack, module);
+                this.buildModules.add(module);
             }
-
             await this.buildIncludes();
             await this.emitSql();
             await this.emitManifest();
-            const error = await this.emitAssets();
-            compilation.completed(this.plugin,true);
+            await this.emitAssets();
             await this.buildAfter();
-            done(error, this);
+            this.__buildDone = true;
+            done(null, this);
         }catch(e){
             done(e, this);
         }
     }
 
     make(compilation, stack, module){
-        if(module && module.isVirtualModule)return false;
+        if(!stack || module && module.isVirtualModule)return false;
         if(createAstStackCached.has(stack))return false;
         createAstStackCached.add( stack );
         const config = this.plugin.options;
@@ -406,10 +416,12 @@ class Builder extends Token{
             return child.import === 'reference';
         }).forEach( child=>{
             if( child !== compilation ){
+                const builder = this.plugin.getBuilder(child);
                 if( child.modules.size > 0 ){
-                    this.make(child, child.stack, Array.from(child.modules.values()).shift() );
+                    const module = child.mainModule || Array.from(child.modules.values()).shift();
+                    builder.make(child, child.stack, module);
                 }else{
-                    this.make(child, child.stack);
+                    builder.make(child, child.stack);
                 }
             }
         });

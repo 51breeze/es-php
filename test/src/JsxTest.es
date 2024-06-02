@@ -58,17 +58,17 @@ public class JsxTest extends JSXComponent{
 
     createForDirective( c:Function ){
         return <div>
-            <direct:for name={[1,2]} item="value">
+            <d:for name={[1,2]} item="value">
                     <p>{value}</p>
                     <div>
-                        <direct:each name={[3,4]} item="item">
+                        <d:each name={[3,4]} item="item">
                             <span>{value}-{item}</span>
-                            <div direct:for="(val,key) in children">
+                            <div d:for="(val,key) in children">
                                 {val},{key}
                             </div>
-                        </direct:each>
+                        </d:each>
                     </div>
-            </direct:for>
+            </d:for>
         </div>
     }
 
@@ -76,12 +76,12 @@ public class JsxTest extends JSXComponent{
 
     createIfDirective( c:Function ){
         return <div>
-            <direct:if condition={condition}>
+            <d:if condition={condition}>
                 if
-            </direct:if>
-            <direct:else>
+            </d:if>
+            <d:else>
                 else
-            </direct:else>
+            </d:else>
         </div>
     }
 
