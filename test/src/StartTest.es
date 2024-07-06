@@ -506,6 +506,22 @@ public class StartTest extends Base
             assertEquals(30, obj2.child.child.age )
         }
 
+        type Category1 = {
+            title:string,
+            pid:number
+        }
+        const map:ObjectProtector<Category1> = new stdClass();
+        map.title = '123';
+        assertEquals('123', map.title )
+
+        const arr:Category1 = {};
+        arr.title = '456'
+        assertEquals('456', arr.title )
+
+        const arr2:ArrayProtector<Category1> = {};
+        arr2.title = '789'
+        assertEquals('789', arr2.title )
+
     }
 
     call(){

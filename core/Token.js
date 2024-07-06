@@ -621,10 +621,13 @@ class Token extends events.EventEmitter {
             const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
             if( isWrapType ){
                 let inherit = type.inherit.type();
+                if(this.builder.getGlobalModuleById('ObjectProtector') === inherit){
+                    return false;
+                }
                 if( this.builder.getGlobalModuleById('ArrayProtector') === inherit ){
                     return true;
                 }else if( type.types.length>0 ){
-                    if( this.builder.getGlobalModuleById('RMD') === inherit || this.builder.getGlobalModuleById('ObjectProtector') === inherit){
+                    if( this.builder.getGlobalModuleById('RMD') === inherit){
                         return this.isArrayAccessor( type.types[0].type() )
                     }
                 }
@@ -657,8 +660,11 @@ class Token extends events.EventEmitter {
         const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
         if( isWrapType ){
             const inherit = type.inherit.type();
+            if(this.builder.getGlobalModuleById('ArrayProtector')===inherit){
+                return false;
+            }
             if( type.types.length>0){
-                if( this.builder.getGlobalModuleById('RMD') === inherit || this.builder.getGlobalModuleById('ArrayProtector')===inherit ){
+                if(this.builder.getGlobalModuleById('RMD') === inherit){
                     return this.isObjectAccessor( type.types[0].type() );
                 }
             }

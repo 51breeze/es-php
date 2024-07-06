@@ -20,10 +20,14 @@ module.exports = function(ctx,stack){
     let desc = null;
     if( stack.parentStack.isMemberExpression ) {
         if( stack.parentStack.object === stack ){
-            desc = stack.descriptor();
+            desc = stack.description();
         }
     }else{
-        desc = stack.descriptor();
+        desc = stack.description();
+    }
+
+    if(desc && desc.isImportDeclaration){
+        desc = desc.description();
     }
 
     const builder = ctx.builder;
@@ -114,6 +118,12 @@ module.exports = function(ctx,stack){
             if( desc.kind === 'const' ){
                 isDeclarator = false;
             }
+        }
+    }
+
+    if(stack.parentStack.isNewExpression){
+        if(!desc || !(desc.isDeclaratorVariable || isDeclarator)){
+            return ctx.createLiteralNode(stack.raw())
         }
     }
 
