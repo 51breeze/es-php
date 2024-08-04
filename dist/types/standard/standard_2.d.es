@@ -463,7 +463,16 @@ declare function fscanf(stream:any,format:string, ...vars:RMD<any>[]): array|int
  * If the component parameter is specified a
  * string is returned instead of an array.
  */
-declare function parse_url(url:string,component:int = -1)
+declare function parse_url(url:string):{
+    scheme?:string,
+    port?:int,
+    user?:string,
+    pass?:string,
+    path:string,
+    query?:string,
+    fragment?:string,
+}
+declare function parse_url(url:string,component:int=-1):string|number|null
 
 /**
  * URL-encodes string

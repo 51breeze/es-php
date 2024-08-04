@@ -617,7 +617,10 @@ class Token extends events.EventEmitter {
             return false;
         }else if(type.isLiteralObjectType || type.isLiteralType || type.isLiteralArrayType || type.isTupleType){
             return true;
-        }else{ 
+        }else if(type.isAliasType){
+            return this.isArrayAccessor(type.inherit.type())
+        }
+        else{
             const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
             if( isWrapType ){
                 let inherit = type.inherit.type();
@@ -656,6 +659,8 @@ class Token extends events.EventEmitter {
         }
         if( type.isInstanceofType ){
             return true;
+        }else if(type.isAliasType){
+            return this.isObjectAccessor(type.inherit.type())
         }
         const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
         if( isWrapType ){

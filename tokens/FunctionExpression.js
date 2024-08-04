@@ -87,8 +87,17 @@ function createParamNodes(ctx, stack, params){
       const oType = item.acceptType && item.acceptType.type();
       let acceptType = null;
       if( oType && !item.isRestElement && !oType.isGenericType && !oType.isLiteralObjectType ){
-         acceptType = stack.compiler.callUtils("getOriginType", oType );
+         let _alias = oType;
+         let _last = null;
+         while(_alias && _alias.isAliasType && _last !== _alias){
+            _last = _alias;
+            _alias = _alias.inherit.type();
+         }
+         if(!_alias || !_alias.isLiteralObjectType){
+            acceptType = stack.compiler.callUtils("getOriginType", oType);
+         }
       }
+
       let typeName = '';
       let defaultValue = null;
       let nameNode = null;
@@ -102,6 +111,7 @@ function createParamNodes(ctx, stack, params){
       }else{
          nameNode = ctx.createToken(item);
       }
+
       if( acceptType && acceptType.isModule ){
          const originType = ctx.builder.getAvailableOriginType( acceptType );
          if( originType==='String' || originType==='Array' || originType==='Object'){

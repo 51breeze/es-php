@@ -413,10 +413,13 @@ final class Reflect{
                     return call_user_func_array($fn, $args);
                 }
                 return !$args ? $method->invoke( $thisArg ) : $method->invokeArgs( $thisArg , $args );
-            }else if( method_exists($target, '__call') ){
-                return $target->__call($name, $args);
             }
         }
+
+        if(method_exists($target, '__call')){
+            return $target->__call($name, $args);
+        }
+        
         throw new \Error( $name." method is not exists.");
     }
 

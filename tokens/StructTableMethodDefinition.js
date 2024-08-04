@@ -9,6 +9,10 @@ function createNode(ctx, item, isKey=false, toLower=false){
 }
 module.exports = function(ctx, stack){
     const node = ctx.createNode(stack);
+    const name = stack.key.value().toLowerCase();
+    if(name ==='text' || name==='longtext' || name==='tinytext' || name==='mediumtext'){
+        return ctx.createIdentifierNode(stack.key.value(), stack.key);
+    }
     const key = stack.key.isMemberExpression ? stack.key.property : stack.key;
     node.key = createNode(node, key, false);
     const isKey = stack.parentStack.isStructTableKeyDefinition;

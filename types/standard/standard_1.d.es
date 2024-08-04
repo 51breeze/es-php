@@ -239,7 +239,13 @@ declare function dirname(path:string,levels?:int): string
  * If options is used, this function will return a
  * string if not all elements are requested.
  */
-declare function pathinfo(path:string,flags?:int): array|string
+declare function pathinfo(path:string):{
+    dirname:string,
+    basename?:string,
+    extension?:string,
+    filename?:string,
+}
+declare function pathinfo(path:string,flags:int): string
 
 /**
  * Un-quotes a quoted string

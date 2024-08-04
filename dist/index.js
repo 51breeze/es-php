@@ -1608,14 +1608,19 @@ var require_Token = __commonJS({
           return false;
         } else if (type.isLiteralObjectType || type.isLiteralType || type.isLiteralArrayType || type.isTupleType) {
           return true;
+        } else if (type.isAliasType) {
+          return this.isArrayAccessor(type.inherit.type());
         } else {
           const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
           if (isWrapType) {
             let inherit = type.inherit.type();
+            if (this.builder.getGlobalModuleById("ObjectProtector") === inherit) {
+              return false;
+            }
             if (this.builder.getGlobalModuleById("ArrayProtector") === inherit) {
               return true;
             } else if (type.types.length > 0) {
-              if (this.builder.getGlobalModuleById("RMD") === inherit || this.builder.getGlobalModuleById("ObjectProtector") === inherit) {
+              if (this.builder.getGlobalModuleById("RMD") === inherit) {
                 return this.isArrayAccessor(type.types[0].type());
               }
             }
@@ -1645,12 +1650,17 @@ var require_Token = __commonJS({
         }
         if (type.isInstanceofType) {
           return true;
+        } else if (type.isAliasType) {
+          return this.isObjectAccessor(type.inherit.type());
         }
         const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
         if (isWrapType) {
           const inherit = type.inherit.type();
+          if (this.builder.getGlobalModuleById("ArrayProtector") === inherit) {
+            return false;
+          }
           if (type.types.length > 0) {
-            if (this.builder.getGlobalModuleById("RMD") === inherit || this.builder.getGlobalModuleById("ArrayProtector") === inherit) {
+            if (this.builder.getGlobalModuleById("RMD") === inherit) {
               return this.isObjectAccessor(type.types[0].type());
             }
           }
@@ -3431,8 +3441,13 @@ var require_Builder = __commonJS({
       }
       getDependencies(ctxModule) {
         ctxModule = ctxModule || this.compilation;
-        const compilation = this.compiler.callUtils("isTypeModule", ctxModule) ? this.compilation : ctxModule;
-        const dataset = moduleDependencies.get(ctxModule);
+        let compilation = this.compilation;
+        if (!compilation) {
+          compilation = ctxModule.compilation;
+        }
+        if (!compilation)
+          return [];
+        let dataset = moduleDependencies.get(ctxModule);
         if (!dataset) {
           return compilation.getDependencies(ctxModule);
         }
@@ -6988,7 +7003,15 @@ var require_FunctionExpression = __commonJS({
         const oType = item.acceptType && item.acceptType.type();
         let acceptType = null;
         if (oType && !item.isRestElement && !oType.isGenericType && !oType.isLiteralObjectType) {
-          acceptType = stack.compiler.callUtils("getOriginType", oType);
+          let _alias = oType;
+          let _last = null;
+          while (_alias && _alias.isAliasType && _last !== _alias) {
+            _last = _alias;
+            _alias = _alias.inherit.type();
+          }
+          if (!_alias || !_alias.isLiteralObjectType) {
+            acceptType = stack.compiler.callUtils("getOriginType", oType);
+          }
         }
         let typeName = "";
         let defaultValue2 = null;
@@ -7491,7 +7514,7 @@ var require_CallExpression = __commonJS({
     }
     function CallExpression(ctx2, stack) {
       const isMember = stack.callee.isMemberExpression;
-      const desc2 = stack.doGetDeclareFunctionType(stack.callee.description());
+      const desc2 = stack.descriptor();
       const module3 = stack.module;
       const declareParams = desc2 && desc2.params;
       const node = ctx2.createNode(stack);
@@ -8228,10 +8251,13 @@ var require_Identifier = __commonJS({
       let desc2 = null;
       if (stack.parentStack.isMemberExpression) {
         if (stack.parentStack.object === stack) {
-          desc2 = stack.descriptor();
+          desc2 = stack.description();
         }
       } else {
-        desc2 = stack.descriptor();
+        desc2 = stack.description();
+      }
+      if (desc2 && desc2.isImportDeclaration) {
+        desc2 = desc2.description();
       }
       const builder = ctx2.builder;
       if (desc2 && (desc2.isPropertyDefinition || desc2.isMethodDefinition)) {
@@ -8316,6 +8342,11 @@ var require_Identifier = __commonJS({
           if (desc2.kind === "const") {
             isDeclarator = false;
           }
+        }
+      }
+      if (stack.parentStack.isNewExpression) {
+        if (!desc2 || !(desc2.isDeclaratorVariable || isDeclarator)) {
+          return ctx2.createLiteralNode(stack.raw());
         }
       }
       if (stack.parentStack.isMemberExpression) {
@@ -9173,6 +9204,9 @@ var require_MemberExpression = __commonJS({
         if (result)
           return result;
         isMember = true;
+        if (isStatic && description.kind !== "const") {
+          propertyNode = ctx2.createIdentifierNode(stack.property.value(), stack.property, true);
+        }
       }
       const node = ctx2.createNode(stack);
       node.computed = computed;
@@ -9319,11 +9353,6 @@ var require_NewExpression = __commonJS({
             ctx2.createAssignmentNode(ctx2.createIdentifierNode(refs, null, true), target)
           );
           target = ctx2.createIdentifierNode(refs, null, true);
-        } else if (stack.callee.isIdentifier) {
-          const refDesc = stack.descriptor();
-          if (!refDesc || !refDesc.isDeclarator) {
-            target = ctx2.createLiteralNode(stack.callee.raw());
-          }
         }
         return node2.createCalleeNode(
           node2.createStaticMemberNode([
@@ -9982,6 +10011,10 @@ var require_StructTableMethodDefinition = __commonJS({
     }
     module2.exports = function(ctx2, stack) {
       const node = ctx2.createNode(stack);
+      const name2 = stack.key.value().toLowerCase();
+      if (name2 === "text" || name2 === "longtext" || name2 === "tinytext" || name2 === "mediumtext") {
+        return ctx2.createIdentifierNode(stack.key.value(), stack.key);
+      }
       const key = stack.key.isMemberExpression ? stack.key.property : stack.key;
       node.key = createNode(node, key, false);
       const isKey = stack.parentStack.isStructTableKeyDefinition;
@@ -10650,7 +10683,7 @@ var require_package = __commonJS({
   "package.json"(exports2, module2) {
     module2.exports = {
       name: "es-php",
-      version: "0.4.8",
+      version: "0.4.9",
       description: "test",
       main: "dist/index.js",
       typings: "dist/types/typings.json",

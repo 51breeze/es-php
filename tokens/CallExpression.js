@@ -21,7 +21,7 @@ function createArgumentNodes(ctx, stack, args, declareParams){
 
 function CallExpression(ctx,stack){
     const isMember = stack.callee.isMemberExpression;
-    const desc =stack.doGetDeclareFunctionType(stack.callee.description());
+    const desc = stack.descriptor();
     const module = stack.module;
     const declareParams = desc && desc.params;
     const node = ctx.createNode( stack );

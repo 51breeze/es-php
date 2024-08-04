@@ -196,11 +196,14 @@ function MemberExpression(ctx,stack){
             );
         }
         isMember = true;
-    }else if( description && description.isPropertyDefinition){
+    }else if(description && description.isPropertyDefinition){
         aliasAnnotation = getAliasAnnotation(description);
         const result = trans(ctx, stack, description, aliasAnnotation, objectType);
         if( result )return result;
         isMember = true;
+        if(isStatic && description.kind !=='const'){
+            propertyNode = ctx.createIdentifierNode(stack.property.value(), stack.property, true);
+        }
     }
 
     // let isObjectProtectorFlag = void 0;

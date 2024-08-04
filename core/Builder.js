@@ -810,8 +810,12 @@ class Builder extends Token{
 
     getDependencies( ctxModule ){
         ctxModule = ctxModule || this.compilation;
-        const compilation = this.compiler.callUtils("isTypeModule", ctxModule) ? this.compilation : ctxModule;
-        const dataset = moduleDependencies.get(ctxModule);
+        let compilation = this.compilation;
+        if(!compilation){
+            compilation = ctxModule.compilation;
+        }
+        if(!compilation)return [];
+        let dataset = moduleDependencies.get(ctxModule);
         if( !dataset ){
             return compilation.getDependencies(ctxModule);
         }
