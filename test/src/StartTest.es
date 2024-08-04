@@ -434,7 +434,7 @@ public class StartTest extends Base
         this.assertEquals(true, new Boolean('true').valueOf() );
 
         const classFactory:class<Object> = Object;
-        const obj = (new classFactory()) as Record;
+        const obj = (new classFactory()) as ObjectProtector<Record>;
         this.assertEquals('[object Object]', obj);
         obj.name = 'test';
         this.assertEquals('test', obj.name);

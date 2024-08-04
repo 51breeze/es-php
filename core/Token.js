@@ -713,6 +713,7 @@ class Token extends events.EventEmitter {
         if( stack.isArrayExpression ){
             return true;
         }
+
         const check=(stack, type)=>{
             if( type ){
                 if( verify(type) ){
@@ -733,18 +734,18 @@ class Token extends events.EventEmitter {
                     });
                 }
             }else if( stack.isCallExpression ){
-                let desc = stack.description();
+                let desc = stack.descriptor();
                 if( desc ){
                     if( desc.isFunctionType ){
                         desc = desc.target && desc.target.isFunctionExpression ? desc.target : null;
                     }
-                    if( desc && (desc.isFunctionExpression || desc.isMethodDefinition)){
+                    if( desc && (desc.isFunctionExpression || desc.isMethodDefinition || desc.isCallDefinition || desc.isDeclaratorFunction)){
                         return check(desc, stack.type() );
                     }
                 }
             }else if( stack.isMemberExpression ){
                 let desc = stack.description();
-                if( desc && (desc.isPropertyDefinition || desc.isVariableDeclarator ||  desc.isParamDeclarator) ){
+                if( desc && (desc.isPropertyDefinition || desc.isVariableDeclarator ||  desc.isParamDeclarator || desc.isTypeObjectPropertyDefinition) ){
                     return true;
                 }else if( desc && desc.isProperty && desc.hasInit && desc.init){
                     return check( desc.init );

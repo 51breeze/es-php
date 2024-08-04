@@ -7,7 +7,7 @@ module.exports = function(ctx,stack,type){
       const info = path.parse(resolve);
       const source = ctx.builder.getModuleImportSource( resolve, ctx.module || stack.compilation.file);
       const specifiers = stack.specifiers.map( item=>ctx.createToken(item) );
-      ctx.builder.make(compilation, compilation.stack);
+      ctx.plugin.getBuilder(compilation).make(compilation, compilation.stack);
       if( specifiers.length > 0 ){
          const namespaceSpecifier = specifiers.length === 1 && specifiers[0].type ==='ImportNamespaceSpecifier' ? specifiers[0] : null;
          if( namespaceSpecifier ){

@@ -397,6 +397,9 @@ class Builder extends Token{
             this.getModuleAssets(module);
         }
 
+       
+       
+
         const ast = this.createAstToken(stack);
         const gen = ast ? this.createGenerator(ast, compilation, module) : null;
 

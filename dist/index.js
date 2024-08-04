@@ -1724,18 +1724,18 @@ var require_Token = __commonJS({
               });
             }
           } else if (stack2.isCallExpression) {
-            let desc2 = stack2.description();
+            let desc2 = stack2.descriptor();
             if (desc2) {
               if (desc2.isFunctionType) {
                 desc2 = desc2.target && desc2.target.isFunctionExpression ? desc2.target : null;
               }
-              if (desc2 && (desc2.isFunctionExpression || desc2.isMethodDefinition)) {
+              if (desc2 && (desc2.isFunctionExpression || desc2.isMethodDefinition || desc2.isCallDefinition || desc2.isDeclaratorFunction)) {
                 return check(desc2, stack2.type());
               }
             }
           } else if (stack2.isMemberExpression) {
             let desc2 = stack2.description();
-            if (desc2 && (desc2.isPropertyDefinition || desc2.isVariableDeclarator || desc2.isParamDeclarator)) {
+            if (desc2 && (desc2.isPropertyDefinition || desc2.isVariableDeclarator || desc2.isParamDeclarator || desc2.isTypeObjectPropertyDefinition)) {
               return true;
             } else if (desc2 && desc2.isProperty && desc2.hasInit && desc2.init) {
               return check(desc2.init);
@@ -8416,7 +8416,7 @@ var require_ImportDeclaration = __commonJS({
         const info = path3.parse(resolve);
         const source = ctx2.builder.getModuleImportSource(resolve, ctx2.module || stack.compilation.file);
         const specifiers = stack.specifiers.map((item) => ctx2.createToken(item));
-        ctx2.builder.make(compilation, compilation.stack);
+        ctx2.plugin.getBuilder(compilation).make(compilation, compilation.stack);
         if (specifiers.length > 0) {
           const namespaceSpecifier = specifiers.length === 1 && specifiers[0].type === "ImportNamespaceSpecifier" ? specifiers[0] : null;
           if (namespaceSpecifier) {
