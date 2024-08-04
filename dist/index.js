@@ -1576,15 +1576,17 @@ var require_Token = __commonJS({
             return type.elements.every((item) => this.isArrayAddressRefsType(item.type()));
           } else if (type.isIntersectionType) {
             return this.isArrayAddressRefsType(type.left.type()) && this.isArrayAddressRefsType(type.right.type());
+          } else if (type.isClassGenericType && !type.isClassType) {
+            return this.isArrayAddressRefsType(type.inherit.type());
           }
         }
-        return type && (type.isLiteralArrayType || type.isTupleType || type.toString() === "array");
+        return type && (type.isLiteralArrayType || type.isTupleType || this.builder.getGlobalModuleById("array") === type || this.builder.getGlobalModuleById("Array") === type);
       }
       isArrayMappingType(type) {
         if (!type || !type.isModule)
           return false;
         if (type.dynamicProperties && type.dynamicProperties.size > 0 && this.builder.getGlobalModuleById("Array").is(type)) {
-          return type.dynamicProperties.has(this.builder.getGlobalModuleById("String")) || type.dynamicProperties.has(this.builder.getGlobalModuleById("Number"));
+          return type.dynamicProperties.has(this.builder.getGlobalModuleById("string")) || type.dynamicProperties.has(this.builder.getGlobalModuleById("number")) || type.dynamicProperties.has(this.builder.getGlobalModuleById("String")) || type.dynamicProperties.has(this.builder.getGlobalModuleById("Number"));
         }
         return false;
       }
