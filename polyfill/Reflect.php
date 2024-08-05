@@ -240,7 +240,7 @@ final class Reflect{
     /**
      * 获取对象中的方法或者属性
      */
-    final static private function getReflectionMethodOrProperty( $target, $name, $accessor='',$scope=null){
+    final static private function getReflectionMethodOrProperty( $target, $name, $accessor='',$scope=null, $isCall=false){
         if( $target==null ){
             return null;
         }
@@ -253,21 +253,31 @@ final class Reflect{
         }
 
         $name = strval($name);
-
         $type = 0;
         $method = null;
+
+        if($isCall){
+            if($reflect->hasMethod( $name ) ){
+                $type = 3;
+                $name = $name;
+                $method = $reflect->getMethod( $name );
+            }
+        }
+
         //在实例对象中查找
-        if( $reflect->hasProperty($name) ){
-            $type = 1;
-            $method = $reflect->getProperty($name);
-        }else if( $accessor && $reflect->hasMethod( $accessor.$name ) ){
-            $type = 2;
-            $name = $accessor.$name;
-            $method = $reflect->getMethod( $name );
-        }else if(  $reflect->hasMethod( $name ) ){
-            $type = 3;
-            $name = $name;
-            $method = $reflect->getMethod( $name );
+        if(!$method){
+            if( $reflect->hasProperty($name) ){
+                $type = 1;
+                $method = $reflect->getProperty($name);
+            }else if( $accessor && $reflect->hasMethod( $accessor.$name ) ){
+                $type = 2;
+                $name = $accessor.$name;
+                $method = $reflect->getMethod( $name );
+            }else if( $reflect->hasMethod( $name ) ){
+                $type = 3;
+                $name = $name;
+                $method = $reflect->getMethod( $name );
+            }
         }
 
         $scopeReflect = null;
@@ -400,7 +410,7 @@ final class Reflect{
             throw new \Error( 'target is non-object');
         }
 
-        $desc =  self::getReflectionMethodOrProperty($target, $name,'',$scope);
+        $desc =  self::getReflectionMethodOrProperty($target, $name,'',$scope, true);
         if( $desc ){
             list($type, $method, $accessible) = $desc;
             if( !$accessible ){
