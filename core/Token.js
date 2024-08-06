@@ -582,7 +582,9 @@ class Token extends events.EventEmitter {
 
     isArrayAddressRefsType(type){
         if( type ){
-            if( type.isUnionType ){
+            if(type.isTypeofType && type.origin){
+                return this.isArrayAddressRefsType(type.origin.type())
+            }else if( type.isUnionType ){
                 return type.elements.every( item=>this.isArrayAddressRefsType( item.type() ) );
             }else if( type.isIntersectionType ){
                 return this.isArrayAddressRefsType( type.left.type() ) && this.isArrayAddressRefsType( type.right.type() );
@@ -594,12 +596,14 @@ class Token extends events.EventEmitter {
     }
 
     isArrayMappingType(type){
-        if( !type || !type.isModule )return false;
+        if(!type)return false;
+        if(type.isTypeofType && type.origin){
+            return this.isArrayMappingType(type.origin.type())
+        }
+        if(!type.isModule)return false;
         if(type.dynamicProperties && type.dynamicProperties.size > 0 && this.builder.getGlobalModuleById('Array').is(type) ){
             return type.dynamicProperties.has( this.builder.getGlobalModuleById('string') ) ||
-                    type.dynamicProperties.has( this.builder.getGlobalModuleById('number') ) ||
-                    type.dynamicProperties.has( this.builder.getGlobalModuleById('String') ) || 
-                    type.dynamicProperties.has( this.builder.getGlobalModuleById('Number') );
+                    type.dynamicProperties.has( this.builder.getGlobalModuleById('number') );
         }
         return false;
     }
@@ -618,7 +622,9 @@ class Token extends events.EventEmitter {
         }else if(type.isIntersectionType){
             return [type.left, type.right].every(type=>this.isArrayAccessor(type.type()))
         }
-        if( type.isInstanceofType ){
+        if(type.isTypeofType && type.origin){
+            return this.isArrayAccessor(type.origin.type())
+        }else if( type.isInstanceofType ){
             return false;
         }else if(type.isLiteralObjectType || type.isLiteralType || type.isLiteralArrayType || type.isTupleType){
             return true;
@@ -662,7 +668,10 @@ class Token extends events.EventEmitter {
         }else if(type.isIntersectionType){
             return [type.left, type.right].every(type=>this.isObjectAccessor(type.type()))
         }
-        if( type.isInstanceofType ){
+
+        if(type.isTypeofType && type.origin){
+            return this.isObjectAccessor(type.origin.type())
+        }else if( type.isInstanceofType ){
             return true;
         }else if(type.isAliasType){
             return this.isObjectAccessor(type.inherit.type())

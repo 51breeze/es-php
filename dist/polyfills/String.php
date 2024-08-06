@@ -193,3 +193,29 @@ function es_string_from_char_code( ...$codes ){
     }
     return $chars;
 }
+
+function es_string_from_code_point(...$args){
+    throw new Error('String.fromCodePoint is not supported');
+}
+
+function es_string_raw(...$args){
+    throw new Error('String.raw is not supported');
+}
+
+function es_string_starts_with($target,$value,$position=0){
+    $res = es_string_substring($target, $position, mb_strlen($value));
+    return $value === $res;
+}
+
+function es_string_ends_with($target,$value,$position=-1){
+    $index = mb_strrpos($target, $value);
+    if($index === false)return false;
+    if($position>=0){
+        return $index === $position;
+    }
+    return mb_substr($target, $index) === $value;
+}
+
+function es_string_repeat($target,$value){
+    return str_repeat($target, $value);
+}

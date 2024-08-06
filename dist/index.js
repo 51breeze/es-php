@@ -1572,7 +1572,9 @@ var require_Token = __commonJS({
       }
       isArrayAddressRefsType(type) {
         if (type) {
-          if (type.isUnionType) {
+          if (type.isTypeofType && type.origin) {
+            return this.isArrayAddressRefsType(type.origin.type());
+          } else if (type.isUnionType) {
             return type.elements.every((item) => this.isArrayAddressRefsType(item.type()));
           } else if (type.isIntersectionType) {
             return this.isArrayAddressRefsType(type.left.type()) && this.isArrayAddressRefsType(type.right.type());
@@ -1583,10 +1585,15 @@ var require_Token = __commonJS({
         return type && (type.isLiteralArrayType || type.isTupleType || this.builder.getGlobalModuleById("array") === type || this.builder.getGlobalModuleById("Array") === type);
       }
       isArrayMappingType(type) {
-        if (!type || !type.isModule)
+        if (!type)
+          return false;
+        if (type.isTypeofType && type.origin) {
+          return this.isArrayMappingType(type.origin.type());
+        }
+        if (!type.isModule)
           return false;
         if (type.dynamicProperties && type.dynamicProperties.size > 0 && this.builder.getGlobalModuleById("Array").is(type)) {
-          return type.dynamicProperties.has(this.builder.getGlobalModuleById("string")) || type.dynamicProperties.has(this.builder.getGlobalModuleById("number")) || type.dynamicProperties.has(this.builder.getGlobalModuleById("String")) || type.dynamicProperties.has(this.builder.getGlobalModuleById("Number"));
+          return type.dynamicProperties.has(this.builder.getGlobalModuleById("string")) || type.dynamicProperties.has(this.builder.getGlobalModuleById("number"));
         }
         return false;
       }
@@ -1606,7 +1613,9 @@ var require_Token = __commonJS({
         } else if (type.isIntersectionType) {
           return [type.left, type.right].every((type2) => this.isArrayAccessor(type2.type()));
         }
-        if (type.isInstanceofType) {
+        if (type.isTypeofType && type.origin) {
+          return this.isArrayAccessor(type.origin.type());
+        } else if (type.isInstanceofType) {
           return false;
         } else if (type.isLiteralObjectType || type.isLiteralType || type.isLiteralArrayType || type.isTupleType) {
           return true;
@@ -1650,7 +1659,9 @@ var require_Token = __commonJS({
         } else if (type.isIntersectionType) {
           return [type.left, type.right].every((type2) => this.isObjectAccessor(type2.type()));
         }
-        if (type.isInstanceofType) {
+        if (type.isTypeofType && type.origin) {
+          return this.isObjectAccessor(type.origin.type());
+        } else if (type.isInstanceofType) {
           return true;
         } else if (type.isAliasType) {
           return this.isObjectAccessor(type.inherit.type());
@@ -5300,9 +5311,23 @@ var require_String = __commonJS({
       );
     }
     var methods = {
+      fromCodePoint(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_from_code_point");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
+      },
+      raw(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_raw");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
+      },
       fromCharCode(ctx2, object, args2, called = false, isStatic = false) {
         if (!called) {
-          return ctx2.createChunkNode(`function($code){return chr($code);}`);
+          const module4 = ctx2.builder.getGlobalModuleById("String");
+          ctx2.addDepend(module4);
+          return ctx2.createChunkNode(`function(...$code){return es_string_from_char_code(...$code);}`);
         }
         if (args2.length === 1) {
           return createCommonCalledNode("chr", ctx2, null, args2, true);
@@ -5452,6 +5477,18 @@ var require_String = __commonJS({
           return ctx2.createChunkNode(`function($target){return $target;}`);
         }
         return createCommonCalledNode("strval", ctx2, object, [], called);
+      },
+      startsWith(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_starts_with");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
+      },
+      endsWith(ctx2, object, args2, called = false, isStatic = false) {
+        const module3 = ctx2.builder.getGlobalModuleById("String");
+        ctx2.addDepend(module3);
+        const name2 = ctx2.builder.getModuleNamespace(module3, "es_string_ends_with");
+        return createCommonCalledNode(name2, ctx2, object, args2, called);
       }
     };
     ["propertyIsEnumerable", "hasOwnProperty", "valueOf", "toLocaleString", "toString"].forEach((name2) => {

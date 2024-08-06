@@ -365,7 +365,13 @@ public class StartTest extends Base
 
         names = '123';
         this.assertEquals('123',  names  );
-
+        this.assertEquals(true,  mixed.startsWith('中国'));
+        this.assertEquals(false,  mixed.startsWith('国人'));
+        this.assertEquals(true,  mixed.startsWith('国人',1));
+        this.assertEquals(false,  mixed.endsWith('中国'));
+        this.assertEquals(true,  mixed.endsWith('人A民', 2));
+        this.assertEquals(true,  mixed.endsWith('Ddd'));
+       
     }
 
     testObject(){

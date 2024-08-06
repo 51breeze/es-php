@@ -14,10 +14,23 @@ function createCommonCalledNode(name, ctx, object, args, called){
 }
 
 const methods={
-
+    fromCodePoint(ctx, object, args, called=false, isStatic=false){
+        const module = ctx.builder.getGlobalModuleById('String');
+        ctx.addDepend( module );
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_from_code_point');
+        return createCommonCalledNode(name, ctx, object, args, called);
+    },
+    raw(ctx, object, args, called=false, isStatic=false){
+        const module = ctx.builder.getGlobalModuleById('String');
+        ctx.addDepend( module );
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_raw');
+        return createCommonCalledNode(name, ctx, object, args, called);
+    },
     fromCharCode(ctx, object, args, called=false, isStatic=false){
         if(!called){
-            return ctx.createChunkNode(`function($code){return chr($code);}`)
+            const module = ctx.builder.getGlobalModuleById('String');
+            ctx.addDepend( module );
+            return ctx.createChunkNode(`function(...$code){return es_string_from_char_code(...$code);}`)
         }
         if( args.length ===1 ){
             return createCommonCalledNode('chr', ctx, null, args, true);
@@ -27,6 +40,8 @@ const methods={
         ctx.addDepend( module );
         return createCommonCalledNode(name, ctx, null, args, true);
     },
+
+
    
     charAt(ctx, object, args, called=false, isStatic=false){
         const module = ctx.builder.getGlobalModuleById('String');
@@ -172,7 +187,20 @@ const methods={
             return ctx.createChunkNode(`function($target){return $target;}`)
         }
         return createCommonCalledNode('strval', ctx, object, [], called);
+    },
+    startsWith(ctx, object, args, called=false, isStatic=false){
+        const module = ctx.builder.getGlobalModuleById('String');
+        ctx.addDepend( module );
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_starts_with');
+        return createCommonCalledNode(name, ctx, object, args, called);
+    },
+    endsWith(ctx, object, args, called=false, isStatic=false){
+        const module = ctx.builder.getGlobalModuleById('String');
+        ctx.addDepend( module );
+        const name = ctx.builder.getModuleNamespace( module, 'es_string_ends_with');
+        return createCommonCalledNode(name, ctx, object, args, called);
     }
+    
 };
 
 ['propertyIsEnumerable','hasOwnProperty','valueOf','toLocaleString','toString'].forEach( name=>{
