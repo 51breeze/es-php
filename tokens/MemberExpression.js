@@ -171,7 +171,11 @@ function MemberExpression(ctx,stack){
         aliasAnnotation = getAliasAnnotation(description);
         const result = trans(ctx, stack, description, aliasAnnotation, objectType);
         if( result )return result;
-        if( !stack.parentStack.isCallExpression && !stack.parentStack.isMemberExpression ){
+        let pp = stack.parentStack;
+        while(pp && (pp.isTypeAssertExpression || pp.isParenthesizedExpression)){
+            pp = pp.parentStack
+        }
+        if(pp && !(pp.isCallExpression || pp.isMemberExpression)){
             return ctx.createArrayNode([
                 ctx.createToken(stack.object),
                 ctx.createLiteralNode( aliasAnnotation || stack.property.value() )

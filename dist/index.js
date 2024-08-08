@@ -9212,7 +9212,11 @@ var require_MemberExpression = __commonJS({
         const result = trans(ctx2, stack, description, aliasAnnotation, objectType);
         if (result)
           return result;
-        if (!stack.parentStack.isCallExpression && !stack.parentStack.isMemberExpression) {
+        let pp = stack.parentStack;
+        while (pp && (pp.isTypeAssertExpression || pp.isParenthesizedExpression)) {
+          pp = pp.parentStack;
+        }
+        if (pp && !(pp.isCallExpression || pp.isMemberExpression)) {
           return ctx2.createArrayNode([
             ctx2.createToken(stack.object),
             ctx2.createLiteralNode(aliasAnnotation || stack.property.value())
