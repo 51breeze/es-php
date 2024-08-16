@@ -9,10 +9,8 @@ const Sql = require("./Sql");
 const Manifest = require("./Manifest");
 const Composer = require("./Composer");
 const staticAssets = require("./Assets");
-const moduleDependencies = new Map();
 const moduleIdMap=new Map();
 const namespaceMap=new Map();
-const createAstStackCached = new WeakSet();
 const outputAbsolutePathCached = new Map();
 const fileContextScopes = new Map();
 const uniqueFileRecords = new Map();
@@ -78,6 +76,8 @@ class Builder extends Token{
         this.esSuffix = new RegExp( this.compiler.options.suffix.replace('.','\\')+'$', 'i' );
         this.checkRuntimeCache = new Map();
         this.checkPluginContextCache = new Map();
+        this.moduleDependencies = new Map();
+        this.createAstStackCached = new WeakSet();
     }
 
     getVirtualModule(name){
@@ -384,8 +384,8 @@ class Builder extends Token{
 
     make(compilation, stack, module){
         if(!stack || module && module.isVirtualModule)return false;
-        if(createAstStackCached.has(stack))return false;
-        createAstStackCached.add( stack );
+        if(this.createAstStackCached.has(stack))return false;
+        this.createAstStackCached.add( stack );
         const config = this.plugin.options;
         const isRoot = compilation.stack === stack;
         if( isRoot ){
@@ -396,9 +396,6 @@ class Builder extends Token{
         }else if( module ){
             this.getModuleAssets(module);
         }
-
-       
-       
 
         const ast = this.createAstToken(stack);
         const gen = ast ? this.createGenerator(ast, compilation, module) : null;
@@ -554,7 +551,7 @@ class Builder extends Token{
     isUsed(module, ctxModule){
         ctxModule = ctxModule || this.compilation;
         if( !module )return false;
-        if( ctxModule && moduleDependencies.has(ctxModule) && moduleDependencies.get(ctxModule).has(module) ){
+        if( ctxModule && this.moduleDependencies.has(ctxModule) && this.moduleDependencies.get(ctxModule).has(module) ){
             return true;
         }
         return !!(this.compiler.callUtils("isTypeModule", module) && module.used);
@@ -804,9 +801,11 @@ class Builder extends Token{
         ctxModule = ctxModule || this.compilation;
         if( !(depModule.isModule || depModule.isVirtualModule) || depModule === ctxModule )return;
         if(!depModule.isVirtualModule && !this.compiler.callUtils("isTypeModule", depModule) )return;
-        var dataset = moduleDependencies.get(ctxModule);
+        if(this.compilation.mainModule === depModule)return;
+        if(!this.compilation.isDescriptorDocument() && this.compilation.modules.has(depModule.getName()))return;
+        var dataset = this.moduleDependencies.get(ctxModule);
         if( !dataset ){
-            moduleDependencies.set( ctxModule, dataset = new Set() );
+            this.moduleDependencies.set( ctxModule, dataset = new Set() );
         }
         dataset.add( depModule );
     }
@@ -818,16 +817,17 @@ class Builder extends Token{
             compilation = ctxModule.compilation;
         }
         if(!compilation)return [];
-        let dataset = moduleDependencies.get(ctxModule);
+        let dataset = this.moduleDependencies.get(ctxModule);
         if( !dataset ){
-            return compilation.getDependencies(ctxModule);
+            return []
+            //return compilation.getDependencies(ctxModule);
         }
-        if( !dataset._merged ){
-            dataset._merged = true;
-            compilation.getDependencies(ctxModule).forEach( dep=>{
-                dataset.add(dep);
-            });
-        }
+        // if( !dataset._merged ){
+        //     dataset._merged = true;
+        //     compilation.getDependencies(ctxModule).forEach( dep=>{
+        //         dataset.add(dep);
+        //     });
+        // }
         return Array.from( dataset.values() );
     }
 
@@ -917,7 +917,7 @@ class Builder extends Token{
                 return module.id;
             }
 
-            const deps = moduleDependencies.get( context );
+            const deps = this.moduleDependencies.get( context );
             if( deps && deps.has(module) ){
                 return module.id;
             }

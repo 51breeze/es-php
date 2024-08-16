@@ -316,7 +316,7 @@ class Token extends events.EventEmitter {
 
     createClassRefsNode( module, stack){
         if(!module || !module.isModule)return null;
-        const name = this.getModuleReferenceName(module);
+        let name = stack && stack.isIdentifier && stack.hasLocalDefined() ? stack.value() : this.getModuleReferenceName(module);
         return this.createStaticMemberNode([
             this.createIdentifierNode(name),
             this.createIdentifierNode('class')
@@ -635,6 +635,9 @@ class Token extends events.EventEmitter {
             const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
             if( isWrapType ){
                 let inherit = type.inherit.type();
+                if(this.isArrayAccessor(inherit)){
+                    return true
+                }
                 if(this.builder.getGlobalModuleById('ObjectProtector') === inherit){
                     return false;
                 }
@@ -644,6 +647,10 @@ class Token extends events.EventEmitter {
                     if( this.builder.getGlobalModuleById('RMD') === inherit){
                         return this.isArrayAccessor( type.types[0].type() )
                     }
+                }
+            }else if(type.isClassGenericType){
+                if(this.isArrayAccessor(type.inherit.type())){
+                    return true
                 }
             }
             const raw = this.compiler.callUtils("getOriginType",type);

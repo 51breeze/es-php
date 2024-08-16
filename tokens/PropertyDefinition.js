@@ -1,13 +1,14 @@
 module.exports = function(ctx,stack){
 
-    const annotations = stack.annotations || [];
-    var embeds = annotations.filter( item=>{
+    const alias = stack.getAnnotationAlias()
+    const annotations = stack.annotations;
+    var embeds = annotations && annotations.filter( item=>{
         return item.name.toLowerCase() ==='embed';
     });
 
     var init = null;
     var hasEmbed = false;
-    if( embeds.length > 0  ){
+    if(embeds && embeds.length > 0  ){
         var items = [];
         embeds.forEach( embed=>{
             const args = embed.getArguments();
@@ -62,8 +63,7 @@ module.exports = function(ctx,stack){
     }else if(stack.static){
         node.static = ctx.createIdentifierNode('static');
     }
-
-    node.key =  node.declarations[0].id;
+    node.key = alias ? ctx.createIdentifierNode(alias) : node.declarations[0].id;
     node.init = init || node.declarations[0].init || ctx.createLiteralNode(null);
     return node;
 }

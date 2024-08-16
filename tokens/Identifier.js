@@ -58,11 +58,17 @@ module.exports = function(ctx,stack){
     }
 
     if( stack.compiler.callUtils("isTypeModule", desc) ){
-        ctx.addDepend( desc );
+        if(desc !== stack.module){
+            ctx.addDepend( desc );
+        }
         if( stack.parentStack.isMemberExpression && stack.parentStack.object === stack || 
             stack.parentStack.isNewExpression && !globals.includes(desc.getName()) || 
             stack.parentStack.isBinaryExpression && stack.parentStack.right === stack && stack.parentStack.node.operator==='instanceof'){
-            return ctx.createIdentifierNode( ctx.getModuleReferenceName(desc), stack);
+            if(!stack.hasLocalDefined()){
+                return ctx.createIdentifierNode( ctx.getModuleReferenceName(desc), stack);
+            }else{
+                return ctx.createIdentifierNode( stack.value(), stack);
+            }
         }
         else {
             return ctx.createClassRefsNode(desc, stack)

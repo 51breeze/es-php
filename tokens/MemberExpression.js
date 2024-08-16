@@ -72,15 +72,14 @@ function isDynamicProperty(stack, objectType, propertyType ){
 }
 
 function getAliasAnnotation(desc){
-    if( !desc || !desc.isStack || !desc.annotations )return null;
-    const result = desc.annotations.find( annotation=>{
-        return annotation.name.toLowerCase() === 'alias';
-    });
-    if(result){
-        const args = result.getArguments();
-        if( args[0] )return args[0].value;
-    }
-    return null;
+    if(!desc || !desc.isStack)return null;
+    return desc.getAnnotationAlias();
+    // const result = desc.findAnnotation(annot=>annot.name.toLowerCase() === 'alias')
+    // if(result){
+    //     const args = result.getArguments();
+    //     if( args[0] )return args[0].value;
+    // }
+    // return null;
 }
 
 function MemberExpression(ctx,stack){

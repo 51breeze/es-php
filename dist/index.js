@@ -1324,7 +1324,7 @@ var require_Token = __commonJS({
       createClassRefsNode(module3, stack) {
         if (!module3 || !module3.isModule)
           return null;
-        const name2 = this.getModuleReferenceName(module3);
+        let name2 = stack && stack.isIdentifier && stack.hasLocalDefined() ? stack.value() : this.getModuleReferenceName(module3);
         return this.createStaticMemberNode([
           this.createIdentifierNode(name2),
           this.createIdentifierNode("class")
@@ -1625,6 +1625,9 @@ var require_Token = __commonJS({
           const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
           if (isWrapType) {
             let inherit = type.inherit.type();
+            if (this.isArrayAccessor(inherit)) {
+              return true;
+            }
             if (this.builder.getGlobalModuleById("ObjectProtector") === inherit) {
               return false;
             }
@@ -1634,6 +1637,10 @@ var require_Token = __commonJS({
               if (this.builder.getGlobalModuleById("RMD") === inherit) {
                 return this.isArrayAccessor(type.types[0].type());
               }
+            }
+          } else if (type.isClassGenericType) {
+            if (this.isArrayAccessor(type.inherit.type())) {
+              return true;
             }
           }
           const raw = this.compiler.callUtils("getOriginType", type);
@@ -2696,10 +2703,8 @@ var require_Builder = __commonJS({
     var Manifest = require_Manifest();
     var Composer = require_Composer();
     var staticAssets = require_Assets();
-    var moduleDependencies = /* @__PURE__ */ new Map();
     var moduleIdMap = /* @__PURE__ */ new Map();
     var namespaceMap = /* @__PURE__ */ new Map();
-    var createAstStackCached = /* @__PURE__ */ new WeakSet();
     var outputAbsolutePathCached = /* @__PURE__ */ new Map();
     var fileContextScopes = /* @__PURE__ */ new Map();
     var uniqueFileRecords = /* @__PURE__ */ new Map();
@@ -2759,6 +2764,8 @@ var require_Builder = __commonJS({
         this.esSuffix = new RegExp(this.compiler.options.suffix.replace(".", "\\") + "$", "i");
         this.checkRuntimeCache = /* @__PURE__ */ new Map();
         this.checkPluginContextCache = /* @__PURE__ */ new Map();
+        this.moduleDependencies = /* @__PURE__ */ new Map();
+        this.createAstStackCached = /* @__PURE__ */ new WeakSet();
       }
       getVirtualModule(name2) {
         return VirtualModule2.getVModule(name2);
@@ -3050,9 +3057,9 @@ var require_Builder = __commonJS({
       make(compilation, stack, module3) {
         if (!stack || module3 && module3.isVirtualModule)
           return false;
-        if (createAstStackCached.has(stack))
+        if (this.createAstStackCached.has(stack))
           return false;
-        createAstStackCached.add(stack);
+        this.createAstStackCached.add(stack);
         const config = this.plugin.options;
         const isRoot = compilation.stack === stack;
         if (isRoot) {
@@ -3213,7 +3220,7 @@ var require_Builder = __commonJS({
         ctxModule = ctxModule || this.compilation;
         if (!module3)
           return false;
-        if (ctxModule && moduleDependencies.has(ctxModule) && moduleDependencies.get(ctxModule).has(module3)) {
+        if (ctxModule && this.moduleDependencies.has(ctxModule) && this.moduleDependencies.get(ctxModule).has(module3)) {
           return true;
         }
         return !!(this.compiler.callUtils("isTypeModule", module3) && module3.used);
@@ -3446,9 +3453,13 @@ var require_Builder = __commonJS({
           return;
         if (!depModule.isVirtualModule && !this.compiler.callUtils("isTypeModule", depModule))
           return;
-        var dataset = moduleDependencies.get(ctxModule);
+        if (this.compilation.mainModule === depModule)
+          return;
+        if (!this.compilation.isDescriptorDocument() && this.compilation.modules.has(depModule.getName()))
+          return;
+        var dataset = this.moduleDependencies.get(ctxModule);
         if (!dataset) {
-          moduleDependencies.set(ctxModule, dataset = /* @__PURE__ */ new Set());
+          this.moduleDependencies.set(ctxModule, dataset = /* @__PURE__ */ new Set());
         }
         dataset.add(depModule);
       }
@@ -3460,15 +3471,9 @@ var require_Builder = __commonJS({
         }
         if (!compilation)
           return [];
-        let dataset = moduleDependencies.get(ctxModule);
+        let dataset = this.moduleDependencies.get(ctxModule);
         if (!dataset) {
-          return compilation.getDependencies(ctxModule);
-        }
-        if (!dataset._merged) {
-          dataset._merged = true;
-          compilation.getDependencies(ctxModule).forEach((dep) => {
-            dataset.add(dep);
-          });
+          return [];
         }
         return Array.from(dataset.values());
       }
@@ -3551,7 +3556,7 @@ var require_Builder = __commonJS({
             }
             return module3.id;
           }
-          const deps = moduleDependencies.get(context);
+          const deps = this.moduleDependencies.get(context);
           if (deps && deps.has(module3)) {
             return module3.id;
           }
@@ -8325,9 +8330,15 @@ var require_Identifier = __commonJS({
         return propertyNode;
       }
       if (stack.compiler.callUtils("isTypeModule", desc2)) {
-        ctx2.addDepend(desc2);
+        if (desc2 !== stack.module) {
+          ctx2.addDepend(desc2);
+        }
         if (stack.parentStack.isMemberExpression && stack.parentStack.object === stack || stack.parentStack.isNewExpression && !globals.includes(desc2.getName()) || stack.parentStack.isBinaryExpression && stack.parentStack.right === stack && stack.parentStack.node.operator === "instanceof") {
-          return ctx2.createIdentifierNode(ctx2.getModuleReferenceName(desc2), stack);
+          if (!stack.hasLocalDefined()) {
+            return ctx2.createIdentifierNode(ctx2.getModuleReferenceName(desc2), stack);
+          } else {
+            return ctx2.createIdentifierNode(stack.value(), stack);
+          }
         } else {
           return ctx2.createClassRefsNode(desc2, stack);
         }
@@ -9114,17 +9125,9 @@ var require_MemberExpression = __commonJS({
       return null;
     }
     function getAliasAnnotation(desc2) {
-      if (!desc2 || !desc2.isStack || !desc2.annotations)
+      if (!desc2 || !desc2.isStack)
         return null;
-      const result = desc2.annotations.find((annotation) => {
-        return annotation.name.toLowerCase() === "alias";
-      });
-      if (result) {
-        const args2 = result.getArguments();
-        if (args2[0])
-          return args2[0].value;
-      }
-      return null;
+      return desc2.getAnnotationAlias();
     }
     function MemberExpression(ctx2, stack) {
       const module3 = stack.module;
@@ -9293,12 +9296,17 @@ var require_MethodDefinition = __commonJS({
   "tokens/MethodDefinition.js"(exports2, module2) {
     var FunctionDeclaration = require_FunctionDeclaration();
     module2.exports = function(ctx2, stack, type) {
+      const alias = stack.getAnnotationAlias();
       const node = FunctionDeclaration(ctx2, stack, type);
       node.async = stack.expression.async ? true : false;
       node.static = stack.static ? ctx2.createIdentifierNode("static") : null;
       node.final = stack.final ? ctx2.createIdentifierNode("final") : null;
       node.modifier = ctx2.createIdentifierNode(ctx2.compiler.callUtils("getModifierValue", stack));
       node.kind = "method";
+      if (alias && node.key) {
+        node.key.value = alias;
+        node.key.raw = alias;
+      }
       return node;
     };
   }
@@ -9308,11 +9316,12 @@ var require_MethodDefinition = __commonJS({
 var require_MethodGetterDefinition = __commonJS({
   "tokens/MethodGetterDefinition.js"(exports2, module2) {
     var MethodDefinition = require_MethodDefinition();
-    module2.exports = module2.exports = function(ctx2, stack, type) {
+    module2.exports = function(ctx2, stack, type) {
+      const alias = stack.getAnnotationAlias();
       const node = MethodDefinition(ctx2, stack, type);
       node.isAccessor = true;
       node.kind = "get";
-      node.key.value = ctx2.getAccessorName(node.key.value, stack, "get");
+      node.key.value = ctx2.getAccessorName(alias || node.key.value, stack, "get");
       return node;
     };
   }
@@ -9323,10 +9332,11 @@ var require_MethodSetterDefinition = __commonJS({
   "tokens/MethodSetterDefinition.js"(exports2, module2) {
     var MethodDefinition = require_MethodDefinition();
     module2.exports = module2.exports = function(ctx2, stack, type) {
+      const alias = stack.getAnnotationAlias();
       const node = MethodDefinition(ctx2, stack, type);
       node.isAccessor = true;
       node.kind = "set";
-      node.key.value = ctx2.getAccessorName(node.key.value, stack, "set");
+      node.key.value = ctx2.getAccessorName(alias || node.key.value, stack, "set");
       return node;
     };
   }
@@ -9820,13 +9830,14 @@ var require_Property = __commonJS({
 var require_PropertyDefinition = __commonJS({
   "tokens/PropertyDefinition.js"(exports2, module2) {
     module2.exports = function(ctx2, stack) {
-      const annotations = stack.annotations || [];
-      var embeds = annotations.filter((item) => {
+      const alias = stack.getAnnotationAlias();
+      const annotations = stack.annotations;
+      var embeds = annotations && annotations.filter((item) => {
         return item.name.toLowerCase() === "embed";
       });
       var init = null;
       var hasEmbed = false;
-      if (embeds.length > 0) {
+      if (embeds && embeds.length > 0) {
         var items = [];
         embeds.forEach((embed) => {
           const args2 = embed.getArguments();
@@ -9879,7 +9890,7 @@ var require_PropertyDefinition = __commonJS({
       } else if (stack.static) {
         node.static = ctx2.createIdentifierNode("static");
       }
-      node.key = node.declarations[0].id;
+      node.key = alias ? ctx2.createIdentifierNode(alias) : node.declarations[0].id;
       node.init = init || node.declarations[0].init || ctx2.createLiteralNode(null);
       return node;
     };

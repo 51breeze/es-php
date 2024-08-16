@@ -24,7 +24,7 @@ class Creator {
                 env:{NODE_ENV:'development'}
             },
             resolve:{
-                usings:['PHPUnit/Framework/TestCase'],
+                usings:['PHPUnit/Framework/TestCase','PHPMailer/**'],
                 folders:{
                     "*.global":"escore",
                 }
