@@ -245,7 +245,7 @@ function MemberExpression(ctx,stack){
             //const propertyType = stack.property.type( objCtx );
             //node.computed = isDynamicProperty(stack, objectType, propertyType );
         }
-    }else if( !isStatic && rawObjectType && ctx.isArrayAccessor(rawObjectType) /*check(objectType)*/){
+    }else if( !isStatic && rawObjectType && (rawObjectType.isEnumType || ctx.isArrayAccessor(rawObjectType)) /*check(objectType)*/){
         node.computed = true;
         propertyNode = node.createLiteralNode(stack.property.value(), void 0,  stack.property);
     }

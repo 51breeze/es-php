@@ -407,16 +407,24 @@ public class StartTest extends Base
 
 
     testEnum(){
-        this.assertEquals(0, Types.ADDRESS );
-        this.assertEquals(1, Types.NAME );
-        
+        this.assertEquals(1, Types.ADDRESS );
+        this.assertEquals(2, Types.NAME );
+        this.assertEquals('名称', Types.labelOf(Types.NAME) );
+        this.assertEquals('NAME', Types.keyOf(Types.NAME) );
+        this.assertEquals(2, Types.valueOf(Types.NAME)?.value );
+
         enum Type {
             address=5,
             name
         };
         this.assertEquals(5, Type.address );
         this.assertEquals(6, Type.name );
-      
+        this.assertEquals('name', Type[6] );
+        this.assertEquals(Types.ADDRESS, enum2(Types.ADDRESS) );
+    }
+
+    enum2(add:Types){
+        return add;
     }
 
     testNewObject(){

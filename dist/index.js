@@ -6963,14 +6963,21 @@ var require_ArrayPattern = __commonJS({
 var require_FunctionExpression = __commonJS({
   "tokens/FunctionExpression.js"(exports2, module2) {
     var Token2 = require_Token();
-    function createInitNode(ctx2, name2, initValue, defaultValue2, operator) {
+    function createInitNode(ctx2, name2, initValue, defaultValue2, operator, forceType = null) {
+      let init = defaultValue2 ? ctx2.createBinaryNode(
+        operator,
+        initValue,
+        defaultValue2
+      ) : initValue;
+      if (forceType) {
+        let node = ctx2.createNode("TypeTransformExpression");
+        node.typeName = forceType;
+        node.expression = ctx2.createParenthesNode(init);
+        init = node;
+      }
       return ctx2.createStatementNode(ctx2.createAssignmentNode(
         name2 instanceof Token2 ? name2 : ctx2.createIdentifierNode(name2, null, true),
-        defaultValue2 ? ctx2.createBinaryNode(
-          operator,
-          initValue,
-          defaultValue2
-        ) : initValue
+        init
       ));
     }
     function createRefsMemberNode(ctx2, object, property, computed = false) {
@@ -6995,7 +7002,8 @@ var require_FunctionExpression = __commonJS({
             sName,
             ctx2.createIdentifierNode(sName, null, true),
             ctx2.createNewNode(ctx2.createIdentifierNode("\\stdClass"), []),
-            "?:"
+            "?:",
+            "object"
           ));
           item.properties.forEach((property) => {
             const key = property.key.value();
@@ -7014,7 +7022,7 @@ var require_FunctionExpression = __commonJS({
               "??"
             ));
           });
-          return createParamNode(ctx2, sName, "object");
+          return createParamNode(ctx2, sName);
         } else if (item.isArrayPattern) {
           const sName = ctx2.checkRefsName("_s", false, Token2.SCOPE_REFS_DOWN);
           before.push(createInitNode(
@@ -7022,7 +7030,8 @@ var require_FunctionExpression = __commonJS({
             sName,
             ctx2.createIdentifierNode(sName, null, true),
             ctx2.createArrayNode([]),
-            "?:"
+            "?:",
+            "array"
           ));
           item.elements.forEach((property, index2) => {
             let key = null;
@@ -7042,7 +7051,7 @@ var require_FunctionExpression = __commonJS({
               "??"
             ));
           });
-          return createParamNode(ctx2, sName, "array");
+          return createParamNode(ctx2, sName);
         }
         const oType = item.acceptType && item.acceptType.type();
         let acceptType = null;
@@ -7069,7 +7078,7 @@ var require_FunctionExpression = __commonJS({
         } else {
           nameNode = ctx2.createToken(item);
         }
-        if (acceptType && acceptType.isModule) {
+        if (acceptType && acceptType.isModule && !acceptType.isEnum) {
           const originType = ctx2.builder.getAvailableOriginType(acceptType);
           if (originType === "String" || originType === "Array" || originType === "Object") {
             typeName = originType.toLowerCase();
@@ -7942,36 +7951,13 @@ var require_EnumDeclaration = __commonJS({
       return [items, values];
     }
     module2.exports = function(ctx2, stack, type) {
-      const ClassBuilder2 = ctx2.plugin.getClassModuleBuilder();
-      if (stack.parentStack.isPackageDeclaration) {
+      if (!stack.isExpressionDeclare) {
+        const ClassBuilder2 = ctx2.plugin.getClassModuleBuilder();
         const node = new ClassBuilder2(stack, ctx2, "ClassDeclaration");
-        const module3 = stack.module;
-        if (node.isActiveForModule(module3.inherit)) {
-          node.inherit = node.createIdentifierNode(node.getModuleReferenceName(module3.inherit));
-        }
-        const ns = node.builder.getModuleNamespace(module3);
-        if (ns) {
-          this.namespace = this.createIdentifierNode(ns);
-        }
-        node.key = node.createIdentifierNode(module3.id);
-        node.static = node.createIdentifierNode("static");
-        node.createDependencies(module3);
-        node.createModuleAssets(module3);
         const [items, values] = createStatementMember(node, stack.properties);
         node.body.push(...items);
-        const mtehod = node.createMethodNode(node.createIdentifierNode("getLabelByValue"), (ctx3) => {
-          const node2 = ctx3.createNode("SwitchStatement");
-          node2.condition = node2.createIdentifierNode("value", null, true);
-          node2.cases = values.map((item) => {
-            item.parent = node2;
-            return item;
-          });
-          ctx3.body.push(node2);
-        }, [node.createIdentifierNode("value", null, true)]);
-        mtehod.static = mtehod.createIdentifierNode("static");
-        mtehod.modifier = mtehod.createIdentifierNode("public");
-        node.body.push(mtehod);
-        return node;
+        const classNode = node.create();
+        return classNode;
       } else {
         const name2 = stack.value();
         const keys = [];
@@ -7980,13 +7966,10 @@ var require_EnumDeclaration = __commonJS({
           keys.push(ctx2.createPropertyNode(ctx2.createLiteralNode(item.key.value()), ctx2.createLiteralNode(item.init.value())));
           values.push(ctx2.createPropertyNode(ctx2.createLiteralNode(String(item.init.value())), ctx2.createLiteralNode(item.key.value())));
         });
-        const transform = ctx2.createNode(stack, "TypeTransformExpression");
-        transform.typeName = "object";
-        transform.expression = transform.createObjectNode(values.concat(keys));
         return ctx2.createStatementNode(
           ctx2.createAssignmentNode(
             ctx2.createIdentifierNode(name2, null, true),
-            transform
+            ctx2.createObjectNode(values.concat(keys))
           )
         );
       }
@@ -9269,7 +9252,7 @@ var require_MemberExpression = __commonJS({
         } else if (rawObjectType) {
           node.computed = !ctx2.isObjectAccessor(rawObjectType);
         }
-      } else if (!isStatic && rawObjectType && ctx2.isArrayAccessor(rawObjectType)) {
+      } else if (!isStatic && rawObjectType && (rawObjectType.isEnumType || ctx2.isArrayAccessor(rawObjectType))) {
         node.computed = true;
         propertyNode = node.createLiteralNode(stack.property.value(), void 0, stack.property);
       }

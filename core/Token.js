@@ -630,8 +630,7 @@ class Token extends events.EventEmitter {
             return true;
         }else if(type.isAliasType){
             return this.isArrayAccessor(type.inherit.type())
-        }
-        else{
+        }else{
             const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
             if( isWrapType ){
                 let inherit = type.inherit.type();

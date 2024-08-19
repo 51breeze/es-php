@@ -1,12 +1,22 @@
 const Token  = require('../core/Token');
-function createInitNode(ctx, name, initValue, defaultValue, operator){
+function createInitNode(ctx, name, initValue, defaultValue, operator, forceType=null){
+
+   let init = defaultValue ? ctx.createBinaryNode(
+      operator, 
+      initValue,  
+      defaultValue
+   ) : initValue
+
+   if(forceType){
+      let node = ctx.createNode('TypeTransformExpression')
+      node.typeName = forceType;
+      node.expression = ctx.createParenthesNode(init)
+      init = node;
+   }
+
    return ctx.createStatementNode( ctx.createAssignmentNode( 
       name instanceof Token ? name : ctx.createIdentifierNode(name,null,true),
-      defaultValue ? ctx.createBinaryNode(
-         operator, 
-         initValue,  
-         defaultValue
-      ) : initValue
+      init
    ));
 }
 
@@ -34,7 +44,7 @@ function createParamNodes(ctx, stack, params){
             sName,  
             ctx.createIdentifierNode(sName,null,true),  
             ctx.createNewNode( ctx.createIdentifierNode('\\stdClass'), []),
-            '?:' 
+            '?:', 'object'
          ));
          item.properties.forEach( property=>{
             const key = property.key.value();
@@ -53,7 +63,7 @@ function createParamNodes(ctx, stack, params){
                '??'
             ));
          });
-         return createParamNode(ctx, sName, 'object');
+         return createParamNode(ctx, sName);
       }else if( item.isArrayPattern ){
          const sName = ctx.checkRefsName('_s', false, Token.SCOPE_REFS_DOWN );
          before.push(createInitNode(
@@ -61,7 +71,7 @@ function createParamNodes(ctx, stack, params){
             sName,  
             ctx.createIdentifierNode(sName,null,true),  
             ctx.createArrayNode([]),
-            '?:'
+            '?:','array'
          ));
          item.elements.forEach( (property,index)=>{
             let key= null;
@@ -81,7 +91,7 @@ function createParamNodes(ctx, stack, params){
                '??',
             ));
          });
-         return createParamNode(ctx, sName, 'array');
+         return createParamNode(ctx, sName);
       }
 
       const oType = item.acceptType && item.acceptType.type();
@@ -112,7 +122,7 @@ function createParamNodes(ctx, stack, params){
          nameNode = ctx.createToken(item);
       }
 
-      if( acceptType && acceptType.isModule ){
+      if(acceptType && acceptType.isModule && !acceptType.isEnum){
          const originType = ctx.builder.getAvailableOriginType( acceptType );
          if( originType==='String' || originType==='Array' || originType==='Object'){
             typeName = originType.toLowerCase();
