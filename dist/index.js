@@ -2865,8 +2865,10 @@ var require_Builder = __commonJS({
         if (content === null)
           return;
         fs2.mkdirSync(PATH.dirname(file), { recursive: true });
-        if (file.endsWith(".php")) {
-          if (this.plugin.options.strict) {
+        const config = this.plugin.options;
+        const suffix = config.suffix || ".php";
+        if (file.endsWith(suffix)) {
+          if (config.strict) {
             fs2.writeFileSync(file, "<?php\r\ndeclare (strict_types = 1);\r\n" + content);
           } else {
             fs2.writeFileSync(file, "<?php\r\n" + content);
@@ -3111,6 +3113,8 @@ var require_Builder = __commonJS({
         return true;
       }
       isPluginInContext(module3) {
+        if (module3 && module3.isVirtualModule)
+          return true;
         if (this.checkPluginContextCache.has(module3)) {
           return this.checkPluginContextCache.get(module3);
         }
@@ -3336,7 +3340,8 @@ var require_Builder = __commonJS({
             }
           }
           const info = PATH.parse(filepath);
-          if (info.ext === ".es") {
+          if (this.compiler.isExtensionName(info.ext)) {
+            this.compiler.options.extensions.includes(info.ext);
             filepath = PATH.join(info.dir, info.name + suffix);
           }
           filepath = this.compiler.normalizePath(filepath);
@@ -8286,10 +8291,9 @@ var require_Identifier = __commonJS({
       if (desc2 && desc2.isImportDeclaration) {
         desc2 = desc2.description();
       }
-      const builder = ctx2.builder;
-      if (desc2 && (desc2.isPropertyDefinition || desc2.isMethodDefinition)) {
+      if (desc2 && (desc2.isPropertyDefinition || desc2.isMethodDefinition || desc2.isEnumProperty) && !(stack.parentStack.isProperty && stack.parentStack.key === stack)) {
         const ownerModule = desc2.module;
-        const isStatic = !!(desc2.static || ownerModule.static);
+        const isStatic = !!(desc2.static || ownerModule.static || desc2.isEnumProperty);
         const inMember = stack.parentStack.isMemberExpression;
         let propertyName = stack.value();
         if (!inMember && (desc2.isMethodGetterDefinition || desc2.isMethodSetterDefinition)) {
@@ -8298,7 +8302,7 @@ var require_Identifier = __commonJS({
         let propertyNode = null;
         if (isStatic) {
           propertyNode = ctx2.createStaticMemberNode([
-            ctx2.createIdentifierNode(builder.getModuleNamespace(ownerModule)),
+            ctx2.createIdentifierNode(ctx2.getModuleReferenceName(ownerModule, stack.module)),
             ctx2.createIdentifierNode(propertyName, stack)
           ]);
         } else {
@@ -9181,7 +9185,7 @@ var require_MemberExpression = __commonJS({
         }
       }
       let aliasAnnotation = null;
-      let isMember = false;
+      let isMember = description && description.isEnumProperty;
       if (description && (description.isMethodGetterDefinition || description.isMethodSetterDefinition)) {
         aliasAnnotation = getAliasAnnotation(description);
         const result = trans(ctx2, stack, description, aliasAnnotation, objectType);
@@ -10035,9 +10039,25 @@ var require_StructTableKeyDefinition = __commonJS({
 // tokens/StructTableMethodDefinition.js
 var require_StructTableMethodDefinition = __commonJS({
   "tokens/StructTableMethodDefinition.js"(exports2, module2) {
-    function createNode(ctx2, item, isKey = false, toLower = false) {
+    function createNode(ctx2, item, isKey = false, toLower = false, type = null) {
       if (!item)
         return null;
+      if (type === "enum") {
+        if (item.isIdentifier || item.isMemberExpression) {
+          const type2 = item.compilation.getGlobalTypeById(item.value());
+          const list = [];
+          if (type2 && type2.isModule && type2.isEnum) {
+            Array.from(type2.descriptors.keys()).forEach((key) => {
+              const items = type2.descriptors.get(key);
+              const item2 = items.find((item3) => item3.isEnumProperty);
+              if (item2) {
+                list.push(ctx2.createLiteralNode(item2.init.value()));
+              }
+            });
+          }
+          return list;
+        }
+      }
       if (item.isIdentifier) {
         let value2 = item.value();
         if (toLower)
@@ -10055,7 +10075,7 @@ var require_StructTableMethodDefinition = __commonJS({
       const key = stack.key.isMemberExpression ? stack.key.property : stack.key;
       node.key = createNode(node, key, false);
       const isKey = stack.parentStack.isStructTableKeyDefinition;
-      node.params = (stack.params || []).map((item) => createNode(node, item, isKey));
+      node.params = (stack.params || []).map((item) => createNode(node, item, isKey, false, name2)).flat().filter(Boolean);
       return node;
     };
   }

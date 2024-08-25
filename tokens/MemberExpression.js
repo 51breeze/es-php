@@ -155,7 +155,7 @@ function MemberExpression(ctx,stack){
         }
     }
     let aliasAnnotation = null;
-    let isMember = false;
+    let isMember = description && description.isEnumProperty;
     if( description && (description.isMethodGetterDefinition || description.isMethodSetterDefinition) ){
         aliasAnnotation = getAliasAnnotation(description);
         const result = trans(ctx, stack, description, aliasAnnotation, objectType);

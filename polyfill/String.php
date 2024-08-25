@@ -115,7 +115,7 @@ function es_string_replace_all($target,$search,$replacement=''){
  */
 function es_string_match($target,$regexp){
     if( $regexp instanceof RegExp ){
-        return $search->match( $target );
+        return $regexp->match( $target );
     }else{
         return (new RegExp( $regexp ))->match( $target );
     }

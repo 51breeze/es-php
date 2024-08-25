@@ -42,7 +42,7 @@ describe('compile file', function() {
     let compilation = null;
     let errors = [];
     beforeAll(async function() {
-        compilation = await creator.startByFile('./StartTest.es');
+        compilation = await creator.startByFile('./StartTest');
         errors = compilation.compiler.errors.filter(e=>e.code===0 ||e.code===1);
     });
 

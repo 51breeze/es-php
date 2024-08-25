@@ -7,5 +7,6 @@ struct table Address{
   content: varchar(255) DEFAULT '',
   phone: varchar(16) DEFAULT '' ,
   postcode?: varchar(32),
+  status?: enum(Types),
   PRIMARY KEY(id)
 }

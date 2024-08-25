@@ -30,10 +30,9 @@ module.exports = function(ctx,stack){
         desc = desc.description();
     }
 
-    const builder = ctx.builder;
-    if( desc && (desc.isPropertyDefinition || desc.isMethodDefinition) ){
+    if( desc && (desc.isPropertyDefinition || desc.isMethodDefinition || desc.isEnumProperty) && !(stack.parentStack.isProperty && stack.parentStack.key === stack) ){
         const ownerModule = desc.module;
-        const isStatic = !!(desc.static || ownerModule.static);
+        const isStatic = !!(desc.static || ownerModule.static || desc.isEnumProperty);
         const inMember = stack.parentStack.isMemberExpression;
         let propertyName = stack.value();
         if( !inMember && (desc.isMethodGetterDefinition || desc.isMethodSetterDefinition) ){
@@ -42,7 +41,7 @@ module.exports = function(ctx,stack){
         let propertyNode = null;
         if( isStatic ){
             propertyNode = ctx.createStaticMemberNode([
-                ctx.createIdentifierNode( builder.getModuleNamespace(ownerModule) ),
+                ctx.createIdentifierNode( ctx.getModuleReferenceName(ownerModule, stack.module) ),
                 ctx.createIdentifierNode(propertyName, stack)
             ]);
         }else{

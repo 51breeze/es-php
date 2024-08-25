@@ -3,11 +3,12 @@ package{
     public enum Types {
         ADDRESS
         NAME
-
+        SG='AR'
+        RT='AY'
         label(){
             
             switch(this.value){
-                case Types.ADDRESS :
+                case ADDRESS :
                     return '地址'
                 case Types.NAME :
                     return '名称'

@@ -189,8 +189,10 @@ class Builder extends Token{
     emitFile(file, content){
         if( content=== null )return;
         fs.mkdirSync(PATH.dirname(file),{recursive: true});
-        if( file.endsWith('.php') ){
-            if( this.plugin.options.strict ){
+        const config = this.plugin.options;
+        const suffix = config.suffix||".php";
+        if( file.endsWith(suffix) ){
+            if( config.strict ){
                 fs.writeFileSync(file, '<?php\r\ndeclare (strict_types = 1);\r\n'+content);
             }else{
                 fs.writeFileSync(file, '<?php\r\n'+content);
@@ -440,6 +442,7 @@ class Builder extends Token{
     }
 
     isPluginInContext(module){
+        if(module && module.isVirtualModule)return true;
         if(this.checkPluginContextCache.has(module)){
             return this.checkPluginContextCache.get(module);
         }
@@ -673,7 +676,8 @@ class Builder extends Token{
                 }
             }
             const info = PATH.parse(filepath);
-            if( info.ext === '.es' ){
+            if( this.compiler.isExtensionName(info.ext)){
+                this.compiler.options.extensions.includes(info.ext)
                 filepath = PATH.join(info.dir, info.name+suffix);
             }
             filepath = this.compiler.normalizePath(filepath);

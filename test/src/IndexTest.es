@@ -206,8 +206,8 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator<an
 
         this.assertEquals(5, t );
         this.assertEquals(6, Type.name );
-        this.assertEquals(1,b );
-        this.assertEquals(2,Types.NAME );
+        this.assertEquals(0,b );
+        this.assertEquals(1,Types.NAME );
         
     }
 

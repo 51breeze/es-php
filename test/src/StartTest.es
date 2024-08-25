@@ -12,7 +12,7 @@ import Assets;
 
 //@Embed(Imgs='./Person.es');
 
-public class StartTest extends Base
+public class StartTest extends Base implements Address
 {
     private var items = [];
     private var list  = [];
@@ -407,11 +407,11 @@ public class StartTest extends Base
 
 
     testEnum(){
-        this.assertEquals(1, Types.ADDRESS );
-        this.assertEquals(2, Types.NAME );
+        this.assertEquals(0, Types.ADDRESS );
+        this.assertEquals(1, Types.NAME );
         this.assertEquals('名称', Types.labelOf(Types.NAME) );
         this.assertEquals('NAME', Types.keyOf(Types.NAME) );
-        this.assertEquals(2, Types.valueOf(Types.NAME)?.value );
+        this.assertEquals(1, Types.valueOf(Types.NAME)?.value );
 
         enum Type {
             address=5,
