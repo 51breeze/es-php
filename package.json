@@ -27,7 +27,6 @@
   },
   "homepage": "https://github.com/51breeze/es-php#readme",
   "dependencies": {
-    "easescript-cli": "^0.1.3",
     "fs-extra": "^11.2.0",
     "glob-path": "latest",
     "lodash": "^4.17.21"
@@ -38,6 +37,7 @@
   },
   "devDependencies": {
     "easescript": "latest",
+    "easescript-cli": "latest",
     "esbuild": "^0.17.11",
     "esbuild-plugin-copy": "^2.1.0",
     "jasmine": "^3.10.0",
