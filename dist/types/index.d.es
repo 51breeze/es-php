@@ -1,25 +1,23 @@
-declare var _SERVER:ArrayMapping<any>;
-declare var _GET:ArrayMapping<any>;
-declare var _POST:ArrayMapping<any>;
-declare var _FILES:ArrayMapping<any>;
-declare var _REQUEST:ArrayMapping<any>;
-declare var _SESSION:ArrayMapping<any>;
-declare var _ENV:ArrayMapping<any>;
-declare var _COOKIE:ArrayMapping<any>;
-
+declare var _SERVER:Record;
+declare var _GET:Record;
+declare var _POST:Record;
+declare var _FILES:Record;
+declare var _REQUEST:Record;
+declare var _SESSION:Record;
+declare var _ENV:Record;
+declare var _COOKIE:Record;
 declare interface Resource{}
-
 declare interface ArrayMapping<T=any> extends Array<T>{
     [key:string]:T
     [key:number]:T
 }
-
-declare type ScalarValue = string | number | boolean | null;
-
-declare type TableColumnValue = string | number | null;
-
+//标量类型
+declare type Scalar = string | number | boolean | null;
 //引用内存地址类型
 declare type RMD<T> = T;
+//对象保护类型
 declare type ObjectProtector<T> = T;
+//数组保护类型
 declare type ArrayProtector<T> = T;
-declare type GeneralCallback<T=any,R=void> = [string, string] | (...args:T[])=>R;
+//通用回调类型
+declare type GeneralCallback<T=any,R=any> = [string, string] | (...args:T[])=>R;

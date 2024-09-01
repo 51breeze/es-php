@@ -8,7 +8,7 @@ function top(a, b){
 }
 
 
-function env<T=ScalarValue | ScalarValue[]>(name:string,defaultValue?:any):T{
+function env<T=Scalar | Scalar[]>(name:string,defaultValue?:any):T{
     return null;
 }
 
