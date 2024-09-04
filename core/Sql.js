@@ -42,6 +42,10 @@ class Sql{
         return !(Sql.#instance.dataset.size > 0)
     }
 
+    static changed(){
+        return Sql.#instance.changed
+    }
+
     static get tables(){
         return Array.from(Sql.#instance.dataset.values());
     }

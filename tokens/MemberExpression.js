@@ -260,8 +260,14 @@ function MemberExpression(ctx,stack){
 
     if( node.computed || !isMember ){
         let pStack = stack.getParentStack(p=>!p.isMemberExpression);
-        if( !(pStack.isCallExpression||pStack.isNewExpression||pStack.isAssignmentExpression||pStack.isChainExpression) ){
-            return node.createBinaryNode('??', node, node.createLiteralNode(null) );
+        if(pStack){
+            let optionalChain = pStack.isAssignmentExpression||pStack.isChainExpression;
+            if(pStack.isCallExpression||pStack.isNewExpression){
+                optionalChain=!pStack.arguments.includes(stack)
+            }
+            if(!optionalChain){
+                return node.createBinaryNode('??', node, node.createLiteralNode(null));
+            }
         }
     }
 

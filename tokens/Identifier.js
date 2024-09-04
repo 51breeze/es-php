@@ -86,8 +86,8 @@ module.exports = function(ctx,stack){
                         ctx.createIdentifierNode('getScopeVariable')
                 ]),
                 [
-                ctx.createLiteralNode( ctx.builder.createScopeId(stack.compilation, resolve) ),
-                ctx.createLiteralNode( stack.value() )
+                    ctx.createLiteralNode( ctx.builder.createScopeId(stack.compilation, resolve) ),
+                    ctx.createLiteralNode( stack.value() )
                 ]
             );
             return node;

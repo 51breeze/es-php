@@ -215,6 +215,22 @@ class PluginEsPhp{
         return VirtualModule.getVModule(id);
     }
 
+    async buildIncludes(){
+        const includes = this.options.includes || [];
+        if(!(includes.length>0))return;
+        const files = includes.map( file=>this.compiler.resolveRuleFiles(file) ).flat().filter(file=>this.compiler.checkFileExt(file));
+        await Promise.allSettled(files.map( async file=>{
+            const compilation = await this.compiler.createCompilation(file,null,true);
+            if(compilation){
+                await compilation.ready();
+            }
+        }));
+    }
+
+    async buildStart(){
+        await this.buildIncludes()
+    }
+
     async start(compilation, done=()=>null){
         const builder = this.getBuilder( compilation );
         await builder.start(done);

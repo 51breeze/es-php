@@ -73,7 +73,6 @@ class Builder extends Token{
         this.platform = null;
         this.buildModules = new Set();
         this.fileContextScopes = fileContextScopes;
-        this.esSuffix = new RegExp( this.compiler.options.suffix.replace('.','\\')+'$', 'i' );
         this.checkRuntimeCache = new Map();
         this.checkPluginContextCache = new Map();
         this.moduleDependencies = new Map();
@@ -135,7 +134,7 @@ class Builder extends Token{
     }
 
     async emitManifest(){
-        if(!Manifest.isEmpty()){
+        if(!Manifest.isEmpty() && Manifest.changed){
             let file = 'manifest.php';
             let folder = this.plugin.resolveSourceId('manifest.php', 'folders') || '.';
             file  = PATH.isAbsolute(folder) ? PATH.join(folder,file) : PATH.join(this.getOutputPath(), folder, file);
@@ -144,7 +143,7 @@ class Builder extends Token{
     }
 
     async emitSql(){
-        if(!Sql.isEmpty()){
+        if(!Sql.isEmpty() && Sql.changed){
             let file = 'app.sql';
             let folder = this.plugin.resolveSourceId(file, 'folders') || '.';
             file = PATH.isAbsolute(folder) ? PATH.join(folder,file) : PATH.join(this.getOutputPath(), folder, file);
@@ -172,11 +171,11 @@ class Builder extends Token{
     getOutputPath(){
         const value = this.__outputPath;
         if(value)return value;
-        return this.__outputPath = this.compiler.pathAbsolute(this.plugin.options.output || this.compiler.options.output);
+        return this.__outputPath = this.compiler.pathAbsolute(this.plugin.options.output);
     }
 
     getComposerPath(){
-        return this.compiler.pathAbsolute( this.plugin.options.composer || this.plugin.options.output || this.compiler.options.output );
+        return this.compiler.pathAbsolute( this.plugin.options.composer || this.plugin.options.output);
     }
 
     emitContent(file, content, output=null){
@@ -261,63 +260,6 @@ class Builder extends Token{
         });
     }
 
-    async buildIncludes(){
-        if(this.__buildIncludes)return;
-        this.__buildIncludes = true;
-        const includes = this.plugin.options.includes || [];
-        const files = [];
-        const push = (file, readdir)=>{
-            if(!file)return;
-            if( fs.existsSync(file) ){
-                const stat = fs.statSync( file );
-                if(stat.isFile()){
-                    files.push( file );
-                }else if( readdir && stat.isDirectory() ){
-                    resolve(file, readdir);
-                }
-            }
-        };
-        const resolve = (file,readdir)=>{
-            if( file.endsWith('*') ){
-                const resolveFile = this.compiler.getFileAbsolute( PATH.dirname(file), null, false );
-                if(!resolveFile)return;
-                readdir = readdir || file.endsWith('**');
-                (this.compiler.callUtils('readdir',resolveFile,true)||[]).forEach( file=>{
-                    push(file, !!readdir);
-                });
-            }else{
-                const resolveFile = this.compiler.getFileAbsolute( file, null, false );
-                push(resolveFile,!!readdir);
-            }
-        };
-        includes.forEach( file=>resolve(file) );
-
-        await Promise.allSettled(files.map( async file=>{
-            if(!this.esSuffix.test( file ))return;
-            const compilation = await this.compiler.createCompilation(file,null,true);
-            if( compilation ){
-                await compilation.ready();
-                const builder = this.plugin.getBuilder(compilation);
-                if( compilation.isDescriptorDocument() ){
-                    compilation.modules.forEach( module=>{
-                        const stack = compilation.getStackByModule(module);
-                        if(stack){
-                            builder.buildForModule(compilation, stack, module);
-                        }
-                    });
-                }else{
-                    if(compilation.modules.size>0){
-                        builder.buildForModule(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift() );
-                    }else{
-                        builder.buildForModule(compilation, compilation.stack );
-                    }
-                }
-            }else if(!compilation){
-                this.emitCopyFile(file, this.getOutputAbsolutePath(file) );
-            }
-        }));
-    }
-
     async buildAfter(){}
 
     async start( done ){
@@ -340,8 +282,6 @@ class Builder extends Token{
                     this.buildForModule(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift() );
                 }
             }
-
-            await this.buildIncludes();
             await this.emitSql();
             await this.emitManifest();
             await this.emitAssets();
@@ -372,7 +312,6 @@ class Builder extends Token{
                 this.make(compilation, compilation.stack, module);
                 this.buildModules.add(module);
             }
-            await this.buildIncludes();
             await this.emitSql();
             await this.emitManifest();
             await this.emitAssets();

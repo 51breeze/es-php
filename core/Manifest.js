@@ -22,6 +22,10 @@ class Manifest{
         return !(Manifest.#instance.dataset.size > 0)
     }
 
+    static changed(){
+        return Manifest.#instance.changed
+    }
+
     static get instance(){
         return Manifest.#instance;
     }

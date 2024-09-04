@@ -2221,6 +2221,9 @@ var require_Sql = __commonJS({
       static isEmpty() {
         return !(__privateGet(_Sql, _instance).dataset.size > 0);
       }
+      static changed() {
+        return __privateGet(_Sql, _instance).changed;
+      }
       static get tables() {
         return Array.from(__privateGet(_Sql, _instance).dataset.values());
       }
@@ -2299,6 +2302,9 @@ var require_Manifest = __commonJS({
       }
       static isEmpty() {
         return !(__privateGet(_Manifest, _instance).dataset.size > 0);
+      }
+      static changed() {
+        return __privateGet(_Manifest, _instance).changed;
       }
       static get instance() {
         return __privateGet(_Manifest, _instance);
@@ -2761,7 +2767,6 @@ var require_Builder = __commonJS({
         this.platform = null;
         this.buildModules = /* @__PURE__ */ new Set();
         this.fileContextScopes = fileContextScopes;
-        this.esSuffix = new RegExp(this.compiler.options.suffix.replace(".", "\\") + "$", "i");
         this.checkRuntimeCache = /* @__PURE__ */ new Map();
         this.checkPluginContextCache = /* @__PURE__ */ new Map();
         this.moduleDependencies = /* @__PURE__ */ new Map();
@@ -2815,7 +2820,7 @@ var require_Builder = __commonJS({
         }
       }
       async emitManifest() {
-        if (!Manifest.isEmpty()) {
+        if (!Manifest.isEmpty() && Manifest.changed) {
           let file = "manifest.php";
           let folder = this.plugin.resolveSourceId("manifest.php", "folders") || ".";
           file = PATH.isAbsolute(folder) ? PATH.join(folder, file) : PATH.join(this.getOutputPath(), folder, file);
@@ -2823,7 +2828,7 @@ var require_Builder = __commonJS({
         }
       }
       async emitSql() {
-        if (!Sql2.isEmpty()) {
+        if (!Sql2.isEmpty() && Sql2.changed) {
           let file = "app.sql";
           let folder = this.plugin.resolveSourceId(file, "folders") || ".";
           file = PATH.isAbsolute(folder) ? PATH.join(folder, file) : PATH.join(this.getOutputPath(), folder, file);
@@ -2850,10 +2855,10 @@ var require_Builder = __commonJS({
         const value2 = this.__outputPath;
         if (value2)
           return value2;
-        return this.__outputPath = this.compiler.pathAbsolute(this.plugin.options.output || this.compiler.options.output);
+        return this.__outputPath = this.compiler.pathAbsolute(this.plugin.options.output);
       }
       getComposerPath() {
-        return this.compiler.pathAbsolute(this.plugin.options.composer || this.plugin.options.output || this.compiler.options.output);
+        return this.compiler.pathAbsolute(this.plugin.options.composer || this.plugin.options.output);
       }
       emitContent(file, content, output = null) {
         this.plugin.generatedCodeMaps.set(file, content);
@@ -2934,65 +2939,6 @@ var require_Builder = __commonJS({
           }
         });
       }
-      async buildIncludes() {
-        if (this.__buildIncludes)
-          return;
-        this.__buildIncludes = true;
-        const includes = this.plugin.options.includes || [];
-        const files = [];
-        const push = (file, readdir) => {
-          if (!file)
-            return;
-          if (fs2.existsSync(file)) {
-            const stat = fs2.statSync(file);
-            if (stat.isFile()) {
-              files.push(file);
-            } else if (readdir && stat.isDirectory()) {
-              resolve(file, readdir);
-            }
-          }
-        };
-        const resolve = (file, readdir) => {
-          if (file.endsWith("*")) {
-            const resolveFile = this.compiler.getFileAbsolute(PATH.dirname(file), null, false);
-            if (!resolveFile)
-              return;
-            readdir = readdir || file.endsWith("**");
-            (this.compiler.callUtils("readdir", resolveFile, true) || []).forEach((file2) => {
-              push(file2, !!readdir);
-            });
-          } else {
-            const resolveFile = this.compiler.getFileAbsolute(file, null, false);
-            push(resolveFile, !!readdir);
-          }
-        };
-        includes.forEach((file) => resolve(file));
-        await Promise.allSettled(files.map(async (file) => {
-          if (!this.esSuffix.test(file))
-            return;
-          const compilation = await this.compiler.createCompilation(file, null, true);
-          if (compilation) {
-            await compilation.ready();
-            const builder = this.plugin.getBuilder(compilation);
-            if (compilation.isDescriptorDocument()) {
-              compilation.modules.forEach((module3) => {
-                const stack = compilation.getStackByModule(module3);
-                if (stack) {
-                  builder.buildForModule(compilation, stack, module3);
-                }
-              });
-            } else {
-              if (compilation.modules.size > 0) {
-                builder.buildForModule(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift());
-              } else {
-                builder.buildForModule(compilation, compilation.stack);
-              }
-            }
-          } else if (!compilation) {
-            this.emitCopyFile(file, this.getOutputAbsolutePath(file));
-          }
-        }));
-      }
       async buildAfter() {
       }
       async start(done) {
@@ -3015,7 +2961,6 @@ var require_Builder = __commonJS({
               this.buildForModule(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift());
             }
           }
-          await this.buildIncludes();
           await this.emitSql();
           await this.emitManifest();
           await this.emitAssets();
@@ -3045,7 +2990,6 @@ var require_Builder = __commonJS({
             this.make(compilation, compilation.stack, module3);
             this.buildModules.add(module3);
           }
-          await this.buildIncludes();
           await this.emitSql();
           await this.emitManifest();
           await this.emitAssets();
@@ -9268,8 +9212,14 @@ var require_MemberExpression = __commonJS({
       node.isStatic = isStatic;
       if (node.computed || !isMember) {
         let pStack = stack.getParentStack((p) => !p.isMemberExpression);
-        if (!(pStack.isCallExpression || pStack.isNewExpression || pStack.isAssignmentExpression || pStack.isChainExpression)) {
-          return node.createBinaryNode("??", node, node.createLiteralNode(null));
+        if (pStack) {
+          let optionalChain = pStack.isAssignmentExpression || pStack.isChainExpression;
+          if (pStack.isCallExpression || pStack.isNewExpression) {
+            optionalChain = !pStack.arguments.includes(stack);
+          }
+          if (!optionalChain) {
+            return node.createBinaryNode("??", node, node.createLiteralNode(null));
+          }
         }
       }
       return node;
@@ -10767,7 +10717,6 @@ var require_package = __commonJS({
       },
       homepage: "https://github.com/51breeze/es-php#readme",
       dependencies: {
-        "easescript-cli": "^0.1.3",
         "fs-extra": "^11.2.0",
         "glob-path": "latest",
         lodash: "^4.17.21"
@@ -10778,6 +10727,7 @@ var require_package = __commonJS({
       },
       devDependencies: {
         easescript: "latest",
+        "easescript-cli": "latest",
         esbuild: "^0.17.11",
         "esbuild-plugin-copy": "^2.1.0",
         jasmine: "^3.10.0",
@@ -10990,6 +10940,21 @@ var PluginEsPhp = class {
   }
   getVirtualModule(id2) {
     return VirtualModule.getVModule(id2);
+  }
+  async buildIncludes() {
+    const includes = this.options.includes || [];
+    if (!(includes.length > 0))
+      return;
+    const files = includes.map((file) => this.compiler.resolveRuleFiles(file)).flat().filter((file) => this.compiler.checkFileExt(file));
+    await Promise.allSettled(files.map(async (file) => {
+      const compilation = await this.compiler.createCompilation(file, null, true);
+      if (compilation) {
+        await compilation.ready();
+      }
+    }));
+  }
+  async buildStart() {
+    await this.buildIncludes();
   }
   async start(compilation, done = () => null) {
     const builder = this.getBuilder(compilation);
