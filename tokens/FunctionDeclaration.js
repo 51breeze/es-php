@@ -12,7 +12,7 @@ module.exports = function(ctx,stack,type){
     }
     if( stack.isConstructor ){
         node.key = node.createIdentifierNode('__construct', stack.key);
-    }else{
+    }else if(stack.key){
         node.key = node.createIdentifierNode(stack.key.value(), stack.key);
     }
     return node;

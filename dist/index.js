@@ -3400,7 +3400,8 @@ var require_Builder = __commonJS({
         ctxModule = ctxModule || this.compilation;
         if (!(depModule.isModule || depModule.isVirtualModule) || depModule === ctxModule)
           return;
-        if (!depModule.isVirtualModule && !this.compiler.callUtils("isTypeModule", depModule))
+        let isModule = this.compiler.callUtils("isTypeModule", depModule);
+        if (!depModule.isVirtualModule && !isModule)
           return;
         if (this.compilation.mainModule === depModule)
           return;
@@ -3409,6 +3410,9 @@ var require_Builder = __commonJS({
         var dataset = this.moduleDependencies.get(ctxModule);
         if (!dataset) {
           this.moduleDependencies.set(ctxModule, dataset = /* @__PURE__ */ new Set());
+        }
+        if (isModule) {
+          depModule = depModule.type();
         }
         dataset.add(depModule);
       }
@@ -3470,15 +3474,11 @@ var require_Builder = __commonJS({
         return staticAssets.getAsset(file);
       }
       getModuleUsingAliasName(module3, context) {
-        if (!context || !context.isModule)
+        if (!context || !this.compiler.callUtils("isModule", context))
           return null;
-        if (context.importAlias && context.importAlias.has(module3)) {
-          return context.importAlias.get(module3);
-        }
-        if (context.imports && context.imports.has(module3.id)) {
-          if (context.imports.get(module3.id) !== module3) {
-            return "__" + module3.getName("_");
-          }
+        const alias = context.getModuleAlias(module3);
+        if (alias) {
+          return alias;
         }
         return null;
       }
@@ -8198,7 +8198,7 @@ var require_FunctionDeclaration = __commonJS({
       }
       if (stack.isConstructor) {
         node.key = node.createIdentifierNode("__construct", stack.key);
-      } else {
+      } else if (stack.key) {
         node.key = node.createIdentifierNode(stack.key.value(), stack.key);
       }
       return node;

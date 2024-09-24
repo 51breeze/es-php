@@ -743,14 +743,18 @@ class Builder extends Token{
     addDepend( depModule, ctxModule ){
         ctxModule = ctxModule || this.compilation;
         if( !(depModule.isModule || depModule.isVirtualModule) || depModule === ctxModule )return;
-        if(!depModule.isVirtualModule && !this.compiler.callUtils("isTypeModule", depModule) )return;
+        let isModule = this.compiler.callUtils("isTypeModule", depModule);
+        if(!depModule.isVirtualModule && !isModule )return;
         if(this.compilation.mainModule === depModule)return;
         if(!this.compilation.isDescriptorDocument() && this.compilation.modules.has(depModule.getName()))return;
         var dataset = this.moduleDependencies.get(ctxModule);
         if( !dataset ){
             this.moduleDependencies.set( ctxModule, dataset = new Set() );
         }
-        dataset.add( depModule );
+        if(isModule){
+            depModule = depModule.type();
+        }
+        dataset.add(depModule);
     }
 
     getDependencies( ctxModule ){
@@ -822,15 +826,16 @@ class Builder extends Token{
     }
 
     getModuleUsingAliasName(module,context){
-        if(!context || !context.isModule)return null;
-        if(context.importAlias && context.importAlias.has(module) ){
-            return context.importAlias.get(module);
+        if(!context || !this.compiler.callUtils('isModule', context))return null;
+        const alias = context.getModuleAlias(module)
+        if(alias){
+            return alias;
         }
-        if(context.imports && context.imports.has(module.id)){
-            if(context.imports.get(module.id) !== module){
-                return '__'+module.getName('_');
-            } 
-        }
+        // if(context.imports && context.imports.has(module.id)){
+        //     if(context.imports.get(module.id) !== module){
+        //         return '__'+module.getName('_');
+        //     } 
+        // }
         return null;
     }
 
