@@ -16,7 +16,7 @@ module.exports = function(ctx, stack, type){
         node.namespace = node.createIdentifierNode(ns);
     }
     node.key = node.createIdentifierNode( polyfillModule.export || module.id );
-    node.comment = polyfillModule.comment ? node.createChunkNode( polyfillModule.comment ) : null;
+    node.comments = polyfillModule.comment ? node.createChunkNode( polyfillModule.comment ) : null;
     polyfillModule.require.forEach( name=>{
         const module = stack.getModuleById(name);
         if( module ){

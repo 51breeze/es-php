@@ -30,8 +30,8 @@ function createDependencies(stack, ctx, node, importExcludes){
 
     dependencies.forEach( depModule =>{
         if( stack.compiler.isPluginInContext(plugin, depModule) ){
-            if( !importExcludes.has( depModule ) ){
-                if( node.isActiveForModule( depModule ) ){
+            if( node.isActiveForModule( depModule ) ){
+                if(!importExcludes.has( depModule )){
                     if( importFlag ){
                         if( !builder.isImportExclude(depModule) ){
                             const source = builder.getModuleImportSource(depModule, stack.compilation.file);
@@ -42,10 +42,10 @@ function createDependencies(stack, ctx, node, importExcludes){
                         const name = builder.getModuleNamespace(depModule, depModule.id);
                         builder.addFileAndNamespaceMapping(source, name);
                     }
-                    createUse( depModule );
-                }else if( node.isReferenceDeclaratorModule(depModule) ){
-                    createUse( depModule );
                 }
+                createUse( depModule );
+            }else if( node.isReferenceDeclaratorModule(depModule) ){
+                createUse( depModule );
             }
         }
     });
@@ -56,6 +56,7 @@ module.exports = function(ctx,stack){
     const node = ctx.createNode(stack);
     node.body = [];
     node.afterBody = [];
+    node.beforeBody = [];
     node.imports = [];
     node.beforeExternals = [];
     stack.body.forEach( item=>{
@@ -67,11 +68,23 @@ module.exports = function(ctx,stack){
     });
 
     node.body.push( ...node.beforeExternals );
-    
+
     const externalImports = [];
     const insertImports = [];
     const insertUsing = [];
     const importExcludes = new WeakSet();
+
+    if(stack.imports && stack.imports.length>0){
+        stack.imports.forEach(item=>{
+            const desc = item.description();
+            if( desc && desc.isModule ){
+                importExcludes.add(desc);
+            }
+            externalImports.push( item );
+        })
+    }
+
+    let externalNodes = []
     if( stack.externals.length > 0 ){
         stack.externals.forEach( item=>{
             if( item.isImportDeclaration ){
@@ -82,7 +95,8 @@ module.exports = function(ctx,stack){
                 externalImports.push( item );
             }else{
                 const obj = node.createToken(item);
-                if( obj ){
+                if(obj){
+                    externalNodes.push(obj)
                     node.body.push( obj );
                 }
             }
@@ -91,7 +105,11 @@ module.exports = function(ctx,stack){
 
     if( stack.exports.length > 0 ){
         const dataset = [];
-        const isDefaultGlobal = stack.exports.length === 1 && stack.exports[0].isExportDefaultDeclaration;
+        let exportAssignmentNode = null;
+        let ignoreDefaultSpecifier = false;
+        if(stack.exports.length===1 && stack.exports[0].isExportDefaultDeclaration){
+            ignoreDefaultSpecifier = true;
+        }
         stack.exports.forEach( item=>{
             const obj = node.createToken(item);
             if( obj.type === 'ExportNamedDeclaration' ){
@@ -155,59 +173,61 @@ module.exports = function(ctx,stack){
                 }
             }
             else if(obj.type === 'ExportDefaultDeclaration'){
-
-                if( isDefaultGlobal ){
-
-                    if( obj.declaration.type ==='ClassDeclaration' ){
-                        dataset.push(node.createIdentifierNode( 
-                            node.getModuleReferenceName( obj.declaration.module ) 
-                        ));
-                    }else{
-                        dataset.push(obj.declaration);
-                    }
-
+                let value = obj.declaration
+                if(obj.declaration.type ==='ClassDeclaration'){
+                    value = node.createIdentifierNode( 
+                        node.getModuleReferenceName(obj.declaration.module) 
+                    )
+                }
+                if(ignoreDefaultSpecifier){
+                    exportAssignmentNode = value;
                 }else{
-
-                    if( obj.declaration.type ==='ClassDeclaration' ){
-                        dataset.push(
-                            node.createPropertyNode(
-                                'default',
-                                node.createIdentifierNode( 
-                                    node.getModuleReferenceName( obj.declaration.module ) 
-                                )
-                            )
-                        );
-                    }else{
-                        dataset.push(node.createPropertyNode('default', obj.declaration));
-                    }
+                    dataset.push(node.createPropertyNode('default', value));
                 }
             }
             else if( obj.type === 'ExportAllDeclaration' ){
-                const refs = obj.checkRefsName(obj.exported.value,true);
-                insertImports.push( node.createImportNode(obj.source, [[refs]]) );
-                dataset.push(
-                    node.createPropertyNode(
-                        obj.exported.value,  
-                        node.createIdentifierNode(refs,null,true)
-                    )
-                );
+                if(obj.exported){
+                    const refs = obj.checkRefsName(obj.exported.value,true);
+                    if(obj.source){
+                        insertImports.push( node.createImportNode(obj.source, [[refs]]) );
+                    }
+                    dataset.push(
+                        node.createPropertyNode(
+                            obj.exported.value,  
+                            node.createIdentifierNode(refs,null,true)
+                        )
+                    );
+                }else{
+                    externalNodes.forEach(item=>{
+                        if(item.type==='VariableDeclaration'){
+                            item.declarations.forEach(decl=>{
+                                dataset.push(
+                                    node.createPropertyNode(
+                                        node.createLiteralNode(decl.id.value),  
+                                        node.createIdentifierNode(decl.id.value, null, true)
+                                    )
+                                );
+                            })
+                        }else if(item.isFunctionDeclaration){
+                            dataset.push(
+                                node.createPropertyNode(
+                                    node.createLiteralNode(item.key),  
+                                    node.createIdentifierNode(item.key, null, true)
+                                )
+                            );
+                        }
+                    })
+                }
+            }else if( obj.type==='ExportAssignmentDeclaration'){
+                exportAssignmentNode = obj.expression;
             }
         });
-
-        if( isDefaultGlobal ){
-            if( dataset[0] ){
-                node.afterBody.push( node.createReturnNode( dataset[0] ) );
-            }
+        if(exportAssignmentNode){
+            node.afterBody.push( node.createReturnNode(exportAssignmentNode) )
         }else{
             node.afterBody.push( node.createReturnNode( node.createObjectNode( dataset ) ) );
         }
     }
-
-    if( !stack.compilation.mainModule && (stack.externals.length > 0 ||  stack.exports.length > 0) ){
-        const [imps, using]  = createDependencies(stack, ctx, node, importExcludes);
-        insertImports.push( ...imps );
-        insertUsing.push( ...using );
-     }
 
     externalImports.forEach( item=>{
         const obj = node.createToken(item);
@@ -216,10 +236,16 @@ module.exports = function(ctx,stack){
         }
     });
 
-    node.imports.push( ...insertImports );
-    node.body.unshift( ...node.imports );
-    node.body.push( ...insertUsing );
+    if( !stack.compilation.mainModule && (stack.externals.length > 0 ||  stack.exports.length > 0) ){
+        const [imps, using]  = createDependencies(stack, ctx, node, importExcludes);
+        insertImports.push( ...imps );
+        insertUsing.push( ...using );
+    }
+
+    node.body.splice(0, 0, ...node.imports, ...insertImports, ...insertUsing, ...node.beforeBody);
     node.body.push( ...node.afterBody );
+
+    delete node.beforeBody.afterBody;
     delete node.afterBody;
     delete node.imports;
     delete node.beforeExternals;

@@ -247,11 +247,11 @@ class Generator{
                     if(token.newLine !== false){
                         this.newLine();
                     }
-                    this.withString( token.value );
-                    const result = token.value.match(/[\r\n]+/g);
-                    if( result ){
-                        this.line+=result.length;
-                    }
+                    let lines = String(token.value).split(/[\r\n]+/)
+                    lines.forEach(line=>{
+                        this.withString(line);
+                        this.newLine();
+                    })
                     if(token.newLine !== false){
                         this.newLine();
                     }
@@ -304,10 +304,10 @@ class Generator{
                 this.withSemicolon();
             break;
             case "ExportDefaultDeclaration" :
-                this.newLine();
-                this.withString('export default ');
-                this.make(token.declaration);
-                this.withSemicolon();
+            case "ExportAllDeclaration" :
+            case "ExportNamedDeclaration" :
+            case "ExportSpecifier" :
+            case "ExportAssignmentDeclaration" :
             break;
             case "ForInStatement" :
                 this.newLine();
@@ -369,6 +369,11 @@ class Generator{
             case "MethodSetterDefinition" :
                 this.newLine();
 
+                if(token.comments){
+                    this.make( token.comments );
+                    this.newLine();
+                }
+
                 if( token.final ){
                     this.make( token.final );
                     this.withSpace();
@@ -413,6 +418,10 @@ class Generator{
                 this.newLine();
             break;
             case "FunctionExpression" :
+                if(token.comments){
+                    this.make( token.comments );
+                    this.newLine();
+                }
                 this.withString('function');
                 if( token.prefix ){
                     this.withSpace();
@@ -470,7 +479,11 @@ class Generator{
                         this.withString( '=' );
                     });
                 }
-                this.withString('include_once');
+                if(token.includeOnce===false){
+                    this.withString('include');
+                }else{
+                    this.withString('include_once');
+                }
                 this.withParenthesL()
                 this.make( token.source );
                 this.withParenthesR()
@@ -583,6 +596,10 @@ class Generator{
             break;
             case "PropertyDefinition" :
                 this.newLine();
+                if(token.comments){
+                    this.make( token.comments );
+                    this.newLine();
+                }
                 if( token.static ){
                     this.make( token.static );
                     this.withSpace();
@@ -835,8 +852,8 @@ class Generator{
     }
 
     genDeclarationClass(token){
-        if( token.comment ){
-            this.make( token.comment );
+        if( token.comments ){
+            this.make( token.comments );
             this.newLine();
         }
 
@@ -880,6 +897,11 @@ class Generator{
 
         this.newLine();
 
+        if(token.comments){
+            this.make( token.comments );
+            this.newLine();
+        }
+
         if( token.abstract ){
             this.make( token.abstract );
             this.withSpace();
@@ -919,6 +941,10 @@ class Generator{
 
     genSql(token){
         this.newLine();
+        if(token.comments){
+            this.make( token.comments );
+            this.newLine();
+        }
         this.withString('create table');
         this.withString(' ');
         this.make(token.id);

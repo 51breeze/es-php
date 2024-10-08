@@ -1,4 +1,5 @@
 const FunctionDeclaration = require("./FunctionDeclaration");
+
 module.exports = function(ctx,stack,type){
    const alias = stack.getAnnotationAlias()
    const node = FunctionDeclaration(ctx,stack,type);
@@ -11,5 +12,6 @@ module.exports = function(ctx,stack,type){
       node.key.value = alias;
       node.key.raw   = alias;
    }
+   ctx.createCommentsNode(stack, node)
    return node;
 }

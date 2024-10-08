@@ -3,12 +3,15 @@ package;
 import Types;
 
 import config,{top} from 'config';
+import {home} from 'lang/zh-cn.es';
 
 import gl from 'g.config.es';
 
 import table.Address;
 
 import Assets;
+
+//import asset.Manifest;
 
 //@Embed(Imgs='./Person.es');
 
@@ -28,8 +31,14 @@ public class StartTest extends Base implements Address
 
     constructor(){
         super();
+        asset.Manifest.all()
     }
 
+    /**
+      * @group 列表
+      * @label 列表
+      * @auth false
+      */
     testArray(){
         var items = this.items; 
         var flag  = true;
@@ -46,6 +55,8 @@ public class StartTest extends Base implements Address
         this.assertEquals('dd', top(1,1) );
 
         this.assertEquals([1,6], gl);
+        this.assertEquals([1,6], gl);
+        this.assertEquals('dd', home.top('a', 'b'))
 
         this.assertEquals( time() , Math.floor( new Date().getTime() / 1000 ) )
         this.assertEquals( '2063c1608d6e0baf80249c42e2be5804' ,  md5('value') )
@@ -208,6 +219,37 @@ public class StartTest extends Base implements Address
         this.assertTrue( isNaN(Math.sqrt(-1)) )
 
          this.assertTrue( NaN !== NaN )
+
+         let group:Record<any[]> = {}
+         for(let i=0;i<5;i++){
+            let dataset = group['1'] || (group['1']=[])
+            dataset.push(i)
+
+            let dataset2 = group['2']
+            let dataset3 = group['3']
+            let dataset4 = group['4']
+            if(!dataset2){
+                dataset2 = group['2'] = []
+                group['3'] = []
+                dataset3 = group['3']
+
+                group['4'] = []
+                let g4 = group['4']
+                dataset4 = g4;
+            }
+            let dataset5 = dataset4
+            let dataset6 = group['6'] = []
+            dataset2.push(i)
+            dataset3.push(i)
+            dataset5.push(i)
+            dataset6.push(i)
+            this.assertEquals([i], group['6']);
+         }
+         this.assertEquals([0,1,2,3,4],group['1']);
+         this.assertEquals([0,1,2,3,4],group['2']);
+         this.assertEquals([0,1,2,3,4],group['3']);
+         this.assertEquals([0,1,2,3,4],group['4']);
+        this.assertTrue( isset(group['1']) )
 
     }
 
@@ -453,6 +495,10 @@ public class StartTest extends Base implements Address
         obj.name = 'test';
         this.assertEquals('test', obj.name);
         this.assertEquals('{"name":"test"}', JSON.stringify(obj));
+
+        
+        let person = new com.Person
+        this.assertEquals('person', person.name);
     }
 
     testChian(){

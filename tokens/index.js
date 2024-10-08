@@ -22,6 +22,7 @@ modules.set("EmptyStatement",require('./EmptyStatement.js'));
 modules.set("EnumDeclaration",require('./EnumDeclaration.js'));
 modules.set("EnumProperty",require('./EnumProperty.js'));
 modules.set("ExportAllDeclaration",require('./ExportAllDeclaration.js'));
+modules.set("ExportAssignmentDeclaration",require('./ExportAssignmentDeclaration.js'));
 modules.set("ExportDefaultDeclaration",require('./ExportDefaultDeclaration.js'));
 modules.set("ExportNamedDeclaration",require('./ExportNamedDeclaration.js'));
 modules.set("ExportSpecifier",require('./ExportSpecifier.js'));

@@ -35,6 +35,7 @@ class ClassBuilder extends Token{
         this.imports = [];
         this.using = [];
         this.assets = [];
+        this.createCommentsNode(stack, this)
     }
 
     create(){
@@ -280,7 +281,8 @@ class ClassBuilder extends Token{
         const usingExcludes = this.builder.getGlobalModules();
         const createUse=(depModule)=>{
             if( !usingExcludes.includes(depModule) ){
-                const name = this.builder.getModuleNamespace(depModule, depModule.id);
+                const hasNs = module.namespace && module.namespace.isNamespace && module.namespace.parent;
+                const name = this.builder.getModuleNamespace(depModule, depModule.id, !hasNs);
                 if( name ){
                     let local = this.builder.getModuleUsingAliasName(depModule, module);
                     let imported = name;

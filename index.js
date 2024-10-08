@@ -8,6 +8,7 @@ const Constant = require('./core/Constant');
 const Router = require('./core/Router');
 const Sql = require('./core/Sql');
 const Transform = require('./core/Transform');
+const Manifest = require('./core/Manifest');
 const JSXTransform = require('./core/JSXTransform');
 const JSXClassBuilder = require('./core/JSXClassBuilder');
 const Assets = require('./core/Assets');
@@ -49,6 +50,11 @@ const defaultConfig ={
     },
     lessOptions:{},
     sassOptions:{},
+    comments:false,
+    manifests:{
+        comments:false,
+        annotations:false,
+    },
     rollupOptions:{
         input:{
             plugins:[]
@@ -62,6 +68,7 @@ const defaultConfig ={
         usings:{},
         folders:{
             "*.global":"escore",
+            "*.virtual":"__virtual__"
         },
         namespaces:{},
     },
@@ -119,7 +126,8 @@ class PluginEsPhp{
             JSXClassBuilder,
             Assets,
             Merge:merge,
-            VirtualModule
+            VirtualModule,
+            Manifest
         };
     }
 
@@ -177,7 +185,7 @@ class PluginEsPhp{
     }
 
     resolveSourcePresetFlag(id, group){
-        return !!this.glob.dest(id, {group,failValue:false});
+        return this.glob.dest(id, {group,failValue:null});
     }
 
     resolveSourceId(id, group, delimiter='/'){

@@ -1,6 +1,4 @@
-
 const globals =['String','Number','Boolean','Object','Array'];
-
 module.exports = function(ctx,stack){
 
     if( !stack.parentStack.isMemberExpression){
@@ -76,7 +74,7 @@ module.exports = function(ctx,stack){
 
     var isDeclarator = desc && (desc.isDeclarator || desc.isProperty && (desc.parentStack.isObjectPattern || desc.parentStack.isObjectExpression) );
     if( isDeclarator ){
-        if( desc.parentStack.isImportDeclaration ){
+        if( desc.parentStack.isImportDeclaration && stack.compilation.mainModule){
             const resolve = desc.parentStack.getResolveFile();
             const system = ctx.builder.getGlobalModuleById('System');
             ctx.addDepend( system );

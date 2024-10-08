@@ -5,10 +5,13 @@ const SCOPE_MAP = new Map();
 const DECLARE_REFS = new Map();
 const refsParentVariable = new Map();
 const assignAddressRef = new Map();
-const addressRefNodes = new Map();
 const accessorNamedMaps = new Map();
-
+const PATH = require("path");
+const FS = require("fs");
 const AddressVariable = require('./AddressVariable');
+const Manifest = require("../core/Manifest");
+const staticAssets = require("./Assets");
+
 class Token extends events.EventEmitter {
 
     static SCOPE_REFS_All = 31;
@@ -33,6 +36,24 @@ class Token extends events.EventEmitter {
         this.builder = null;
         this.value = '';
         this.raw = '';
+    }
+
+    hookAsync(name, callback){
+        const hooks = this.__hooks || (this.__hooks = Object.create(null))
+        const items = hooks[name] || (hooks[name]=[])
+        items.push(callback);
+    }
+
+    async callHookAsync(name, always=false){
+        const hooks = this.__hooks;
+        if(!hooks)return;
+        const queues = hooks[name] || (hooks[name]=[])
+        try{
+            const items = always ? queues.slice(0) : queues.splice(0, queues.length);
+            await Promise.allSettled(items.map(callback=>callback()));
+        }catch(e){
+            console.error(e);
+        }
     }
 
     createNode(stack,type){
@@ -730,10 +751,7 @@ class Token extends events.EventEmitter {
         const result = this.isArrayAddressRefsType(type);
         if( !result )return false;
         if( !stack || !stack.isStack )return result;
-        if( stack.isArrayExpression ){
-            return true;
-        }
-
+        const cache = new WeakSet();
         const check=(stack, type)=>{
             if( type ){
                 if( verify(type) ){
@@ -741,7 +759,9 @@ class Token extends events.EventEmitter {
                 }
                 if( !this.isArrayAddressRefsType(type) )return false;
             }
-            if( stack.isIdentifier || stack.isVariableDeclarator || stack.isParamDeclarator )return true;
+            if(cache.has(stack))return true;
+            cache.add(stack);
+            if( stack.isIdentifier || stack.isVariableDeclarator || stack.isParamDeclarator || stack.isArrayExpression)return true;
             if( stack.isMethodDefinition && stack.expression){
                 stack = stack.expression;
             }
@@ -783,6 +803,10 @@ class Token extends events.EventEmitter {
                 }
             }else if( stack.isConditionalExpression ){
                 return check( stack.consequent, stack.consequent.type() ) || check( stack.alternate, stack.alternate.type() );
+            }else if(stack.isParenthesizedExpression){
+                return check(stack.expression)
+            }else if(stack.isAssignmentExpression){
+                return check(stack.right)
             }
             return false;
         }
@@ -1052,6 +1076,208 @@ class Token extends events.EventEmitter {
         const file  = this.compilation.file;
         message+= ` (${file}:${range.start.line}:${range.start.column})`;
         this.compiler.callUtils("warn",message);
+    }
+
+    createReadfileAnnotationNode(ctx, stack){
+        const args = stack.getArguments();
+        const indexes = ['dir','load','suffix','relative','lazy','only','source'];
+        let [_path, _load, _suffix, _relative, _lazy, _only, _source] = [
+            stack.getAnnotationArgumentItem('dir', args, indexes),
+            stack.getAnnotationArgumentItem('load', args, indexes),
+            stack.getAnnotationArgumentItem('suffix', args, indexes),
+            stack.getAnnotationArgumentItem('relative', args, indexes),
+            stack.getAnnotationArgumentItem('lazy', args, indexes),
+            stack.getAnnotationArgumentItem('only', args, indexes),
+            stack.getAnnotationArgumentItem('source', args, indexes),
+        ].map( item=>{
+            return item ? item.value : null;
+        });
+
+        if(!_path){
+            return null;
+        }
+
+        let only = String(_only)==='true';
+        let dir = String(_path).trim();
+        let suffixPattern = null;
+
+        if(dir.charCodeAt(0) === 64){
+            dir = dir.slice(1);
+            let segs = dir.split('.');
+            let precede = segs.shift();
+            let latter = segs.pop();
+            let options = ctx.plugin[precede];
+            if(precede==='options'){
+                while(options && segs.length>0){
+                    options = options[segs.shift()];
+                }
+            }
+            if(options && Object.prototype.hasOwnProperty.call(options, latter)){
+                dir = options[latter];
+            }
+        }
+
+        let rawDir = dir;
+        dir = this.compiler.resolveManager.resolveSource(dir, this.compilation.file);
+        if(!dir){
+            this.error(`Readfile not found the '${rawDir}' folders`, stack)
+            return null;
+        }
+
+        if(_suffix){
+            _suffix = String(_suffix).trim();
+            if(_suffix.charCodeAt(0) === 47 && _suffix.charCodeAt(_suffix.length-1) === 47){
+                let index = _suffix.lastIndexOf('/');
+                let flags = '';
+                if(index>0 && index !== _suffix.length-1){
+                    flags = _suffix.slice(index);
+                    _suffix = _suffix(0, index);
+                }
+                _suffix = suffixPattern = new RegExp(_suffix.slice(1,-1), flags);
+            }else{
+                _suffix = _suffix.split(',').map(item=>item.trim());
+            }
+        }
+
+        let extensions = (this.compiler.options.extensions || []).map(ext=>String(ext).startsWith('.') ? ext : '.'+ext);
+        if(!extensions.includes('.es')){
+            extensions.push('.es')
+        }
+
+        let suffix = _suffix || [...extensions, '.json', '.env', '.js','.css', '.scss', '.less'];
+        const checkSuffix=(file)=>{
+            if(suffixPattern){
+                return suffixPattern.test(filepath);
+            }
+            if(suffix==='*')return true;
+            return suffix.some( item=>file.endsWith(item) );
+        }
+
+        let files = this.compiler.resolveFiles(dir).filter(checkSuffix)
+        if(!files.length)return null;
+
+        files.sort((a,b)=>{
+            a = a.replaceAll('.', '/').split('/').length;
+            b = b.replaceAll('.', '/').split('/').length;
+            return a - b;
+        });
+
+        const fileMap = {};
+        const workspaces = this.compiler.getWorkspaceFolders()
+        const getParentFile=(pid)=>{
+            if( fileMap[pid] ){
+                return fileMap[pid]
+            }
+            if(workspaces.some(folder=>folder !==pid && pid.includes(folder))){
+                return getParentFile(PATH.dirname(pid))
+            }
+            return null;
+        }
+
+        const dataset = [];
+        files.forEach( file=>{
+            const pid = PATH.dirname(file).toLowerCase();
+            const named = PATH.basename(file,PATH.extname(file));
+            const id = (pid+'/'+named).toLowerCase();
+            const filepath = this.builder.getOutputRelativePath(file, this.compilation.file);
+            let item = {
+                path:Boolean(_relative)===true ? `'${filepath}'` : `__DIR__ .'${filepath}'`,
+                isFile:FS.statSync(file).isFile()
+            }
+
+            if(item.isFile && Boolean(_load) === true){
+                let data = '';
+                if(file.endsWith('.env')){
+                    const content = dotenv.parse(FS.readFileSync(file));
+                    dotenvExpand.expand({parsed:content})
+                    data = JSON.stringify(content);
+                }else{
+                    if(this.compiler.isExtensionFile(file)){
+                        this.builder.hookAsync('emitBofore', async()=>{
+                            let compi = await this.compiler.createCompilation(file)
+                            if(compi){
+                                await compi.ready()
+                                await this.plugin.build(compi)
+                            }
+                        });
+                        data = `include(__DIR__ ."${filepath}")`
+                    }else if(file.endsWith('.json')){
+                        this.builder.emitContent(
+                            file, 
+                            FS.readFileSync(file).toString(),
+                            this.builder.getOutputAbsolutePath(file, this.compilation.file)
+                        );
+                        data = `json_decode(file_get_contents(__DIR__ ."${filepath}"), true)`
+                    }else{
+                        const asset = staticAssets.create(file, file, null, this.compilation, this.builder);
+                        data = `'${asset.getResourcePath()}'`
+                        item.path = data;
+                    }
+                }
+                item.content = data;
+            }else if(String(_source)==='true'){
+                item.content =JSON.stringify(FS.readFileSync(file));
+            }
+
+            const parent = getParentFile(pid);
+            if( parent ){
+                const children = parent.children || (parent.children = []);
+                children.push(item);
+            }else{
+                fileMap[id+PATH.extname(file)] = item;
+                dataset.push(item);
+            }
+        });
+
+        const make = (list)=>{
+            return list.map( object=>{
+                if(only){
+                    return object.content ? ctx.createChunkNode(object.content) : ctx.createLiteralNode(null);
+                }
+                const properties = [ctx.createPropertyNode('path', ctx.createChunkNode(object.path, false))];
+                if(object.isFile){
+                    properties.push(ctx.createPropertyNode('isFile', ctx.createLiteralNode(true)))
+                }
+                if(object.content){
+                    properties.push(ctx.createPropertyNode('content',ctx.createChunkNode(object.content, false)))
+                }
+                if(object.children){
+                    properties.push(ctx.createPropertyNode('children',ctx.createArrayNode(make(object.children))))
+                }
+                return ctx.createObjectNode(properties)
+            });
+        }
+
+        return ctx.createArrayNode(make(dataset))
+    }
+
+    createCommentsNode(stack, node){
+        const manifests = this.plugin.options.manifests || {};
+        const enable = this.plugin.options.comments;
+        if(stack.module && (enable||manifests.comments)){
+            const result = stack.parseComments('Block');
+            if(result){
+                if(enable && result.comments.length>0){
+                    node.comments = this.createChunkNode( ['/**',...result.comments,'**/'].join("\n"), false )
+                }
+                if(manifests.comments && result.meta){
+                    let kind = 'class';
+                    if(stack.isMethodSetterDefinition){
+                        kind = 'setter'
+                    }else if(stack.isMethodGetterDefinition){
+                        kind = 'getter'
+                    }else if(stack.isMethodDefinition){
+                        kind = 'method'
+                    }else if(stack.isPropertyDefinition){
+                        kind = 'property'
+                    }
+                    const id = this.builder.getModuleNamespace(stack.module, stack.module.id, false);
+                    Manifest.add(stack.compilation, 'comments', {
+                        [id]:{[node.key.value+':'+kind]:result.meta}
+                    })
+                }
+            }
+        }
     }
 }
 

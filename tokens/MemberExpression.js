@@ -84,9 +84,9 @@ function getAliasAnnotation(desc){
 
 function MemberExpression(ctx,stack){
     const module = stack.module;
-    const description = stack.descriptor();
+    let description = stack.descriptor();
     let computed = false;
-    if( description && description.isModule && stack.compiler.callUtils("isTypeModule",description) ){
+    if( description && stack.compiler.callUtils("isTypeModule",description) ){
         ctx.addDepend( description );
         if( stack.parentStack.isMemberExpression || stack.parentStack.isNewExpression || stack.parentStack.isCallExpression ){
             return ctx.createIdentifierNode( ctx.getModuleReferenceName(description,module), stack );
@@ -264,6 +264,9 @@ function MemberExpression(ctx,stack){
             let optionalChain = pStack.isAssignmentExpression||pStack.isChainExpression;
             if(pStack.isCallExpression||pStack.isNewExpression){
                 optionalChain=!pStack.arguments.includes(stack)
+            }
+            if(!optionalChain && pStack.isCallExpression){
+                optionalChain = pStack.callee.value() ==='isset';
             }
             if(!optionalChain){
                 return node.createBinaryNode('??', node, node.createLiteralNode(null));

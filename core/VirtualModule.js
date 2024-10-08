@@ -1,5 +1,4 @@
 function createVirtualModule(callback, id, ns='', file=''){
-    id  = '__'+id;
     file = file || id + '.php';
     if(ns){
         file =  ns.replaceAll('.', '/') +'/'+ id + '.php';
@@ -18,6 +17,9 @@ function createVirtualModule(callback, id, ns='', file=''){
         async make(){
             const content = await callback(this, this.context);
             return this.emitFile(content);
+        },
+        async getContent(){
+            return await callback(this, this.context);
         },
         getName(delimiter='.'){
             if(delimiter!=='.'){

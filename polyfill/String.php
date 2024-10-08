@@ -31,7 +31,7 @@ function es_string_last_index_of($target,$value){
 function es_string_substring($target,$start=0, $end=null){
     $len = mb_strlen($target);
     if( $end === null ){
-        $end = mb_strlen($len);
+        $end = mb_strlen($target);
     }
     $start = is_numeric( $start ) ? min($len,max($start,0)) : 0;
     $end = is_numeric( $end ) ? min($len,max($end,0)) : 0;

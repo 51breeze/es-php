@@ -7,7 +7,6 @@ function top(a, b){
     return 'dd';
 }
 
-
 function env<T=Scalar | Scalar[]>(name:string,defaultValue?:any):T{
     return null;
 }

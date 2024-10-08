@@ -12,7 +12,7 @@
   * </p>
   * @return array an array of the parameters. The parameters can be given an index with the => operator.
   */
-declare function array(...args:any[]);
+declare function array(...args:any[]):any[];
 
 /**
   * Assigns a list of variables in one operation.
@@ -21,7 +21,7 @@ declare function array(...args:any[]);
   * @param mixed ...$_ [optional] <p>Another variable ...</p>
   * @return array the assigned array.
   */
-declare function list(var1:any, ...args:any[]);
+declare function list(var1:any, ...args:any[]):any[];
 /**
   * <p>Terminates execution of the script. Shutdown functions and object destructors will always be executed even if exit is called.</p>
   * <p>die is a language construct and it can be called without parentheses if no status is passed.</p>
@@ -83,7 +83,7 @@ declare function exit(status:any = "");
   * </ul>
   * </p>
   */
-declare function empty(vars:any);
+declare function empty(vars:any):boolean;
 /**
   * <p>Determine if a variable is set and is not <b>NULL</b>.</p>
   * <p>If a variable has been unset with unset(), it will no longer be set. <b>isset()</b> will return <b>FALSE</b> if testing a variable
@@ -95,7 +95,7 @@ declare function empty(vars:any);
   * @param mixed ...$_ [optional] <p>Another variable ...</p>
   * @return bool Returns <b>TRUE</b> if var exists and has value other than <b>NULL</b>, <b>FALSE</b> otherwise.
   */
-declare function isset(vars:any, ...args:any[]);
+declare function isset(vars:any, ...args:any[]):boolean;
 /**
   * <p>Destroys the specified variables.</p>
   * <p>The behavior of <b>unset()</b> inside of a function can vary depending on what type of variable you are attempting to destroy.</p>
@@ -104,7 +104,7 @@ declare function isset(vars:any, ...args:any[]);
   * @param mixed ...$_ [optional] <p>Another variable ...</p>
   * @return void
   */
-declare function unset(vars:any, ...args:any[]);
+declare function unset(vars:any, ...args:any[]):any;
 /**
   * <p>Evaluates the given code as PHP.</p>
   * <p>Caution: The <b>eval()</b> language construct is very dangerous because it allows execution of arbitrary PHP code. Its use thus is
@@ -135,7 +135,7 @@ declare function unset(vars:any, ...args:any[]);
   * case <b>eval()</b> returned <b>FALSE</b> and execution of the following code continued normally. It is not possible to catch a parse
   * error in <b>eval()</b> using set_error_handler().
   */
-declare function eval(code:any);
+declare function eval(code:any):any;
 
 /**
   * Generator objects are returned from generators, cannot be instantiated via new.

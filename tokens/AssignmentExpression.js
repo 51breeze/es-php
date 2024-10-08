@@ -1,5 +1,6 @@
 const Transform = require('../core/Transform');
 const hasOwn = Object.prototype.hasOwnProperty;
+
 function createNode(ctx,stack){
     const node = ctx.createNode( stack );
     let desc = stack.left.description();
@@ -7,9 +8,9 @@ function createNode(ctx,stack){
     const isMember = stack.left.isMemberExpression;
     let operator = stack.operator;
     node.operator = operator;
-    if( desc && desc.isVariableDeclarator && desc.useRefItems && desc.useRefItems.size === 0){
-        //return null;
-    }
+    // if( desc && desc.isVariableDeclarator && desc.useRefItems && desc.useRefItems.size === 0){
+    //     //return null;
+    // }
     var refsNode = node.createToken(stack.right);
     var leftNode = null;
     var isReflect = false;
@@ -73,12 +74,19 @@ function createNode(ctx,stack){
             node.addVariableRefs(stack, left );
             let isAddressRefs = false;
             if( node.isPassableReferenceExpress(stack.right,stack.right.type()) ){
+                if(refsNode.type==='ParenthesizedExpression'){
+                    refsNode = refsNode.expression
+                }
+                if(refsNode.type==='AssignmentExpression'){
+                    node.insertNodeBlockContextAt(refsNode);
+                    refsNode = refsNode.left
+                }
                 refsNode = node.creaateAddressRefsNode(refsNode);
                 isAddressRefs = true;
             }
 
             if( !stack.right.isIdentifier ){
-                const refs = node.checkRefsName('ref');
+                const refs = node.checkRefsName('__REF');
                 node.insertNodeBlockContextAt(
                     node.createAssignmentNode( node.createIdentifierNode(refs, null, true), refsNode )
                 );
@@ -124,7 +132,7 @@ function createNode(ctx,stack){
 
         let target = node.createToken(stack.left.object);
         if( !stack.left.object.isIdentifier ){
-            const refs = node.checkRefsName('ref');
+            const refs = node.checkRefsName('__REF');
             node.insertNodeBlockContextAt(
                 node.createAssignmentNode( node.createIdentifierNode(refs, null, true), target )
             );

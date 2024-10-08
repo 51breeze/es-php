@@ -1,9 +1,14 @@
 package com
 {
+    import Exception
     public class Person
     {
         constructor(){
-           this.hasOwnProperty("name");
+            let err = new Exception('error')
+        }
+
+        get name(){
+            return 'person';
         }
     }
   

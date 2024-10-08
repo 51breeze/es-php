@@ -65,5 +65,6 @@ module.exports = function(ctx,stack){
     }
     node.key = alias ? ctx.createIdentifierNode(alias) : node.declarations[0].id;
     node.init = init || node.declarations[0].init || ctx.createLiteralNode(null);
+    ctx.createCommentsNode(stack, node)
     return node;
 }

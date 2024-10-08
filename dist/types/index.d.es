@@ -21,3 +21,10 @@ declare type ObjectProtector<T> = T;
 declare type ArrayProtector<T> = T;
 //通用回调类型
 declare type GeneralCallback<T=any,R=any> = [string, string] | (...args:T[])=>R;
+
+package asset{
+    declare class Manifest{
+        static all():Record<any>
+        static get(name:string):null | Record<Record<any>>
+    }
+}

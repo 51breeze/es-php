@@ -8,6 +8,7 @@ class Creator {
         const compiler = new Compiler(Object.assign({
             debug:false,
             diagnose:true,
+            enableComments:true,
             autoLoadDescribeFile:true,
             output:path.join(__dirname,"./build"),
             workspace:path.join(__dirname,"./src"),
@@ -20,8 +21,14 @@ class Creator {
         this.plugin = compiler.applyPlugin( {plugin,options:{
             includes:['JsxTest.es'],
             folderAsNamespace:true,
+            output:path.join(__dirname,"./build"),
             metadata:{
                 env:{NODE_ENV:'development'}
+            },
+            comments:true,
+            manifests:{
+                comments:true,
+                annotations:false,
             },
             resolve:{
                 usings:['PHPUnit/Framework/TestCase','PHPMailer/**'],

@@ -13,7 +13,6 @@ const moduleIdMap=new Map();
 const namespaceMap=new Map();
 const outputAbsolutePathCached = new Map();
 const fileContextScopes = new Map();
-const uniqueFileRecords = new Map();
 
 VirtualModule.createVModule((module)=>{
     const data = {};
@@ -41,10 +40,10 @@ VirtualModule.createVModule((module)=>{
     return top.concat([
         `class ${module.id}{`,
         `\tstatic function get(string $id, string $name='path'){`,
-        `\t\t$assets = static::getAssets();`,
+        `\t\t$assets = static::all();`,
         `\t\treturn $assets[$id][$name] ?? null;`,
         `\t}`,
-        `\tstatic function getAssets(){`,
+        `\tstatic function all(){`,
         `\t\tstatic $assets=${content};`,
         `\t\treturn $assets;`,
         `\t}`,
@@ -52,6 +51,25 @@ VirtualModule.createVModule((module)=>{
     ]).join('\n');
 
 },'Assets', 'asset');
+
+VirtualModule.createVModule((module)=>{
+    const content = Manifest.instance.emit()
+    const ns = module.nsId ? `namespace ${module.nsId};` : '';
+    const top = [];
+    if(ns)top.push(ns);
+    return top.concat([
+        `class ${module.id}{`,
+        `\tstatic function all(){`,
+        `\t\tstatic $mainifests=${content};`,
+        `\t\treturn $mainifests;`,
+        `\t}`,
+        `\tstatic function get($name){`,
+        `\t\t$all = static::all();`,
+        `\t\treturn $all[$name] ?? null;`,
+        `\t}`,
+        `}`
+    ]).join('\n');
+},'Manifest', 'asset');
 
 class Builder extends Token{
 
@@ -112,8 +130,10 @@ class Builder extends Token{
     }
 
     addFileAndNamespaceMapping(file, namespace, module){
-        if( namespace && file ){
-            Manifest.add(module, file, namespace);
+        if(module && namespace && file && module.compilation){
+            if(this.compiler.callUtils('isCompilation', module.compilation)){
+                Manifest.add(module.compilation, 'mappings', {[namespace]:file});
+            }
         }
     }
 
@@ -135,10 +155,10 @@ class Builder extends Token{
 
     async emitManifest(){
         if(!Manifest.isEmpty() && Manifest.changed){
-            let file = 'manifest.php';
-            let folder = this.plugin.resolveSourceId('manifest.php', 'folders') || '.';
-            file  = PATH.isAbsolute(folder) ? PATH.join(folder,file) : PATH.join(this.getOutputPath(), folder, file);
-            this.emitFile(file, Manifest.emit());
+            let vm = VirtualModule.getVModule('asset.Manifest')
+            if(vm && vm.using){
+                await vm.make();
+            }
         }
     }
 
@@ -282,10 +302,12 @@ class Builder extends Token{
                     this.buildForModule(compilation, compilation.stack, compilation.mainModule || Array.from(compilation.modules.values()).shift() );
                 }
             }
+            await this.callHookAsync('emitBofore')
             await this.emitSql();
             await this.emitManifest();
             await this.emitAssets();
             await this.buildAfter();
+            await this.callHookAsync('buildDone')
             done(null, this);
         }catch(e){
             done(e, this);
@@ -312,10 +334,12 @@ class Builder extends Token{
                 this.make(compilation, compilation.stack, module);
                 this.buildModules.add(module);
             }
+            await this.callHookAsync('emitBofore')
             await this.emitSql();
             await this.emitManifest();
             await this.emitAssets();
             await this.buildAfter();
+            await this.callHookAsync('buildDone')
             this.__buildDone = true;
             done(null, this);
         }catch(e){
@@ -339,17 +363,23 @@ class Builder extends Token{
         }
 
         const ast = this.createAstToken(stack);
-        const gen = ast ? this.createGenerator(ast, compilation, module) : null;
-
-        if( gen ){
-            const file = this.getModuleFile( module || compilation );
-            const content = gen.toString();
-            if( content ){
-                this.emitContent(
-                    file, 
-                    content,  
-                    config.emit ? this.getOutputAbsolutePath(module ? module : compilation.file, compilation) : null
-                );
+        if(ast){
+            const gen = ast ? this.createGenerator(ast, compilation, module) : null;
+            if( gen ){
+                const file = this.getModuleFile( module || compilation );
+                const content = gen.toString();
+                if( content ){
+                    this.emitContent(
+                        file, 
+                        content,  
+                        config.emit ? this.getOutputAbsolutePath(module ? module : compilation.file, compilation) : null
+                    );
+                }
+            }
+        }else{
+            const vm = VirtualModule.getVModule(module.getName());
+            if(vm){
+                this.buildForVirtualModule(vm, compilation)
             }
         }
 
@@ -526,8 +556,14 @@ class Builder extends Token{
         const metadata = this.plugin.options.metadata;
         const env = metadata.env || {};
         if( value !== void 0 ){
-            if(name.toLowerCase()==='mode'){
+            let _name = name.toLowerCase()
+            if(_name==='mode' || _name ==='node_env'){
                 if(this.plugin.options.mode === value || env.NODE_ENV===value){
+                    return true;
+                }
+            }
+            if(_name==='hot'){
+                if(this.plugin.options.hot === value || metadata.hot === value){
                     return true;
                 }
             }
@@ -607,7 +643,7 @@ class Builder extends Token{
                 filepath = PATH.resolve(output, folder ? PATH.join(folder, PATH.parse(module).name+suffix) : PATH.relative( workspace, module ) );
             }else if(module){
                 if(module.isVirtualModule){
-                    filepath = PATH.join(output, folder ? PATH.join(folder, module.file) : module.file );
+                    filepath = PATH.join(output, (folder ? PATH.join(folder, module.id) : module.getName("/"))+suffix );
                 }else if( module.isModule && module.compilation.modules.size===1 && this.compiler.normalizePath(module.file).includes(workspace) ){
                     filepath = PATH.resolve(output, folder ? PATH.join(folder, module.id+suffix) : PATH.relative(workspace, module.file) );
                 }else if(module.isModule){
@@ -616,27 +652,27 @@ class Builder extends Token{
             }
             const info = PATH.parse(filepath);
             if( this.compiler.isExtensionName(info.ext)){
-                this.compiler.options.extensions.includes(info.ext)
                 filepath = PATH.join(info.dir, info.name+suffix);
             }
             filepath = this.compiler.normalizePath(filepath);
             result = filepath;
         }
 
-        let old = uniqueFileRecords.get(result);
-        if(old && old !== origin){
-            let index = 0;
-            let _info = PATH.parse(result);
-            while(index<10){
-                index++;
-                result = this.compiler.normalizePath(_info.dir +'/'+ (_info.name+index) + _info.ext);
-                if(!uniqueFileRecords.has(result)){
-                    break;
-                }
-            }
-        }else{
-            uniqueFileRecords.set(result, origin);
-        }
+        // let old = uniqueFileRecords.get(result);
+        // if(old && old !== origin){
+        //     let index = 0;
+        //     let _info = PATH.parse(result);
+        //     while(index<10){
+        //         index++;
+        //         result = this.compiler.normalizePath(_info.dir +'/'+ (_info.name+index) + _info.ext);
+        //         if(!uniqueFileRecords.has(result)){
+        //             break;
+        //         }
+        //     }
+        // }else{
+        //     uniqueFileRecords.set(result, origin);
+        // }
+
         outputAbsolutePathCached.set(module,result);
         return result;
     }
@@ -647,7 +683,7 @@ class Builder extends Token{
 
     getModuleMappingFolder(module){
         if( module && module.isModule ){
-            let file = module.isVirtualModule ? module.file : module.compilation.file;
+            let file = module.isVirtualModule ? module.file+'.virtual' : module.compilation.file;
             if( module.isDeclaratorModule ){
                 file = module.getName('/');
                 const compilation = module.compilation;
@@ -667,12 +703,19 @@ class Builder extends Token{
         let ns = module.id;
         let assignment = null;
         if(module.isDeclaratorModule){
-            const polyfill = this.getPolyfillModule(module.getName());
+            let _id = module.getName()
+            const polyfill = this.getPolyfillModule(_id);
             if( polyfill ){
                 assignment = (polyfill.namespace ? polyfill.namespace : '').replace(/[\\\\.]/g, '/');
                 ns = [assignment, polyfill.export || module.id].filter(Boolean).join('/');
             }else{
-                ns = module.getName('/');
+                let vm = VirtualModule.getVModule(_id)
+                if(vm){
+                    module = vm;
+                    ns = module.getName('/') + '.virtual';
+                }else{
+                    ns = module.getName('/');
+                }
             }
             const compilation = module.compilation;
             if(compilation){
@@ -742,11 +785,14 @@ class Builder extends Token{
 
     addDepend( depModule, ctxModule ){
         ctxModule = ctxModule || this.compilation;
-        if( !(depModule.isModule || depModule.isVirtualModule) || depModule === ctxModule )return;
-        let isModule = this.compiler.callUtils("isTypeModule", depModule);
-        if(!depModule.isVirtualModule && !isModule )return;
-        if(this.compilation.mainModule === depModule)return;
-        if(!this.compilation.isDescriptorDocument() && this.compilation.modules.has(depModule.getName()))return;
+        let isModule = false;
+        if(!depModule.isVirtualModule){
+            if( !depModule.isModule || depModule === ctxModule )return;
+            isModule = this.compiler.callUtils("isTypeModule", depModule);
+            if(!isModule)return;
+            if(this.compilation.mainModule === depModule)return;
+            if(!this.compilation.isDescriptorDocument() && this.compilation.modules.has(depModule.getName()))return;
+        }
         var dataset = this.moduleDependencies.get(ctxModule);
         if( !dataset ){
             this.moduleDependencies.set( ctxModule, dataset = new Set() );
@@ -791,19 +837,31 @@ class Builder extends Token{
         if(!isUsed)return false;
         if(depModule.isVirtualModule)return true;
         if(depModule.isDeclaratorModule){
-            return !!this.getPolyfillModule(depModule.getName());
+            let id = depModule.getName();
+            if(VirtualModule.getVModule(id))return true;
+            return !!this.getPolyfillModule(id);
         }else{
             return !this.compiler.callUtils("checkDepend", ctxModule, depModule);
         }
     }
 
-    isReferenceDeclaratorModule(depModule){
+    isReferenceDeclaratorModule(depModule, context){
         if( depModule && depModule.isDeclaratorModule ){
             if( depModule.isStructTable ){
                 return false;
             }
-            if( this.plugin.resolveSourcePresetFlag(depModule.getName('/'), 'usings') ){
+            let result = this.plugin.resolveSourcePresetFlag(depModule.getName('/'), 'usings');
+            if(result){
                 return true;
+            }
+            if(result===false){
+                return false;
+            }
+            if(context && context.isModule){
+                const ns = context.namespace;
+                if(ns && ns.isNamespace){
+                    return !!ns.parent
+                }
             }
         }
         return false;
@@ -831,11 +889,6 @@ class Builder extends Token{
         if(alias){
             return alias;
         }
-        // if(context.imports && context.imports.has(module.id)){
-        //     if(context.imports.get(module.id) !== module){
-        //         return '__'+module.getName('_');
-        //     } 
-        // }
         return null;
     }
 
@@ -854,14 +907,14 @@ class Builder extends Token{
                 return module.id 
             }
 
-            if( context.importAlias && context.importAlias.has(module) ){
-                return context.importAlias.get(module);
+            if(this.compiler.callUtils('isModule', context)){
+                const alias = context.getModuleAlias(module)
+                if(alias){
+                    return alias;
+                }
             }
 
             if( module.required || context.imports && context.imports.has( module.id ) ){
-                if(context.imports.get( module.id ) !== module ){
-                   return '__'+module.getName('_');
-                }
                 return module.id;
             }
 
@@ -892,7 +945,7 @@ class Builder extends Token{
             }
         }else if(module.isVirtualModule && module.ns){
             if(suffix){
-                return module.ns.split('.').concat(suffix).join('\\');
+                return '\\'+module.ns.split('.').concat(suffix).join('\\');
             }
             return module.ns.split('.').join('\\');
         }
@@ -1015,6 +1068,12 @@ class Builder extends Token{
     getModuleImportSource(source,module){
         const config = this.plugin.options;
         const isString = typeof source === 'string';
+        if(!isString && source.isDeclaratorModule){
+            const vm = VirtualModule.getVModule(source.getName())
+            if(vm){
+                source = vm;
+            }
+        }
         if( config.useAbsolutePathImport ){
             return isString ? source : this.getOutputAbsolutePath(source);
         }

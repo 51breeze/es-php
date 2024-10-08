@@ -44,6 +44,9 @@ module.exports = function(ctx,stack,type){
             return null;
         case 'http' :
             return null;
+        case 'readfile' :{
+            return ctx.createReadfileAnnotationNode(ctx, stack) || ctx.createLiteralNode(null);
+        }
         default :
             ctx.error( `The '${name}' annotations is not supported.` );
     }

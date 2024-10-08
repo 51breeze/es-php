@@ -18,6 +18,13 @@ module.exports = function(ctx,stack){
                 if( stack.init ){
                     let init = node.createToken(stack.init);
                     if( node.isPassableReferenceExpress(stack.init) ){
+                        if(init.type==='ParenthesizedExpression'){
+                            init = init.expression
+                        }
+                        if(init.type==='AssignmentExpression'){
+                            node.insertNodeBlockContextAt(init);
+                            init = init.left
+                        }
                         init = node.creaateAddressRefsNode(init);
                     }
                     const index = address.getIndex( stack.init );
@@ -33,18 +40,26 @@ module.exports = function(ctx,stack){
                     return node;
                 }
             }else if( stack.init && node.isPassableReferenceExpress(stack.init) ){
+                let init = node.createToken(stack.init)
+                if(init.type==='ParenthesizedExpression'){
+                    init = init.expression
+                }
+                if(init.type==='AssignmentExpression'){
+                    node.insertNodeBlockContextAt(init);
+                    init = init.left
+                }
                 if( stack.parentStack.parentStack.isExportNamedDeclaration ){
-                    const name = ctx.getDeclareRefsName(stack.init, 'R');
+                    const name = ctx.getDeclareRefsName(stack.init, '__REF');
                     const refNode = ctx.createDeclarationNode('const', [
                         ctx.createDeclaratorNode(
                             ctx.createIdentifierNode(name),
-                            ctx.creaateAddressRefsNode( node.createToken(stack.init) ),
+                            ctx.creaateAddressRefsNode( init ),
                         )
                     ]);
                     ctx.insertNodeBlockContextAt(refNode);
                     node.init = ctx.creaateAddressRefsNode( ctx.createIdentifierNode(name,null,true) );
                 }else{
-                    node.init = node.creaateAddressRefsNode( node.createToken(stack.init) );
+                    node.init = node.creaateAddressRefsNode( init );
                 }
                 return node;
             }

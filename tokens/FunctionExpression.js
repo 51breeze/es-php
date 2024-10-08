@@ -122,7 +122,7 @@ function createParamNodes(ctx, stack, params){
          nameNode = ctx.createToken(item);
       }
 
-      if(acceptType && acceptType.isModule && !acceptType.isEnum){
+      if(acceptType && stack.compiler.callUtils("isModule", acceptType) && !acceptType.isEnum){
          const originType = ctx.builder.getAvailableOriginType( acceptType );
          if( originType==='String' || originType==='Array' || originType==='Object'){
             typeName = originType.toLowerCase();
@@ -134,6 +134,9 @@ function createParamNodes(ctx, stack, params){
          if( !typeName && !originType){
             //to local type
             typeName = ctx.getModuleReferenceName( acceptType );
+            if(typeName && (acceptType.isClass || acceptType.isInterface)){
+               ctx.addDepend(acceptType)
+            }
          }
       }
      

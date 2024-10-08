@@ -157,6 +157,10 @@ final class Reflect{
                             return ["rtrim",[$target]];
                         case "trimLeft" :
                             return ["ltrim",[$target]];
+                        case "startsWith" :
+                            return ["es_string_starts_with",array_merge([$target], $args)];
+                        case "endsWith" :
+                            return ["es_string_ends_with",array_merge([$target], $args)];
                         case "includes" :
                             return [function($target,$needle){
                                 return @strpos( $target, $needle) !== false;

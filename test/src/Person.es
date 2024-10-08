@@ -2,6 +2,12 @@ package;
 
 import PHPUnit.Framework.TestCase;
 import com.TestInterface as IT;
+
+
+/**
+* Person class
+*/
+
 public class Person<T> extends TestCase implements IT
 {
 
@@ -9,6 +15,9 @@ public class Person<T> extends TestCase implements IT
 
     private var _name:string = '';
 
+    /**
+    * type t
+    */
     private var _type:T = null;
 
     constructor(){

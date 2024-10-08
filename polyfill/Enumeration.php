@@ -34,7 +34,7 @@ abstract class Enumeration implements \JsonSerializable
         return $this->value;
     }
 
-    private static function &properties(): array{
+    private static function properties(): array{
         try {
             static $records = [];
             $key = static::class;
@@ -74,7 +74,7 @@ abstract class Enumeration implements \JsonSerializable
             }
             return null;
         }
-        $properties = &static::properties();
+        $properties = static::properties();
         if(array_key_exists($value, $properties)){
             return static::getInstance($value);
         }else{
@@ -90,7 +90,7 @@ abstract class Enumeration implements \JsonSerializable
         if(is_object($value) && is_a($value, static::class) ){
             return $value->name;
         }
-        $properties = &static::properties();
+        $properties = static::properties();
         return array_search($value, $properties) ?: null;
     }
 
@@ -102,7 +102,7 @@ abstract class Enumeration implements \JsonSerializable
         return null;
     }
 
-    private static function &getRecords(){
+    private static function getRecords(){
         static $instances = [];
         $key = static::class;
         if(isset($instances[$key])){
@@ -112,11 +112,11 @@ abstract class Enumeration implements \JsonSerializable
     }
 
     private static function getInstance(string $key){
-        $records = &static::getRecords();
+        $records = static::getRecords();
         if(isset($records[$key])){
             return $records[$key];
         }
-        $properties = &static::properties();
+        $properties = static::properties();
         if(isset($properties[$key])){
             $obj = new static($key, $properties[$key]);
             $records[$key] = $obj;

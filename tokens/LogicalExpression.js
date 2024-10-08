@@ -37,7 +37,7 @@ module.exports = function(ctx,stack){
                }
 
                if( createRefs ){
-                    refs = node.checkRefsName('RE', false, Token.SCOPE_REFS_DOWN, stack);
+                    refs = node.checkRefsName('__REF', false, Token.SCOPE_REFS_DOWN, stack);
                     node.insertNodeBlockContextAt( 
                          node.createAssignmentNode(
                               node.createIdentifierNode(refs, null, true),
@@ -54,9 +54,15 @@ module.exports = function(ctx,stack){
                     left = node.creaateAddressRefsNode( left );
                }
 
-               
-
+               let rightInitial = null
                if( node.isPassableReferenceExpress(stack.right, ctx.inferType(stack.right) ) ){
+                    if(right.type==='ParenthesizedExpression'){
+                         right = right.expression
+                    }
+                    if(right.type==='AssignmentExpression'){
+                         rightInitial =  right;
+                         right = right.left
+                    }
                     right = node.creaateAddressRefsNode( right );
                     isAddress = true;
                }
@@ -84,6 +90,7 @@ module.exports = function(ctx,stack){
                          ],null, true), 
                          node.createLiteralNode(null)
                     ));
+
                     let consequent = ctx.createAssignmentNode( 
                          node.createMemberNode([
                              node.createIdentifierNode(result,null,true),
@@ -91,6 +98,16 @@ module.exports = function(ctx,stack){
                          ],null, true), 
                          right
                     );
+
+                    if(rightInitial){
+                         const block = node.createNode('BlockStatement');
+                         block.body = [
+                              ctx.createStatementNode(rightInitial),
+                              ctx.createStatementNode(consequent)
+                         ];
+                         consequent = block;
+                    }
+
                     let alternate = null;
                     if( !isAnd ){
                          alternate = consequent;
