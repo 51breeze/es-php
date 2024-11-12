@@ -1,12 +1,12 @@
 const esbuild = require('esbuild');
 const config = {
   entryPoints:{
-    index: 'index.js',
+    index: 'lib/index.js',
   },
   bundle: true,
   outdir: './dist',
   //outExtension:{'.js':'.mjs'},
-  external: ['fsevents','less','node-sass','rollup','rollup-plugin-commonjs','rollup-plugin-node-resolve','fs-extra','lodash'],
+  external: ['fsevents','less','node-sass','rollup','rollup-plugin-commonjs','rollup-plugin-node-resolve','fs-extra','lodash','easescript','glob-path','source-map'],
   format: 'cjs',
   platform: 'node',
   minify:false,
@@ -16,11 +16,11 @@ const config = {
       resolveFrom: 'cwd',
       globbyOptions:{
         ignore:[
-          './types/php.d.es',
+          'lib/types/php.d.es',
         ],
       },
       assets: {
-        from: ['./types/**'],
+        from: ['lib/types/**'],
         to: ['./dist/types/'],
       },
       keepStructure: false,
@@ -28,7 +28,7 @@ const config = {
     require('esbuild-plugin-copy').copy({
       resolveFrom: 'cwd',
       assets: {
-        from: ['./polyfill/**'],
+        from: ['lib/polyfills/**'],
         to: ['./dist/polyfills/'],
       },
       keepStructure: false,

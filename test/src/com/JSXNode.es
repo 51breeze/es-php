@@ -4,7 +4,7 @@ public class JSXNode implements VNode{
     type:string;
     attr:{[key:string]:any};
     children:VNode[];
-    props:{key:string};
+    props?:{[key:string]:any};
     key:string|number;
     constructor(type:string, attr:any, children:JSXNode[]){
         this.type = type;

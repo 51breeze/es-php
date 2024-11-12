@@ -1,11 +1,11 @@
 {
-  "name": "es-php",
-  "version": "0.5.0",
-  "description": "test",
+  "name": "@easescript/es-php",
+  "version": "0.0.1",
+  "description": "Code Transform To PHP For EaseScript Plugin",
   "main": "dist/index.js",
   "typings": "dist/types/typings.json",
   "scripts": {
-    "dev": "jasmine ./test/index.js",
+    "dev": "node ./scripts/build.js && jasmine ./test/index.js",
     "run": "node ./test/phptest.js",
     "test": "npm run dev & npm run run",
     "build": "npm run manifest & node ./scripts/build.js",
@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/51breeze/es-php#readme",
   "dependencies": {
+    "@easescript/transform": "latest",
     "fs-extra": "^11.2.0",
     "glob-path": "latest",
     "lodash": "^4.17.21"

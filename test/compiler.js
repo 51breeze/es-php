@@ -1,8 +1,8 @@
-const Compiler = require("../../easescript/lib/core/Compiler");
-const Diagnostic = require("../../easescript/lib/core/Diagnostic");
-const Compilation = require("../../easescript/lib/core/Compilation");
+const Compiler = require("easescript/lib/core/Compiler");
+const Compilation = require("easescript/lib/core/Compilation");
 const path =require("path");
-const plugin = require("../index");
+let plugin = require("../dist/index");
+plugin = plugin.default || plugin
 class Creator {
     constructor(options){
         const compiler = new Compiler(Object.assign({
@@ -18,7 +18,7 @@ class Creator {
         },options || {}));
         
         this._compiler = compiler;
-        this.plugin = compiler.applyPlugin( {plugin,options:{
+        this.plugin = plugin({
             includes:['JsxTest.es'],
             folderAsNamespace:true,
             output:path.join(__dirname,"./build"),
@@ -31,30 +31,33 @@ class Creator {
                 annotations:false,
             },
             resolve:{
-                usings:['PHPUnit/Framework/TestCase','PHPMailer/**'],
+                usings:[
+                    'PHPUnit/Framework/TestCase',
+                    'PHPMailer/**'
+                ],
                 folders:{
                     "*.global":"escore",
                 }
             }
-        }});
+        });
+        this.plugin.init(compiler);
     }
 
     get compiler(){
         return this._compiler;
     }
 
-    factor(file,source){
+    factor(file){
         return new Promise( async(resolved,reject)=>{
             const compiler = this.compiler;
             await compiler.initialize();
             await compiler.loadTypes([
-               'types/php.d.es',
-               //'types/Assets.d.es',
+               'lib/types/php.d.es',
             ], {scope:'es-php'});
             let compilation = null;
             try{
                 compilation=file ? await compiler.createCompilation(file) : new Compilation( compiler );
-                await compilation.parserAsync(source);
+                await compilation.parserAsync();
                 if(compilation.stack){
                     resolved(compilation);
                 }else{
@@ -79,15 +82,8 @@ class Creator {
         return this.plugin.make( stack );
     }
 
-    build( compilation , done){
-        return this.plugin.start( compilation, (e)=>{
-            if( e ){
-                console.log(e);
-            }else{
-                console.log("build done!!")
-            }
-            if(done)done();
-        });
+    build(compilation){
+        this.plugin.build(compilation);
     }
 }
 

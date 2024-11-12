@@ -4,6 +4,8 @@ import * as config2 from '../config.es'
 
 let data = @Readfile('com')
 
+export * as ddd from '../g.config.es'
+
 export const home={
     data,
     top,
