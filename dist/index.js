@@ -11067,6 +11067,9 @@ var Context2 = class extends Context_default {
     if (parent) {
       let node = this.getNode(parent);
       if (node) {
+        if (token.type !== "ExpressionStatement") {
+          token = this.createExpressionStatement(token);
+        }
         if (parent.isBlockStatement) {
           node.body.push(token);
         } else if (parent.isProgram) {
@@ -13474,7 +13477,7 @@ function CallExpression(ctx2, stack2) {
         const propValue = stack2.callee.property.value();
         const property = ctx2.createLiteral(propValue, void 0, stack2.callee.property);
         let target = ctx2.createToken(stack2.callee.object);
-        if (!stack2.callee.object.isIdentifier) {
+        if (!stack2.callee.object.isIdentifier && target.type !== "Literal") {
           const refs = ctx2.getLocalRefName(stack2, "ref");
           ctx2.insertTokenToBlock(
             stack2,
@@ -13485,14 +13488,17 @@ function CallExpression(ctx2, stack2) {
           );
           target = ctx2.createVarIdentifier(refs);
         }
+        let _args = [
+          createScopeIdNode(ctx2, module2),
+          target,
+          property
+        ];
+        if (args.length > 0) {
+          _args.push(ctx2.createArrayExpression(args));
+        }
         return ctx2.createCallExpression(
           createStaticReferenceNode2(ctx2, stack2, "Reflect", "call"),
-          [
-            createScopeIdNode(ctx2, module2),
-            target,
-            property,
-            args.length > 0 ? ctx2.createArrayExpression(args) : null
-          ],
+          _args,
           stack2
         );
       } else if (import_Utils24.default.isStack(desc2)) {
@@ -16309,15 +16315,27 @@ function MemberExpression2(ctx2, stack2) {
     isWrapType = true;
   }
   if (objectType.isNamespace && !stack2.parentStack.isMemberExpression) {
-    const mappingNs = ctx2.getMappingNamespace(stack2.value());
-    if (mappingNs !== null) {
-      return mappingNs ? ctx2.createIdentifier(mappingNs + "\\" + stack2.property.value(), stack2.property) : ctx2.createToken(stack2.property);
+    let mappingNs = ctx2.getMappingNamespace(stack2.value());
+    if (mappingNs === false)
+      return ctx2.createLiteral(null);
+    if (mappingNs) {
+      return ctx2.createIdentifier(mappingNs);
     }
     return ctx2.createIdentifier("\\" + stack2.value().replace(/\./g, "\\"));
   }
-  if (description && description.isType && description.isAnyType) {
+  if (!description || description.isType && description.isAnyType) {
+    let isCall = stack2.parentStack.parentStack.isCallExpression;
+    if (!description || isCall) {
+      let mappingNs = ctx2.getMappingNamespace(stack2.value());
+      if (mappingNs === false)
+        return ctx2.createLiteral(null);
+      if (mappingNs) {
+        return ctx2.createLiteral(mappingNs.replace(/\\/g, "\\\\"));
+      }
+      return ctx2.createLiteral("\\\\" + stack2.value().replace(/\./g, "\\\\"));
+    }
     let isReflect = !!objectType.isAnyType;
-    let hasDynamic = description.isComputeType && description.isPropertyExists();
+    let hasDynamic = description && description.isComputeType && description.isPropertyExists();
     if (!hasDynamic && !import_Utils28.default.isLiteralObjectType(objectType)) {
       isReflect = true;
     }
@@ -16334,7 +16352,7 @@ function MemberExpression2(ctx2, stack2) {
     }
     computed = true;
   }
-  var isNewObject = !!stack2.object.isNewExpression;
+  let isNewObject = !!stack2.object.isNewExpression;
   if (!isNewObject && stack2.object.isParenthesizedExpression) {
     let op = stack2.object.expression;
     while (op.isParenthesizedExpression) {
@@ -16342,9 +16360,9 @@ function MemberExpression2(ctx2, stack2) {
     }
     isNewObject = !!op.isNewExpression;
   }
-  var isStatic = stack2.object.isSuperExpression || objectType.isClassType || !isNewObject && stack2.compiler.callUtils("isClassType", objectDescription);
-  var objectNode = null;
-  var propertyNode = null;
+  let isStatic = stack2.object.isSuperExpression || objectType.isClassType || !isNewObject && stack2.compiler.callUtils("isClassType", objectDescription);
+  let objectNode = null;
+  let propertyNode = null;
   if (isStatic && !(objectType.isClassType || stack2.object.isSuperExpression)) {
     if (stack2.object.isCallExpression) {
       isStatic = false;
@@ -17327,7 +17345,7 @@ function VariableDeclarator_default2(ctx2, stack2) {
             ctx2.createVarIdentifier(left),
             ctx2.createLiteral(index)
           );
-          node.id = ctx2.createStaticMemberExpression([
+          node.id = ctx2.createComputeMemberExpression([
             node.id,
             key
           ]);
