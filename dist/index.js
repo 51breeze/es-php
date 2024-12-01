@@ -18518,6 +18518,7 @@ var package_default = {
   typings: "dist/types/typings.json",
   scripts: {
     dev: "node ./scripts/build.js && jasmine ./test/index.js",
+    compiler: "jasmine ./test/index.js",
     run: "node ./test/phptest.js",
     test: "npm run dev & npm run run",
     build: "npm run manifest & node ./scripts/build.js",
