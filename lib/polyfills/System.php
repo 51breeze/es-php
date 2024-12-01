@@ -180,12 +180,6 @@ final class System{
         return is_a($object, ObjectWraper::class);
     }
 
-    public static function condition( $value ){
-        if( $value )return true;
-        if( is_array($value) )return true;
-        return false;
-    }
-
     private static $variablesScope = [];
     public static function registerScopeVariables(string $scopeId, string $name, $data){
         $dataset = &static::$variablesScope;
@@ -425,7 +419,13 @@ final class System{
         return $array;
     }
 
-    static function isArray( $target ){
+    public static function toBoolean( $value ){
+        if( $value )return true;
+        if( is_array($value) )return true;
+        return false;
+    }
+
+    public static function isArray( $target ){
         if( !is_array($target) )return false;
         $keys = array_keys($target);
         $len = count($keys);
@@ -436,43 +436,43 @@ final class System{
         return true;
     }
 
-    static function isObject($target){
+    public static function isObject($target){
         return is_object($target) || is_array($target);
     }
 
-    static function isNumber($target){
+    public static function isNumber($target){
         return is_numeric($target) || static::isNaN($target);
     }
 
-    static function isNaN($target){
+    public static function isNaN($target){
         return is_nan(floatval($target));
     }
 
-    static function isFinite($target){
+    public static function isFinite($target){
         return is_finite($target);
     }
 
-    static function isIterator($target){
+    public static function isIterator($target){
         return is_a($target, static::getCoreSystemNamespace('Iterator') );
     }
 
-    static function isClass($target){
+    public static function isClass($target){
         return is_string($target) && class_exists($target);
     }
 
-    static function isString($target){
+    public static function isString($target){
         return is_string($target);
     }
 
-    static function isScalar($target){
+    public static function isScalar($target){
         return is_scalar($target);
     }
 
-    static function isBoolean($target){
+    public static function isBoolean($target){
         return is_bool($target);
     }
 
-    static function merge(&$target,...$args){
+    public static function merge(&$target,...$args){
         $isObj = is_object($target);
         if( !($isObj || is_array($target)) ) {
             throw new TypeError('Cannot convert null to object');
@@ -493,18 +493,18 @@ final class System{
         return $target;
     }
 
-    static function sequences(...$args){
+    public static function sequences(...$args){
         return func_get_arg( func_num_args()-1 );
     }
 
-    static function getIterator( &$target ){
+    public static function getIterator( &$target ){
         if( System::isIterator($target) ){
             return $target;
         }
         return new IterableIterator($target);
     }
 
-    static function getQualifiedClassName( $name ){
+    public static function getQualifiedClassName( $name ){
         $name = str_replace(".",'\\',$name);
         if( !class_exists( $name, true ) ){
             throw new \Exception("is not exists ". $name );
@@ -512,7 +512,7 @@ final class System{
         return $name;
     }
 
-    static function getQualifiedObjectName( $object ){
+    public static function getQualifiedObjectName( $object ){
         return get_class($object);
     }
 }

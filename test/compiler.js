@@ -10,7 +10,6 @@ class Creator {
             diagnose:true,
             enableComments:true,
             autoLoadDescribeFile:true,
-            output:path.join(__dirname,"./build"),
             workspace:path.join(__dirname,"./src"),
             parser:{
                 locations:true
@@ -21,7 +20,7 @@ class Creator {
         this.plugin = plugin({
             includes:['JsxTest.es'],
             folderAsNamespace:true,
-            output:path.join(__dirname,"./build"),
+            outDir:path.join(__dirname,"./build"),
             metadata:{
                 env:{NODE_ENV:'development'}
             },

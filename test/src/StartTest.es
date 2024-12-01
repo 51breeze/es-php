@@ -11,6 +11,10 @@ import table.Address;
 
 import Assets;
 
+import asset.Annotation as Anns;
+
+import Person;
+
 //import asset.Manifest;
 
 //@Embed(Imgs='./Person.es');
@@ -21,8 +25,11 @@ public class StartTest extends Base implements Address
     private var list  = [];
     private var addData:Address;
 
+    // @Embed('./Person.es');
+    // static imsgs:string
+
     @Embed('./Person.es');
-    static imsgs:string
+    imsgs:string
 
     @Main
     public static main(){
@@ -31,7 +38,8 @@ public class StartTest extends Base implements Address
 
     constructor(){
         super();
-        asset.Manifest.all()
+        let Annotation = null;
+        Anns.all()
     }
 
     /**
@@ -208,8 +216,7 @@ public class StartTest extends Base implements Address
         array6.push(1);
         this.assertEquals([1],array6);
         this.assertTrue( array6 === array3 );
-
-
+        
         var array7 = this.array2 ? this.array2 : array2 ? array3 : [];
         array7.push(1);
         this.assertTrue( array7 === this.array2 );

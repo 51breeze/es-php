@@ -41,7 +41,7 @@ public class Person<T> extends TestCase implements IT
         var b:[string, [string,int] ] = ["", ["1",1] ];
 
         var cc:[number] = [1];
-        var x:[number,int,string,...object] = [1,1,'2222',{}];
+        var x:[number,int,string,...object] = [1,1,'2222',[{}]];
 
         b.push( '1' )
         b.push( ['1',1] )

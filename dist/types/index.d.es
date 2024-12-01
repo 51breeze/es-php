@@ -23,15 +23,15 @@ declare type ArrayProtector<T> = T;
 declare type GeneralCallback<T=any,R=any> = [string, string] | (...args:T[])=>R;
 
 package asset{
-    declare class Annotations{
+
+    declare class Annotation{
         static all():Record<any>
         static get(name:string):null | Record<Record<any>>
     }
-}
 
-package asset{
-    declare class Files{
-        static all():Record<any>
-        static get(id:string, name:string='path'):null | Record<Record<any>>
+    declare class Manifest{
+        static all():string[]
+        static path(id):null | string
+        static get(id:string):null | string
     }
 }

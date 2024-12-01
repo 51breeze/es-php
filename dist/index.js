@@ -190,8 +190,8 @@ function parseMacroMethodArguments(args, name) {
   });
   return parseMacroArguments(args, name);
 }
-function parseReadfileAnnotation(ctx2, stack2) {
-  let args = stack2.getArguments();
+function parseReadfileAnnotation(ctx, stack) {
+  let args = stack.getArguments();
   let indexes = annotationIndexers.readfile;
   let stackArgs = {};
   let annotArgs = indexes.map((key) => {
@@ -215,7 +215,7 @@ function parseReadfileAnnotation(ctx2, stack2) {
     let segs = dir.split(".");
     let precede = segs.shift();
     let latter = segs.pop();
-    let options = ctx2.plugin[precede];
+    let options = ctx.plugin[precede];
     if (precede === "options") {
       while (options && segs.length > 0) {
         options = options[segs.shift()];
@@ -226,9 +226,9 @@ function parseReadfileAnnotation(ctx2, stack2) {
     }
   }
   let rawDir = dir;
-  dir = stack2.compiler.resolveManager.resolveSource(dir, stack2.compilation.file);
+  dir = stack.compiler.resolveManager.resolveSource(dir, stack.compilation.file);
   if (!dir) {
-    ctx2.error(`Readfile not found the '${rawDir}' folders`, dirStack || stack2);
+    ctx.error(`Readfile not found the '${rawDir}' folders`, dirStack || stack);
     return null;
   }
   if (_suffix) {
@@ -245,7 +245,7 @@ function parseReadfileAnnotation(ctx2, stack2) {
       _suffix = _suffix.split(",").map((item) => item.trim());
     }
   }
-  let extensions = (stack2.compiler.options.extensions || []).map((ext) => String(ext).startsWith(".") ? ext : "." + ext);
+  let extensions = (stack.compiler.options.extensions || []).map((ext) => String(ext).startsWith(".") ? ext : "." + ext);
   if (!extensions.includes(".es")) {
     extensions.push(".es");
   }
@@ -258,7 +258,7 @@ function parseReadfileAnnotation(ctx2, stack2) {
       return true;
     return suffix.some((item) => file.endsWith(item));
   };
-  let files = stack2.compiler.resolveFiles(dir).filter(checkSuffix);
+  let files = stack.compiler.resolveFiles(dir).filter(checkSuffix);
   if (!files.length)
     return null;
   files.sort((a, b) => {
@@ -278,11 +278,11 @@ function parseReadfileAnnotation(ctx2, stack2) {
     files
   };
 }
-function parseUrlAnnotation(ctx2, stack2) {
-  const args = stack2.getArguments();
+function parseUrlAnnotation(ctx, stack) {
+  const args = stack.getArguments();
   return args.map((arg) => {
     if (arg && arg.resolveFile) {
-      const asset = (stack2.module || stack2.compilation).assets.get(arg.resolveFile);
+      const asset = (stack.module || stack.compilation).assets.get(arg.resolveFile);
       if (asset) {
         return {
           id: asset.assign,
@@ -294,11 +294,11 @@ function parseUrlAnnotation(ctx2, stack2) {
     return null;
   }).filter(Boolean);
 }
-function parseEnvAnnotation(ctx2, stack2) {
-  const args = stack2.getArguments();
+function parseEnvAnnotation(ctx, stack) {
+  const args = stack.getArguments();
   return args.map((item) => {
     let key = item.assigned ? item.key : item.value;
-    let value = ctx2.options.metadata.env[key] || process.env[key];
+    let value = ctx.options.metadata.env[key] || process.env[key];
     if (!value && item.assigned) {
       value = item.value;
     }
@@ -311,17 +311,17 @@ function parseEnvAnnotation(ctx2, stack2) {
     }
   }).filter(Boolean);
 }
-function parseHttpAnnotation(ctx2, stack2) {
-  const args = stack2.getArguments();
+function parseHttpAnnotation(ctx, stack) {
+  const args = stack.getArguments();
   const indexes = annotationIndexers.indexes;
   const [moduleClass, actionArg, paramArg, dataArg, methodArg, configArg] = indexes.map((key) => getAnnotationArgument(key, args, indexes));
   const providerModule = moduleClass ? import_Namespace.default.globals.get(moduleClass.value) : null;
   if (!providerModule) {
-    ctx2.error(`Class '${moduleClass.value}' is not exists.`);
+    ctx.error(`Class '${moduleClass.value}' is not exists.`);
   } else {
     const member = actionArg ? providerModule.getMember(actionArg.value) : null;
     if (!member || !import_Utils.default.isModifierPublic(member) || !(member.isMethodDefinition && !(member.isMethodGetterDefinition || member.isMethodSetterDefinition))) {
-      ctx2.error(`Method '${moduleClass.value}::${actionArg && actionArg.value}' is not exists.`, actionArg ? actionArg.stack : stack2);
+      ctx.error(`Method '${moduleClass.value}::${actionArg && actionArg.value}' is not exists.`, actionArg ? actionArg.stack : stack);
     } else {
       return {
         args: {
@@ -665,8 +665,8 @@ function parseVersionExpression(expression2, pluginVersion = "0.0.0", optionVers
     throw new Error("Version expression parse failed");
   }
 }
-function createFormatImportSpecifiers(stack2) {
-  return stack2.specifiers.map((spec) => {
+function createFormatImportSpecifiers(stack) {
+  return stack.specifiers.map((spec) => {
     if (spec.isImportDefaultSpecifier) {
       return {
         local: spec.value(),
@@ -687,36 +687,39 @@ function createFormatImportSpecifiers(stack2) {
     }
   });
 }
-function parseImportDeclaration(ctx2, stack2, context = null, graph = null) {
+function parseImportDeclaration(ctx, stack, context = null, graph = null) {
   let importSource = null;
-  if (!graph && context) {
-    graph = ctx2.getBuildGraph(context);
+  if (!context) {
+    context = stack.compilation;
   }
-  if (stack2.source.isLiteral) {
-    let compilation = stack2.getResolveCompilation();
-    let source = stack2.getResolveFile() || stack2.source.value();
+  if (!graph && context) {
+    graph = ctx.getBuildGraph(context);
+  }
+  if (stack.source.isLiteral) {
+    let compilation = stack.getResolveCompilation();
+    let source = stack.getResolveFile() || stack.source.value();
     let specifiers = null;
     let ownerModule = null;
     if (compilation && !compilation.isDescriptorDocument()) {
-      source = ctx2.getModuleImportSource(source, stack2.compilation.file);
-      specifiers = createFormatImportSpecifiers(stack2);
-      ctx2.addDepend(compilation);
+      source = ctx.getModuleImportSource(source, stack.compilation.file);
+      specifiers = createFormatImportSpecifiers(stack);
+      ctx.addDepend(compilation);
     } else {
-      if (stack2.additional && stack2.additional.isDeclaratorDeclaration) {
-        ownerModule = stack2.additional.module;
+      if (stack.additional && stack.additional.isDeclaratorDeclaration) {
+        ownerModule = stack.additional.module;
       }
       let isLocal = import_fs.default.existsSync(source);
-      specifiers = createFormatImportSpecifiers(stack2);
-      source = ctx2.getImportAssetsMapping(source, {
+      specifiers = createFormatImportSpecifiers(stack);
+      source = ctx.getImportAssetsMapping(source, {
         group: "imports",
         source,
         specifiers,
-        ctx: ctx2,
+        ctx,
         context
       });
       if (isLocal && source) {
-        let asset = ctx2.createAsset(source);
-        source = ctx2.getAssetsImportSource(asset, stack2.compilation);
+        let asset = ctx.createAsset(source);
+        source = ctx.getAssetsImportSource(asset, stack.compilation);
         graph.addAsset(asset);
       }
     }
@@ -725,151 +728,150 @@ function parseImportDeclaration(ctx2, stack2, context = null, graph = null) {
         specifiers.forEach((spec) => {
           let local = spec.local;
           if (ownerModule && spec.local === ownerModule.id) {
-            local = ctx2.getModuleReferenceName(ownerModule, context);
+            local = ctx.getModuleReferenceName(ownerModule, context);
           }
-          importSource = ctx2.addImport(source, local, spec.imported, spec.stack);
+          importSource = ctx.addImport(source, local, spec.imported, spec.stack);
         });
       } else {
-        importSource = ctx2.addImport(source, null, null, stack2.source);
+        importSource = ctx.addImport(source, null, null, stack.source);
       }
       if (compilation) {
         importSource.setSourceTarget(compilation);
       }
     }
   } else {
-    const classModule = stack2.description();
-    if (classModule && classModule.isModule && ctx2.isActiveModule(classModule) && ctx2.isNeedBuild(classModule)) {
-      let local = stack2.alias ? stack2.alias.value() : classModule.id;
-      let source = ctx2.getModuleImportSource(classModule, import_Utils.default.isModule(context) ? context : stack2.compilation);
-      importSource = ctx2.addImport(source, local, null, stack2.source);
+    const classModule = stack.description();
+    if (classModule && classModule.isModule && ctx.isActiveModule(classModule) && ctx.isNeedBuild(classModule)) {
+      let local = stack.alias ? stack.alias.value() : classModule.id;
+      let source = ctx.getModuleImportSource(classModule, import_Utils.default.isModule(context) ? context : stack.compilation);
+      importSource = ctx.addImport(source, local, null, stack.source);
       importSource.setSourceTarget(classModule);
     }
   }
   if (importSource) {
-    importSource.setSourceContext(context);
-    importSource.stack = stack2;
+    importSource.stack = stack;
     if (graph) {
       graph.addImport(importSource);
     }
   }
   return importSource;
 }
-function createHttpAnnotationNode(ctx2, stack2) {
-  const result = parseHttpAnnotation(ctx2, stack2);
+function createHttpAnnotationNode(ctx, stack) {
+  const result = parseHttpAnnotation(ctx, stack);
   if (!result)
     return null;
   const { param, method, data, config } = result.args;
-  const routeConfigNode = createRouteConfigNode(ctx2, result.module, result.method, param);
+  const routeConfigNode = createRouteConfigNode(ctx, result.module, result.method, param);
   const createArgNode = (argItem) => {
     if (argItem) {
       if (argItem.stack.isAssignmentPattern) {
-        return ctx2.createToken(argItem.stack.right);
+        return ctx.createToken(argItem.stack.right);
       } else {
-        return ctx2.createToken(argItem.stack);
+        return ctx.createToken(argItem.stack);
       }
     }
     return null;
   };
   const System = import_Namespace.default.globals.get("System");
   const Http = import_Namespace.default.globals.get("net.Http");
-  ctx2.addDepend(System, stack2.module);
-  ctx2.addDepend(Http, stack2.module);
+  ctx.addDepend(System, stack.module);
+  ctx.addDepend(Http, stack.module);
   const props = {
     data: createArgNode(data),
     options: createArgNode(config),
-    method: method && allMethods.includes(method.value) ? ctx2.createLiteral(method.value) : null
+    method: method && allMethods.includes(method.value) ? ctx.createLiteral(method.value) : null
   };
   const properties = Object.keys(props).map((name) => {
     const value = props[name];
     if (value) {
-      return ctx2.createProperty(ctx2.createIdentifier(name), value);
+      return ctx.createProperty(ctx.createIdentifier(name), value);
     }
     return null;
   }).filter((item) => !!item);
   let calleeArgs = [
-    ctx2.createIdentifier(
-      ctx2.getGlobalRefName(
-        stack2,
-        ctx2.getModuleReferenceName(Http, stack2.module)
+    ctx.createIdentifier(
+      ctx.getGlobalRefName(
+        stack,
+        ctx.getModuleReferenceName(Http, stack.module)
       )
     ),
     routeConfigNode
   ];
   if (properties.length > 0) {
-    calleeArgs.push(ctx2.createObjectExpression(properties));
+    calleeArgs.push(ctx.createObjectExpression(properties));
   }
-  return ctx2.createCallExpression(
-    ctx2.createMemberExpression([
-      ctx2.createIdentifier(
-        ctx2.getGlobalRefName(
-          stack2,
-          ctx2.builder.getModuleReferenceName(System, stack2.module)
+  return ctx.createCallExpression(
+    ctx.createMemberExpression([
+      ctx.createIdentifier(
+        ctx.getGlobalRefName(
+          stack,
+          ctx.builder.getModuleReferenceName(System, stack.module)
         )
       ),
-      ctx2.createIdentifier("createHttpRequest")
+      ctx.createIdentifier("createHttpRequest")
     ]),
     calleeArgs,
-    stack2
+    stack
   );
 }
-function createUrlAnnotationNode(ctx2, stack2) {
-  let result = parseUrlAnnotation(ctx2, stack2);
+function createUrlAnnotationNode(ctx, stack) {
+  let result = parseUrlAnnotation(ctx, stack);
   if (result.length > 0) {
     let items = result.map((item) => {
       if (item.id)
-        return ctx2.createIdentifier(item.id);
-      return ctx2.createLiteral(item.resolve);
+        return ctx.createIdentifier(item.id);
+      return ctx.createLiteral(item.resolve);
     });
     if (items.length > 1) {
-      return ctx2.createArrayExpression(items);
+      return ctx.createArrayExpression(items);
     } else {
       return items[0];
     }
   }
-  return ctx2.createLiteral("");
+  return ctx.createLiteral("");
 }
-function createEmbedAnnotationNode(ctx2, stack2) {
-  let result = parseUrlAnnotation(ctx2, stack2);
+function createEmbedAnnotationNode(ctx, stack) {
+  let result = parseUrlAnnotation(ctx, stack);
   if (result.length > 0) {
     let items = result.map((item) => {
       if (item.id)
-        return ctx2.createIdentifier(item.id);
-      return ctx2.createLiteral(
-        ctx2.getRelativePath(stack2.file, item.resolve)
+        return ctx.createIdentifier(item.id);
+      return ctx.createLiteral(
+        ctx.getRelativePath(stack.file, item.resolve)
       );
     });
     if (items.length > 1) {
-      return ctx2.createArrayExpression(items);
+      return ctx.createArrayExpression(items);
     } else {
       return items[0];
     }
   }
-  return ctx2.createLiteral("");
+  return ctx.createLiteral("");
 }
-function createEnvAnnotationNode(ctx2, stack2) {
-  let result = parseEnvAnnotation(ctx2, stack2);
+function createEnvAnnotationNode(ctx, stack) {
+  let result = parseEnvAnnotation(ctx, stack);
   if (result.length > 0) {
     let properties = result.map((item) => {
-      return ctx2.createProperty(ctx2.createIdentifier(item.key), ctx2.createLiteral(item.value));
+      return ctx.createProperty(ctx.createIdentifier(item.key), ctx.createLiteral(item.value));
     });
-    return ctx2.createObjectExpression(properties);
+    return ctx.createObjectExpression(properties);
   }
-  return ctx2.createLiteral(null);
+  return ctx.createLiteral(null);
 }
-function createRouterAnnotationNode(ctx2, stack2) {
-  const result = parseHttpAnnotation(ctx2, stack2);
+function createRouterAnnotationNode(ctx, stack) {
+  const result = parseHttpAnnotation(ctx, stack);
   if (!result)
     return null;
   if (result.isWebComponent) {
-    let route = getModuleRoutes(result.module, ["router"], ctx2.options);
+    let route = getModuleRoutes(result.module, ["router"], ctx.options);
     if (route && Array.isArray(route))
       route = route[0];
     if (!route) {
-      return ctx2.createLiteral(result.module.getName("/"));
+      return ctx.createLiteral(result.module.getName("/"));
     }
     const paramArg = result.args.param;
     if (!paramArg) {
-      return ctx2.createLiteral(createRoutePath(route));
+      return ctx.createLiteral(createRoutePath(route));
     } else {
       const System = import_Namespace.default.globals.get("System");
       const routePath = "/" + route.path.split("/").map((segment) => {
@@ -878,19 +880,19 @@ function createRouterAnnotationNode(ctx2, stack2) {
         }
         return segment;
       }).filter((val) => !!val).join("/");
-      let paramNode = ctx2.createToken(paramArg.assigned ? paramArg.stack.right : paramArg.stack);
-      ctx2.addDepend(System, stack2.module);
+      let paramNode = ctx.createToken(paramArg.assigned ? paramArg.stack.right : paramArg.stack);
+      ctx.addDepend(System, stack.module);
       if (route.params) {
-        const defaultParams = ctx2.createObjectExpression(
+        const defaultParams = ctx.createObjectExpression(
           Object.keys(route.params).map((name) => {
             const value = route.params[name];
-            return ctx2.createProperty(ctx2.createIdentifier(name), ctx2.createLiteral(value));
+            return ctx.createProperty(ctx.createIdentifier(name), ctx.createLiteral(value));
           })
         );
-        paramNode = ctx2.createCallExpression(
-          ctx2.createMemberExpression([
-            ctx2.createIdentifier("Object"),
-            ctx2.createIdentifier("assign")
+        paramNode = ctx.createCallExpression(
+          ctx.createMemberExpression([
+            ctx.createIdentifier("Object"),
+            ctx.createIdentifier("assign")
           ]),
           [
             defaultParams,
@@ -898,53 +900,53 @@ function createRouterAnnotationNode(ctx2, stack2) {
           ]
         );
       }
-      return ctx2.createCallExpression(
-        ctx2.createMemberExpression([
-          ctx2.createIdentifier(
-            ctx2.getGlobalRefName(
-              stack2,
-              ctx2.getModuleReferenceName(System, stack2.module)
+      return ctx.createCallExpression(
+        ctx.createMemberExpression([
+          ctx.createIdentifier(
+            ctx.getGlobalRefName(
+              stack,
+              ctx.getModuleReferenceName(System, stack.module)
             ),
-            stack2
+            stack
           ),
-          ctx2.createIdentifier("createHttpRoute", stack2)
+          ctx.createIdentifier("createHttpRoute", stack)
         ]),
         [
-          ctx2.createLiteral(routePath),
+          ctx.createLiteral(routePath),
           paramNode
         ],
-        stack2
+        stack
       );
     }
   } else {
-    return createRouteConfigNode(ctx2, result.module, result.method, result.args.param);
+    return createRouteConfigNode(ctx, result.module, result.method, result.args.param);
   }
 }
-function createMainAnnotationNode(ctx2, stack2) {
-  if (!stack2 || !stack2.isMethodDefinition)
+function createMainAnnotationNode(ctx, stack) {
+  if (!stack || !stack.isMethodDefinition)
     return;
-  const main = Array.isArray(stack2.annotations) ? stack2.annotations.find((stack3) => stack3.getLowerCaseName() === "main") : null;
+  const main = Array.isArray(stack.annotations) ? stack.annotations.find((stack2) => stack2.getLowerCaseName() === "main") : null;
   if (!main)
     return;
-  let callMain = ctx2.createCallExpression(
-    ctx2.createMemberExpression([
-      ctx2.createIdentifier(stack2.module.id),
-      ctx2.createIdentifier(stack2.key.value())
+  let callMain = ctx.createCallExpression(
+    ctx.createMemberExpression([
+      ctx.createIdentifier(stack.module.id),
+      ctx.createIdentifier(stack.key.value())
     ])
   );
   const args = main ? main.getArguments() : [];
   const defer = args.length > 0 ? !(String(args[0].value).toLowerCase() === "false") : true;
   if (defer) {
-    callMain = ctx2.createCallExpression(
-      createStaticReferenceNode(ctx2, stack2, "System", "setImmediate"),
+    callMain = ctx.createCallExpression(
+      createStaticReferenceNode(ctx, stack, "System", "setImmediate"),
       [
-        ctx2.createArrowFunctionExpression(callMain)
+        ctx.createArrowFunctionExpression(callMain)
       ]
     );
   }
   return callMain;
 }
-function createRouteConfigNode(ctx2, module2, method, paramArg) {
+function createRouteConfigNode(ctx, module2, method, paramArg) {
   if (!import_Utils.default.isStack(method) || !method.isMethodDefinition) {
     throw new Error(`method invalid`);
   }
@@ -963,7 +965,7 @@ function createRouteConfigNode(ctx2, module2, method, paramArg) {
     const question = required ? "" : "?";
     if (item.isAssignmentPattern) {
       if (item.right.isLiteral) {
-        defaultParams.push(ctx2.createProperty(ctx2.createIdentifier(item.value()), ctx2.createToken(item.right)));
+        defaultParams.push(ctx.createProperty(ctx.createIdentifier(item.value()), ctx.createToken(item.right)));
       } else {
         item.right.error(10101, item.value());
       }
@@ -973,21 +975,21 @@ function createRouteConfigNode(ctx2, module2, method, paramArg) {
   const uri = declareParams.length > 0 ? [value].concat(declareParams).join("/") : value;
   let url = uri;
   if (uri.charCodeAt(0) !== 47) {
-    const withNs = ctx2.options.routePathWithNamespace?.server;
+    const withNs = ctx.options.routePathWithNamespace?.server;
     url = withNs ? `/${module2.getName("/")}/${uri}` : `/${module2.id}/${uri}`;
   }
-  let allowMethodNode = ctx2.createLiteral(annotation ? annotation.getLowerCaseName() : "*");
+  let allowMethodNode = ctx.createLiteral(annotation ? annotation.getLowerCaseName() : "*");
   let allowMethodNames = annotation ? annotation.getLowerCaseName() : "*";
   if (annotation && annotation.getLowerCaseName() === "router") {
     const allowMethods = args.filter((item) => item !== pathArg);
     if (allowMethods.length > 0) {
       allowMethodNames = allowMethods.map((item) => item.value).join(",");
-      allowMethodNode = ctx2.createArrayExpression(allowMethods.map((item) => ctx2.createLiteral(item.value)));
+      allowMethodNode = ctx.createArrayExpression(allowMethods.map((item) => ctx.createLiteral(item.value)));
     } else {
-      allowMethodNode = ctx2.createLiteral("*");
+      allowMethodNode = ctx.createLiteral("*");
     }
   }
-  let formatRoute = ctx2.options.formation?.route;
+  let formatRoute = ctx.options.formation?.route;
   if (formatRoute) {
     url = formatRoute(url, {
       action: actionName,
@@ -1000,36 +1002,36 @@ function createRouteConfigNode(ctx2, module2, method, paramArg) {
   let paramNode = null;
   if (paramArg) {
     if (paramArg.stack.isAssignmentPattern) {
-      paramNode = ctx2.createToken(paramArg.stack.right);
+      paramNode = ctx.createToken(paramArg.stack.right);
     } else {
-      paramNode = ctx2.createToken(paramArg.stack);
+      paramNode = ctx.createToken(paramArg.stack);
     }
   }
   const props = {
-    url: ctx2.createLiteral(url),
+    url: ctx.createLiteral(url),
     param: paramNode,
     allowMethod: allowMethodNode
   };
   if (defaultParams.length > 0) {
-    props["default"] = ctx2.createObjectExpression(defaultParams);
+    props["default"] = ctx.createObjectExpression(defaultParams);
   }
-  return ctx2.createObjectExpression(
+  return ctx.createObjectExpression(
     Object.keys(props).map((name) => {
       const value2 = props[name];
       if (value2) {
-        return ctx2.createProperty(name, value2);
+        return ctx.createProperty(name, value2);
       }
       return null;
     }).filter((item) => !!item)
   );
 }
-function createReadfileAnnotationNode(ctx2, stack2) {
-  const result = parseReadfileAnnotation(ctx2, stack2);
+function createReadfileAnnotationNode(ctx, stack) {
+  const result = parseReadfileAnnotation(ctx, stack);
   if (!result)
     return null;
   const addDeps = (source, local) => {
-    source = ctx2.getSourceFileMappingFolder(source) || source;
-    ctx2.addImport(source, local);
+    source = ctx.getSourceFileMappingFolder(source) || source;
+    ctx.addImport(source, local);
   };
   const fileMap = {};
   const localeCxt = result.dir.toLowerCase();
@@ -1049,7 +1051,7 @@ function createReadfileAnnotationNode(ctx2, stack2) {
     const pid = import_path.default.dirname(file).toLowerCase();
     const named = import_path.default.basename(file, import_path.default.extname(file));
     const id = (pid + "/" + named).toLowerCase();
-    const filepath2 = result.relative ? ctx2.compiler.getRelativeWorkspacePath(file) : file;
+    const filepath2 = result.relative ? ctx.compiler.getRelativeWorkspacePath(file) : file;
     let item = {
       path: filepath2,
       isFile: import_fs.default.statSync(file).isFile()
@@ -1065,7 +1067,7 @@ function createReadfileAnnotationNode(ctx2, stack2) {
           data = `import('${file}')`;
         } else {
           namedMap.add(file);
-          data = ctx2.getGlobalRefName(stack2, "_" + named.replaceAll("-", "_") + namedMap.size);
+          data = ctx.getGlobalRefName(stack, "_" + named.replaceAll("-", "_") + namedMap.size);
           addDeps(file, data);
         }
       }
@@ -1085,32 +1087,32 @@ function createReadfileAnnotationNode(ctx2, stack2) {
   const make = (list) => {
     return list.map((object) => {
       if (only) {
-        return object.content ? ctx2.createChunkExpression(object.content) : ctx2.createLiteral(null);
+        return object.content ? ctx.createChunkExpression(object.content) : ctx.createLiteral(null);
       }
       const properties = [
-        ctx2.createProperty(
-          ctx2.createIdentifier("path"),
-          ctx2.createLiteral(object.path)
+        ctx.createProperty(
+          ctx.createIdentifier("path"),
+          ctx.createLiteral(object.path)
         )
       ];
       if (object.isFile) {
-        properties.push(ctx2.createProperty(ctx2.createIdentifier("isFile"), ctx2.createLiteral(true)));
+        properties.push(ctx.createProperty(ctx.createIdentifier("isFile"), ctx.createLiteral(true)));
       }
       if (object.content) {
-        properties.push(ctx2.createProperty(ctx2.createIdentifier("content"), ctx2.createChunkExpression(object.content)));
+        properties.push(ctx.createProperty(ctx.createIdentifier("content"), ctx.createChunkExpression(object.content)));
       }
       if (object.children) {
-        properties.push(ctx2.createProperty(ctx2.createIdentifier("children"), ctx2.createArrayExpression(make(object.children))));
+        properties.push(ctx.createProperty(ctx.createIdentifier("children"), ctx.createArrayExpression(make(object.children))));
       }
-      return ctx2.createObjectExpression(properties);
+      return ctx.createObjectExpression(properties);
     });
   };
-  return ctx2.createArrayExpression(make(dataset));
+  return ctx.createArrayExpression(make(dataset));
 }
-function createIdentNode(ctx2, stack2) {
-  if (!stack2)
+function createIdentNode(ctx, stack) {
+  if (!stack)
     return null;
-  return stack2.isIdentifier ? ctx2.createIdentifier(stack2.value(), stack2) : stack2.isLiteral ? ctx2.createLiteral(stack2.value()) : ctx2.createToken(stack2);
+  return stack.isIdentifier ? ctx.createIdentifier(stack.value(), stack) : stack.isLiteral ? ctx.createLiteral(stack.value()) : ctx.createToken(stack);
 }
 function toCamelCase(name) {
   name = String(name);
@@ -1122,7 +1124,7 @@ function toCamelCase(name) {
 function toFirstUpperCase(str) {
   return str.substring(0, 1).toUpperCase() + str.substring(1);
 }
-function createCJSImports(ctx2, importManage) {
+function createCJSImports(ctx, importManage) {
   let imports = [];
   importManage.getAllImportSource().forEach((importSource) => {
     if (importSource.isExportSource)
@@ -1130,40 +1132,40 @@ function createCJSImports(ctx2, importManage) {
     const properties = [];
     importSource.specifiers.forEach((spec) => {
       if (spec.type === "default" || spec.type === "namespace") {
-        let requireNode = ctx2.createCallExpression(
-          ctx2.createIdentifier("require"),
+        let requireNode = ctx.createCallExpression(
+          ctx.createIdentifier("require"),
           [
-            ctx2.createLiteral(importSource.sourceId)
+            ctx.createLiteral(importSource.sourceId)
           ]
         );
         if (spec.type === "default") {
           const module2 = importSource.getSourceTarget();
           if (import_Utils.default.isCompilation(module2)) {
-            requireNode = ctx2.createCallExpression(
-              createStaticReferenceNode(ctx2, null, "Class", "getExportDefault"),
+            requireNode = ctx.createCallExpression(
+              createStaticReferenceNode(ctx, null, "Class", "getExportDefault"),
               [
                 requireNode
               ]
             );
           }
         }
-        const node = ctx2.createVariableDeclaration("const", [
-          ctx2.createVariableDeclarator(
-            ctx2.createIdentifier(spec.local, importSource.stack),
+        const node = ctx.createVariableDeclaration("const", [
+          ctx.createVariableDeclarator(
+            ctx.createIdentifier(spec.local, importSource.stack),
             requireNode,
             importSource.stack
           )
         ]);
         imports.push(node);
       } else if (spec.type === "specifier") {
-        let imported = ctx2.createIdentifier(spec.local);
+        let imported = ctx.createIdentifier(spec.local);
         let local = null;
         if (spec.imported && spec.imported !== spec.local) {
           local = imported;
-          imported = ctx2.createIdentifier(spec.imported);
+          imported = ctx.createIdentifier(spec.imported);
         }
         properties.push(
-          ctx2.createProperty(
+          ctx.createProperty(
             imported,
             local
           )
@@ -1171,13 +1173,13 @@ function createCJSImports(ctx2, importManage) {
       }
     });
     if (properties.length > 0) {
-      const node = ctx2.createVariableDeclaration("const", [
-        ctx2.createVariableDeclarator(
-          ctx2.createObjectPattern(properties),
-          ctx2.createCallExpression(
-            ctx2.createIdentifier("require"),
+      const node = ctx.createVariableDeclaration("const", [
+        ctx.createVariableDeclarator(
+          ctx.createObjectPattern(properties),
+          ctx.createCallExpression(
+            ctx.createIdentifier("require"),
             [
-              ctx2.createLiteral(importSource.sourceId)
+              ctx.createLiteral(importSource.sourceId)
             ]
           ),
           importSource.stack
@@ -1186,11 +1188,11 @@ function createCJSImports(ctx2, importManage) {
       imports.push(node);
     } else if (!(importSource.specifiers.length > 0)) {
       imports.unshift(
-        ctx2.createExpressionStatement(
-          ctx2.createCallExpression(
-            ctx2.createIdentifier("require"),
+        ctx.createExpressionStatement(
+          ctx.createCallExpression(
+            ctx.createIdentifier("require"),
             [
-              ctx2.createLiteral(importSource.sourceId)
+              ctx.createLiteral(importSource.sourceId)
             ]
           )
         )
@@ -1199,23 +1201,23 @@ function createCJSImports(ctx2, importManage) {
   });
   return imports;
 }
-function createESMImports(ctx2, importManage) {
+function createESMImports(ctx, importManage) {
   let imports = [];
   importManage.getAllImportSource().forEach((importSource) => {
     if (importSource.isExportSource)
       return;
     const specifiers = importSource.specifiers.map((spec) => {
       if (spec.type === "default") {
-        return ctx2.createImportSpecifier(spec.local);
+        return ctx.createImportSpecifier(spec.local);
       } else if (spec.type === "specifier") {
-        return ctx2.createImportSpecifier(spec.local, spec.imported);
+        return ctx.createImportSpecifier(spec.local, spec.imported);
       } else if (spec.type === "namespace") {
-        return ctx2.createImportSpecifier(spec.local, null, true);
+        return ctx.createImportSpecifier(spec.local, null, true);
       }
     });
     if (importSource.specifiers.length > 0) {
       imports.push(
-        ctx2.createImportDeclaration(
+        ctx.createImportDeclaration(
           importSource.sourceId,
           specifiers,
           importSource.stack
@@ -1223,7 +1225,7 @@ function createESMImports(ctx2, importManage) {
       );
     } else {
       imports.unshift(
-        ctx2.createImportDeclaration(
+        ctx.createImportDeclaration(
           importSource.sourceId,
           specifiers,
           importSource.stack
@@ -1233,7 +1235,7 @@ function createESMImports(ctx2, importManage) {
   });
   return imports;
 }
-function createCJSExports(ctx2, exportManage, graph) {
+function createCJSExports(ctx, exportManage, graph) {
   let importSpecifiers = /* @__PURE__ */ new Map();
   let imports = [];
   let exports = [];
@@ -1245,7 +1247,7 @@ function createCJSExports(ctx2, exportManage, graph) {
     let importSource = exportSource.importSource;
     let sourceId = importSource ? importSource.sourceId : null;
     if (sourceId) {
-      sourceId = ctx2.createLiteral(sourceId);
+      sourceId = ctx.createLiteral(sourceId);
     }
     let specifiers = [];
     graph.addExport(exportSource);
@@ -1253,8 +1255,8 @@ function createCJSExports(ctx2, exportManage, graph) {
       if (spec.type === "namespace") {
         if (!spec.exported) {
           exportAlls.push(
-            ctx2.createCallExpression(
-              ctx2.createIdentifier("require"),
+            ctx.createCallExpression(
+              ctx.createIdentifier("require"),
               [
                 sourceId
               ],
@@ -1263,10 +1265,10 @@ function createCJSExports(ctx2, exportManage, graph) {
           );
         } else {
           properties.push(
-            ctx2.createProperty(
-              ctx2.createIdentifier(spec.exported),
-              ctx2.createCallExpression(
-                ctx2.createIdentifier("require"),
+            ctx.createProperty(
+              ctx.createIdentifier(spec.exported),
+              ctx.createCallExpression(
+                ctx.createIdentifier("require"),
                 [
                   sourceId
                 ]
@@ -1277,8 +1279,8 @@ function createCJSExports(ctx2, exportManage, graph) {
         }
       } else if (spec.type === "default") {
         properties.push(
-          ctx2.createProperty(
-            ctx2.createIdentifier("default"),
+          ctx.createProperty(
+            ctx.createIdentifier("default"),
             spec.local,
             spec.stack
           )
@@ -1287,9 +1289,9 @@ function createCJSExports(ctx2, exportManage, graph) {
         if (spec.local.type === "VariableDeclaration") {
           spec.local.declarations.map((decl) => {
             properties.push(
-              ctx2.createProperty(
+              ctx.createProperty(
                 decl.id,
-                decl.init || ctx2.createLiteral(null),
+                decl.init || ctx.createLiteral(null),
                 spec.stack
               )
             );
@@ -1297,7 +1299,7 @@ function createCJSExports(ctx2, exportManage, graph) {
         } else if (spec.local.type === "FunctionDeclaration") {
           declares.push(spec.local);
           properties.push(
-            ctx2.createProperty(
+            ctx.createProperty(
               spec.local.key,
               null,
               spec.stack
@@ -1306,23 +1308,23 @@ function createCJSExports(ctx2, exportManage, graph) {
         }
       } else if (spec.type === "specifier") {
         if (sourceId) {
-          let node = ctx2.createProperty(
-            ctx2.createIdentifier(spec.local),
-            ctx2.createIdentifier(spec.exported),
+          let node = ctx.createProperty(
+            ctx.createIdentifier(spec.local),
+            ctx.createIdentifier(spec.exported),
             spec.stack
           );
           properties.push(
-            ctx2.createProperty(
-              ctx2.createIdentifier(spec.exported),
+            ctx.createProperty(
+              ctx.createIdentifier(spec.exported),
               null,
               spec.stack
             )
           );
           specifiers.push(node);
         } else {
-          let node = ctx2.createProperty(
-            ctx2.createIdentifier(spec.exported),
-            ctx2.createIdentifier(spec.local),
+          let node = ctx.createProperty(
+            ctx.createIdentifier(spec.exported),
+            ctx.createIdentifier(spec.local),
             spec.stack
           );
           properties.push(node);
@@ -1339,11 +1341,11 @@ function createCJSExports(ctx2, exportManage, graph) {
   });
   importSpecifiers.forEach((specifiers, sourceId) => {
     imports.push(
-      ctx2.createVariableDeclaration("const", [
-        ctx2.createVariableDeclarator(
-          ctx2.createObjectPattern(specifiers),
-          ctx2.createCallExpression(
-            ctx2.createIdentifier("require"),
+      ctx.createVariableDeclaration("const", [
+        ctx.createVariableDeclarator(
+          ctx.createObjectPattern(specifiers),
+          ctx.createCallExpression(
+            ctx.createIdentifier("require"),
             [
               sourceId
             ]
@@ -1355,50 +1357,50 @@ function createCJSExports(ctx2, exportManage, graph) {
   if (exportAlls.length > 0 && !properties.length) {
     if (exportAlls.length === 1) {
       exports.push(
-        ctx2.createExpressionStatement(
-          ctx2.createAssignmentExpression(
-            ctx2.createChunkExpression("module.exports", false, false),
+        ctx.createExpressionStatement(
+          ctx.createAssignmentExpression(
+            ctx.createChunkExpression("module.exports", false, false),
             exportAlls[0]
           )
         )
       );
     } else {
       let spreads = exportAlls.map((require2) => {
-        return ctx2.createSpreadElement(
-          ctx2.createParenthesizedExpression(
-            ctx2.createLogicalExpression(
+        return ctx.createSpreadElement(
+          ctx.createParenthesizedExpression(
+            ctx.createLogicalExpression(
               require2,
-              ctx2.createObjectExpression(),
+              ctx.createObjectExpression(),
               "||"
             )
           )
         );
       });
       exports.push(
-        ctx2.createExpressionStatement(
-          ctx2.createAssignmentExpression(
-            ctx2.createChunkExpression("module.exports", false, false),
-            ctx2.createObjectExpression(spreads)
+        ctx.createExpressionStatement(
+          ctx.createAssignmentExpression(
+            ctx.createChunkExpression("module.exports", false, false),
+            ctx.createObjectExpression(spreads)
           )
         )
       );
     }
   } else if (!exportAlls.length && properties.length === 1 && properties[0].key.value === "default") {
     exports.push(
-      ctx2.createExpressionStatement(
-        ctx2.createAssignmentExpression(
-          ctx2.createChunkExpression("module.exports", false, false),
+      ctx.createExpressionStatement(
+        ctx.createAssignmentExpression(
+          ctx.createChunkExpression("module.exports", false, false),
           properties[0].init
         )
       )
     );
   } else {
     let spreads = exportAlls.map((require2) => {
-      return ctx2.createSpreadElement(
-        ctx2.createParenthesizedExpression(
-          ctx2.createLogicalExpression(
+      return ctx.createSpreadElement(
+        ctx.createParenthesizedExpression(
+          ctx.createLogicalExpression(
             require2,
-            ctx2.createObjectExpression(),
+            ctx.createObjectExpression(),
             "||"
           )
         )
@@ -1409,17 +1411,17 @@ function createCJSExports(ctx2, exportManage, graph) {
       ...properties
     ];
     exports.push(
-      ctx2.createExpressionStatement(
-        ctx2.createAssignmentExpression(
-          ctx2.createChunkExpression("module.exports", false, false),
-          ctx2.createObjectExpression(items)
+      ctx.createExpressionStatement(
+        ctx.createAssignmentExpression(
+          ctx.createChunkExpression("module.exports", false, false),
+          ctx.createObjectExpression(items)
         )
       )
     );
   }
   return { imports, exports, declares };
 }
-function createESMExports(ctx2, exportManage, graph) {
+function createESMExports(ctx, exportManage, graph) {
   let importSpecifiers = /* @__PURE__ */ new Map();
   let exports = [];
   let imports = [];
@@ -1433,19 +1435,19 @@ function createESMExports(ctx2, exportManage, graph) {
     exportSource.specifiers.forEach((spec) => {
       if (spec.type === "namespace") {
         exports.push(
-          ctx2.createExportAllDeclaration(sourceId, spec.exported, spec.stack)
+          ctx.createExportAllDeclaration(sourceId, spec.exported, spec.stack)
         );
       } else if (spec.type === "default") {
         exports.push(
-          ctx2.createExportDefaultDeclaration(spec.local, spec.stack)
+          ctx.createExportDefaultDeclaration(spec.local, spec.stack)
         );
       } else if (spec.type === "named" && !sourceId) {
         exports.push(
-          ctx2.createExportNamedDeclaration(spec.local, null, [], spec.stack)
+          ctx.createExportNamedDeclaration(spec.local, null, [], spec.stack)
         );
       } else if (spec.type === "specifier") {
         specifiers.push(
-          ctx2.createExportSpecifier(spec.local, spec.exported, spec.stack)
+          ctx.createExportSpecifier(spec.local, spec.exported, spec.stack)
         );
       }
     });
@@ -1458,7 +1460,7 @@ function createESMExports(ctx2, exportManage, graph) {
     }
   });
   importSpecifiers.forEach((specifiers, sourceId) => {
-    exports.push(ctx2.createExportNamedDeclaration(null, sourceId, specifiers));
+    exports.push(ctx.createExportNamedDeclaration(null, sourceId, specifiers));
   });
   return { imports, exports, declares };
 }
@@ -1475,33 +1477,33 @@ function isExternalDependency(externals, source, module2 = null) {
   }
   return false;
 }
-function getMethodOrPropertyAlias(ctx2, stack2, name = null) {
-  if (Cache.has(stack2, "getMethodOrPropertyAlias")) {
-    return Cache.get(stack2, "getMethodOrPropertyAlias");
+function getMethodOrPropertyAlias(ctx, stack, name = null) {
+  if (Cache.has(stack, "getMethodOrPropertyAlias")) {
+    return Cache.get(stack, "getMethodOrPropertyAlias");
   }
-  let result = getMethodAnnotations(stack2, ["alias"]);
+  let result = getMethodAnnotations(stack, ["alias"]);
   let resolevName = name;
   if (result) {
     const [annotation] = result;
-    const value = parseAliasAnnotation(annotation, ctx2.plugin.version, ctx2.options.metadata.versions);
+    const value = parseAliasAnnotation(annotation, ctx.plugin.version, ctx.options.metadata.versions);
     if (value) {
       resolevName = value;
     }
   }
-  Cache.set(stack2, "getMethodOrPropertyAlias", resolevName);
+  Cache.set(stack, "getMethodOrPropertyAlias", resolevName);
   return resolevName;
 }
-function getMethodOrPropertyHook(ctx2, stack2) {
-  if (!stack2)
+function getMethodOrPropertyHook(ctx, stack) {
+  if (!stack)
     return null;
-  if (Cache.has(stack2, "getMethodOrPropertyHook")) {
-    return Cache.get(stack2, "getMethodOrPropertyHook");
+  if (Cache.has(stack, "getMethodOrPropertyHook")) {
+    return Cache.get(stack, "getMethodOrPropertyHook");
   }
-  let result = getMethodAnnotations(stack2, ["hook"]);
+  let result = getMethodAnnotations(stack, ["hook"]);
   let invoke = null;
   if (result.length > 0) {
     let annotation = result[0];
-    result = parseHookAnnotation(annotation, ctx2.plugin.version, ctx2.options.metadata.versions);
+    result = parseHookAnnotation(annotation, ctx.plugin.version, ctx.options.metadata.versions);
     if (result) {
       invoke = [
         result.type,
@@ -1509,52 +1511,52 @@ function getMethodOrPropertyHook(ctx2, stack2) {
       ];
     }
   }
-  Cache.set(stack2, "getMethodOrPropertyHook", invoke);
+  Cache.set(stack, "getMethodOrPropertyHook", invoke);
   return invoke;
 }
-function createJSXAttrHookNode(ctx2, stack2, desc2) {
-  if (!(stack2 && stack2.isMemberProperty && stack2.value && desc2))
+function createJSXAttrHookNode(ctx, stack, desc2) {
+  if (!(stack && stack.isMemberProperty && stack.value && desc2))
     return null;
   const hookAnnot = getMethodOrPropertyHook(desc2);
   if (hookAnnot) {
     let [type, annotation] = hookAnnot;
     let lower = type && String(type).toLowerCase();
-    const hooks = ctx2.options.hooks;
+    const hooks = ctx.options.hooks;
     let createdNode = null;
     if (hooks.createJSXAttrValue) {
-      createdNode = hooks.createJSXAttrValue({ ctx: ctx2, type, jsxAttrNode: stack2, descriptor: desc2, annotation });
+      createdNode = hooks.createJSXAttrValue({ ctx, type, jsxAttrNode: stack, descriptor: desc2, annotation });
     }
     if (!createdNode) {
       if (lower === "compiling:create-route-path") {
-        if (stack2.value && stack2.value.isJSXExpressionContainer) {
-          const value = stack2.value.description();
-          if (value && value.isModule && stack2.isModuleForWebComponent(value)) {
-            let route = getModuleRoutes(value, ["router"], ctx2.options);
+        if (stack.value && stack.value.isJSXExpressionContainer) {
+          const value = stack.value.description();
+          if (value && value.isModule && stack.isModuleForWebComponent(value)) {
+            let route = getModuleRoutes(value, ["router"], ctx.options);
             if (route && route[0]) {
               if (Array.isArray(route))
                 route = route[0];
               if (route.path) {
-                return ctx2.createLiteral(createRoutePath(route));
+                return ctx.createLiteral(createRoutePath(route));
               } else {
                 console.error(`[es-transform] Route missing the 'path' property.`);
               }
             }
-            return ctx2.createLiteral(value.getName("/"));
+            return ctx.createLiteral(value.getName("/"));
           }
         }
         return null;
       }
       if (type) {
-        const node = ctx2.createCallExpression(
-          ctx2.createMemberExpression([
-            ctx2.createThisExpression(stack2),
-            ctx2.createIdentifier("invokeHook")
+        const node = ctx.createCallExpression(
+          ctx.createMemberExpression([
+            ctx.createThisExpression(stack),
+            ctx.createIdentifier("invokeHook")
           ]),
           [
-            ctx2.createLiteral(type),
-            ctx2.createToken(stack2.value),
-            ctx2.createLiteral(stack2.name.value()),
-            ctx2.createLiteral(desc2.module.getName())
+            ctx.createLiteral(type),
+            ctx.createToken(stack.value),
+            ctx.createLiteral(stack.name.value()),
+            ctx.createLiteral(desc2.module.getName())
           ]
         );
         node.hasInvokeHook = true;
@@ -1565,19 +1567,19 @@ function createJSXAttrHookNode(ctx2, stack2, desc2) {
   }
   return null;
 }
-function createStaticReferenceNode(ctx2, stack2, className, method) {
-  return ctx2.createMemberExpression([
-    createModuleReferenceNode(ctx2, stack2, className),
-    ctx2.createIdentifier(method, stack2)
+function createStaticReferenceNode(ctx, stack, className, method) {
+  return ctx.createMemberExpression([
+    createModuleReferenceNode(ctx, stack, className),
+    ctx.createIdentifier(method, stack)
   ]);
 }
-function createModuleReferenceNode(ctx2, stack2, className) {
+function createModuleReferenceNode(ctx, stack, className) {
   let gloablModule = import_Namespace.default.globals.get(className);
   if (gloablModule) {
-    let context = stack2 ? stack2.module || stack2.compilation : null;
-    ctx2.addDepend(gloablModule, context);
-    return ctx2.createIdentifier(
-      ctx2.getModuleReferenceName(gloablModule, context)
+    let context = stack ? stack.module || stack.compilation : null;
+    ctx.addDepend(gloablModule, context);
+    return ctx.createIdentifier(
+      ctx.getModuleReferenceName(gloablModule, context)
     );
   } else {
     throw new Error(`References the '${className}' module is not exists`);
@@ -1642,6 +1644,984 @@ var init_Common = __esm({
     beginNumericRE = /^\d+/;
     allMethods = ["get", "post", "put", "delete", "option", "router"];
     hashCache = /* @__PURE__ */ Object.create(null);
+  }
+});
+
+// node_modules/@easescript/transform/lib/core/Asset.js
+function isAsset(value) {
+  return value ? value instanceof Asset : false;
+}
+function getAssetsManager(AssetFactory) {
+  const records3 = /* @__PURE__ */ new Map();
+  function createAsset(sourceFile, id = null, type = null) {
+    if (!type) {
+      type = import_path3.default.extname(sourceFile);
+      if (type.startsWith(".")) {
+        type = type.substring(1);
+      }
+    } else {
+      type = String(type);
+    }
+    let key = sourceFile + ":" + type;
+    if (id != null) {
+      key = sourceFile + ":" + id + ":" + type;
+    }
+    let asset = records3.get(key);
+    if (!asset) {
+      records3.set(sourceFile, asset = new AssetFactory(sourceFile, type, id));
+    }
+    return asset;
+  }
+  function createStyleAsset(sourceFile, id = null) {
+    return createAsset(sourceFile, id, "style");
+  }
+  function getAsset(sourceFile, id = null, type = "") {
+    let key = sourceFile + ":" + type;
+    if (id) {
+      key = sourceFile + ":" + id + ":" + type;
+    }
+    return records3.get(key);
+  }
+  function getStyleAsset(sourceFile, id = null) {
+    return getAsset(sourceFile, id, "style");
+  }
+  function getAssets() {
+    return Array.from(records3.values());
+  }
+  function setAsset(sourceFile, asset, id = null, type = null) {
+    if (!type) {
+      type = import_path3.default.extname(sourceFile);
+      if (type.startsWith(".")) {
+        type = type.substring(1);
+      }
+    } else {
+      type = String(type);
+    }
+    let key = sourceFile + ":" + type;
+    if (id != null) {
+      key = sourceFile + ":" + id + ":" + type;
+    }
+    records3.set(key, asset);
+  }
+  return {
+    createAsset,
+    createStyleAsset,
+    getStyleAsset,
+    getAsset,
+    setAsset,
+    getAssets
+  };
+}
+var import_path3, import_fs3, import_Utils5, Asset;
+var init_Asset = __esm({
+  "node_modules/@easescript/transform/lib/core/Asset.js"() {
+    import_path3 = __toESM(require("path"));
+    import_fs3 = __toESM(require("fs"));
+    import_Utils5 = __toESM(require("easescript/lib/core/Utils"));
+    Asset = class {
+      #code = "";
+      #type = "";
+      #file = null;
+      #sourcemap = null;
+      #local = null;
+      #imported = null;
+      #sourceId = null;
+      #outfile = null;
+      #id = null;
+      #changed = true;
+      #attrs = null;
+      #initialized = false;
+      constructor(sourceFile, type, id = null) {
+        this.#type = type;
+        this.#file = sourceFile;
+        this.#sourceId = sourceFile;
+        this.#id = id;
+      }
+      get code() {
+        let code = this.#code;
+        if (code)
+          return code;
+        let file = this.file;
+        if (file && import_fs3.default.existsSync(file)) {
+          this.#code = import_fs3.default.readFileSync(file).toString("utf8");
+        }
+        return this.#code;
+      }
+      set code(value) {
+        this.#code = value;
+        this.#changed = true;
+      }
+      get id() {
+        return this.#id;
+      }
+      set id(value) {
+        this.#id = value;
+      }
+      get attrs() {
+        return this.#attrs;
+      }
+      set attrs(value) {
+        this.#attrs = value;
+      }
+      get changed() {
+        return this.#changed;
+      }
+      set changed(value) {
+        this.#changed = value;
+      }
+      get local() {
+        return this.#local;
+      }
+      set local(value) {
+        this.#local = value;
+      }
+      get imported() {
+        return this.#imported;
+      }
+      set imported(value) {
+        this.#imported = value;
+      }
+      get file() {
+        return this.#file;
+      }
+      set file(value) {
+        this.#file = value;
+      }
+      get sourceId() {
+        return this.#sourceId;
+      }
+      set sourceId(value) {
+        this.#sourceId = value;
+      }
+      get type() {
+        return this.#type;
+      }
+      get sourcemap() {
+        return this.#sourcemap;
+      }
+      set sourcemap(value) {
+        this.#sourcemap = value;
+      }
+      get outfile() {
+        return this.#outfile;
+      }
+      set outfile(value) {
+        this.#outfile = value;
+      }
+      initialize(ctx) {
+        if (this.#initialized)
+          return;
+        let outDir = ctx.getOutputDir();
+        let publicDir = ctx.getPublicDir();
+        let file = String(this.file).trim();
+        let sourceFile = file;
+        let filename = null;
+        let folder = ctx.getSourceFileMappingFolder(file + ".assets");
+        if (this.type === "style" && file.includes("?")) {
+          sourceFile = file.split("?")[0];
+          filename = ctx.genUniFileName(file);
+        } else {
+          filename = import_path3.default.basename(sourceFile);
+        }
+        let ext = ctx.getOutputExtName();
+        if (!filename.endsWith(ext)) {
+          filename = import_path3.default.basename(filename, import_path3.default.extname(filename)) + ext;
+        }
+        if (folder) {
+          this.#outfile = import_Utils5.default.normalizePath(import_path3.default.join(outDir, folder, filename));
+        } else {
+          let relativeDir = ctx.plugin.complier.getRelativeWorkspace(sourceFile);
+          if (relativeDir) {
+            relativeDir = import_path3.default.dirname(relativeDir);
+          }
+          this.#outfile = import_Utils5.default.normalizePath(import_path3.default.join(outDir, folder || publicDir, relativeDir, filename));
+        }
+      }
+      async build(ctx) {
+        if (!this.#changed)
+          return;
+        if (ctx.options.emitFile) {
+          let code = this.code;
+          if (ctx.options.module === "cjs") {
+            code = `module.exports=${JSON.stringify(code)};`;
+          } else {
+            code = `export default ${JSON.stringify(code)};`;
+          }
+          this.code = code;
+          ctx.emit(this);
+        }
+        this.#changed = false;
+      }
+    };
+  }
+});
+
+// lib/core/Manifest.js
+var arrayKey, merge, _instance, _Manifest, Manifest, Manifest_default;
+var init_Manifest = __esm({
+  "lib/core/Manifest.js"() {
+    arrayKey = Symbol("array");
+    merge = (target, source) => {
+      if (Array.isArray(target)) {
+        if (Array.isArray(source)) {
+          source.forEach((value, index) => {
+            if (Array.isArray(value) && Array.isArray(target[index])) {
+              merge(target[index], value);
+            } else if (typeof value === "object" && typeof target[index] === "object") {
+              merge(target[index], value);
+            } else if (!target.includes(value)) {
+              target.push(value);
+            }
+          });
+        }
+      } else if (typeof target === "object") {
+        if (typeof source === "object") {
+          Object.keys(source).forEach((key) => {
+            if (Array.isArray(target[key]) && Array.isArray(source[key])) {
+              merge(target[key], source[key]);
+            } else if (typeof target[key] === "object" && typeof source[key] === "object") {
+              merge(target[key], source[key]);
+            } else {
+              target[key] = source[key];
+            }
+          });
+        }
+      }
+      return target;
+    };
+    _Manifest = class {
+      static add(compilation, name, data) {
+        __privateGet(_Manifest, _instance).add(compilation, name, data);
+      }
+      static emit() {
+        return __privateGet(_Manifest, _instance).emit();
+      }
+      static has(file) {
+        return __privateGet(_Manifest, _instance).has(file);
+      }
+      static del(file) {
+        return __privateGet(_Manifest, _instance).del(file);
+      }
+      static isEmpty() {
+        return !(__privateGet(_Manifest, _instance).dataset.size > 0);
+      }
+      static changed() {
+        return __privateGet(_Manifest, _instance).changed;
+      }
+      static get instance() {
+        return __privateGet(_Manifest, _instance);
+      }
+      constructor() {
+        this.dataset = /* @__PURE__ */ new Map();
+        this.changed = false;
+        this.content = "[]";
+      }
+      add(compilation, name, object) {
+        if (!compilation || !name || !object)
+          return;
+        this.changed = true;
+        let group = this.dataset.get(name);
+        if (!group) {
+          this.dataset.set(name, group = /* @__PURE__ */ new Map());
+        }
+        let data = group.get(compilation);
+        if (!data) {
+          group.set(compilation, data = /* @__PURE__ */ new Map());
+          compilation.on("onClear", () => {
+            this.changed = true;
+            data.delete(compilation);
+          });
+        }
+        if (Array.isArray(object)) {
+          const existed = data.get(arrayKey);
+          if (existed) {
+            merge(existed, object);
+          } else {
+            data.set(arrayKey, object);
+          }
+        } else {
+          Object.keys(object).forEach((key) => {
+            const existed = data.get(key);
+            if (existed) {
+              merge(existed, object[key]);
+            } else {
+              data.set(key, object[key]);
+            }
+          });
+        }
+      }
+      update(name, object) {
+        let group = this.dataset.get(name);
+        if (group) {
+          let keys2 = Array.isArray(object) ? [arrayKey] : Object.keys(object);
+          let len = keys2.length;
+          for (let data of group) {
+            for (let index in keys2) {
+              let key = keys2[index];
+              if (data.has(key)) {
+                keys2.splice(index, 1);
+                merge(data.get(key), object[key]);
+                break;
+              }
+            }
+            if (!keys2.length) {
+              break;
+            }
+          }
+          return keys2.length === len;
+        }
+        return false;
+      }
+      has(name) {
+        return this.dataset.has(name);
+      }
+      del(name) {
+        return this.dataset.delete(name);
+      }
+      emit() {
+        if (this.changed) {
+          this.content = this.toString();
+          this.changed = false;
+        }
+        return this.content;
+      }
+      toString() {
+        if (this.dataset.size > 0) {
+          const items = [];
+          const make = (obj, indent2 = 0) => {
+            let tabs = "	".repeat(indent2);
+            let endTabs2 = "	".repeat(indent2 - 1);
+            if (Array.isArray(obj)) {
+              if (!obj.length)
+                return "[]";
+              return `[
+` + obj.map((item) => {
+                return tabs + make(item, indent2 + 1);
+              }).join(`,
+`) + `
+${endTabs2}]`;
+            } else {
+              const type = typeof obj;
+              if (type === "number" || type === "boolean") {
+                return obj;
+              } else if (type === "string") {
+                return `'${obj}'`;
+              }
+              let keys2 = Object.keys(obj);
+              if (!keys2.length)
+                return "[]";
+              return `[
+` + keys2.map((key) => {
+                return `${tabs}'${key}'=>${make(obj[key], indent2 + 1)}`;
+              }).join(`,
+`) + `
+${endTabs2}]`;
+            }
+          };
+          const toItem = (group, indent2) => {
+            const dataitems = Array.from(group.values());
+            const dataGroup = [];
+            let tabs = "	".repeat(indent2);
+            let endTabs2 = "	".repeat(indent2 - 1);
+            dataitems.forEach((data) => {
+              data.forEach((object, key) => {
+                dataGroup.push(`${tabs}'${key}'=>${make(object, indent2 + 1)}`);
+              });
+            });
+            if (!dataGroup.length)
+              return `[]`;
+            return `[
+` + dataGroup.join(",\n") + `
+${endTabs2}]`;
+          };
+          let indent = 3;
+          this.dataset.forEach((group, name) => {
+            let tabs = "	".repeat(indent);
+            items.push(`${tabs}'${name}'=>${toItem(group, indent + 1)}`);
+          });
+          let endTabs = "	".repeat(indent - 1);
+          return `[
+${items.join(",\n")}
+${endTabs}]`;
+        }
+        return `[]`;
+      }
+    };
+    Manifest = _Manifest;
+    _instance = new WeakMap();
+    __privateAdd(Manifest, _instance, new _Manifest());
+    Manifest_default = Manifest;
+  }
+});
+
+// lib/core/Asset.js
+var import_Utils20, import_path7, Asset2;
+var init_Asset2 = __esm({
+  "lib/core/Asset.js"() {
+    init_Asset();
+    import_Utils20 = __toESM(require("easescript/lib/core/Utils"));
+    import_path7 = __toESM(require("path"));
+    init_Common2();
+    Asset2 = class extends Asset {
+      #initialized = false;
+      initialize(ctx) {
+        if (this.#initialized)
+          return;
+        let outDir = ctx.getOutputDir();
+        let publicDir = ctx.getPublicDir();
+        let file = String(this.file).trim();
+        let sourceFile = file;
+        let filename = null;
+        let folder = ctx.getSourceFileMappingFolder(file + ".assets");
+        if (this.type === "style" && file.includes("?")) {
+          sourceFile = file.split("?")[0];
+          filename = ctx.genUniFileName(file);
+        } else {
+          filename = import_path7.default.basename(sourceFile);
+        }
+        if (folder) {
+          if (import_path7.default.isAbsolute(folder)) {
+            this.outfile = import_Utils20.default.normalizePath(import_path7.default.join(folder, filename));
+          } else {
+            this.outfile = import_Utils20.default.normalizePath(import_path7.default.join(outDir, folder, filename));
+          }
+        } else {
+          let relativeDir = ctx.plugin.complier.getRelativeWorkspace(sourceFile);
+          if (relativeDir) {
+            relativeDir = import_path7.default.dirname(relativeDir);
+          }
+          this.outfile = import_Utils20.default.normalizePath(import_path7.default.join(outDir, publicDir, relativeDir, filename));
+        }
+        const vm = ctx.getVModule("asset.Manifest");
+        vm.append(ctx, createUniqueHashId(file), this.outfile);
+      }
+      async build(ctx) {
+        if (!this.changed)
+          return;
+        if (ctx.options.emitFile) {
+          ctx.emit(this);
+        }
+        this.changed = false;
+      }
+    };
+  }
+});
+
+// lib/core/Common.js
+function createStaticReferenceNode2(ctx, stack, className, method) {
+  return ctx.createStaticMemberExpression([
+    createModuleReferenceNode2(ctx, stack, className),
+    ctx.createIdentifier(method, stack)
+  ]);
+}
+function createModuleReferenceNode2(ctx, stack, className) {
+  let gloablModule = import_Namespace8.default.globals.get(className);
+  if (gloablModule) {
+    let context = stack ? stack.module || stack.compilation : null;
+    ctx.addDepend(gloablModule, context);
+    return ctx.createIdentifier(
+      ctx.getModuleReferenceName(gloablModule, context)
+    );
+  } else {
+    throw new Error(`References the '${className}' module is not exists`);
+  }
+}
+function createClassRefsNode(ctx, module2, stack = null) {
+  if (!import_Utils21.default.isModule(module2))
+    return null;
+  let name = null;
+  if (import_Utils21.default.isStack(stack)) {
+    name = stack.isIdentifier && stack.hasLocalDefined() ? stack.value() : ctx.getModuleReferenceName(module2, stack.module || stack.compilation);
+  } else {
+    name = ctx.getModuleReferenceName(module2);
+  }
+  return ctx.createStaticMemberExpression([
+    ctx.createIdentifier(name),
+    ctx.createIdentifier("class")
+  ], stack);
+}
+function createScopeIdNode(ctx, module2) {
+  if (module2 && module2.isModule) {
+    return createClassRefsNode(ctx, module2);
+  }
+  return ctx.createLiteral(null);
+}
+function createComputedPropertyNode(ctx, stack) {
+  return stack.computed ? ctx.createToken(stack.property) : ctx.createLiteral(stack.property.value());
+}
+function createAddressRefsNode(ctx, argument) {
+  let node = ctx.createNode("AddressReferenceExpression");
+  node.argument = argument;
+  return node;
+}
+function createArrayAddressRefsNode(ctx, stack, desc2, name, nameNode) {
+  if (!desc2)
+    return;
+  let assignAddress = import_Utils21.default.isStack(desc2) && desc2.assignItems && ctx.getAssignAddressRef(desc2);
+  if (assignAddress) {
+    let name2 = assignAddress.getName(desc2);
+    let rd = assignAddress.createIndexName(stack, desc2);
+    if (rd) {
+      return ctx.createStaticMemberExpression([
+        ctx.createVarIdentifier(name2),
+        ctx.createVarIdentifier(rd)
+      ]);
+    }
+  }
+  return nameNode || ctx.createVarIdentifier(name);
+}
+function createExpressionTransformBooleanValueNode(ctx, stack, assignName = null, type = null, originType = null, tokenValue = null) {
+  if (stack.isLogicalExpression || stack.isUnaryExpression || stack.isBinaryExpression) {
+    return ctx.createToken(stack);
+  }
+  if (stack.isParenthesizedExpression) {
+    return ctx.createParenthesizedExpression(
+      createExpressionTransformBooleanValueNode(
+        ctx,
+        stack.expression,
+        assignName,
+        type,
+        originType,
+        tokenValue
+      )
+    );
+  }
+  type = type || stack.type();
+  originType = originType || ctx.getAvailableOriginType(type);
+  if (originType && originType.toLowerCase() === "array") {
+    let value = tokenValue || ctx.createToken(stack);
+    if (assignName) {
+      value = ctx.createAssignmentExpression(
+        ctx.createVarIdentifier(assignName),
+        value
+      );
+    }
+    return ctx.createCallExpression(
+      ctx.createIdentifier("is_array"),
+      [value]
+    );
+  } else if (type.isAnyType || type.isUnionType || type.isIntersectionType || type.isLiteralObjectType) {
+    let value = tokenValue || ctx.createToken(stack);
+    if (assignName) {
+      value = ctx.createAssignmentExpression(
+        ctx.createVarIdentifier(assignName),
+        value
+      );
+    }
+    return ctx.createCallExpression(
+      createStaticReferenceNode2(ctx, stack, "System", "toBoolean"),
+      [value]
+    );
+  }
+  return tokenValue || ctx.createToken(stack);
+}
+function createExpressionTransformTypeNode(ctx, typename, expression2, parenthese = false) {
+  let node = ctx.createNode("TypeTransformExpression");
+  node.typeName = typename;
+  node.expression = expression2;
+  if (parenthese) {
+    return ctx.createParenthesizedExpression(node);
+  }
+  return node;
+}
+function createCommentsNode(ctx, stack, node) {
+  const manifests = ctx.options.manifests || {};
+  const enable = ctx.options.comments;
+  if (stack.module && (enable || manifests.comments)) {
+    const result = stack.parseComments("Block");
+    if (result) {
+      if (manifests.comments && result.meta) {
+        let kind = "class";
+        if (stack.isMethodSetterDefinition) {
+          kind = "setter";
+        } else if (stack.isMethodGetterDefinition) {
+          kind = "getter";
+        } else if (stack.isMethodDefinition) {
+          kind = "method";
+        } else if (stack.isPropertyDefinition) {
+          kind = "property";
+        }
+        const id = ctx.getModuleNamespace(stack.module, stack.module.id);
+        Manifest_default.add(stack.compilation, "comments", {
+          [id]: { [node.key.value + ":" + kind]: result.meta }
+        });
+      }
+      if (enable && result.comments.length > 0) {
+        return ctx.createChunkExpression(["/**", ...result.comments, "**/"].join("\n"), false);
+      }
+    }
+  }
+  return null;
+}
+function createESMImports2(ctx, importManage) {
+  let imports = [];
+  importManage.getAllImportSource().forEach((importSource) => {
+    if (importSource.isExportSource)
+      return;
+    let target = importSource.getSourceTarget();
+    if (isAsset(target)) {
+      return;
+    }
+    let isExpre = import_Utils21.default.isCompilation(target);
+    let isDefault = false;
+    if (isExpre) {
+      let targetGraph = ctx.graphs.getBuildGraph(target);
+      if (targetGraph) {
+        let exports = targetGraph.exports;
+        if (exports && exports.size === 1) {
+          isDefault = Array.from(exports.values()).some((exportSource) => {
+            return exportSource.specifiers.length === 1 && exportSource.specifiers[0].type === "default";
+          });
+        }
+      }
+    }
+    const size = importSource.specifiers.length;
+    const specifiers = importSource.specifiers.map((spec) => {
+      if (spec.type === "default") {
+        if (size === 1 && isDefault) {
+          return ctx.createImportSpecifier(spec.local, null, true);
+        } else {
+          return ctx.createImportSpecifier(spec.local);
+        }
+      } else if (spec.type === "specifier") {
+        return ctx.createImportSpecifier(spec.local, spec.imported);
+      } else if (spec.type === "namespace") {
+        return ctx.createImportSpecifier(spec.local, null, true);
+      }
+    });
+    const node = ctx.createImportDeclaration(
+      importSource.sourceId,
+      specifiers,
+      isExpre,
+      target,
+      imports
+    );
+    if (node) {
+      imports.push(ctx.createExpressionStatement(node));
+    }
+  });
+  return imports;
+}
+function createESMExports2(ctx, exportManage, graph) {
+  let importSpecifiers = /* @__PURE__ */ new Map();
+  let exports = [];
+  let imports = [];
+  let declares = [];
+  let exportSets = new Set(exportManage.getAllExportSource());
+  let properties = [];
+  let spreads = [];
+  exportSets.forEach((exportSource) => {
+    let importSource = exportSource.importSource;
+    let sourceId = importSource ? importSource.sourceId : null;
+    let specifiers = [];
+    let refs = null;
+    let isDefault = false;
+    graph.addExport(exportSource);
+    if (sourceId) {
+      let target = importSource.getSourceTarget();
+      let isExpre = import_Utils21.default.isCompilation(target);
+      refs = import_path8.default.basename(ctx.genUniFileName(sourceId)).replaceAll(".", "_");
+      refs = ctx.getGlobalRefName(null, "_" + refs);
+      let importNode = ctx.createImportDeclaration(
+        sourceId,
+        [ctx.createImportSpecifier(refs)],
+        isExpre,
+        target
+      );
+      if (importNode) {
+        imports.push(
+          ctx.createExpressionStatement(
+            importNode
+          )
+        );
+      }
+      if (isExpre) {
+        let targetGraph = ctx.graphs.getBuildGraph(target);
+        if (targetGraph) {
+          let exports2 = targetGraph.exports;
+          if (exports2 && exports2.size === 1) {
+            isDefault = Array.from(exports2.values()).some((exportSource2) => {
+              return exportSource2.specifiers.length === 1 && exportSource2.specifiers[0].type === "default";
+            });
+          }
+        }
+      }
+    }
+    exportSource.specifiers.forEach((spec) => {
+      if (spec.type === "namespace") {
+        if (spec.exported) {
+          properties.push(
+            ctx.createProperty(
+              ctx.createLiteral(spec.exported),
+              ctx.createVarIdentifier(refs)
+            )
+          );
+        } else if (refs) {
+          if (isDefault) {
+            spreads.push(ctx.createObjectExpression(
+              ctx.createProperty(
+                ctx.createLiteral("default"),
+                ctx.createVarIdentifier(refs)
+              )
+            ));
+          } else {
+            spreads.push(ctx.createVarIdentifier(refs));
+          }
+        }
+      } else if (spec.type === "default") {
+        properties.push(
+          ctx.createProperty(
+            ctx.createLiteral("default"),
+            spec.local
+          )
+        );
+      } else if (spec.type === "named" && !sourceId) {
+        if (spec.local.type === "VariableDeclaration") {
+          spec.local.declarations.map((decl) => {
+            properties.push(
+              ctx.createProperty(
+                ctx.createLiteral(decl.id.value),
+                decl.init || ctx.createLiteral(null)
+              )
+            );
+          });
+        } else if (spec.local.type === "FunctionDeclaration") {
+          spec.local.type = "FunctionExpression";
+          properties.push(
+            ctx.createProperty(
+              ctx.createLiteral(spec.local.key.value),
+              spec.local
+            )
+          );
+        }
+      } else if (spec.type === "specifier") {
+        if (sourceId) {
+          let node = [
+            refs,
+            spec.local,
+            spec.exported
+          ];
+          properties.push(
+            ctx.createProperty(
+              ctx.createLiteral(spec.local),
+              ctx.createVarIdentifier(spec.exported || spec.local)
+            )
+          );
+          specifiers.push(node);
+        } else {
+          properties.push(ctx.createProperty(
+            ctx.createLiteral(spec.exported),
+            ctx.createVarIdentifier(spec.local),
+            spec.stack
+          ));
+        }
+      }
+    });
+    if (specifiers.length > 0) {
+      let dataset = importSpecifiers.get(sourceId);
+      if (!dataset) {
+        importSpecifiers.set(sourceId, dataset = []);
+      }
+      dataset.push(...specifiers);
+    }
+  });
+  importSpecifiers.forEach((specifiers) => {
+    let [refs, local, exported] = specifiers;
+    declares.push(ctx.createExpressionStatement(
+      ctx.createAssignmentExpression(
+        ctx.createVarIdentifier(exported || local),
+        ctx.createBinaryExpression(
+          ctx.createComputeMemberExpression([
+            ctx.createIdentifier(refs),
+            ctx.createLiteral(local)
+          ]),
+          ctx.createLiteral(null),
+          "??"
+        )
+      )
+    ));
+  });
+  if (properties.length > 0) {
+    if (properties.length === 1 && properties[0].key.value === "default" && !spreads.length) {
+      exports.push(
+        ctx.createReturnStatement(properties[0].init)
+      );
+    } else {
+      let object = ctx.createObjectExpression(properties);
+      if (spreads.length > 0) {
+        let args = spreads.map((item) => ctx.createConditionalExpression(
+          ctx.createCallExpression(
+            ctx.createIdentifier("is_array"),
+            [
+              item
+            ]
+          ),
+          item,
+          ctx.createObjectExpression()
+        ));
+        object = ctx.createCallExpression(
+          ctx.createIdentifier("array_merge"),
+          [
+            ...args,
+            object
+          ]
+        );
+      }
+      exports.push(
+        ctx.createReturnStatement(object)
+      );
+    }
+  }
+  return { imports, exports, declares };
+}
+function createEmbedAnnotationNode2(ctx, annot, stack) {
+  let result = parseUrlAnnotation(ctx, annot);
+  if (result.length > 0) {
+    let items = result.map((item) => {
+      return ctx.createCallExpression(
+        createStaticReferenceNode2(ctx, stack, "asset.Manifest", "get"),
+        [
+          ctx.createLiteral(createUniqueHashId(item.resolve))
+        ]
+      );
+    });
+    if (items.length > 1) {
+      return ctx.createArrayExpression(items);
+    } else {
+      return items[0];
+    }
+  }
+  return ctx.createLiteral("");
+}
+function createUrlAnnotationNode2(ctx, stack) {
+  let result = parseUrlAnnotation(ctx, stack);
+  if (result.length > 0) {
+    let items = result.map((item) => {
+      return ctx.createCallExpression(
+        createStaticReferenceNode2(ctx, stack, "asset.Manifest", "path"),
+        [
+          ctx.createLiteral(createUniqueHashId(item.resolve))
+        ]
+      );
+    });
+    if (items.length > 1) {
+      return ctx.createArrayExpression(items);
+    } else {
+      return items[0];
+    }
+  }
+  return ctx.createLiteral("");
+}
+function createReadfileAnnotationNode2(ctx, annot, stack) {
+  const result = parseReadfileAnnotation(ctx, annot);
+  if (!result)
+    return null;
+  const addDeps = (source, local) => {
+    source = ctx.getSourceFileMappingFolder(source) || source;
+    let importSource = ctx.addImport(source, local);
+    importSource.setSourceTarget();
+  };
+  const fileMap = {};
+  const localeCxt = result.dir.toLowerCase();
+  const getParentFile = (pid) => {
+    if (fileMap[pid]) {
+      return fileMap[pid];
+    }
+    if (localeCxt !== pid && pid.includes(localeCxt)) {
+      return getParentFile(import_path8.default.dirname(pid));
+    }
+    return null;
+  };
+  const dataset = [];
+  const namedMap = /* @__PURE__ */ new Set();
+  const only = result.only;
+  result.files.forEach((file) => {
+    const pid = import_path8.default.dirname(file).toLowerCase();
+    const named = import_path8.default.basename(file, import_path8.default.extname(file));
+    const id = (pid + "/" + named).toLowerCase();
+    const filepath2 = result.relative ? ctx.compiler.getRelativeWorkspacePath(file) : file;
+    let item = {
+      path: filepath2,
+      isFile: import_fs6.default.statSync(file).isFile()
+    };
+    if (item.isFile && result.load) {
+      let data = "";
+      if (file.endsWith(".env")) {
+        const content = dotenv.parse(import_fs6.default.readFileSync(file));
+        dotenvExpand.expand({ parsed: content });
+        data = JSON.stringify(content);
+      } else {
+        if (result.lazy) {
+          data = `include('${file}')`;
+        } else {
+          namedMap.add(file);
+          data = ctx.getGlobalRefName(annot, "_" + named.replace(/[\.\-]+/g, "_") + namedMap.size);
+          addDeps(file, data);
+        }
+      }
+      item.content = data;
+    } else if (result.source) {
+      item.content = JSON.stringify(import_fs6.default.readFileSync(file));
+    }
+    const parent = getParentFile(pid);
+    if (parent) {
+      const children = parent.children || (parent.children = []);
+      children.push(item);
+    } else {
+      fileMap[id + import_path8.default.extname(file)] = item;
+      dataset.push(item);
+    }
+  });
+  const make = (list) => {
+    return list.map((object) => {
+      if (only) {
+        return object.content ? ctx.createChunkExpression(object.content) : ctx.createLiteral(null);
+      }
+      const properties = [
+        ctx.createProperty(
+          ctx.createIdentifier("path"),
+          ctx.createLiteral(object.path)
+        )
+      ];
+      if (object.isFile) {
+        properties.push(ctx.createProperty(ctx.createIdentifier("isFile"), ctx.createLiteral(true)));
+      }
+      if (object.content) {
+        properties.push(ctx.createProperty(ctx.createIdentifier("content"), ctx.createChunkExpression(object.content)));
+      }
+      if (object.children) {
+        properties.push(ctx.createProperty(ctx.createIdentifier("children"), ctx.createArrayExpression(make(object.children))));
+      }
+      return ctx.createObjectExpression(properties);
+    });
+  };
+  return ctx.createArrayExpression(make(dataset));
+}
+function createMainAnnotationNode2(ctx, stack) {
+  if (!stack || !stack.isMethodDefinition)
+    return;
+  const main = Array.isArray(stack.annotations) ? stack.annotations.find((stack2) => stack2.getLowerCaseName() === "main") : null;
+  if (!main)
+    return;
+  let callMain = ctx.createCallExpression(
+    ctx.createStaticMemberExpression([
+      ctx.createIdentifier(stack.module.id),
+      ctx.createIdentifier(stack.key.value())
+    ])
+  );
+  return ctx.createExpressionStatement(callMain);
+}
+var import_path8, import_fs6, import_Namespace8, import_Utils21;
+var init_Common2 = __esm({
+  "lib/core/Common.js"() {
+    import_path8 = __toESM(require("path"));
+    import_fs6 = __toESM(require("fs"));
+    import_Namespace8 = __toESM(require("easescript/lib/core/Namespace"));
+    import_Utils21 = __toESM(require("easescript/lib/core/Utils"));
+    init_Manifest();
+    init_Common();
+    init_Asset2();
+    init_Common();
   }
 });
 
@@ -2052,7 +3032,7 @@ var require_Generator = __commonJS({
               this.withSpace();
             }
             if (token.static) {
-              this.make(token.static);
+              this.withString("static");
               this.withSpace();
             }
             if (token.modifier) {
@@ -2273,6 +3253,24 @@ var require_Generator = __commonJS({
             this.withString("=>");
             this.make(token.value);
             break;
+          case "EnumProperty":
+            this.newLine();
+            if (token.comments) {
+              this.make(token.comments);
+              this.newLine();
+            }
+            if (token.modifier) {
+              this.make(token.modifier);
+              this.withSpace();
+            }
+            this.withString("const");
+            this.withSpace();
+            this.make(token.key);
+            this.withString("=");
+            this.make(token.init);
+            this.withSemicolon();
+            this.newLine();
+            break;
           case "PropertyDefinition":
             this.newLine();
             if (token.comments) {
@@ -2280,7 +3278,7 @@ var require_Generator = __commonJS({
               this.newLine();
             }
             if (token.static) {
-              this.make(token.static);
+              this.withString("static");
               this.withSpace();
             }
             if (token.modifier) {
@@ -2430,6 +3428,10 @@ var require_Generator = __commonJS({
           case "VariableDeclaration":
             if (!token.inFor)
               this.newLine();
+            if (token.kind === "static") {
+              this.withString("static");
+              this.withSpace();
+            }
             this.withSequence(token.declarations);
             if (!token.inFor) {
               this.withSemicolon();
@@ -2538,34 +3540,13 @@ var require_Generator = __commonJS({
               this.make(item);
             });
             break;
-          case "DeclaratorDeclaration":
-            this.genDeclarationClass(token);
-            break;
           case "EnumDeclaration":
+          case "DeclaratorDeclaration":
+            break;
           case "PackageDeclaration":
           case "Program":
             token.body.forEach((item) => this.make(item));
         }
-      }
-      genDeclarationClass(token) {
-        if (token.comments) {
-          this.make(token.comments);
-          this.newLine();
-        }
-        if (token.namespace) {
-          this.withString("namespace");
-          this.withSpace();
-          this.make(token.namespace);
-          this.withSemicolon();
-          this.newLine();
-        }
-        token.imports.forEach((item) => {
-          this.make(item);
-        });
-        token.using.forEach((item) => {
-          this.make(item);
-        });
-        token.body.forEach((item) => this.make(item));
       }
       genClass(token) {
         this.newLine();
@@ -2601,13 +3582,7 @@ var require_Generator = __commonJS({
           this.withSpace();
           this.withSequence(token.implements);
         }
-        this.withBraceL();
-        this.newBlock();
-        this.newLine();
-        token.body.forEach((item) => this.make(item));
-        this.endBlock();
-        this.newLine();
-        this.withBraceR();
+        this.make(token.body);
       }
       genSql(token) {
         this.newLine();
@@ -2645,586 +3620,15 @@ var require_Generator = __commonJS({
   }
 });
 
-// lib/core/Manifest.js
-var arrayKey, merge, _instance, _Manifest, Manifest, Manifest_default;
-var init_Manifest = __esm({
-  "lib/core/Manifest.js"() {
-    arrayKey = Symbol("array");
-    merge = (target, source) => {
-      if (Array.isArray(target)) {
-        if (Array.isArray(source)) {
-          source.forEach((value, index) => {
-            if (Array.isArray(value) && Array.isArray(target[index])) {
-              merge(target[index], value);
-            } else if (typeof value === "object" && typeof target[index] === "object") {
-              merge(target[index], value);
-            } else if (!target.includes(value)) {
-              target.push(value);
-            }
-          });
-        }
-      } else if (typeof target === "object") {
-        if (typeof source === "object") {
-          Object.keys(source).forEach((key) => {
-            if (Array.isArray(target[key]) && Array.isArray(source[key])) {
-              merge(target[key], source[key]);
-            } else if (typeof target[key] === "object" && typeof source[key] === "object") {
-              merge(target[key], source[key]);
-            } else {
-              target[key] = source[key];
-            }
-          });
-        }
-      }
-      return target;
-    };
-    _Manifest = class {
-      static add(compilation, name, data) {
-        __privateGet(_Manifest, _instance).add(compilation, name, data);
-      }
-      static emit() {
-        return __privateGet(_Manifest, _instance).emit();
-      }
-      static has(file) {
-        return __privateGet(_Manifest, _instance).has(file);
-      }
-      static del(file) {
-        return __privateGet(_Manifest, _instance).del(file);
-      }
-      static isEmpty() {
-        return !(__privateGet(_Manifest, _instance).dataset.size > 0);
-      }
-      static changed() {
-        return __privateGet(_Manifest, _instance).changed;
-      }
-      static get instance() {
-        return __privateGet(_Manifest, _instance);
-      }
-      constructor() {
-        this.dataset = /* @__PURE__ */ new Map();
-        this.changed = false;
-        this.content = "[]";
-      }
-      add(compilation, name, object) {
-        if (!compilation || !name || !object)
-          return;
-        this.changed = true;
-        let group = this.dataset.get(name);
-        if (!group) {
-          this.dataset.set(name, group = /* @__PURE__ */ new Map());
-        }
-        let data = group.get(compilation);
-        if (!data) {
-          group.set(compilation, data = /* @__PURE__ */ new Map());
-          compilation.on("onClear", () => {
-            this.changed = true;
-            data.delete(compilation);
-          });
-        }
-        if (Array.isArray(object)) {
-          const existed = data.get(arrayKey);
-          if (existed) {
-            merge(existed, object);
-          } else {
-            data.set(arrayKey, object);
-          }
-        } else {
-          Object.keys(object).forEach((key) => {
-            const existed = data.get(key);
-            if (existed) {
-              merge(existed, object[key]);
-            } else {
-              data.set(key, object[key]);
-            }
-          });
-        }
-      }
-      update(name, object) {
-        let group = this.dataset.get(name);
-        if (group) {
-          let keys2 = Array.isArray(object) ? [arrayKey] : Object.keys(object);
-          let len = keys2.length;
-          for (let data of group) {
-            for (let index in keys2) {
-              let key = keys2[index];
-              if (data.has(key)) {
-                keys2.splice(index, 1);
-                merge(data.get(key), object[key]);
-                break;
-              }
-            }
-            if (!keys2.length) {
-              break;
-            }
-          }
-          return keys2.length === len;
-        }
-        return false;
-      }
-      has(name) {
-        return this.dataset.has(name);
-      }
-      del(name) {
-        return this.dataset.delete(name);
-      }
-      emit() {
-        if (this.changed) {
-          this.content = this.toString();
-          this.changed = false;
-        }
-        return this.content;
-      }
-      toString() {
-        if (this.dataset.size > 0) {
-          const items = [];
-          const make = (obj, indent2 = 0) => {
-            let tabs = "	".repeat(indent2);
-            let endTabs2 = "	".repeat(indent2 - 1);
-            if (Array.isArray(obj)) {
-              if (!obj.length)
-                return "[]";
-              return `[
-` + obj.map((item) => {
-                return tabs + make(item, indent2 + 1);
-              }).join(`,
-`) + `
-${endTabs2}]`;
-            } else {
-              const type = typeof obj;
-              if (type === "number" || type === "boolean") {
-                return obj;
-              } else if (type === "string") {
-                return `'${obj}'`;
-              }
-              let keys2 = Object.keys(obj);
-              if (!keys2.length)
-                return "[]";
-              return `[
-` + keys2.map((key) => {
-                return `${tabs}'${key}'=>${make(obj[key], indent2 + 1)}`;
-              }).join(`,
-`) + `
-${endTabs2}]`;
-            }
-          };
-          const toItem = (group, indent2) => {
-            const dataitems = Array.from(group.values());
-            const dataGroup = [];
-            let tabs = "	".repeat(indent2);
-            let endTabs2 = "	".repeat(indent2 - 1);
-            dataitems.forEach((data) => {
-              data.forEach((object, key) => {
-                dataGroup.push(`${tabs}'${key}'=>${make(object, indent2 + 1)}`);
-              });
-            });
-            if (!dataGroup.length)
-              return `[]`;
-            return `[
-` + dataGroup.join(",\n") + `
-${endTabs2}]`;
-          };
-          let indent = 3;
-          this.dataset.forEach((group, name) => {
-            let tabs = "	".repeat(indent);
-            items.push(`${tabs}'${name}'=>${toItem(group, indent + 1)}`);
-          });
-          let endTabs = "	".repeat(indent - 1);
-          return `[
-${items.join(",\n")}
-${endTabs}]`;
-        }
-        return `[]`;
-      }
-    };
-    Manifest = _Manifest;
-    _instance = new WeakMap();
-    __privateAdd(Manifest, _instance, new _Manifest());
-    Manifest_default = Manifest;
-  }
-});
-
-// lib/core/Common.js
-function createStaticReferenceNode2(ctx2, stack2, className, method) {
-  return ctx2.createStaticMemberExpression([
-    createModuleReferenceNode2(ctx2, stack2, className),
-    ctx2.createIdentifier(method, stack2)
-  ]);
-}
-function createModuleReferenceNode2(ctx2, stack2, className) {
-  let gloablModule = import_Namespace9.default.globals.get(className);
-  if (gloablModule) {
-    let context = stack2 ? stack2.module || stack2.compilation : null;
-    ctx2.addDepend(gloablModule, context);
-    return ctx2.createIdentifier(
-      ctx2.getModuleReferenceName(gloablModule, context)
-    );
-  } else {
-    throw new Error(`References the '${className}' module is not exists`);
-  }
-}
-function createClassRefsNode(ctx2, module2, stack2 = null) {
-  if (!import_Utils19.default.isModule(module2))
-    return null;
-  let name = null;
-  if (import_Utils19.default.isStack(stack2)) {
-    name = stack2.isIdentifier && stack2.hasLocalDefined() ? stack2.value() : ctx2.getModuleReferenceName(module2, stack2.module || stack2.compilation);
-  } else {
-    name = ctx2.getModuleReferenceName(module2);
-  }
-  return ctx2.createStaticMemberExpression([
-    ctx2.createIdentifier(name),
-    ctx2.createIdentifier("class")
-  ], stack2);
-}
-function createScopeIdNode(ctx2, module2) {
-  if (module2 && module2.isModule) {
-    return createClassRefsNode(ctx2, module2);
-  }
-  return ctx2.createLiteral(null);
-}
-function createComputedPropertyNode(ctx2, stack2) {
-  return stack2.computed ? ctx2.createToken(stack2.property) : ctx2.createLiteral(stack2.property.value());
-}
-function createAddressRefsNode(ctx2, argument) {
-  let node = ctx2.createNode("AddressReferenceExpression");
-  node.argument = argument;
-  return node;
-}
-function createArrayAddressRefsNode(ctx2, desc2, name, nameNode) {
-  if (!desc2)
-    return;
-  let assignAddress = import_Utils19.default.isStack(desc2) && desc2.assignItems && ctx2.getAssignAddressRef(desc2);
-  if (assignAddress) {
-    let name2 = assignAddress.getName(desc2);
-    let rd = assignAddress.createIndexName(desc2);
-    if (rd) {
-      return ctx2.createStaticMemberExpression([
-        ctx2.createVarIdentifier(name2),
-        ctx2.createVarIdentifier(rd)
-      ]);
-    }
-  }
-  return nameNode || ctx2.createVarIdentifier(name);
-}
-function createExpressionTransformBooleanValueNode(ctx2, stack2, assignName = null, type = null, originType = null, tokenValue = null) {
-  if (stack2.isLogicalExpression || stack2.isUnaryExpression || stack2.isBinaryExpression) {
-    return ctx2.createToken(stack2);
-  }
-  if (stack2.isParenthesizedExpression) {
-    return ctx2.createParenthesizedExpression(
-      createExpressionTransformBooleanValueNode(
-        ctx2,
-        stack2.expression,
-        assignName,
-        type,
-        originType,
-        tokenValue
-      )
-    );
-  }
-  type = type || stack2.type();
-  originType = originType || ctx2.getAvailableOriginType(type);
-  if (originType && originType.toLowerCase() === "array") {
-    let value = tokenValue || ctx2.createToken(stack2);
-    if (assignName) {
-      value = ctx2.createAssignmentExpression(
-        ctx2.createVarIdentifier(assignName),
-        value
-      );
-    }
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("is_array"),
-      [value]
-    );
-  } else if (type.isAnyType || type.isUnionType || type.isIntersectionType || type.isLiteralObjectType) {
-    let value = tokenValue || ctx2.createToken(stack2);
-    if (assignName) {
-      value = ctx2.createAssignmentExpression(
-        ctx2.createVarIdentifier(assignName),
-        value
-      );
-    }
-    return ctx2.createCallExpression(
-      createStaticReferenceNode2(ctx2, stack2, "System", "toBoolValue"),
-      [value]
-    );
-  }
-  return tokenValue || ctx2.createToken(stack2);
-}
-function createExpressionTransformTypeNode(ctx2, typename, expression2, parenthese = false) {
-  let node = ctx2.createNode("TypeTransformExpression");
-  node.typeName = typename;
-  node.expression = expression2;
-  if (parenthese) {
-    return ctx2.createParenthesizedExpression(node);
-  }
-  return node;
-}
-function createDocumentScopeId(context, source) {
-  if (!context || !source || !context.file)
-    return null;
-  let isModule3 = import_Utils19.default.isModule(context);
-  const file = isModule3 ? context.file + "?id=" + context.getName() : context.file;
-  const key = isModule3 ? file + "&scope=" + source : file + "?scope=" + source;
-  return createUniqueHashId(key);
-}
-function createCommentsNode(ctx2, stack2, node) {
-  const manifests = ctx2.options.manifests || {};
-  const enable = ctx2.options.comments;
-  if (stack2.module && (enable || manifests.comments)) {
-    const result = stack2.parseComments("Block");
-    if (result) {
-      if (manifests.comments && result.meta) {
-        let kind = "class";
-        if (stack2.isMethodSetterDefinition) {
-          kind = "setter";
-        } else if (stack2.isMethodGetterDefinition) {
-          kind = "getter";
-        } else if (stack2.isMethodDefinition) {
-          kind = "method";
-        } else if (stack2.isPropertyDefinition) {
-          kind = "property";
-        }
-        const id = ctx2.getModuleNamespace(stack2.module, stack2.module.id, false);
-        Manifest_default.add(stack2.compilation, "comments", {
-          [id]: { [node.key.value + ":" + kind]: result.meta }
-        });
-      }
-      if (enable && result.comments.length > 0) {
-        return ctx2.createChunkExpression(["/**", ...result.comments, "**/"].join("\n"), false);
-      }
-    }
-  }
-  return null;
-}
-function createESMImports2(ctx2, importManage) {
-  let imports = [];
-  importManage.getAllImportSource().forEach((importSource) => {
-    if (importSource.isExportSource)
-      return;
-    let target = importSource.getSourceTarget();
-    let isExpre = import_Utils19.default.isCompilation(target);
-    let isDefault = false;
-    if (isExpre) {
-      let targetGraph = ctx2.graphs.getBuildGraph(target);
-      if (targetGraph) {
-        let exports = targetGraph.exports;
-        if (exports && exports.size === 1) {
-          isDefault = Array.from(exports.values()).some((exportSource) => {
-            return exportSource.specifiers.length === 1 && exportSource.specifiers[0].type === "default";
-          });
-        }
-      }
-    }
-    const size = importSource.specifiers.length;
-    const specifiers = importSource.specifiers.map((spec) => {
-      if (spec.type === "default") {
-        if (size === 1 && isDefault) {
-          return ctx2.createImportSpecifier(spec.local, null, true);
-        } else {
-          return ctx2.createImportSpecifier(spec.local);
-        }
-      } else if (spec.type === "specifier") {
-        return ctx2.createImportSpecifier(spec.local, spec.imported);
-      } else if (spec.type === "namespace") {
-        return ctx2.createImportSpecifier(spec.local, null, true);
-      }
-    });
-    imports.push(ctx2.createExpressionStatement(
-      ctx2.createImportDeclaration(
-        importSource.sourceId,
-        specifiers,
-        isExpre
-      )
-    ));
-  });
-  return imports;
-}
-function createESMExports2(ctx2, exportManage, graph) {
-  let importSpecifiers = /* @__PURE__ */ new Map();
-  let exports = [];
-  let imports = [];
-  let declares = [];
-  let exportSets = new Set(exportManage.getAllExportSource());
-  let properties = [];
-  let spreads = [];
-  exportSets.forEach((exportSource) => {
-    let importSource = exportSource.importSource;
-    let sourceId = importSource ? importSource.sourceId : null;
-    let specifiers = [];
-    let refs = null;
-    let isDefault = false;
-    graph.addExport(exportSource);
-    if (sourceId) {
-      let target = importSource.getSourceTarget();
-      let isExpre = import_Utils19.default.isCompilation(target);
-      refs = import_path8.default.basename(ctx2.genUniFileName(sourceId)).replaceAll(".", "_");
-      refs = ctx2.getGlobalRefName(null, "_" + refs);
-      imports.push(
-        ctx2.createExpressionStatement(
-          ctx2.createImportDeclaration(sourceId, [ctx2.createImportSpecifier(refs)], isExpre)
-        )
-      );
-      if (isExpre) {
-        let targetGraph = ctx2.graphs.getBuildGraph(target);
-        if (targetGraph) {
-          let exports2 = targetGraph.exports;
-          if (exports2 && exports2.size === 1) {
-            isDefault = Array.from(exports2.values()).some((exportSource2) => {
-              return exportSource2.specifiers.length === 1 && exportSource2.specifiers[0].type === "default";
-            });
-          }
-        }
-      }
-    }
-    exportSource.specifiers.forEach((spec) => {
-      if (spec.type === "namespace") {
-        if (spec.exported) {
-          properties.push(
-            ctx2.createProperty(
-              ctx2.createLiteral(spec.exported),
-              ctx2.createVarIdentifier(refs)
-            )
-          );
-        } else if (refs) {
-          if (isDefault) {
-            spreads.push(ctx2.createObjectExpression(
-              ctx2.createProperty(
-                ctx2.createLiteral("default"),
-                ctx2.createVarIdentifier(refs)
-              )
-            ));
-          } else {
-            spreads.push(ctx2.createVarIdentifier(refs));
-          }
-        }
-      } else if (spec.type === "default") {
-        properties.push(
-          ctx2.createProperty(
-            ctx2.createLiteral("default"),
-            spec.local
-          )
-        );
-      } else if (spec.type === "named" && !sourceId) {
-        if (spec.local.type === "VariableDeclaration") {
-          spec.local.declarations.map((decl) => {
-            properties.push(
-              ctx2.createProperty(
-                ctx2.createLiteral(decl.id.value),
-                decl.init || ctx2.createLiteral(null)
-              )
-            );
-          });
-        } else if (spec.local.type === "FunctionDeclaration") {
-          spec.local.type = "FunctionExpression";
-          properties.push(
-            ctx2.createProperty(
-              ctx2.createLiteral(spec.local.key.value),
-              spec.local
-            )
-          );
-        }
-      } else if (spec.type === "specifier") {
-        if (sourceId) {
-          let node = [
-            refs,
-            spec.local,
-            spec.exported
-          ];
-          properties.push(
-            ctx2.createProperty(
-              ctx2.createLiteral(spec.local),
-              ctx2.createVarIdentifier(spec.exported || spec.local)
-            )
-          );
-          specifiers.push(node);
-        } else {
-          properties.push(ctx2.createProperty(
-            ctx2.createLiteral(spec.exported),
-            ctx2.createVarIdentifier(spec.local),
-            spec.stack
-          ));
-        }
-      }
-    });
-    if (specifiers.length > 0) {
-      let dataset = importSpecifiers.get(sourceId);
-      if (!dataset) {
-        importSpecifiers.set(sourceId, dataset = []);
-      }
-      dataset.push(...specifiers);
-    }
-  });
-  importSpecifiers.forEach((specifiers) => {
-    let [refs, local, exported] = specifiers;
-    declares.push(ctx2.createExpressionStatement(
-      ctx2.createAssignmentExpression(
-        ctx2.createVarIdentifier(exported || local),
-        ctx2.createBinaryExpression(
-          ctx2.createComputeMemberExpression([
-            ctx2.createIdentifier(refs),
-            ctx2.createLiteral(local)
-          ]),
-          ctx2.createLiteral(null),
-          "??"
-        )
-      )
-    ));
-  });
-  if (properties.length > 0) {
-    if (properties.length === 1 && properties[0].key.value === "default" && !spreads.length) {
-      exports.push(
-        ctx2.createReturnStatement(properties[0].init)
-      );
-    } else {
-      let object = ctx2.createObjectExpression(properties);
-      if (spreads.length > 0) {
-        let args = spreads.map((item) => ctx2.createConditionalExpression(
-          ctx2.createCallExpression(
-            ctx2.createIdentifier("is_array"),
-            [
-              item
-            ]
-          ),
-          item,
-          ctx2.createObjectExpression()
-        ));
-        object = ctx2.createCallExpression(
-          ctx2.createIdentifier("array_merge"),
-          [
-            ...args,
-            object
-          ]
-        );
-      }
-      exports.push(
-        ctx2.createReturnStatement(object)
-      );
-    }
-  }
-  return { imports, exports, declares };
-}
-var import_path8, import_Namespace9, import_Utils19;
-var init_Common2 = __esm({
-  "lib/core/Common.js"() {
-    import_path8 = __toESM(require("path"));
-    import_Namespace9 = __toESM(require("easescript/lib/core/Namespace"));
-    import_Utils19 = __toESM(require("easescript/lib/core/Utils"));
-    init_Manifest();
-    init_Common();
-    init_Common();
-  }
-});
-
 // lib/transforms/Object.js
-function createMethodFunctionNode(ctx2, name) {
-  return ctx2.createLiteral(name);
+function createMethodFunctionNode(ctx, name) {
+  return ctx.createLiteral(name);
 }
-function createCommonCalledNode(name, stack2, ctx2, object, args, called) {
+function createCommonCalledNode(name, stack, ctx, object, args, called) {
   if (!called)
-    return createMethodFunctionNode(ctx2, name);
-  return ctx2.createCallExpression(
-    ctx2.createIdentifier(name),
+    return createMethodFunctionNode(ctx, name);
+  return ctx.createCallExpression(
+    ctx.createIdentifier(name),
     object ? [object].concat(args) : args
   );
 }
@@ -3233,68 +3637,68 @@ var init_Object = __esm({
   "lib/transforms/Object.js"() {
     import_Namespace10 = __toESM(require("easescript/lib/core/Namespace"));
     Object_default = {
-      assign(stack2, ctx2, object, args, called = false, isStatic = false) {
+      assign(stack, ctx, object, args, called = false, isStatic = false) {
         const module2 = import_Namespace10.default.globals.get("Object");
-        ctx2.addDepend(module2);
-        const name = ctx2.getModuleNamespace(module2, "es_object_assign");
+        ctx.addDepend(module2);
+        const name = ctx.getModuleNamespace(module2, "es_object_assign");
         if (!called)
-          return createMethodFunctionNode(ctx2, name);
-        return ctx2.createCallExpression(
-          ctx2.createIdentifier(name),
+          return createMethodFunctionNode(ctx, name);
+        return ctx.createCallExpression(
+          ctx.createIdentifier(name),
           args
         );
       },
-      keys(stack2, ctx2, object, args, called = false, isStatic = false) {
+      keys(stack, ctx, object, args, called = false, isStatic = false) {
         const module2 = import_Namespace10.default.globals.get("Object");
-        ctx2.addDepend(module2);
-        const name = ctx2.getModuleNamespace(module2, "es_object_keys");
+        ctx.addDepend(module2);
+        const name = ctx.getModuleNamespace(module2, "es_object_keys");
         if (!called)
-          return createMethodFunctionNode(ctx2, name);
-        return ctx2.createCallExpression(
-          ctx2.createIdentifier(name),
+          return createMethodFunctionNode(ctx, name);
+        return ctx.createCallExpression(
+          ctx.createIdentifier(name),
           args
         );
       },
-      values(stack2, ctx2, object, args, called = false, isStatic = false) {
+      values(stack, ctx, object, args, called = false, isStatic = false) {
         const module2 = import_Namespace10.default.globals.get("Object");
-        ctx2.addDepend(module2);
-        const name = ctx2.getModuleNamespace(module2, "es_object_values");
+        ctx.addDepend(module2);
+        const name = ctx.getModuleNamespace(module2, "es_object_values");
         if (!called)
-          return createMethodFunctionNode(ctx2, name);
-        return ctx2.createCallExpression(
-          ctx2.createIdentifier(name),
+          return createMethodFunctionNode(ctx, name);
+        return ctx.createCallExpression(
+          ctx.createIdentifier(name),
           args
         );
       },
-      propertyIsEnumerable(stack2, ctx2, object, args, called = false, isStatic = false) {
+      propertyIsEnumerable(stack, ctx, object, args, called = false, isStatic = false) {
         const module2 = import_Namespace10.default.globals.get("Object");
-        ctx2.addDepend(module2);
-        const name = ctx2.getModuleNamespace(module2, "es_object_property_is_enumerable");
-        return createCommonCalledNode(name, stack2, ctx2, object, args, called);
+        ctx.addDepend(module2);
+        const name = ctx.getModuleNamespace(module2, "es_object_property_is_enumerable");
+        return createCommonCalledNode(name, stack, ctx, object, args, called);
       },
-      hasOwnProperty(stack2, ctx2, object, args, called = false, isStatic = false) {
+      hasOwnProperty(stack, ctx, object, args, called = false, isStatic = false) {
         const module2 = import_Namespace10.default.globals.get("Object");
-        ctx2.addDepend(module2);
-        const name = ctx2.getModuleNamespace(module2, "es_object_has_own_property");
-        return createCommonCalledNode(name, stack2, ctx2, object, args, called);
+        ctx.addDepend(module2);
+        const name = ctx.getModuleNamespace(module2, "es_object_has_own_property");
+        return createCommonCalledNode(name, stack, ctx, object, args, called);
       },
-      valueOf(stack2, ctx2, object, args, called = false, isStatic = false) {
+      valueOf(stack, ctx, object, args, called = false, isStatic = false) {
         const module2 = import_Namespace10.default.globals.get("Object");
-        ctx2.addDepend(module2);
-        const name = ctx2.getModuleNamespace(module2, "es_object_value_of");
-        return createCommonCalledNode(name, stack2, ctx2, object, args, called);
+        ctx.addDepend(module2);
+        const name = ctx.getModuleNamespace(module2, "es_object_value_of");
+        return createCommonCalledNode(name, stack, ctx, object, args, called);
       },
-      toLocaleString(stack2, ctx2, object, args, called = false, isStatic = false) {
+      toLocaleString(stack, ctx, object, args, called = false, isStatic = false) {
         const module2 = import_Namespace10.default.globals.get("Object");
-        ctx2.addDepend(module2);
-        const name = ctx2.getModuleNamespace(module2, "es_object_to_string");
-        return createCommonCalledNode(name, stack2, ctx2, object, args, called);
+        ctx.addDepend(module2);
+        const name = ctx.getModuleNamespace(module2, "es_object_to_string");
+        return createCommonCalledNode(name, stack, ctx, object, args, called);
       },
-      toString(stack2, ctx2, object, args, called = false, isStatic = false) {
+      toString(stack, ctx, object, args, called = false, isStatic = false) {
         const module2 = import_Namespace10.default.globals.get("Object");
-        ctx2.addDepend(module2);
-        const name = ctx2.getModuleNamespace(module2, "es_object_to_string");
-        return createCommonCalledNode(name, stack2, ctx2, object, args, called);
+        ctx.addDepend(module2);
+        const name = ctx.getModuleNamespace(module2, "es_object_to_string");
+        return createCommonCalledNode(name, stack, ctx, object, args, called);
       }
     };
   }
@@ -3305,12 +3709,12 @@ var Number_exports = {};
 __export(Number_exports, {
   default: () => Number_default
 });
-function createCommonCalledNode4(name, stack2, ctx2, object, args, called = true) {
+function createCommonCalledNode4(name, stack, ctx, object, args, called = true) {
   if (!called) {
-    return ctx2.createLiteral(name.replace(/\\/g, "\\\\"));
+    return ctx.createLiteral(name.replace(/\\/g, "\\\\"));
   }
-  return ctx2.createCallExpression(
-    ctx2.createIdentifier(name),
+  return ctx.createCallExpression(
+    ctx.createIdentifier(name),
     [object].concat(args)
   );
 }
@@ -3321,69 +3725,69 @@ var init_Number = __esm({
     init_Common2();
     import_Namespace16 = __toESM(require("easescript/lib/core/Namespace"));
     methods4 = {
-      MAX_VALUE(stack2, ctx2) {
-        return ctx2.createLiteral(`1.79E+308`, `1.79E+308`);
+      MAX_VALUE(stack, ctx) {
+        return ctx.createLiteral(`1.79E+308`, `1.79E+308`);
       },
-      MIN_VALUE(stack2, ctx2) {
-        return ctx2.createLiteral(`5e-324`, `5e-324`);
+      MIN_VALUE(stack, ctx) {
+        return ctx.createLiteral(`5e-324`, `5e-324`);
       },
-      MAX_SAFE_INTEGER(stack2, ctx2) {
-        return ctx2.createLiteral(`9007199254740991`, `9007199254740991`);
+      MAX_SAFE_INTEGER(stack, ctx) {
+        return ctx.createLiteral(`9007199254740991`, `9007199254740991`);
       },
-      POSITIVE_INFINITY(stack2, ctx2) {
-        return ctx2.createIdentifier(`Infinity`);
+      POSITIVE_INFINITY(stack, ctx) {
+        return ctx.createIdentifier(`Infinity`);
       },
-      EPSILON(stack2, ctx2) {
-        return ctx2.createLiteral(`2.220446049250313e-16`, `2.220446049250313e-16`);
+      EPSILON(stack, ctx) {
+        return ctx.createLiteral(`2.220446049250313e-16`, `2.220446049250313e-16`);
       },
-      isFinite(stack2, ctx2, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode4("is_finite", stack2, ctx2, object, args, called);
+      isFinite(stack, ctx, object, args, called = false, isStatic = false) {
+        return createCommonCalledNode4("is_finite", stack, ctx, object, args, called);
       },
-      isNaN(stack2, ctx2, object, args, called = false, isStatic = false) {
+      isNaN(stack, ctx, object, args, called = false, isStatic = false) {
         if (!called) {
-          ctx2.addDepend(import_Namespace16.default.globals.get("System"));
-          ctx2.createChunkExpression(`function($target){return System::isNaN($target);}`);
+          ctx.addDepend(import_Namespace16.default.globals.get("System"));
+          ctx.createChunkExpression(`function($target){return System::isNaN($target);}`);
         }
-        return ctx2.createCallExpression(
-          createStaticReferenceNode2(ctx2, object.stack, "System", "isNaN"),
+        return ctx.createCallExpression(
+          createStaticReferenceNode2(ctx, object.stack, "System", "isNaN"),
           [object].concat(args)
         );
       },
-      isInteger(stack2, ctx2, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode4("is_int", stack2, ctx2, object, args, called);
+      isInteger(stack, ctx, object, args, called = false, isStatic = false) {
+        return createCommonCalledNode4("is_int", stack, ctx, object, args, called);
       },
-      isSafeInteger(stack2, ctx2, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode4("is_int", stack2, ctx2, object, args, called);
+      isSafeInteger(stack, ctx, object, args, called = false, isStatic = false) {
+        return createCommonCalledNode4("is_int", stack, ctx, object, args, called);
       },
-      parseFloat(stack2, ctx2, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode4("floatval", stack2, ctx2, object, args, called);
+      parseFloat(stack, ctx, object, args, called = false, isStatic = false) {
+        return createCommonCalledNode4("floatval", stack, ctx, object, args, called);
       },
-      parseInt(stack2, ctx2, object, args, called = false, isStatic = false) {
-        return createCommonCalledNode4("intval", stack2, ctx2, object, args, called);
+      parseInt(stack, ctx, object, args, called = false, isStatic = false) {
+        return createCommonCalledNode4("intval", stack, ctx, object, args, called);
       },
-      toFixed(stack2, ctx2, object, args, called = false, isStatic = false) {
+      toFixed(stack, ctx, object, args, called = false, isStatic = false) {
         const module2 = import_Namespace16.default.globals.get("Number");
-        ctx2.addDepend(module2);
-        const name = ctx2.getModuleNamespace(module2, "es_number_to_fixed");
-        return createCommonCalledNode4(name, stack2, ctx2, object, args, called);
+        ctx.addDepend(module2);
+        const name = ctx.getModuleNamespace(module2, "es_number_to_fixed");
+        return createCommonCalledNode4(name, stack, ctx, object, args, called);
       },
-      toExponential(stack2, ctx2, object, args, called = false, isStatic = false) {
+      toExponential(stack, ctx, object, args, called = false, isStatic = false) {
         const module2 = import_Namespace16.default.globals.get("Number");
-        ctx2.addDepend(module2);
-        const name = ctx2.getModuleNamespace(module2, "es_number_to_exponential");
-        return createCommonCalledNode4(name, stack2, ctx2, object, args, called);
+        ctx.addDepend(module2);
+        const name = ctx.getModuleNamespace(module2, "es_number_to_exponential");
+        return createCommonCalledNode4(name, stack, ctx, object, args, called);
       },
-      toPrecision(stack2, ctx2, object, args, called = false, isStatic = false) {
+      toPrecision(stack, ctx, object, args, called = false, isStatic = false) {
         const module2 = import_Namespace16.default.globals.get("Number");
-        ctx2.addDepend(module2);
-        const name = ctx2.getModuleNamespace(module2, "es_number_to_precision");
-        return createCommonCalledNode4(name, stack2, ctx2, object, args, called);
+        ctx.addDepend(module2);
+        const name = ctx.getModuleNamespace(module2, "es_number_to_precision");
+        return createCommonCalledNode4(name, stack, ctx, object, args, called);
       },
-      valueOf(stack2, ctx2, object, args, called = false, isStatic = false) {
+      valueOf(stack, ctx, object, args, called = false, isStatic = false) {
         const module2 = import_Namespace16.default.globals.get("Number");
-        ctx2.addDepend(module2);
-        const name = ctx2.getModuleNamespace(module2, "es_number_value_of");
-        return createCommonCalledNode4(name, stack2, ctx2, object, args, called);
+        ctx.addDepend(module2);
+        const name = ctx.getModuleNamespace(module2, "es_number_value_of");
+        return createCommonCalledNode4(name, stack, ctx, object, args, called);
       }
     };
     ["propertyIsEnumerable", "hasOwnProperty", "toLocaleString", "toString"].forEach((name) => {
@@ -3405,7 +3809,7 @@ __export(lib_exports, {
 module.exports = __toCommonJS(lib_exports);
 
 // lib/core/Plugin.js
-var import_path9 = __toESM(require("path"));
+var import_path10 = __toESM(require("path"));
 var import_Compilation2 = __toESM(require("easescript/lib/core/Compilation"));
 
 // node_modules/@easescript/transform/lib/core/Plugin.js
@@ -3413,7 +3817,7 @@ var import_Compilation = __toESM(require("easescript/lib/core/Compilation"));
 var import_path6 = __toESM(require("path"));
 
 // node_modules/@easescript/transform/lib/core/Builder.js
-var import_Utils17 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils18 = __toESM(require("easescript/lib/core/Utils"));
 
 // node_modules/@easescript/transform/lib/core/Context.js
 var import_path2 = __toESM(require("path"));
@@ -3424,13 +3828,13 @@ var Node = class {
   static is(value) {
     return value ? value instanceof Node : false;
   }
-  static create(type, stack2) {
-    return new Node(type, stack2);
+  static create(type, stack) {
+    return new Node(type, stack);
   }
-  constructor(type, stack2 = null) {
+  constructor(type, stack = null) {
     this.type = type;
-    if (stack2 && stack2.node && stack2.node.loc) {
-      this.loc = stack2.node.loc;
+    if (stack && stack.node && stack.node.loc) {
+      this.loc = stack.node.loc;
     }
   }
 };
@@ -3438,17 +3842,17 @@ var Node_default = Node;
 
 // node_modules/@easescript/transform/lib/core/Token.js
 var Token = class {
-  createNode(stack2, type) {
-    const isString = typeof stack2 === "string";
+  createNode(stack, type) {
+    const isString = typeof stack === "string";
     if (!type) {
-      type = isString ? stack2 : stack2.toString();
+      type = isString ? stack : stack.toString();
     }
     if (!type)
       return null;
-    return Node_default.create(type, isString ? null : stack2);
+    return Node_default.create(type, isString ? null : stack);
   }
-  createIdentifier(value, stack2) {
-    let node = this.createNode(stack2, "Identifier");
+  createIdentifier(value, stack) {
+    let node = this.createNode(stack, "Identifier");
     node.value = String(value);
     node.raw = node.value;
     return node;
@@ -3526,13 +3930,13 @@ var Token = class {
     node.key = this.createIdentifier(key);
     return node;
   }
-  createObjectExpression(properties, stack2) {
-    const node = this.createNode(stack2, "ObjectExpression");
+  createObjectExpression(properties, stack) {
+    const node = this.createNode(stack, "ObjectExpression");
     node.properties = properties || [];
     return node;
   }
-  createArrayExpression(elements, stack2) {
-    const node = this.createNode(stack2, "ArrayExpression");
+  createArrayExpression(elements, stack) {
+    const node = this.createNode(stack, "ArrayExpression");
     node.elements = elements || [];
     return node;
   }
@@ -3541,8 +3945,8 @@ var Token = class {
     node.properties = properties;
     return node;
   }
-  createProperty(key, init, stack2) {
-    const node = this.createNode(stack2, "Property");
+  createProperty(key, init, stack) {
+    const node = this.createNode(stack, "Property");
     node.key = key;
     node.computed = key.computed;
     node.init = init;
@@ -3553,7 +3957,7 @@ var Token = class {
     node.argument = argument;
     return node;
   }
-  createMemberExpression(items, stack2) {
+  createMemberExpression(items, stack) {
     let object = items.shift();
     while (items.length > 1) {
       const _node = this.createNode("MemberExpression");
@@ -3561,24 +3965,24 @@ var Token = class {
       _node.property = items.shift();
       object = _node;
     }
-    const node = this.createNode(stack2, "MemberExpression");
+    const node = this.createNode(stack, "MemberExpression");
     node.object = object;
     node.property = items.shift();
     return node;
   }
-  createComputeMemberExpression(items, stack2) {
-    const node = this.createMemberExpression(items, stack2);
+  createComputeMemberExpression(items, stack) {
+    const node = this.createMemberExpression(items, stack);
     node.computed = true;
     return node;
   }
-  createCallExpression(callee, args, stack2) {
-    const node = this.createNode(stack2, "CallExpression");
+  createCallExpression(callee, args, stack) {
+    const node = this.createNode(stack, "CallExpression");
     node.callee = callee;
     node.arguments = args;
     return node;
   }
-  createNewExpression(callee, args, stack2) {
-    const node = this.createNode(stack2, "NewExpression");
+  createNewExpression(callee, args, stack) {
+    const node = this.createNode(stack, "NewExpression");
     node.callee = callee;
     node.arguments = args;
     return node;
@@ -3630,20 +4034,20 @@ var Token = class {
     node.prefix = prefix;
     return node;
   }
-  createVariableDeclaration(kind, items, stack2) {
-    const node = this.createNode(stack2, "VariableDeclaration");
+  createVariableDeclaration(kind, items, stack) {
+    const node = this.createNode(stack, "VariableDeclaration");
     node.kind = kind;
     node.declarations = items;
     return node;
   }
-  createVariableDeclarator(id, init, stack2) {
-    const node = this.createNode(stack2, "VariableDeclarator");
+  createVariableDeclarator(id, init, stack) {
+    const node = this.createNode(stack, "VariableDeclarator");
     node.id = id;
     node.init = init;
     return node;
   }
-  createLiteral(value, raw, stack2) {
-    const node = this.createNode(stack2, "Literal");
+  createLiteral(value, raw, stack) {
+    const node = this.createNode(stack, "Literal");
     node.value = value;
     if (raw === void 0) {
       if (typeof value === "string") {
@@ -3661,6 +4065,13 @@ var Token = class {
     node.body = this.createBlockStatement();
     return node;
   }
+  createPropertyDefinition(key, init, isStatic = false) {
+    const node = this.createNode("PropertyDefinition");
+    node.key = key;
+    node.init = init;
+    node.static = isStatic;
+    return node;
+  }
   createChunkExpression(value, newLine = true, semicolon = false) {
     const node = this.createNode("ChunkExpression");
     node.newLine = newLine;
@@ -3669,16 +4080,16 @@ var Token = class {
     node.raw = value;
     return node;
   }
-  createThisExpression(stack2) {
-    return this.createNode(stack2, "ThisExpression");
+  createThisExpression(stack) {
+    return this.createNode(stack, "ThisExpression");
   }
-  createSuperExpression(value, stack2) {
-    const node = this.createNode(stack2, "SuperExpression");
+  createSuperExpression(value, stack) {
+    const node = this.createNode(stack, "SuperExpression");
     node.value = value;
     return node;
   }
-  createImportDeclaration(source, specifiers, stack2) {
-    const node = this.createNode(stack2, "ImportDeclaration");
+  createImportDeclaration(source, specifiers, stack) {
+    const node = this.createNode(stack, "ImportDeclaration");
     node.source = this.createLiteral(source);
     node.specifiers = specifiers;
     return node;
@@ -3701,8 +4112,8 @@ var Token = class {
       return node;
     }
   }
-  createExportAllDeclaration(source, exported, stack2) {
-    const node = this.createNode(stack2, "ExportAllDeclaration");
+  createExportAllDeclaration(source, exported, stack) {
+    const node = this.createNode(stack, "ExportAllDeclaration");
     if (exported === "*")
       exported = null;
     node.exported = exported ? this.createIdentifier(exported) : null;
@@ -3713,16 +4124,16 @@ var Token = class {
     }
     return node;
   }
-  createExportDefaultDeclaration(declaration, stack2) {
-    const node = this.createNode(stack2, "ExportDefaultDeclaration");
+  createExportDefaultDeclaration(declaration, stack) {
+    const node = this.createNode(stack, "ExportDefaultDeclaration");
     if (!Node_default.is(declaration)) {
       declaration = this.createIdentifier(declaration);
     }
     node.declaration = declaration;
     return node;
   }
-  createExportNamedDeclaration(declaration, source = null, specifiers = [], stack2 = null) {
-    const node = this.createNode(stack2, "ExportNamedDeclaration");
+  createExportNamedDeclaration(declaration, source = null, specifiers = [], stack = null) {
+    const node = this.createNode(stack, "ExportNamedDeclaration");
     if (declaration) {
       node.declaration = declaration;
     } else {
@@ -3741,8 +4152,8 @@ var Token = class {
     }
     return node;
   }
-  createExportSpecifier(local, exported = null, stack2 = null) {
-    const node = this.createNode(stack2, "ExportSpecifier");
+  createExportSpecifier(local, exported = null, stack = null) {
+    const node = this.createNode(stack, "ExportSpecifier");
     if (!Node_default.is(exported || local)) {
       node.exported = this.createIdentifier(exported || local);
     } else {
@@ -3766,7 +4177,7 @@ var import_Utils2 = __toESM(require("easescript/lib/core/Utils"));
 var ImportManage = class {
   #records = /* @__PURE__ */ new Map();
   #locals = /* @__PURE__ */ new Map();
-  createImportSource(sourceId, local = null, imported = null, stack2 = null) {
+  createImportSource(sourceId, local = null, imported = null, stack = null) {
     let key = sourceId;
     if (imported === "*") {
       key += ":*";
@@ -3784,7 +4195,7 @@ var ImportManage = class {
       } else {
         this.#locals.set(local, importSource);
       }
-      importSource.addSpecifier(local, imported, stack2);
+      importSource.addSpecifier(local, imported, stack);
     }
     return importSource;
   }
@@ -3854,21 +4265,13 @@ var ImportSource = class {
   getSourceTarget() {
     return this.#sourceTarget;
   }
-  setSourceContext(value) {
-    if (value) {
-      this.#sourceContext = value;
-    }
-  }
-  getSourceContext() {
-    return this.#sourceContext;
-  }
   setExportSource() {
     this.#isExportSource = true;
   }
   getSpecifier(imported) {
     return this.#fields[imported];
   }
-  addSpecifier(local, imported = null, stack2 = null) {
+  addSpecifier(local, imported = null, stack = null) {
     if (local) {
       let type = imported ? "specifier" : "default";
       if (imported === "*") {
@@ -3887,7 +4290,7 @@ var ImportSource = class {
         type,
         local,
         imported,
-        stack: stack2
+        stack
       };
       this.#fields[key] = spec;
       this.#specifiers.push(spec);
@@ -3909,7 +4312,7 @@ function getExportType(exported, local) {
 var ExportManage = class {
   #records = /* @__PURE__ */ new Map();
   #exporteds = /* @__PURE__ */ new Map();
-  createExportSource(exported, local = null, importSource = null, stack2 = null) {
+  createExportSource(exported, local = null, importSource = null, stack = null) {
     let key = exported;
     if (!key) {
       key = importSource;
@@ -3936,7 +4339,7 @@ var ExportManage = class {
         this.#exporteds.set(key, exportSource = new ExportSource(null, this));
       }
     }
-    exportSource.addSpecifier(exported, local, stack2);
+    exportSource.addSpecifier(exported, local, stack);
     return exportSource;
   }
   bindSource(exported, exportSource) {
@@ -3987,7 +4390,7 @@ var ExportSource = class {
   getSpecifier(exported) {
     return this.#fields[exported];
   }
-  addSpecifier(exported, local = null, stack2 = null) {
+  addSpecifier(exported, local = null, stack = null) {
     let type = getExportType(exported, local);
     let old = this.#fields[exported];
     if (old) {
@@ -4001,7 +4404,7 @@ var ExportSource = class {
       type,
       local,
       exported,
-      stack: stack2
+      stack
     };
     this.#fields[exported] = spec;
     this.#specifiers.push(spec);
@@ -5123,10 +5526,10 @@ var VirtualModule = class {
   set changed(value) {
     this.#changed = value;
   }
-  addExport(exported, local = null, importSource = null, stack2 = null) {
+  addExport(exported, local = null, importSource = null, stack = null) {
     let has = this.#exports.some((item) => item[0] === exported);
     if (!has) {
-      this.#exports.push([exported, local, importSource, stack2]);
+      this.#exports.push([exported, local, importSource, stack]);
     }
   }
   addImport(source, local = null, imported = null) {
@@ -5158,14 +5561,14 @@ var VirtualModule = class {
     this.#content = content;
     this.#changed = true;
   }
-  createImports(ctx2) {
+  createImports(ctx) {
     this.#imports.forEach((args) => {
-      ctx2.addImport(...args);
+      ctx.addImport(...args);
     });
   }
-  createExports(ctx2) {
+  createExports(ctx) {
     let exportName = this.id;
-    this.#exports.forEach(([exported, local, importSource, stack2]) => {
+    this.#exports.forEach(([exported, local, importSource, stack]) => {
       if (exported === "default") {
         if (typeof local === "string") {
           exportName = local;
@@ -5174,111 +5577,111 @@ var VirtualModule = class {
         }
       }
       if (typeof local === "string") {
-        local = ctx2.createIdentifier(local);
+        local = ctx.createIdentifier(local);
       }
-      ctx2.addExport(exported, local, importSource, stack2);
+      ctx.addExport(exported, local, importSource, stack);
     });
     return exportName;
   }
-  createReferences(ctx2) {
+  createReferences(ctx) {
     let context = this.bindModule || this;
     this.getReferences().forEach((local, classname) => {
       let module2 = import_Namespace2.default.globals.get(classname);
       if (module2) {
-        ctx2.addDepend(module2, context);
+        ctx.addDepend(module2, context);
       }
     });
   }
-  gen(ctx2, graph, body = []) {
+  gen(ctx, graph, body = []) {
     let imports = [];
     let exports = [];
     let exportNodes = null;
     let importNodes = null;
-    if (ctx2.options.module === "cjs") {
-      importNodes = createCJSImports(ctx2, ctx2.imports);
-      exportNodes = createCJSExports(ctx2, ctx2.exports, graph);
+    if (ctx.options.module === "cjs") {
+      importNodes = createCJSImports(ctx, ctx.imports);
+      exportNodes = createCJSExports(ctx, ctx.exports, graph);
     } else {
-      importNodes = createESMImports(ctx2, ctx2.imports);
-      exportNodes = createESMExports(ctx2, ctx2.exports, graph);
+      importNodes = createESMImports(ctx, ctx.imports);
+      exportNodes = createESMExports(ctx, ctx.exports, graph);
     }
     imports.push(...importNodes, ...exportNodes.imports);
     body.push(...exportNodes.declares);
     exports.push(...exportNodes.exports);
-    const generator = new Generator_default(ctx2, false);
+    const generator = new Generator_default(ctx, false);
     const layout = [
       ...imports,
-      ctx2.createChunkExpression(this.getContent()),
+      ctx.createChunkExpression(this.getContent()),
       ...body,
       ...exports
     ];
     layout.forEach((item) => generator.make(item));
     return generator;
   }
-  async build(ctx2, graph) {
+  async build(ctx, graph) {
     if (!this.#changed && graph.code)
       return graph;
     this.#changed = false;
-    this.createImports(ctx2);
-    this.createReferences(ctx2, graph);
+    this.createImports(ctx);
+    this.createReferences(ctx, graph);
     let module2 = this.bindModule;
-    let emitFile = ctx2.options.emitFile;
+    let emitFile = ctx.options.emitFile;
     let body = [];
-    let exportName = this.createExports(ctx2);
+    let exportName = this.createExports(ctx);
     if (this.id === "Class" && this.#ns.length === 0) {
       let properties = Object.keys(Constant_exports).map((key) => {
         if (key === "PRIVATE_NAME")
           return;
-        return ctx2.createProperty(
-          ctx2.createIdentifier(key),
-          ctx2.createLiteral(Constant_exports[key])
+        return ctx.createProperty(
+          ctx.createIdentifier(key),
+          ctx.createLiteral(Constant_exports[key])
         );
       }).filter(Boolean);
       properties.sort((a, b) => {
         return a.init.value - b.init.value;
       });
       body.push(
-        ctx2.createExpressionStatement(
-          ctx2.createAssignmentExpression(
-            ctx2.createMemberExpression([
-              ctx2.createIdentifier("Class"),
-              ctx2.createIdentifier("constant")
+        ctx.createExpressionStatement(
+          ctx.createAssignmentExpression(
+            ctx.createMemberExpression([
+              ctx.createIdentifier("Class"),
+              ctx.createIdentifier("constant")
             ]),
-            ctx2.createObjectExpression(properties)
+            ctx.createObjectExpression(properties)
           )
         )
       );
     } else {
       body.push(
-        this.createClassDescriptors(ctx2, exportName, this.id)
+        this.createClassDescriptors(ctx, exportName, this.id)
       );
     }
     if (module2) {
-      ctx2.createModuleImportReferences(module2);
+      ctx.createDeclaratorModuleImportReferences(module2, module2, graph);
     }
     if (emitFile) {
-      await ctx2.buildDeps();
+      await ctx.buildDeps();
     }
-    ctx2.createAllDependencies();
-    graph.code = this.gen(ctx2, graph, body).code;
+    ctx.createAllDependencies();
+    graph.code = this.gen(ctx, graph, body).code;
     graph.sourcemap = this.getSourcemap();
     if (emitFile) {
-      graph.outfile = ctx2.getOutputAbsolutePath(this);
+      graph.outfile = ctx.getOutputAbsolutePath(this);
     }
     return graph;
   }
-  createClassDescriptors(ctx2, exportName, className) {
-    return ctx2.createCallExpression(
-      createStaticReferenceNode(ctx2, null, "Class", "creator"),
+  createClassDescriptors(ctx, exportName, className) {
+    return ctx.createCallExpression(
+      createStaticReferenceNode(ctx, null, "Class", "creator"),
       [
-        ctx2.createIdentifier(exportName),
-        ctx2.createObjectExpression([
-          ctx2.createProperty(
-            ctx2.createIdentifier("m"),
-            ctx2.createLiteral(KIND_CLASS | MODIFIER_PUBLIC)
+        ctx.createIdentifier(exportName),
+        ctx.createObjectExpression([
+          ctx.createProperty(
+            ctx.createIdentifier("m"),
+            ctx.createLiteral(KIND_CLASS | MODIFIER_PUBLIC)
           ),
-          ctx2.createProperty(
-            ctx2.createIdentifier("name"),
-            ctx2.createLiteral(className)
+          ctx.createProperty(
+            ctx.createIdentifier("name"),
+            ctx.createLiteral(className)
           )
         ])
       ]
@@ -5406,14 +5809,22 @@ var Context = class extends Token_default {
     return this.#dependencies;
   }
   async buildDeps() {
-    const ctx2 = this.plugin.context;
-    await ctx2.buildDeps(this);
+    const ctx = this.plugin.context;
+    await ctx.buildDeps(this);
   }
   createAsset(source) {
-    return this.assets.createAsset(source);
+    let asset = this.assets.createAsset(source);
+    if (asset) {
+      asset.initialize(this);
+    }
+    return asset;
   }
   createStyleAsset(source, index) {
-    return this.assets.createStyleAsset(source, index);
+    let asset = this.assets.createStyleAsset(source, index);
+    if (asset) {
+      asset.initialize(this);
+    }
+    return asset;
   }
   getVModule(sourceId) {
     return this.virtuals.getVModule(sourceId);
@@ -5426,15 +5837,15 @@ var Context = class extends Token_default {
       if (module2.isDeclaratorModule) {
         return this.hasVModule(module2.getName());
       } else if (this.virtuals.isVModule(module2)) {
-        return module2;
+        return true;
       }
     }
     return false;
   }
-  createToken(stack2) {
-    if (!stack2)
+  createToken(stack) {
+    if (!stack)
       return null;
-    const type = stack2.toString();
+    const type = stack.toString();
     if (type === "TypeStatement")
       return null;
     if (type === "NewDefinition")
@@ -5447,7 +5858,7 @@ var Context = class extends Token_default {
       return null;
     if (type === "DeclaratorDeclaration")
       return null;
-    return this.#token.create(this, stack2, type);
+    return this.#token.create(this, stack, type);
   }
   addNodeToAfterBody(node) {
     if (node) {
@@ -5463,8 +5874,8 @@ var Context = class extends Token_default {
     }
     return node;
   }
-  addImport(source, local = null, imported = null, stack2 = null) {
-    return this.#imports.createImportSource(source, local, imported, stack2);
+  addImport(source, local = null, imported = null, stack = null) {
+    return this.#imports.createImportSource(source, local, imported, stack);
   }
   getImport(source, isNamespace = false) {
     return this.#imports.getImportSource(source, isNamespace);
@@ -5472,8 +5883,8 @@ var Context = class extends Token_default {
   hasImport(source, local = null, isNamespace = false) {
     return this.#imports.hasImportSource(source, local, isNamespace);
   }
-  addExport(exported, local = null, importSource = null, stack2 = null) {
-    return this.#exports.createExportSource(exported, local, importSource, stack2);
+  addExport(exported, local = null, importSource = null, stack = null) {
+    return this.#exports.createExportSource(exported, local, importSource, stack);
   }
   hasExport(exported) {
     return this.#exports.hasExportSource(exported);
@@ -5569,17 +5980,22 @@ var Context = class extends Token_default {
         return true;
       }
       return this.target.importModuleNameds.has(module2);
+    } else if (import_Utils3.default.isModule(this.target)) {
+      const vm = this.getVModule(this.target.getName());
+      if (vm) {
+        return !!vm.getReferenceName(module2.getName());
+      }
     }
     return false;
   }
-  setNode(stack2, node) {
-    this.#nodes.set(stack2, node);
+  setNode(stack, node) {
+    this.#nodes.set(stack, node);
   }
-  getNode(stack2) {
-    return this.#nodes.get(stack2);
+  getNode(stack) {
+    return this.#nodes.get(stack);
   }
-  removeNode(stack2) {
-    this.#nodes.delete(stack2);
+  removeNode(stack) {
+    this.#nodes.delete(stack);
   }
   getModuleReferenceName(module2, context = null) {
     let name = null;
@@ -5639,18 +6055,20 @@ var Context = class extends Token_default {
       return data.es6class;
     });
   }
-  isLoadAssetsRawCode(stack2, resolveFile) {
-    if (!stack2 || !resolveFile)
+  isLoadAssetsRawCode(stack, resolveFile) {
+    if (!stack || !resolveFile)
       return false;
-    if (!stack2.isAnnotationDeclaration)
+    if (!stack.isAnnotationDeclaration)
       return false;
-    if (stack2.getLowerCaseName() !== "embed")
+    if (stack.getLowerCaseName() !== "embed")
       return false;
     if (/\.[m|c]?js$/i.test(resolveFile))
       return true;
     return this.compiler.isExtensionFile(resolveFile);
   }
   createDeclaratorModuleImportReferences(module2, context, graph = null) {
+    if (!import_Utils3.default.isModule(module2))
+      return;
     if (!graph && context) {
       graph = this.getBuildGraph(context);
     }
@@ -5665,65 +6083,73 @@ var Context = class extends Token_default {
     }
     module2.getImportDeclarations().forEach((item) => {
       if (item.source.isLiteral) {
-        parseImportDeclaration(this, item, context, graph);
+        parseImportDeclaration(this, item, context || module2, graph);
       }
     });
+  }
+  resolveAsset(rawAsset, context) {
+    if (rawAsset.file) {
+      let source = rawAsset.resolve;
+      let specifiers = null;
+      if (rawAsset.assign) {
+        specifiers = [
+          {
+            local: rawAsset.assign,
+            stack: rawAsset.stack
+          }
+        ];
+      }
+      source = this.getImportAssetsMapping(source, {
+        group: "imports",
+        source,
+        specifiers,
+        ctx: this,
+        context
+      });
+      if (source) {
+        let asset = this.createAsset(source);
+        asset.file = rawAsset.resolve;
+        if (rawAsset.assign) {
+          asset.local = rawAsset.assign;
+        }
+        return { asset, specifiers };
+      }
+    } else {
+      let { index, type, attrs = {} } = rawAsset;
+      let lang = attrs.lang || attrs.type || "css";
+      let suffix = "file." + lang;
+      let _attrs = { ...attrs, index, type, lang, [suffix]: "" };
+      let source = this.getModuleResourceId(context, _attrs);
+      let asset = this.createStyleAsset(source, index);
+      asset.code = rawAsset.content;
+      asset.attrs = _attrs;
+      return { asset };
+    }
+    return null;
   }
   createAssets(context, graph) {
     const assets = context.assets;
     if (assets && assets.size > 0) {
-      assets.forEach((asset) => {
-        if (asset.file) {
-          let source = asset.resolve;
-          let specifiers = null;
-          if (asset.assign) {
-            specifiers = [
-              {
-                local: asset.assign,
-                stack: asset.stack
-              }
-            ];
-          }
-          source = this.getImportAssetsMapping(source, {
-            group: "imports",
-            source,
-            specifiers,
-            ctx: this,
-            context
-          });
+      assets.forEach((rawAsset) => {
+        let { asset, specifiers } = this.resolveAsset(rawAsset, context);
+        if (asset) {
+          if (graph)
+            graph.addAsset(asset);
+          let source = this.getAssetsImportSource(asset, context);
           if (source) {
-            let _asset = this.createAsset(source);
-            _asset.file = asset.resolve;
-            _asset.local = asset.assign;
-            graph.addAsset(_asset);
-            source = this.getAssetsImportSource(_asset, context);
             let importSource = null;
             if (specifiers && specifiers.length > 0) {
               specifiers.forEach((spec) => {
-                importSource = this.addImport(source, spec.local, spec.imported, spec.stack);
+                importSource = this.addImport(source, spec.local, spec.imported);
               });
             } else {
-              importSource = ctx.addImport(source, null, null, stack.source);
+              importSource = this.addImport(source);
             }
             importSource.setSourceTarget(asset);
-            importSource.setSourceContext(context);
             if (graph) {
               graph.addImport(importSource);
             }
           }
-        } else if (asset.type === "style") {
-          const { index, type, attrs = {} } = asset;
-          const lang = attrs.lang || attrs.type || "css";
-          const suffix = "file." + lang;
-          let source = this.getModuleResourceId(context, { ...attrs, index, type, lang, [suffix]: "" });
-          let _asset = this.createStyleAsset(source, index);
-          _asset.code = asset.content;
-          source = this.getAssetsImportSource(_asset, context);
-          let importSource = this.addImport(source);
-          importSource.setSourceTarget(asset);
-          importSource.setSourceContext(context);
-          graph.addImport(importSource);
-          graph.addAsset(_asset);
         }
       });
     }
@@ -5733,7 +6159,7 @@ var Context = class extends Token_default {
     if (requires && requires.size > 0) {
       requires.forEach((item) => {
         let local = item.name;
-        if (item.stack && item.stack.parentStack && item.stack.parentStack.isAnnotationDeclaration) {
+        if (import_Utils3.default.isStack(item.stack) && item.stack.parentStack && item.stack.parentStack.isAnnotationDeclaration) {
           let additional = item.stack.parentStack.additional;
           if (additional && additional.isDeclaratorDeclaration && additional.module.id === local) {
             local = this.getModuleReferenceName(additional.module, context);
@@ -5775,7 +6201,6 @@ var Context = class extends Token_default {
       }
       if (importSource) {
         importSource.setSourceTarget(target);
-        importSource.setSourceContext(context);
       }
       if (importSource && graph) {
         graph.addImport(importSource);
@@ -5815,7 +6240,6 @@ var Context = class extends Token_default {
             const source = this.getModuleImportSource(depModule, moduleOrCompi);
             const importSource = this.addImport(source, name);
             importSource.setSourceTarget(depModule);
-            importSource.setSourceContext(moduleOrCompi);
             graph.addImport(importSource);
           } else if (depModule.isDeclaratorModule) {
             this.createDeclaratorModuleImportReferences(depModule, moduleOrCompi, graph);
@@ -5845,7 +6269,6 @@ var Context = class extends Token_default {
           const source = this.getModuleImportSource(depModule, module2);
           const importSource = this.addImport(source, name);
           importSource.setSourceTarget(depModule);
-          importSource.setSourceContext(module2);
           graph.addImport(importSource);
         } else if (depModule.isDeclaratorModule) {
           this.createDeclaratorModuleImportReferences(depModule, module2, graph);
@@ -5887,14 +6310,14 @@ var Context = class extends Token_default {
       }
     }
   }
-  getGlobalRefName(stack2, name, group = null) {
-    if (!stack2) {
+  getGlobalRefName(stack, name, group = null) {
+    if (!stack) {
       if (import_Utils3.default.isModule(this.target)) {
-        stack2 = this.target.compilation.stack;
+        stack = this.target.compilation.stack;
       } else {
-        stack2 = this.target.stack;
+        stack = this.target.stack;
       }
-      stack2 = stack2 || this;
+      stack = stack || this;
     }
     let variables = this.variables;
     if (group) {
@@ -5902,21 +6325,21 @@ var Context = class extends Token_default {
       if (this.cache.has(group, key)) {
         return this.cache.get(group, key);
       } else {
-        let value = variables.hasRefs(stack2, name, true) ? variables.genGlobalRefs(stack2, name) : variables.getGlobalRefs(stack2, name);
+        let value = variables.hasRefs(stack, name, true) ? variables.genGlobalRefs(stack, name) : variables.getGlobalRefs(stack, name);
         this.cache.set(group, key, value);
         return value;
       }
     }
-    return variables.getGlobalRefs(stack2, name);
+    return variables.getGlobalRefs(stack, name);
   }
-  getLocalRefName(stack2, name, group = null) {
-    if (!stack2) {
+  getLocalRefName(stack, name, group = null) {
+    if (!stack) {
       if (import_Utils3.default.isModule(this.target)) {
-        stack2 = this.target.compilation.stack;
+        stack = this.target.compilation.stack;
       } else {
-        stack2 = this.target.stack;
+        stack = this.target.stack;
       }
-      stack2 = stack2 || this;
+      stack = stack || this;
     }
     let variables = this.variables;
     if (group) {
@@ -5924,12 +6347,12 @@ var Context = class extends Token_default {
       if (this.cache.has(group, key)) {
         return this.cache.get(group, key);
       } else {
-        let value = variables.hasRefs(stack2, name) ? variables.genLocalRefs(stack2, name) : variables.getLocalRefs(stack2, name);
+        let value = variables.hasRefs(stack, name) ? variables.genLocalRefs(stack, name) : variables.getLocalRefs(stack, name);
         this.cache.set(group, key, value);
         return value;
       }
     }
-    return variables.getLocalRefs(stack2, name);
+    return variables.getLocalRefs(stack, name);
   }
   getImportAssetsMapping(file, options = {}) {
     if (!options.group) {
@@ -5956,7 +6379,7 @@ var Context = class extends Token_default {
     let source = asset.sourceId;
     if (this.options.emitFile) {
       source = this.getRelativePath(
-        asset.getOutFile(this),
+        asset.outfile,
         this.getOutputAbsolutePath(context)
       );
     }
@@ -6004,12 +6427,12 @@ var Context = class extends Token_default {
     }
     return glob.dest(id, data);
   }
-  resolveImportSource(id, ctx2 = {}) {
+  resolveImportSource(id, ctx = {}) {
     let glob = this.#glob;
     if (!glob)
       return id;
-    const scheme = glob.scheme(id, ctx2);
-    let source = glob.parse(scheme, ctx2);
+    const scheme = glob.scheme(id, ctx);
+    let source = glob.parse(scheme, ctx);
     let rule = scheme.rule;
     if (!rule) {
       source = id;
@@ -6030,20 +6453,28 @@ var Context = class extends Token_default {
     }
     return source;
   }
+  getPublicDir() {
+    return this.options.publicDir || "assets";
+  }
   getOutputDir() {
-    return this.options.output || ".output";
+    return this.options.outDir || ".output";
   }
   getOutputExtName() {
-    return this.options.outext || ".js";
+    return this.options.outExt || ".js";
   }
-  getOutputAbsolutePath(source) {
+  getOutputAbsolutePath(source, secondDir = null) {
     const isStr = typeof source === "string";
-    const output = this.getOutputDir();
     const suffix = this.getOutputExtName();
+    let output = this.getOutputDir();
     if (!source)
       return output;
-    if (this.cache.has(source, "Context.getOutputAbsolutePath")) {
-      return this.cache.get(source, "Context.getOutputAbsolutePath");
+    let key = source;
+    if (secondDir) {
+      output = import_path2.default.join(output, secondDir);
+      key = source + secondDir;
+    }
+    if (this.cache.has(key, "Context.getOutputAbsolutePath")) {
+      return this.cache.get(key, "Context.getOutputAbsolutePath");
     }
     let folder = isStr ? this.getSourceFileMappingFolder(source) : this.getModuleMappingFolder(source);
     let filename = null;
@@ -6087,7 +6518,7 @@ var Context = class extends Token_default {
     if (result.includes("?")) {
       result = import_path2.default.join(import_path2.default.dirname(result), this.genUniFileName(result, import_path2.default.extname(result)));
     }
-    this.cache.set(source, "Context.getOutputAbsolutePath", result);
+    this.cache.set(key, "Context.getOutputAbsolutePath", result);
     return result;
   }
   getOutputRelativePath(source, context) {
@@ -6111,18 +6542,20 @@ var Context = class extends Token_default {
   }
   async emit(buildGraph) {
     let outfile = buildGraph.outfile;
-    import_fs2.default.mkdirSync(import_path2.default.dirname(outfile), { recursive: true });
-    import_fs2.default.writeFileSync(outfile, buildGraph.code);
-    let sourcemap = buildGraph.sourcemap;
-    if (sourcemap) {
-      import_fs2.default.writeFileSync(outfile + ".map", JSON.stringify(sourcemap.toJSON()));
+    if (outfile) {
+      import_fs2.default.mkdirSync(import_path2.default.dirname(outfile), { recursive: true });
+      import_fs2.default.writeFileSync(outfile, buildGraph.code);
+      let sourcemap = buildGraph.sourcemap;
+      if (sourcemap) {
+        import_fs2.default.writeFileSync(outfile + ".map", JSON.stringify(sourcemap.toJSON()));
+      }
     }
   }
-  error(message, stack2 = null) {
+  error(message, stack = null) {
     if (this.target) {
-      let range = stack2 && stack2 instanceof import_Range.default ? stack2 : null;
-      if (!range && import_Utils3.default.isStack(stack2)) {
-        range = this.target.getRangeByNode(stack2.node);
+      let range = stack && stack instanceof import_Range.default ? stack : null;
+      if (!range && import_Utils3.default.isStack(stack)) {
+        range = this.target.getRangeByNode(stack.node);
       }
       const file = this.target.file;
       if (range) {
@@ -6133,11 +6566,11 @@ var Context = class extends Token_default {
     }
     import_Utils3.default.error(message);
   }
-  warn(message, stack2 = null) {
+  warn(message, stack = null) {
     if (this.target) {
-      let range = stack2 && stack2 instanceof import_Range.default ? stack2 : null;
-      if (!range && import_Utils3.default.isStack(stack2)) {
-        range = this.target.getRangeByNode(stack2.node);
+      let range = stack && stack instanceof import_Range.default ? stack : null;
+      if (!range && import_Utils3.default.isStack(stack)) {
+        range = this.target.getRangeByNode(stack.node);
       }
       const file = this.target.file;
       if (range) {
@@ -6214,8 +6647,8 @@ var Manage = class {
     }
     return false;
   }
-  gen(name, scope, flags = REFS_All) {
-    let index = 0;
+  gen(name, scope, flags = REFS_All, begin = 0) {
+    let index = begin;
     let value = name;
     while (this.check(value = name + index, scope, flags)) {
       index++;
@@ -6477,173 +6910,8 @@ function getBuildGraphManager() {
   };
 }
 
-// node_modules/@easescript/transform/lib/core/Asset.js
-var import_path3 = __toESM(require("path"));
-var import_fs3 = __toESM(require("fs"));
-var Asset = class {
-  #code = "";
-  #type = "";
-  #file = null;
-  #sourcemap = null;
-  #local = null;
-  #imported = null;
-  #sourceId = null;
-  #outfile = null;
-  #id = null;
-  #changed = true;
-  constructor(sourceFile, type, id = null) {
-    this.#type = type;
-    this.#file = sourceFile;
-    this.#sourceId = sourceFile;
-    this.#id = id;
-  }
-  get code() {
-    let code = this.#code;
-    if (code)
-      return code;
-    let file = this.file;
-    if (file && import_fs3.default.existsSync(file)) {
-      this.#code = import_fs3.default.readFileSync(file).toString("utf8");
-    }
-    return this.#code;
-  }
-  set code(value) {
-    this.#code = value;
-    this.#changed = true;
-  }
-  get id() {
-    return this.#id;
-  }
-  set id(value) {
-    this.#id = value;
-  }
-  get local() {
-    return this.#local;
-  }
-  set local(value) {
-    this.#local = value;
-  }
-  get imported() {
-    return this.#imported;
-  }
-  set imported(value) {
-    this.#imported = value;
-  }
-  get file() {
-    return this.#file;
-  }
-  set file(value) {
-    this.#file = value;
-  }
-  get sourceId() {
-    return this.#sourceId;
-  }
-  set sourceId(value) {
-    this.#sourceId = value;
-  }
-  get type() {
-    return this.#type;
-  }
-  get sourcemap() {
-    return this.#sourcemap;
-  }
-  set sourcemap(value) {
-    this.#sourcemap = value;
-  }
-  get outfile() {
-    return this.#outfile;
-  }
-  getOutFile(ctx2) {
-    if (this.#outfile)
-      return this.#outfile;
-    let source = ctx2.getOutputAbsolutePath(this.sourceId);
-    let ext = ctx2.getOutputExtName();
-    if (!source.endsWith(ext)) {
-      source += ext;
-    }
-    this.#outfile = source;
-    return source;
-  }
-  async build(ctx2) {
-    if (!this.#changed)
-      return;
-    if (ctx2.options.emitFile) {
-      let code = this.code;
-      if (ctx2.options.module === "cjs") {
-        code = `module.exports=${JSON.stringify(code)};`;
-      } else {
-        code = `export default ${JSON.stringify(code)};`;
-      }
-      this.code = code;
-      this.#outfile = this.getOutFile(ctx2);
-      ctx2.emit(this);
-    }
-    this.#changed = false;
-  }
-};
-function getAssetsManager(AssetFactory) {
-  const records3 = /* @__PURE__ */ new Map();
-  function createAsset(sourceFile, id = null, type = null) {
-    if (!type) {
-      type = import_path3.default.extname(sourceFile);
-      if (type.startsWith(".")) {
-        type = type.substring(1);
-      }
-    } else {
-      type = String(type);
-    }
-    let key = sourceFile + ":" + type;
-    if (id != null) {
-      key = sourceFile + ":" + id + ":" + type;
-    }
-    let asset = records3.get(key);
-    if (!asset) {
-      records3.set(sourceFile, asset = new AssetFactory(sourceFile, type, id));
-    }
-    return asset;
-  }
-  function createStyleAsset(sourceFile, id = null) {
-    return createAsset(sourceFile, id, "style");
-  }
-  function getAsset(sourceFile, id = null, type = "") {
-    let key = sourceFile + ":" + type;
-    if (id) {
-      key = sourceFile + ":" + id + ":" + type;
-    }
-    return records3.get(key);
-  }
-  function getStyleAsset(sourceFile, id = null) {
-    return getAsset(sourceFile, id, "style");
-  }
-  function getAssets() {
-    return Array.from(records3.values());
-  }
-  function setAsset(sourceFile, asset, id = null, type = null) {
-    if (!type) {
-      type = import_path3.default.extname(sourceFile);
-      if (type.startsWith(".")) {
-        type = type.substring(1);
-      }
-    } else {
-      type = String(type);
-    }
-    let key = sourceFile + ":" + type;
-    if (id != null) {
-      key = sourceFile + ":" + id + ":" + type;
-    }
-    records3.set(key, asset);
-  }
-  return {
-    createAsset,
-    createStyleAsset,
-    getStyleAsset,
-    getAsset,
-    setAsset,
-    getAssets
-  };
-}
-
 // node_modules/@easescript/transform/lib/core/Builder.js
+init_Asset();
 init_Cache();
 
 // node_modules/@easescript/transform/lib/tokens/index.js
@@ -6753,184 +7021,184 @@ function AnnotationDeclaration_default() {
 
 // node_modules/@easescript/transform/lib/tokens/AnnotationExpression.js
 init_Common();
-function AnnotationExpression_default(ctx2, stack2) {
-  const name = stack2.getLowerCaseName();
+function AnnotationExpression_default(ctx, stack) {
+  const name = stack.getLowerCaseName();
   switch (name) {
     case "http": {
-      return createHttpAnnotationNode(ctx2, stack2) || ctx2.createLiteral(null);
+      return createHttpAnnotationNode(ctx, stack) || ctx.createLiteral(null);
     }
     case "router": {
-      return createRouterAnnotationNode(ctx2, stack2) || ctx2.createLiteral(null);
+      return createRouterAnnotationNode(ctx, stack) || ctx.createLiteral(null);
     }
     case "url": {
-      return createUrlAnnotationNode(ctx2, stack2);
+      return createUrlAnnotationNode(ctx, stack);
     }
     case "env": {
-      return createEnvAnnotationNode(ctx2, stack2);
+      return createEnvAnnotationNode(ctx, stack);
     }
     case "readfile": {
-      return createReadfileAnnotationNode(ctx2, stack2) || ctx2.createLiteral(null);
+      return createReadfileAnnotationNode(ctx, stack) || ctx.createLiteral(null);
     }
     default:
-      ctx2.error(`The '${name}' annotations is not supported.`);
+      ctx.error(`The '${name}' annotations is not supported.`);
   }
   return null;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ArrayExpression.js
-function ArrayExpression_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.elements = stack2.elements.map((item) => ctx2.createToken(item));
+function ArrayExpression_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.elements = stack.elements.map((item) => ctx.createToken(item));
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ArrayPattern.js
-function ArrayPattern_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.elements = stack2.elements.map((item) => ctx2.createToken(item));
+function ArrayPattern_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.elements = stack.elements.map((item) => ctx.createToken(item));
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/FunctionExpression.js
-function FunctionExpression_default(ctx2, stack2, type) {
-  const node = ctx2.createNode(stack2, type);
-  node.async = stack2.async ? true : false;
-  node.params = stack2.params.map((item) => ctx2.createToken(item));
-  node.body = ctx2.createToken(stack2.body);
+function FunctionExpression_default(ctx, stack, type) {
+  const node = ctx.createNode(stack, type);
+  node.async = stack.async ? true : false;
+  node.params = stack.params.map((item) => ctx.createToken(item));
+  node.body = ctx.createToken(stack.body);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ArrowFunctionExpression.js
-function ArrowFunctionExpression_default(ctx2, stack2, type) {
-  const node = FunctionExpression_default(ctx2, stack2, type);
+function ArrowFunctionExpression_default(ctx, stack, type) {
+  const node = FunctionExpression_default(ctx, stack, type);
   node.type = type;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/AssignmentExpression.js
-var import_Utils5 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils6 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
-function AssignmentExpression_default(ctx2, stack2) {
-  const desc2 = stack2.left.description();
-  const module2 = stack2.module;
-  const isMember = stack2.left.isMemberExpression;
+function AssignmentExpression_default(ctx, stack) {
+  const desc2 = stack.left.description();
+  const module2 = stack.module;
+  const isMember = stack.left.isMemberExpression;
   let isReflect = false;
-  let operator = stack2.operator;
+  let operator = stack.operator;
   if (isMember) {
-    if (stack2.left.computed) {
+    if (stack.left.computed) {
       let hasDynamic = desc2 && desc2.isComputeType && desc2.isPropertyExists();
       if (!hasDynamic && desc2 && (desc2.isProperty && desc2.computed || desc2.isPropertyDefinition && desc2.dynamic)) {
         hasDynamic = true;
       }
-      if (!hasDynamic && !import_Utils5.default.isLiteralObjectType(stack2.left.object.type())) {
+      if (!hasDynamic && !import_Utils6.default.isLiteralObjectType(stack.left.object.type())) {
         isReflect = true;
       }
     } else if (!desc2 || desc2.isAnyType) {
-      isReflect = !import_Utils5.default.isLiteralObjectType(stack2.left.object.type());
+      isReflect = !import_Utils6.default.isLiteralObjectType(stack.left.object.type());
     }
   }
   if (isReflect) {
-    let value = ctx2.createToken(stack2.right);
-    let scopeId = module2 ? ctx2.createIdentifier(module2.id) : ctx2.createLiteral(null);
-    let propertyNode = ctx2.createLiteral(
-      stack2.left.property.value(),
+    let value = ctx.createToken(stack.right);
+    let scopeId = module2 ? ctx.createIdentifier(module2.id) : ctx.createLiteral(null);
+    let propertyNode = ctx.createLiteral(
+      stack.left.property.value(),
       void 0,
-      stack2.left.property
+      stack.left.property
     );
     if (operator && operator.charCodeAt(0) !== 61 && operator.charCodeAt(operator.length - 1) === 61) {
       operator = operator.slice(0, -1);
-      const callee2 = createStaticReferenceNode(ctx2, stack2, "Reflect", "get");
-      const left2 = ctx2.createCallExpression(callee2, [
+      const callee2 = createStaticReferenceNode(ctx, stack, "Reflect", "get");
+      const left2 = ctx.createCallExpression(callee2, [
         scopeId,
-        ctx2.createToken(stack2.left.object),
+        ctx.createToken(stack.left.object),
         propertyNode
-      ], stack2);
-      value = ctx2.createBinaryExpression(left2, value, operator);
+      ], stack);
+      value = ctx.createBinaryExpression(left2, value, operator);
     }
-    const callee = createStaticReferenceNode(ctx2, stack2, "Reflect", "set");
-    return ctx2.createCallExpression(callee, [
+    const callee = createStaticReferenceNode(ctx, stack, "Reflect", "set");
+    return ctx.createCallExpression(callee, [
       scopeId,
-      ctx2.createToken(stack2.left.object),
+      ctx.createToken(stack.left.object),
       propertyNode,
       value
-    ], stack2);
+    ], stack);
   }
-  let left = ctx2.createToken(stack2.left);
-  if (isMember && stack2.left.object.isSuperExpression) {
+  let left = ctx.createToken(stack.left);
+  if (isMember && stack.left.object.isSuperExpression) {
     if (left.type === "CallExpression" && left.callee.type === "MemberExpression" && left.callee.property.value === "callSuperSetter") {
       left.arguments.push(
-        ctx2.createToken(stack2.right)
+        ctx.createToken(stack.right)
       );
       return left;
     }
   }
-  const node = ctx2.createNode(stack2);
+  const node = ctx.createNode(stack);
   node.left = left;
-  node.right = ctx2.createToken(stack2.right);
+  node.right = ctx.createToken(stack.right);
   node.operator = operator;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/AssignmentPattern.js
-function AssignmentPattern_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.left = ctx2.createToken(stack2.left);
-  node.right = ctx2.createToken(stack2.right);
+function AssignmentPattern_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.left = ctx.createToken(stack.left);
+  node.right = ctx.createToken(stack.right);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/AwaitExpression.js
-function AwaitExpression_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.argument = ctx2.createToken(stack2.argument);
+function AwaitExpression_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.argument = ctx.createToken(stack.argument);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/BinaryExpression.js
-var import_Utils6 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils7 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
 var globals = ["Array", "Object", "RegExp", "Number", "String", "Function"];
-function BinaryExpression_default(ctx2, stack2) {
-  let operator = stack2.operator;
-  let node = ctx2.createNode(stack2);
-  let right = ctx2.createToken(stack2.right);
+function BinaryExpression_default(ctx, stack) {
+  let operator = stack.operator;
+  let node = ctx.createNode(stack);
+  let right = ctx.createToken(stack.right);
   if (operator === "is" || operator === "instanceof") {
-    let type = stack2.right.type();
-    let origin = !import_Utils6.default.isModule(type) ? import_Utils6.default.getOriginType(type) : type;
-    if (!stack2.right.hasLocalDefined()) {
-      ctx2.addDepend(origin, stack2.module);
-      right = ctx2.createIdentifier(
-        ctx2.getGlobalRefName(
-          stack2,
-          ctx2.getModuleReferenceName(origin, stack2.module)
+    let type = stack.right.type();
+    let origin = !import_Utils7.default.isModule(type) ? import_Utils7.default.getOriginType(type) : type;
+    if (!stack.right.hasLocalDefined()) {
+      ctx.addDepend(origin, stack.module);
+      right = ctx.createIdentifier(
+        ctx.getGlobalRefName(
+          stack,
+          ctx.getModuleReferenceName(origin, stack.module)
         )
       );
     }
     if (operator === "is" && !(origin && globals.includes(origin.id))) {
-      return ctx2.createCallExpression(
-        createStaticReferenceNode(ctx2, stack2, "System", "is"),
+      return ctx.createCallExpression(
+        createStaticReferenceNode(ctx, stack, "System", "is"),
         [
-          ctx2.createToken(stack2.left),
+          ctx.createToken(stack.left),
           right
         ],
-        stack2
+        stack
       );
     }
     operator = "instanceof";
   }
-  node.left = ctx2.createToken(stack2.left);
+  node.left = ctx.createToken(stack.left);
   node.right = right;
   node.operator = operator;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/BlockStatement.js
-function BlockStatement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
+function BlockStatement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
   node.body = [];
-  ctx2.setNode(stack2, node);
-  for (let child of stack2.body) {
-    const token = ctx2.createToken(child);
+  ctx.setNode(stack, node);
+  for (let child of stack.body) {
+    const token = ctx.createToken(child);
     if (token) {
       node.body.push(token);
       if (child.isWhenStatement) {
@@ -6947,105 +7215,105 @@ function BlockStatement_default(ctx2, stack2) {
     }
   }
   ;
-  ctx2.removeNode(stack2);
+  ctx.removeNode(stack);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/BreakStatement.js
-function BreakStatement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.label = stack2.label && ctx2.createIdentifier(stack2.label.value(), stack2.label);
+function BreakStatement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.label = stack.label && ctx.createIdentifier(stack.label.value(), stack.label);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/CallExpression.js
-var import_Utils7 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils8 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
-function CallExpression_default(ctx2, stack2) {
-  const isMember = stack2.callee.isMemberExpression;
-  const desc2 = stack2.descriptor();
-  const module2 = stack2.module;
-  const isChainExpression = stack2.parentStack.isChainExpression;
-  if (stack2.callee.isSuperExpression) {
+function CallExpression_default(ctx, stack) {
+  const isMember = stack.callee.isMemberExpression;
+  const desc2 = stack.descriptor();
+  const module2 = stack.module;
+  const isChainExpression = stack.parentStack.isChainExpression;
+  if (stack.callee.isSuperExpression) {
     const parent = module2 && module2.inherit;
     if (parent) {
-      ctx2.addDepend(parent, module2);
-      if (!ctx2.isActiveModule(parent, stack2.module) || ctx2.isES6ClassModule(parent)) {
+      ctx.addDepend(parent, module2);
+      if (!ctx.isActiveModule(parent, stack.module) || ctx.isES6ClassModule(parent)) {
         return null;
       }
     }
   }
   if (isMember && !isChainExpression && (!desc2 || desc2.isType && desc2.isAnyType)) {
-    const property = stack2.callee.computed ? ctx2.createToken(stack2.callee.property) : ctx2.createLiteral(
-      stack2.callee.property.value()
+    const property = stack.callee.computed ? ctx.createToken(stack.callee.property) : ctx.createLiteral(
+      stack.callee.property.value()
     );
     const args = [
-      module2 ? ctx2.createIdentifier(module2.id) : ctx2.createLiteral(null),
-      ctx2.createToken(stack2.callee.object),
+      module2 ? ctx.createIdentifier(module2.id) : ctx.createLiteral(null),
+      ctx.createToken(stack.callee.object),
       property,
-      ctx2.createArrayExpression(
-        stack2.arguments.map((item) => ctx2.createToken(item))
+      ctx.createArrayExpression(
+        stack.arguments.map((item) => ctx.createToken(item))
       )
     ];
-    if (stack2.callee.object.isSuperExpression) {
-      args.push(ctx2.createThisExpression());
+    if (stack.callee.object.isSuperExpression) {
+      args.push(ctx.createThisExpression());
     }
-    return ctx2.createCallExpression(
-      createStaticReferenceNode(ctx2, stack2, "Reflect", "call"),
+    return ctx.createCallExpression(
+      createStaticReferenceNode(ctx, stack, "Reflect", "call"),
       args,
-      stack2
+      stack
     );
   }
-  if (stack2.callee.isSuperExpression || isMember && stack2.callee.object.isSuperExpression && !isChainExpression) {
-    return ctx2.createCallExpression(
-      ctx2.createMemberExpression(
+  if (stack.callee.isSuperExpression || isMember && stack.callee.object.isSuperExpression && !isChainExpression) {
+    return ctx.createCallExpression(
+      ctx.createMemberExpression(
         [
-          ctx2.createToken(stack2.callee),
-          ctx2.createIdentifier("call")
+          ctx.createToken(stack.callee),
+          ctx.createIdentifier("call")
         ]
       ),
       [
-        ctx2.createThisExpression()
-      ].concat(stack2.arguments.map((item) => ctx2.createToken(item))),
-      stack2
+        ctx.createThisExpression()
+      ].concat(stack.arguments.map((item) => ctx.createToken(item))),
+      stack
     );
   }
-  const privateChain = ctx2.options.privateChain;
+  const privateChain = ctx.options.privateChain;
   if (privateChain && desc2 && desc2.isMethodDefinition && !(desc2.static || desc2.module.static)) {
-    const modifier = import_Utils7.default.getModifierValue(desc2);
+    const modifier = import_Utils8.default.getModifierValue(desc2);
     const refModule = desc2.module;
     if (modifier === "private" && refModule.children.length > 0) {
-      return ctx2.createCallExpression(
-        ctx2.createMemberExpression(
+      return ctx.createCallExpression(
+        ctx.createMemberExpression(
           [
-            ctx2.createToken(stack2.callee),
-            ctx2.createIdentifier("call")
+            ctx.createToken(stack.callee),
+            ctx.createIdentifier("call")
           ]
         ),
-        [isMember ? ctx2.createToken(stack2.callee.object) : ctx2.createThisExpression()].concat(stack2.arguments.map((item) => ctx2.createToken(item))),
-        stack2
+        [isMember ? ctx.createToken(stack.callee.object) : ctx.createThisExpression()].concat(stack.arguments.map((item) => ctx.createToken(item))),
+        stack
       );
     }
   }
   if (desc2) {
     let type = desc2.isCallDefinition ? desc2.module : desc2;
-    if (!isMember && !stack2.callee.isSuperExpression && desc2.isMethodDefinition)
+    if (!isMember && !stack.callee.isSuperExpression && desc2.isMethodDefinition)
       type = desc2.module;
-    if (import_Utils7.default.isTypeModule(type)) {
-      ctx2.addDepend(desc2, module2);
+    if (import_Utils8.default.isTypeModule(type)) {
+      ctx.addDepend(desc2, module2);
     }
   }
-  const node = ctx2.createNode(stack2);
-  node.callee = ctx2.createToken(stack2.callee);
-  node.arguments = stack2.arguments.map((item) => ctx2.createToken(item));
+  const node = ctx.createNode(stack);
+  node.callee = ctx.createToken(stack.callee);
+  node.arguments = stack.arguments.map((item) => ctx.createToken(item));
   node.isChainExpression = isChainExpression;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ChainExpression.js
-function ChainExpression_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.expression = ctx2.createToken(stack2.expression);
+function ChainExpression_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.expression = ctx.createToken(stack.expression);
   return node;
 }
 
@@ -7066,10 +7334,10 @@ var kindMaps = {
   "enumProperty": KIND_ENUM_PROPERTY
 };
 var ClassBuilder = class {
-  constructor(stack2) {
-    this.stack = stack2;
-    this.compilation = stack2.compilation;
-    this.module = stack2.module;
+  constructor(stack) {
+    this.stack = stack;
+    this.compilation = stack.compilation;
+    this.module = stack.module;
     this.privateProperties = [];
     this.initProperties = [];
     this.body = [];
@@ -7084,87 +7352,87 @@ var ClassBuilder = class {
     this.privateName = null;
     this.mainEnter = null;
   }
-  create(ctx2) {
-    ctx2.setNode(this.stack, this);
+  create(ctx) {
+    ctx.setNode(this.stack, this);
     const module2 = this.module;
-    const stack2 = this.stack;
-    this.createInherit(ctx2, module2, stack2);
-    this.createImplements(ctx2, module2, stack2);
-    this.createBody(ctx2, module2, stack2);
-    let methods7 = this.createMemberDescriptors(ctx2, this.methods);
-    let members = this.createMemberDescriptors(ctx2, this.members);
+    const stack = this.stack;
+    this.createInherit(ctx, module2, stack);
+    this.createImplements(ctx, module2, stack);
+    this.createBody(ctx, module2, stack);
+    let methods7 = this.createMemberDescriptors(ctx, this.methods);
+    let members = this.createMemberDescriptors(ctx, this.members);
     let creator = this.createCreator(
-      ctx2,
+      ctx,
       module2,
       module2.id,
-      this.createClassDescriptor(ctx2, module2, methods7, members)
+      this.createClassDescriptor(ctx, module2, methods7, members)
     );
-    ctx2.crateModuleAssets(module2);
-    ctx2.createModuleImportReferences(module2);
-    if (stack2.compilation.mainModule === module2) {
-      ctx2.addExport("default", ctx2.createIdentifier(module2.id));
+    ctx.crateModuleAssets(module2);
+    ctx.createModuleImportReferences(module2);
+    if (stack.compilation.mainModule === module2) {
+      ctx.addExport("default", ctx.createIdentifier(module2.id));
     }
     if (this.mainEnter) {
-      ctx2.addNodeToAfterBody(
-        ctx2.createExpressionStatement(
-          ctx2.createExpressionStatement(this.mainEnter)
+      ctx.addNodeToAfterBody(
+        ctx.createExpressionStatement(
+          ctx.createExpressionStatement(this.mainEnter)
         )
       );
     }
-    ctx2.removeNode(this.stack);
+    ctx.removeNode(this.stack);
     let expressions = [
       this.construct,
       ...this.beforeBody,
       ...this.body,
       ...this.afterBody,
-      ctx2.createExpressionStatement(creator)
+      ctx.createExpressionStatement(creator)
     ];
     let symbolNode = this.privateSymbolNode;
     if (symbolNode) {
       expressions.unshift(symbolNode);
     }
-    return ctx2.createMultipleStatement(expressions);
+    return ctx.createMultipleStatement(expressions);
   }
-  createBody(ctx2, module2, stack2) {
-    this.createMemebers(ctx2, stack2);
-    this.createIteratorMethodNode(ctx2, module2);
+  createBody(ctx, module2, stack) {
+    this.createMemebers(ctx, stack);
+    this.createIteratorMethodNode(ctx, module2);
     if (!this.construct) {
-      this.construct = this.createDefaultConstructor(ctx2, module2.id, module2.inherit);
+      this.construct = this.createDefaultConstructor(ctx, module2.id, module2.inherit);
     }
-    this.checkConstructor(ctx2, this.construct, module2);
+    this.checkConstructor(ctx, this.construct, module2);
   }
-  createInherit(ctx2, module2, stack2 = null) {
+  createInherit(ctx, module2, stack = null) {
     let inherit = module2.inherit;
     if (inherit) {
-      ctx2.addDepend(inherit, module2);
-      if (ctx2.isActiveModule(inherit, module2)) {
-        this.inherit = ctx2.createIdentifier(
-          ctx2.getModuleReferenceName(inherit, module2)
+      ctx.addDepend(inherit, module2);
+      if (ctx.isActiveModule(inherit, module2)) {
+        this.inherit = ctx.createIdentifier(
+          ctx.getModuleReferenceName(inherit, module2)
         );
       }
     }
   }
-  createImplements(ctx2, module2, stack2 = null) {
+  createImplements(ctx, module2, stack = null) {
     this.implements = module2.implements.map((impModule) => {
-      ctx2.addDepend(impModule, module2);
-      if (impModule.isInterface && ctx2.isActiveModule(impModule, module2) && import_Namespace3.default.globals.get("Iterator") !== impModule) {
-        return ctx2.createIdentifier(
-          ctx2.getModuleReferenceName(impModule, module2)
+      ctx.addDepend(impModule, module2);
+      if (impModule.isInterface && ctx.isActiveModule(impModule, module2) && import_Namespace3.default.globals.get("Iterator") !== impModule) {
+        return ctx.createIdentifier(
+          ctx.getModuleReferenceName(impModule, module2)
         );
       }
       return null;
     }).filter(Boolean);
   }
-  createIteratorMethodNode(ctx2, module2) {
+  createIteratorMethodNode(ctx, module2) {
     const iteratorType = import_Namespace3.default.globals.get("Iterator");
     if (module2.implements.includes(iteratorType)) {
-      const block = ctx2.createBlockStatement();
+      const block = ctx.createBlockStatement();
       block.body.push(
-        ctx2.createReturnStatement(
-          ctx2.createThisExpression()
+        ctx.createReturnStatement(
+          ctx.createThisExpression()
         )
       );
-      const method = ctx2.createMethodDefinition("Symbol.iterator", block);
+      const method = ctx.createMethodDefinition("Symbol.iterator", block);
       method.key.computed = true;
       method.static = false;
       method.modifier = "public";
@@ -7172,11 +7440,11 @@ var ClassBuilder = class {
       this.members.push(method);
     }
   }
-  createPrivateRefsName(ctx2) {
-    if (!this.privateName && ctx2.options.privateChain) {
-      this.privateName = ctx2.getGlobalRefName(this.stack, PRIVATE_NAME, this.module);
+  createPrivateRefsName(ctx) {
+    if (!this.privateName && ctx.options.privateChain) {
+      this.privateName = ctx.getGlobalRefName(this.stack, PRIVATE_NAME, this.module);
       if (!this.privateSymbolNode) {
-        this.privateSymbolNode = this.createPrivateSymbolNode(ctx2, this.privateName);
+        this.privateSymbolNode = this.createPrivateSymbolNode(ctx, this.privateName);
       }
     }
     return this.privateName;
@@ -7190,35 +7458,35 @@ var ClassBuilder = class {
     }
     return moduleHashId;
   }
-  createPrivateSymbolNode(ctx2, name) {
-    if (!ctx2.options.privateChain)
+  createPrivateSymbolNode(ctx, name) {
+    if (!ctx.options.privateChain)
       return null;
-    let isProd = ctx2.plugin.options.mode === "production";
+    let isProd = ctx.plugin.options.mode === "production";
     if (isProd) {
-      return ctx2.createVariableDeclaration(
+      return ctx.createVariableDeclaration(
         "const",
         [
-          ctx2.createVariableDeclarator(
-            ctx2.createIdentifier(name),
-            ctx2.createCallExpression(
-              ctx2.createIdentifier("Symbol"),
+          ctx.createVariableDeclarator(
+            ctx.createIdentifier(name),
+            ctx.createCallExpression(
+              ctx.createIdentifier("Symbol"),
               [
-                ctx2.createLiteral("private")
+                ctx.createLiteral("private")
               ]
             )
           )
         ]
       );
     } else {
-      return ctx2.createVariableDeclaration(
+      return ctx.createVariableDeclaration(
         "const",
         [
-          ctx2.createVariableDeclarator(
-            ctx2.createIdentifier(name),
-            ctx2.createCallExpression(
-              createStaticReferenceNode(ctx2, this.stack, "Class", "getKeySymbols"),
+          ctx.createVariableDeclarator(
+            ctx.createIdentifier(name),
+            ctx.createCallExpression(
+              createStaticReferenceNode(ctx, this.stack, "Class", "getKeySymbols"),
               [
-                ctx2.createLiteral(this.getHashId())
+                ctx.createLiteral(this.getHashId())
               ]
             )
           )
@@ -7226,24 +7494,24 @@ var ClassBuilder = class {
       );
     }
   }
-  checkSuperES6Class(ctx2, construct, module2) {
+  checkSuperES6Class(ctx, construct, module2) {
     const inherit = module2.inherit;
-    if (inherit && ctx2.isES6ClassModule(inherit)) {
-      const wrap = ctx2.createFunctionExpression(construct.body);
-      construct.body.body.push(ctx2.createReturnStatement(ctx2.createThisExpression()));
-      const block = ctx2.createBlockStatement();
+    if (inherit && ctx.isES6ClassModule(inherit)) {
+      const wrap = ctx.createFunctionExpression(construct.body);
+      construct.body.body.push(ctx.createReturnStatement(ctx.createThisExpression()));
+      const block = ctx.createBlockStatement();
       block.body.push(
-        ctx2.createReturnStatement(
-          ctx2.createCallExpression(
-            createStaticReferenceNode(ctx2, this.stack, "Reflect", "apply"),
+        ctx.createReturnStatement(
+          ctx.createCallExpression(
+            createStaticReferenceNode(ctx, this.stack, "Reflect", "apply"),
             [
               wrap,
-              ctx2.createCallExpression(
-                createStaticReferenceNode(ctx2, this.stack, "Reflect", "construct"),
+              ctx.createCallExpression(
+                createStaticReferenceNode(ctx, this.stack, "Reflect", "construct"),
                 [
-                  ctx2.createIdentifier(ctx2.getModuleReferenceName(inherit, module2)),
-                  ctx2.createIdentifier("arguments"),
-                  ctx2.createIdentifier(module2.id)
+                  ctx.createIdentifier(ctx.getModuleReferenceName(inherit, module2)),
+                  ctx.createIdentifier("arguments"),
+                  ctx.createIdentifier(module2.id)
                 ]
               )
             ]
@@ -7253,7 +7521,7 @@ var ClassBuilder = class {
       construct.body = block;
     }
   }
-  checkConstructor(ctx2, construct, module2) {
+  checkConstructor(ctx, construct, module2) {
     construct.type = "FunctionDeclaration";
     construct.kind = "";
     construct.key.value = module2.id;
@@ -7262,20 +7530,20 @@ var ClassBuilder = class {
       let appendAt = module2.inherit ? 1 : 0;
       let els = [...this.initProperties];
       if (this.privateProperties.length > 0) {
-        let privateName = this.createPrivateRefsName(ctx2);
-        let definePrivateProperties = ctx2.createExpressionStatement(
-          ctx2.createCallExpression(
-            ctx2.createMemberExpression([
-              ctx2.createIdentifier("Object"),
-              ctx2.createIdentifier("defineProperty")
+        let privateName = this.createPrivateRefsName(ctx);
+        let definePrivateProperties = ctx.createExpressionStatement(
+          ctx.createCallExpression(
+            ctx.createMemberExpression([
+              ctx.createIdentifier("Object"),
+              ctx.createIdentifier("defineProperty")
             ]),
             [
-              ctx2.createThisExpression(),
-              ctx2.createIdentifier(privateName),
-              ctx2.createObjectExpression([
-                ctx2.createProperty(
-                  ctx2.createIdentifier("value"),
-                  ctx2.createObjectExpression(this.privateProperties)
+              ctx.createThisExpression(),
+              ctx.createIdentifier(privateName),
+              ctx.createObjectExpression([
+                ctx.createProperty(
+                  ctx.createIdentifier("value"),
+                  ctx.createObjectExpression(this.privateProperties)
                 )
               ])
             ]
@@ -7285,44 +7553,44 @@ var ClassBuilder = class {
       }
       body.splice(appendAt, 0, ...els);
     }
-    this.checkSuperES6Class(ctx2, construct, module2);
+    this.checkSuperES6Class(ctx, construct, module2);
   }
-  createInitMemberProperty(ctx2, node, stack2 = null, staticFlag = false) {
+  createInitMemberProperty(ctx, node, stack = null, staticFlag = false) {
     if (staticFlag)
       return;
-    if (ctx2.options.privateChain && node.modifier === "private") {
+    if (ctx.options.privateChain && node.modifier === "private") {
       this.privateProperties.push(
-        ctx2.createProperty(
+        ctx.createProperty(
           node.key,
-          node.init || ctx2.createLiteral(null)
+          node.init || ctx.createLiteral(null)
         )
       );
     } else {
       this.initProperties.push(
-        ctx2.createExpressionStatement(
-          ctx2.createAssignmentExpression(
-            ctx2.createMemberExpression([
-              ctx2.createThisExpression(),
+        ctx.createExpressionStatement(
+          ctx.createAssignmentExpression(
+            ctx.createMemberExpression([
+              ctx.createThisExpression(),
               node.key
             ]),
-            node.init || ctx2.createLiteral(null)
+            node.init || ctx.createLiteral(null)
           )
         )
       );
     }
     node.init = null;
   }
-  createMemebers(ctx2, stack2) {
+  createMemebers(ctx, stack) {
     const cache1 = /* @__PURE__ */ new Map();
     const cache2 = /* @__PURE__ */ new Map();
-    stack2.body.forEach((item) => {
-      const child = this.createMemeber(ctx2, item, !!stack2.static);
+    stack.body.forEach((item) => {
+      const child = this.createMemeber(ctx, item, !!stack.static);
       if (!child)
         return;
-      const staticFlag = !!(stack2.static || child.static);
+      const staticFlag = !!(stack.static || child.static);
       const refs = staticFlag ? this.methods : this.members;
       if (child.type === "PropertyDefinition") {
-        this.createInitMemberProperty(ctx2, child, item, staticFlag);
+        this.createInitMemberProperty(ctx, child, item, staticFlag);
       }
       if (item.isMethodSetterDefinition || item.isMethodGetterDefinition) {
         const name = child.key.value;
@@ -7350,50 +7618,50 @@ var ClassBuilder = class {
       }
     });
   }
-  createAnnotations(ctx2, stack2, node, staticFlag = false) {
-    if (staticFlag && stack2.isMethodDefinition && stack2.isEnterMethod && node.modifier === "public" && !this.mainEnter) {
-      this.mainEnter = createMainAnnotationNode(ctx2, stack2);
+  createAnnotations(ctx, stack, node, staticFlag = false) {
+    if (staticFlag && stack.isMethodDefinition && stack.isEnterMethod && node.modifier === "public" && !this.mainEnter) {
+      this.mainEnter = createMainAnnotationNode(ctx, stack);
     }
     return node;
   }
-  createMemeber(ctx2, stack2, staticFlag = false) {
-    const node = ctx2.createToken(stack2);
+  createMemeber(ctx, stack, staticFlag = false) {
+    const node = ctx.createToken(stack);
     if (node) {
-      this.createAnnotations(ctx2, stack2, node, !!(staticFlag || node.static));
+      this.createAnnotations(ctx, stack, node, !!(staticFlag || node.static));
     }
     return node;
   }
-  createDefaultConstructor(ctx2, name, inherit = null, params = []) {
-    const block = ctx2.createBlockStatement();
+  createDefaultConstructor(ctx, name, inherit = null, params = []) {
+    const block = ctx.createBlockStatement();
     if (inherit) {
-      const se = ctx2.createSuperExpression(
-        ctx2.getModuleReferenceName(inherit, this.module)
+      const se = ctx.createSuperExpression(
+        ctx.getModuleReferenceName(inherit, this.module)
       );
-      const args = params.length > 0 ? ctx2.createArrayExpression(params) : ctx2.createIdentifier("arguments");
+      const args = params.length > 0 ? ctx.createArrayExpression(params) : ctx.createIdentifier("arguments");
       block.body.push(
-        ctx2.createExpressionStatement(
-          ctx2.createCallExpression(
-            ctx2.createMemberExpression(
+        ctx.createExpressionStatement(
+          ctx.createCallExpression(
+            ctx.createMemberExpression(
               [
                 se,
-                ctx2.createIdentifier("apply")
+                ctx.createIdentifier("apply")
               ]
             ),
             [
-              ctx2.createThisExpression(),
+              ctx.createThisExpression(),
               args
             ]
           )
         )
       );
     }
-    return ctx2.createMethodDefinition(
+    return ctx.createMethodDefinition(
       name,
       block,
       params
     );
   }
-  createMemberDescriptor(ctx2, node) {
+  createMemberDescriptor(ctx, node) {
     if (node.dynamic && node.type === "PropertyDefinition") {
       return null;
     }
@@ -7421,24 +7689,24 @@ var ClassBuilder = class {
     }
     node.disabledNewLine = true;
     properties.push(
-      ctx2.createProperty(
-        ctx2.createIdentifier("m"),
-        ctx2.createLiteral(mode)
+      ctx.createProperty(
+        ctx.createIdentifier("m"),
+        ctx.createLiteral(mode)
       )
     );
     if (kind === KIND_VAR) {
       properties.push(
-        ctx2.createProperty(
-          ctx2.createIdentifier("writable"),
-          ctx2.createLiteral(true)
+        ctx.createProperty(
+          ctx.createIdentifier("writable"),
+          ctx.createLiteral(true)
         )
       );
     }
     if (!_static && (node.isAccessor || kind === KIND_VAR || kind === KIND_CONST) && modifier === "public") {
       properties.push(
-        ctx2.createProperty(
-          ctx2.createIdentifier("enumerable"),
-          ctx2.createLiteral(true)
+        ctx.createProperty(
+          ctx.createIdentifier("enumerable"),
+          ctx.createLiteral(true)
         )
       );
     }
@@ -7450,8 +7718,8 @@ var ClassBuilder = class {
         node.get.disabledNewLine = true;
         delete node.get.static;
         properties.push(
-          ctx2.createProperty(
-            ctx2.createIdentifier("get"),
+          ctx.createProperty(
+            ctx.createIdentifier("get"),
             node.get
           )
         );
@@ -7462,8 +7730,8 @@ var ClassBuilder = class {
         node.set.disabledNewLine = true;
         delete node.set.static;
         properties.push(
-          ctx2.createProperty(
-            ctx2.createIdentifier("set"),
+          ctx.createProperty(
+            ctx.createIdentifier("set"),
             node.set
           )
         );
@@ -7472,16 +7740,16 @@ var ClassBuilder = class {
       if (node.type === "PropertyDefinition") {
         if (node.init) {
           properties.push(
-            ctx2.createProperty(
-              ctx2.createIdentifier("value"),
+            ctx.createProperty(
+              ctx.createIdentifier("value"),
               node.init
             )
           );
         }
       } else {
         properties.push(
-          ctx2.createProperty(
-            ctx2.createIdentifier("value"),
+          ctx.createProperty(
+            ctx.createIdentifier("value"),
             node
           )
         );
@@ -7489,18 +7757,18 @@ var ClassBuilder = class {
     }
     if (isConfigurable) {
       properties.push(
-        ctx2.createProperty(
-          ctx2.createIdentifier("configurable"),
-          ctx2.createLiteral(true)
+        ctx.createProperty(
+          ctx.createIdentifier("configurable"),
+          ctx.createLiteral(true)
         )
       );
     }
-    return ctx2.createProperty(
+    return ctx.createProperty(
       key,
-      ctx2.createObjectExpression(properties)
+      ctx.createObjectExpression(properties)
     );
   }
-  createClassDescriptor(ctx2, module2, methods7, members) {
+  createClassDescriptor(ctx, module2, methods7, members) {
     const properties = [];
     let kind = module2.isEnum ? KIND_CLASS : module2.isInterface ? KIND_INTERFACE : KIND_CLASS;
     kind |= MODIFIER_PUBLIC;
@@ -7514,134 +7782,134 @@ var ClassBuilder = class {
       kind |= MODIFIER_FINAL;
     }
     properties.push(
-      ctx2.createProperty(
-        ctx2.createIdentifier("m"),
-        ctx2.createLiteral(kind)
+      ctx.createProperty(
+        ctx.createIdentifier("m"),
+        ctx.createLiteral(kind)
       )
     );
     const ns = module2.namespace && module2.namespace.toString();
     if (ns) {
       properties.push(
-        ctx2.createProperty(
-          ctx2.createIdentifier("ns"),
-          ctx2.createLiteral(ns)
+        ctx.createProperty(
+          ctx.createIdentifier("ns"),
+          ctx.createLiteral(ns)
         )
       );
     }
     properties.push(
-      ctx2.createProperty(
-        ctx2.createIdentifier("name"),
-        ctx2.createLiteral(module2.id)
+      ctx.createProperty(
+        ctx.createIdentifier("name"),
+        ctx.createLiteral(module2.id)
       )
     );
     if (module2.dynamic) {
       properties.push(
-        ctx2.createProperty(
-          ctx2.createIdentifier("dynamic"),
-          ctx2.createLiteral(true)
+        ctx.createProperty(
+          ctx.createIdentifier("dynamic"),
+          ctx.createLiteral(true)
         )
       );
     }
     if (this.privateName) {
       properties.push(
-        ctx2.createProperty(
-          ctx2.createIdentifier("private"),
-          ctx2.createIdentifier(this.privateName)
+        ctx.createProperty(
+          ctx.createIdentifier("private"),
+          ctx.createIdentifier(this.privateName)
         )
       );
     }
     if (this.implements.length > 0) {
       properties.push(
-        ctx2.createProperty(
-          ctx2.createIdentifier("imps"),
-          ctx2.createArrayExpression(this.implements)
+        ctx.createProperty(
+          ctx.createIdentifier("imps"),
+          ctx.createArrayExpression(this.implements)
         )
       );
     }
     if (this.inherit) {
       properties.push(
-        ctx2.createProperty(
-          ctx2.createIdentifier("inherit"),
+        ctx.createProperty(
+          ctx.createIdentifier("inherit"),
           this.inherit
         )
       );
     }
     if (methods7) {
       properties.push(
-        ctx2.createProperty(
-          ctx2.createIdentifier("methods"),
+        ctx.createProperty(
+          ctx.createIdentifier("methods"),
           methods7
         )
       );
     }
     if (members) {
       properties.push(
-        ctx2.createProperty(
-          ctx2.createIdentifier("members"),
+        ctx.createProperty(
+          ctx.createIdentifier("members"),
           members
         )
       );
     }
-    return ctx2.createObjectExpression(properties);
+    return ctx.createObjectExpression(properties);
   }
-  createCreator(ctx2, module2, className, description) {
+  createCreator(ctx, module2, className, description) {
     const args = [
-      ctx2.createIdentifier(className || module2.id),
+      ctx.createIdentifier(className || module2.id),
       description
     ];
-    return ctx2.createCallExpression(
-      createStaticReferenceNode(ctx2, this.stack, "Class", "creator"),
+    return ctx.createCallExpression(
+      createStaticReferenceNode(ctx, this.stack, "Class", "creator"),
       args
     );
   }
-  createMemberDescriptors(ctx2, members) {
+  createMemberDescriptors(ctx, members) {
     if (!members.length)
       return;
-    return ctx2.createObjectExpression(
-      members.map((node) => this.createMemberDescriptor(ctx2, node)).filter(Boolean)
+    return ctx.createObjectExpression(
+      members.map((node) => this.createMemberDescriptor(ctx, node)).filter(Boolean)
     );
   }
 };
 var ClassBuilder_default = ClassBuilder;
 
 // node_modules/@easescript/transform/lib/tokens/ClassDeclaration.js
-function ClassDeclaration_default(ctx2, stack2) {
-  const builder = new ClassBuilder_default(stack2);
-  return builder.create(ctx2);
+function ClassDeclaration_default(ctx, stack) {
+  const builder = new ClassBuilder_default(stack);
+  return builder.create(ctx);
 }
 
 // node_modules/@easescript/transform/lib/tokens/ConditionalExpression.js
-function ConditionalExpression_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.test = ctx2.createToken(stack2.test);
-  node.consequent = ctx2.createToken(stack2.consequent);
-  node.alternate = ctx2.createToken(stack2.alternate);
+function ConditionalExpression_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.test = ctx.createToken(stack.test);
+  node.consequent = ctx.createToken(stack.consequent);
+  node.alternate = ctx.createToken(stack.alternate);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ContinueStatement.js
-function ContinueStatement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.label = ctx2.createToken(stack2.label);
+function ContinueStatement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.label = ctx.createToken(stack.label);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/Declarator.js
-function Declarator_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2, "Identifier");
-  node.value = node.raw = stack2.value();
+function Declarator_default(ctx, stack) {
+  const node = ctx.createNode(stack, "Identifier");
+  node.value = node.raw = stack.value();
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/DeclaratorDeclaration.js
-function DeclaratorDeclaration_default(ctx2, stack2) {
+function DeclaratorDeclaration_default(ctx, stack) {
 }
 
 // node_modules/@easescript/transform/lib/tokens/DoWhileStatement.js
-function DoWhileStatement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.condition = ctx2.createToken(stack2.condition);
-  node.body = ctx2.createToken(stack2.body);
+function DoWhileStatement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.condition = ctx.createToken(stack.condition);
+  node.body = ctx.createToken(stack.body);
   return node;
 }
 
@@ -7652,423 +7920,421 @@ function EmptyStatement_default() {
 // node_modules/@easescript/transform/lib/core/EnumBuilder.js
 var import_Namespace4 = __toESM(require("easescript/lib/core/Namespace.js"));
 var EnumBuilder = class extends ClassBuilder_default {
-  create(ctx2) {
-    ctx2.setNode(this.stack, this);
+  create(ctx) {
+    ctx.setNode(this.stack, this);
     const module2 = this.module;
-    const stack2 = this.stack;
-    this.createInherit(ctx2, module2, stack2);
-    this.createImplements(ctx2, module2, stack2);
-    this.createBody(ctx2, module2, stack2);
-    let methods7 = this.createMemberDescriptors(ctx2, this.methods);
-    let members = this.createMemberDescriptors(ctx2, this.members);
+    const stack = this.stack;
+    this.createInherit(ctx, module2, stack);
+    this.createImplements(ctx, module2, stack);
+    this.createBody(ctx, module2, stack);
+    let methods7 = this.createMemberDescriptors(ctx, this.methods);
+    let members = this.createMemberDescriptors(ctx, this.members);
     let creator = this.createCreator(
-      ctx2,
+      ctx,
       module2,
       module2.id,
-      this.createClassDescriptor(ctx2, module2, methods7, members)
+      this.createClassDescriptor(ctx, module2, methods7, members)
     );
-    ctx2.crateModuleAssets(module2);
-    ctx2.createModuleImportReferences(module2);
-    if (stack2.compilation.mainModule === module2) {
-      ctx2.addExport("default", ctx2.createIdentifier(module2.id));
+    ctx.crateModuleAssets(module2);
+    ctx.createModuleImportReferences(module2);
+    if (stack.compilation.mainModule === module2) {
+      ctx.addExport("default", ctx.createIdentifier(module2.id));
     }
-    ctx2.removeNode(this.stack);
+    ctx.removeNode(this.stack);
     let expressions = [
       this.construct,
       ...this.beforeBody,
       ...this.body,
       ...this.afterBody,
-      ctx2.createExpressionStatement(creator)
+      ctx.createExpressionStatement(creator)
     ];
     let symbolNode = this.privateSymbolNode;
     if (symbolNode) {
       expressions.unshift(symbolNode);
     }
-    return ctx2.createMultipleStatement(expressions);
+    return ctx.createMultipleStatement(expressions);
   }
-  createEnumExpression(ctx2) {
-    let stack2 = this.stack;
-    const name = stack2.value();
-    const init = ctx2.createAssignmentExpression(
-      ctx2.createIdentifier(name, stack2),
-      ctx2.createObjectExpression()
+  createEnumExpression(ctx) {
+    let stack = this.stack;
+    const name = stack.value();
+    const init = ctx.createAssignmentExpression(
+      ctx.createIdentifier(name, stack),
+      ctx.createObjectExpression()
     );
-    const properties = stack2.properties.map((item) => {
-      const initNode = ctx2.createMemberExpression([
-        ctx2.createIdentifier(name, item.key),
-        ctx2.createLiteral(
+    const properties = stack.properties.map((item) => {
+      const initNode = ctx.createMemberExpression([
+        ctx.createIdentifier(name, item.key),
+        ctx.createLiteral(
           item.key.value(),
           void 0,
           item.key
         )
       ]);
       initNode.computed = true;
-      const initAssignmentNode = ctx2.createAssignmentExpression(
+      const initAssignmentNode = ctx.createAssignmentExpression(
         initNode,
-        ctx2.createLiteral(
+        ctx.createLiteral(
           item.init.value(),
           item.init.value(),
           item.init
         )
       );
-      const left = ctx2.createMemberExpression([
-        ctx2.createIdentifier(name),
+      const left = ctx.createMemberExpression([
+        ctx.createIdentifier(name),
         initAssignmentNode
       ]);
       left.computed = true;
-      return ctx2.createAssignmentExpression(
+      return ctx.createAssignmentExpression(
         left,
-        ctx2.createLiteral(
+        ctx.createLiteral(
           item.key.value(),
           void 0,
           item.key
         )
       );
     });
-    properties.push(ctx2.createIdentifier(name));
-    return ctx2.createVariableDeclaration("var", [
-      ctx2.createVariableDeclarator(
-        ctx2.createIdentifier(name, stack2),
-        ctx2.createParenthesizedExpression(
-          ctx2.createSequenceExpression([init, ...properties])
+    properties.push(ctx.createIdentifier(name));
+    return ctx.createVariableDeclaration("var", [
+      ctx.createVariableDeclarator(
+        ctx.createIdentifier(name, stack),
+        ctx.createParenthesizedExpression(
+          ctx.createSequenceExpression([init, ...properties])
         )
       )
     ]);
   }
-  createBody(ctx2, module2, stack2) {
-    this.createMemebers(ctx2, stack2);
+  createBody(ctx, module2, stack) {
+    this.createMemebers(ctx, stack);
     if (!this.construct) {
-      this.construct = this.createDefaultConstructor(ctx2, module2.id, module2.inherit);
+      this.construct = this.createDefaultConstructor(ctx, module2.id, module2.inherit);
     }
-    this.checkConstructor(ctx2, this.construct, module2);
+    this.checkConstructor(ctx, this.construct, module2);
   }
-  createInherit(ctx2, module2, stack2 = null) {
+  createInherit(ctx, module2, stack = null) {
     let inherit = module2.inherit;
     if (inherit) {
-      ctx2.addDepend(inherit, stack2.module);
-      if (ctx2.isActiveModule(inherit, stack2.module)) {
-        this.inherit = ctx2.createIdentifier(
-          ctx2.getModuleReferenceName(inherit, module2),
-          stack2.inherit
+      ctx.addDepend(inherit, stack.module);
+      if (ctx.isActiveModule(inherit, stack.module)) {
+        this.inherit = ctx.createIdentifier(
+          ctx.getModuleReferenceName(inherit, module2),
+          stack.inherit
         );
       }
     }
     if (!this.inherit) {
       const inherit2 = import_Namespace4.default.globals.get("Enumeration");
-      ctx2.addDepend(inherit2, stack2.module);
-      this.inherit = ctx2.createIdentifier(
-        ctx2.getModuleReferenceName(inherit2, module2)
+      ctx.addDepend(inherit2, stack.module);
+      this.inherit = ctx.createIdentifier(
+        ctx.getModuleReferenceName(inherit2, module2)
       );
     }
   }
-  createMemebers(ctx2, stack2) {
+  createMemebers(ctx, stack) {
     let methods7 = this.methods;
-    stack2.properties.forEach((item) => {
-      const child = this.createMemeber(ctx2, item);
+    stack.properties.forEach((item) => {
+      const child = this.createMemeber(ctx, item);
       if (child) {
         methods7.push(child);
       }
     });
-    super.createMemebers(ctx2, stack2);
+    super.createMemebers(ctx, stack);
   }
 };
 var EnumBuilder_default = EnumBuilder;
 
 // node_modules/@easescript/transform/lib/tokens/EnumDeclaration.js
-function EnumDeclaration_default(ctx2, stack2) {
-  const builder = new EnumBuilder_default(stack2);
-  if (stack2.isExpression) {
-    return builder.createEnumExpression(ctx2);
+function EnumDeclaration_default(ctx, stack) {
+  const builder = new EnumBuilder_default(stack);
+  if (stack.isExpression) {
+    return builder.createEnumExpression(ctx);
   } else {
-    return builder.create(ctx2);
+    return builder.create(ctx);
   }
 }
 
 // node_modules/@easescript/transform/lib/tokens/EnumProperty.js
-function EnumProperty_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2, "PropertyDefinition");
+function EnumProperty_default(ctx, stack) {
+  const node = ctx.createNode(stack, "PropertyDefinition");
   node.static = true;
-  node.key = ctx2.createToken(stack2.key);
-  node.init = ctx2.createToken(stack2.init);
+  node.key = ctx.createToken(stack.key);
+  node.init = ctx.createToken(stack.init);
   node.modifier = "public";
   node.kind = "enumProperty";
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ExportAllDeclaration.js
-function ExportAllDeclaration_default(ctx2, stack2) {
-  if (stack2.getResolveJSModule() || !stack2.source) {
+function ExportAllDeclaration_default(ctx, stack) {
+  if (stack.getResolveJSModule() || !stack.source) {
     return null;
   }
-  let source = stack2.source.value();
-  const compilation = stack2.getResolveCompilation();
+  let source = stack.source.value();
+  const compilation = stack.getResolveCompilation();
   if (compilation && compilation.stack) {
-    ctx2.addDepend(compilation);
-    source = ctx2.getModuleImportSource(stack2.getResolveFile(), stack2.compilation.file);
+    ctx.addDepend(compilation);
+    source = ctx.getModuleImportSource(stack.getResolveFile(), stack.compilation.file);
   } else {
-    source = ctx2.getModuleImportSource(source, stack2.compilation.file);
+    source = ctx.getModuleImportSource(source, stack.compilation.file);
   }
-  let importSource = ctx2.getImport(source, true);
+  let importSource = ctx.getImport(source, true);
   if (!importSource) {
-    importSource = ctx2.addImport(source, null, "*");
+    importSource = ctx.addImport(source, null, "*");
     importSource.setExportSource();
     importSource.setSourceTarget(compilation);
-    importSource.setSourceContext(stack2.compilation);
   }
-  ctx2.addExport(stack2.exported ? stack2.exported.value() : null, "*", importSource, stack2);
+  ctx.addExport(stack.exported ? stack.exported.value() : null, "*", importSource, stack);
 }
 
 // node_modules/@easescript/transform/lib/tokens/ExportDefaultDeclaration.js
-function ExportDefaultDeclaration_default(ctx2, stack2) {
-  let declaration = ctx2.createToken(stack2.declaration);
+function ExportDefaultDeclaration_default(ctx, stack) {
+  let declaration = ctx.createToken(stack.declaration);
   if (declaration) {
-    ctx2.addExport("default", declaration, null, stack2);
+    ctx.addExport("default", declaration, null, stack);
   }
 }
 
 // node_modules/@easescript/transform/lib/tokens/ExportNamedDeclaration.js
-function ExportNamedDeclaration_default(ctx2, stack2) {
-  if (stack2.getResolveJSModule()) {
+function ExportNamedDeclaration_default(ctx, stack) {
+  if (stack.getResolveJSModule()) {
     return null;
   }
   let exportSource = null;
-  if (stack2.declaration) {
-    const decl = stack2.declaration;
+  if (stack.declaration) {
+    const decl = stack.declaration;
     if (decl.isVariableDeclaration) {
       let decls = decl.declarations.map((decl2) => decl2.id.value());
-      exportSource = ctx2.addExport(decls.shift(), ctx2.createToken(decl), null, decl);
+      exportSource = ctx.addExport(decls.shift(), ctx.createToken(decl), null, decl);
       exportSource.bindExport(decls);
     } else if (decl.isFunctionDeclaration) {
-      exportSource = ctx2.addExport(decl.key.value(), ctx2.createToken(decl), null, decl);
+      exportSource = ctx.addExport(decl.key.value(), ctx.createToken(decl), null, decl);
     } else {
       throw new Error(`Export declaration type only support 'var' or 'function'`);
     }
-  } else if (stack2.specifiers && stack2.specifiers.length > 0) {
+  } else if (stack.specifiers && stack.specifiers.length > 0) {
     let source = null;
-    if (stack2.source) {
-      source = stack2.source.value();
-      let compilation = stack2.getResolveCompilation();
+    if (stack.source) {
+      source = stack.source.value();
+      let compilation = stack.getResolveCompilation();
       if (compilation && compilation.stack) {
-        ctx2.addDepend(compilation);
-        source = ctx2.getModuleImportSource(stack2.getResolveFile(), stack2.compilation.file);
+        ctx.addDepend(compilation);
+        source = ctx.getModuleImportSource(stack.getResolveFile(), stack.compilation.file);
       } else {
-        source = ctx2.getModuleImportSource(source, stack2.compilation.file);
+        source = ctx.getModuleImportSource(source, stack.compilation.file);
       }
-      let importSource = ctx2.getImport(source);
+      let importSource = ctx.getImport(source);
       if (!importSource) {
-        importSource = ctx2.addImport(source);
+        importSource = ctx.addImport(source);
         importSource.setExportSource();
         importSource.setSourceTarget(compilation);
-        importSource.setSourceContext(stack2.compilation);
       }
       source = importSource;
     }
-    stack2.specifiers.forEach((spec) => {
+    stack.specifiers.forEach((spec) => {
       let exported = spec.exported || spec.local;
-      exportSource = ctx2.addExport(exported.value(), spec.local.value(), source, spec);
+      exportSource = ctx.addExport(exported.value(), spec.local.value(), source, spec);
     });
   }
   if (exportSource) {
-    exportSource.stack = stack2;
+    exportSource.stack = stack;
   }
 }
 
 // node_modules/@easescript/transform/lib/tokens/ExportSpecifier.js
-function ExportSpecifier_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.exported = ctx2.createToken(stack2.exported);
-  node.local = ctx2.createToken(stack2.local);
+function ExportSpecifier_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.exported = ctx.createToken(stack.exported);
+  node.local = ctx.createToken(stack.local);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ExpressionStatement.js
-function ExpressionStatement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.expression = ctx2.createToken(stack2.expression);
+function ExpressionStatement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.expression = ctx.createToken(stack.expression);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ForInStatement.js
-function ForInStatement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.left = ctx2.createToken(stack2.left);
-  node.right = ctx2.createToken(stack2.right);
-  node.body = ctx2.createToken(stack2.body);
+function ForInStatement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.left = ctx.createToken(stack.left);
+  node.right = ctx.createToken(stack.right);
+  node.body = ctx.createToken(stack.body);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ForOfStatement.js
-var import_Utils8 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils9 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
-function ForOfStatement_default(ctx2, stack2) {
-  const type = import_Utils8.default.getOriginType(stack2.right.type());
-  if (import_Utils8.default.isLocalModule(type) || stack2.right.type().isAnyType) {
-    const node2 = ctx2.createNode(stack2, "ForStatement");
-    const obj = ctx2.getLocalRefName(stack2, "_i");
-    const res = ctx2.getLocalRefName(stack2, "_v");
-    const init = ctx2.createToken(stack2.left);
-    const object = ctx2.createAssignmentExpression(
-      ctx2.createIdentifier(obj),
-      ctx2.createCallExpression(
-        createStaticReferenceNode(ctx2, stack2, "System", "getIterator"),
+function ForOfStatement_default(ctx, stack) {
+  const type = import_Utils9.default.getOriginType(stack.right.type());
+  if (import_Utils9.default.isLocalModule(type) || stack.right.type().isAnyType) {
+    const node2 = ctx.createNode(stack, "ForStatement");
+    const obj = ctx.getLocalRefName(stack, "_i");
+    const res = ctx.getLocalRefName(stack, "_v");
+    const init = ctx.createToken(stack.left);
+    const object = ctx.createAssignmentExpression(
+      ctx.createIdentifier(obj),
+      ctx.createCallExpression(
+        createStaticReferenceNode(ctx, stack, "System", "getIterator"),
         [
-          ctx2.createToken(stack2.right)
+          ctx.createToken(stack.right)
         ],
-        stack2.right
+        stack.right
       )
     );
-    init.declarations.push(ctx2.createIdentifier(res));
+    init.declarations.push(ctx.createIdentifier(res));
     init.declarations.push(object);
-    const condition = ctx2.createChunkExpression(`${obj} && (${res}=${obj}.next()) && !${res}.done`, false);
+    const condition = ctx.createChunkExpression(`${obj} && (${res}=${obj}.next()) && !${res}.done`, false);
     node2.init = init;
     node2.condition = condition;
     node2.update = null;
-    node2.body = ctx2.createToken(stack2.body);
+    node2.body = ctx.createToken(stack.body);
     const block = node2.body;
-    const assignment = ctx2.createExpressionStatement(
-      ctx2.createAssignmentExpression(
-        ctx2.createIdentifier(init.declarations[0].id.value),
-        ctx2.createMemberExpression([
-          ctx2.createIdentifier(res),
-          ctx2.createIdentifier("value")
+    const assignment = ctx.createExpressionStatement(
+      ctx.createAssignmentExpression(
+        ctx.createIdentifier(init.declarations[0].id.value),
+        ctx.createMemberExpression([
+          ctx.createIdentifier(res),
+          ctx.createIdentifier("value")
         ])
       )
     );
     block.body.splice(0, 0, assignment);
     return node2;
   }
-  const node = ctx2.createNode(stack2);
-  node.left = ctx2.createToken(stack2.left);
-  node.right = ctx2.createToken(stack2.right);
-  node.body = ctx2.createToken(stack2.body);
+  const node = ctx.createNode(stack);
+  node.left = ctx.createToken(stack.left);
+  node.right = ctx.createToken(stack.right);
+  node.body = ctx.createToken(stack.body);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ForStatement.js
-function ForStatement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.init = ctx2.createToken(stack2.init);
-  node.condition = ctx2.createToken(stack2.condition);
-  node.update = ctx2.createToken(stack2.update);
-  node.body = ctx2.createToken(stack2.body);
+function ForStatement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.init = ctx.createToken(stack.init);
+  node.condition = ctx.createToken(stack.condition);
+  node.update = ctx.createToken(stack.update);
+  node.body = ctx.createToken(stack.body);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/FunctionDeclaration.js
 init_Common();
-function FunctionDeclaration_default(ctx2, stack2, type) {
-  const node = FunctionExpression_default(ctx2, stack2, type);
-  if (stack2.key) {
-    let name = stack2.key.value();
-    if (stack2.isMethodDefinition && !stack2.isConstructor) {
-      name = getMethodOrPropertyAlias(ctx2, stack2, name) || name;
+function FunctionDeclaration_default(ctx, stack, type) {
+  const node = FunctionExpression_default(ctx, stack, type);
+  if (stack.key) {
+    let name = stack.key.value();
+    if (stack.isMethodDefinition && !stack.isConstructor) {
+      name = getMethodOrPropertyAlias(ctx, stack, name) || name;
     }
-    node.key = ctx2.createIdentifier(name, stack2.key);
+    node.key = ctx.createIdentifier(name, stack.key);
   }
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/Identifier.js
-var import_Utils9 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils10 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
-function Identifier_default(ctx2, stack2) {
-  const desc2 = stack2.parentStack && stack2.parentStack.isImportSpecifier ? null : stack2.descriptor();
-  const module2 = stack2.module;
-  if (import_Utils9.default.isStack(desc2) && (desc2.isDeclaratorVariable || desc2.isDeclaratorFunction)) {
+function Identifier_default(ctx, stack) {
+  const desc2 = stack.parentStack && stack.parentStack.isImportSpecifier ? null : stack.descriptor();
+  const module2 = stack.module;
+  if (import_Utils10.default.isStack(desc2) && (desc2.isDeclaratorVariable || desc2.isDeclaratorFunction)) {
     let imports = desc2.imports;
     if (Array.isArray(imports)) {
       imports.forEach((item) => {
         if (item.source.isLiteral) {
-          parseImportDeclaration(ctx2, item, module2);
+          parseImportDeclaration(ctx, item, module2);
         }
       });
     }
   }
-  if (desc2 && (desc2.isPropertyDefinition || desc2.isMethodDefinition || desc2.isEnumProperty) && !(stack2.parentStack.isProperty && stack2.parentStack.key === stack2)) {
-    const privateChain = ctx2.options.privateChain;
+  if (desc2 && (desc2.isPropertyDefinition || desc2.isMethodDefinition || desc2.isEnumProperty) && !(stack.parentStack.isProperty && stack.parentStack.key === stack)) {
+    const privateChain = ctx.options.privateChain;
     const ownerModule = desc2.module;
     const isStatic = !!(desc2.static || ownerModule.static || desc2.isEnumProperty);
-    const property = ctx2.createIdentifier(stack2.value(), stack2);
-    const modifier = import_Utils9.default.getModifierValue(desc2);
-    var object = isStatic ? ctx2.createIdentifier(ownerModule.id) : ctx2.createThisExpression();
+    const property = ctx.createIdentifier(stack.value(), stack);
+    const modifier = import_Utils10.default.getModifierValue(desc2);
+    var object = isStatic ? ctx.createIdentifier(ownerModule.id) : ctx.createThisExpression();
     if (privateChain && desc2.isPropertyDefinition && modifier === "private" && !isStatic) {
-      object = ctx2.createMemberExpression([
+      object = ctx.createMemberExpression([
         object,
-        ctx2.createIdentifier(
-          ctx2.getGlobalRefName(stack2, PRIVATE_NAME, stack2.module),
-          stack2
+        ctx.createIdentifier(
+          ctx.getGlobalRefName(stack, PRIVATE_NAME, stack.module),
+          stack
         )
       ]);
       object.computed = true;
-      return ctx2.createMemberExpression([object, property], stack2);
+      return ctx.createMemberExpression([object, property], stack);
     } else {
-      return ctx2.createMemberExpression([object, property], stack2);
+      return ctx.createMemberExpression([object, property], stack);
     }
   }
-  if (desc2 !== stack2.module && import_Utils9.default.isClassType(desc2)) {
-    ctx2.addDepend(desc2, stack2.module);
-    if (!stack2.hasLocalDefined()) {
-      return ctx2.createIdentifier(
-        ctx2.getGlobalRefName(
-          stack2,
-          ctx2.getModuleReferenceName(desc2, module2)
+  if (desc2 !== stack.module && import_Utils10.default.isClassType(desc2)) {
+    ctx.addDepend(desc2, stack.module);
+    if (!stack.hasLocalDefined()) {
+      return ctx.createIdentifier(
+        ctx.getGlobalRefName(
+          stack,
+          ctx.getModuleReferenceName(desc2, module2)
         ),
-        stack2
+        stack
       );
     }
   }
-  return ctx2.createIdentifier(stack2.value(), stack2);
+  return ctx.createIdentifier(stack.value(), stack);
 }
 
 // node_modules/@easescript/transform/lib/tokens/IfStatement.js
-function IfStatement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.condition = ctx2.createToken(stack2.condition);
-  node.consequent = ctx2.createToken(stack2.consequent);
-  node.alternate = ctx2.createToken(stack2.alternate);
+function IfStatement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.condition = ctx.createToken(stack.condition);
+  node.consequent = ctx.createToken(stack.consequent);
+  node.alternate = ctx.createToken(stack.alternate);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ImportDeclaration.js
 init_Common();
-function ImportDeclaration_default(ctx2, stack2) {
-  let module2 = stack2.additional ? stack2.additional.module : null;
-  parseImportDeclaration(ctx2, stack2, module2);
+function ImportDeclaration_default(ctx, stack) {
+  let module2 = stack.additional ? stack.additional.module : null;
+  parseImportDeclaration(ctx, stack, module2 || stack.compilation);
   return null;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ImportDefaultSpecifier.js
-function ImportDefaultSpecifier_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.local = stack2.local ? ctx2.createToken(stack2.local) : ctx2.createIdentifier(stack2.value(), stack2);
+function ImportDefaultSpecifier_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.local = stack.local ? ctx.createToken(stack.local) : ctx.createIdentifier(stack.value(), stack);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ImportExpression.js
-function ImportExpression_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  const desc2 = stack2.description();
+function ImportExpression_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  const desc2 = stack.description();
   if (desc2) {
-    const source = ctx2.getModuleImportSource(desc2, stack2.compilation.file, stack2.source.value());
-    node.source = ctx2.createLiteral(source, void 0, stack2.source);
+    const source = ctx.getModuleImportSource(desc2, stack.compilation.file, stack.source.value());
+    node.source = ctx.createLiteral(source, void 0, stack.source);
   } else {
-    node.source = ctx2.createToken(stack2.source);
+    node.source = ctx.createToken(stack.source);
   }
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ImportNamespaceSpecifier.js
-function ImportNamespaceSpecifier_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.local = stack2.local ? ctx2.createToken(stack2.local) : ctx2.createIdentifier(stack2.value(), stack2);
+function ImportNamespaceSpecifier_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.local = stack.local ? ctx.createToken(stack.local) : ctx.createIdentifier(stack.value(), stack);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ImportSpecifier.js
-function ImportSpecifier_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.imported = node.createToken(stack2.imported);
-  node.local = stack2.local ? ctx2.createToken(stack2.local) : ctx2.createIdentifier(stack2.value(), stack2);
+function ImportSpecifier_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.imported = node.createToken(stack.imported);
+  node.local = stack.local ? ctx.createToken(stack.local) : ctx.createIdentifier(stack.value(), stack);
   return node;
 }
 
@@ -8086,48 +8352,48 @@ var kindMaps2 = {
   "enumProperty": KIND_ENUM_PROPERTY
 };
 var InterfaceBuilder = class extends ClassBuilder_default {
-  create(ctx2) {
-    ctx2.setNode(this.stack, this);
+  create(ctx) {
+    ctx.setNode(this.stack, this);
     const module2 = this.module;
-    const stack2 = this.stack;
-    this.createInherit(ctx2, module2, stack2);
-    this.createImplements(ctx2, module2, stack2);
-    this.createBody(ctx2, module2, stack2);
-    let methods7 = this.createMemberDescriptors(ctx2, this.methods);
-    let members = this.createMemberDescriptors(ctx2, this.members);
+    const stack = this.stack;
+    this.createInherit(ctx, module2, stack);
+    this.createImplements(ctx, module2, stack);
+    this.createBody(ctx, module2, stack);
+    let methods7 = this.createMemberDescriptors(ctx, this.methods);
+    let members = this.createMemberDescriptors(ctx, this.members);
     let creator = this.createCreator(
-      ctx2,
+      ctx,
       module2,
       module2.id,
-      this.createClassDescriptor(ctx2, module2, methods7, members)
+      this.createClassDescriptor(ctx, module2, methods7, members)
     );
-    ctx2.crateModuleAssets(module2);
-    ctx2.createModuleImportReferences(module2);
-    if (stack2.compilation.mainModule === module2) {
-      ctx2.addExport("default", ctx2.createIdentifier(module2.id));
+    ctx.crateModuleAssets(module2);
+    ctx.createModuleImportReferences(module2);
+    if (stack.compilation.mainModule === module2) {
+      ctx.addExport("default", ctx.createIdentifier(module2.id));
     }
-    ctx2.removeNode(this.stack);
+    ctx.removeNode(this.stack);
     let expressions = [
       this.construct,
       ...this.beforeBody,
       ...this.body,
       ...this.afterBody,
-      ctx2.createExpressionStatement(creator)
+      ctx.createExpressionStatement(creator)
     ];
     let symbolNode = this.privateSymbolNode;
     if (symbolNode) {
       expressions.unshift(symbolNode);
     }
-    return ctx2.createMultipleStatement(expressions);
+    return ctx.createMultipleStatement(expressions);
   }
-  createBody(ctx2, module2, stack2) {
-    this.createMemebers(ctx2, stack2);
+  createBody(ctx, module2, stack) {
+    this.createMemebers(ctx, stack);
     if (!this.construct) {
-      this.construct = this.createDefaultConstructor(ctx2, module2.id, module2.inherit);
+      this.construct = this.createDefaultConstructor(ctx, module2.id, module2.inherit);
     }
-    this.checkConstructor(ctx2, this.construct, module2);
+    this.checkConstructor(ctx, this.construct, module2);
   }
-  createMemberDescriptor(ctx2, node) {
+  createMemberDescriptor(ctx, node) {
     if (node.dynamic && node.type === "PropertyDefinition") {
       return null;
     }
@@ -8145,84 +8411,84 @@ var InterfaceBuilder = class extends ClassBuilder_default {
       mode |= MODIFIER_FINAL;
     }
     properties.push(
-      ctx2.createProperty(
-        ctx2.createIdentifier("m"),
-        ctx2.createLiteral(mode)
+      ctx.createProperty(
+        ctx.createIdentifier("m"),
+        ctx.createLiteral(mode)
       )
     );
     if (node.isAccessor) {
       if (node.get) {
         properties.push(
-          ctx2.createProperty(
-            ctx2.createIdentifier("get"),
-            ctx2.createLiteral(true)
+          ctx.createProperty(
+            ctx.createIdentifier("get"),
+            ctx.createLiteral(true)
           )
         );
       }
       if (node.set) {
         properties.push(
-          ctx2.createProperty(
-            ctx2.createIdentifier("set"),
-            ctx2.createLiteral(true)
+          ctx.createProperty(
+            ctx.createIdentifier("set"),
+            ctx.createLiteral(true)
           )
         );
       }
     }
-    return ctx2.createProperty(
+    return ctx.createProperty(
       key,
-      ctx2.createObjectExpression(properties)
+      ctx.createObjectExpression(properties)
     );
   }
 };
 var InterfaceBuilder_default = InterfaceBuilder;
 
 // node_modules/@easescript/transform/lib/tokens/InterfaceDeclaration.js
-function InterfaceDeclaration_default(ctx2, stack2) {
-  const builder = new InterfaceBuilder_default(stack2);
-  return builder.create(ctx2);
+function InterfaceDeclaration_default(ctx, stack) {
+  const builder = new InterfaceBuilder_default(stack);
+  return builder.create(ctx);
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXAttribute.js
 var import_Namespace5 = __toESM(require("easescript/lib/core/Namespace"));
 init_Common();
-function JSXAttribute_default(ctx2, stack2) {
+function JSXAttribute_default(ctx, stack) {
   let ns = null;
-  if (stack2.hasNamespaced) {
-    const xmlns = stack2.getXmlNamespace();
+  if (stack.hasNamespaced) {
+    const xmlns = stack.getXmlNamespace();
     if (xmlns) {
       ns = xmlns.value.value();
     } else {
-      const nsStack = stack2.getNamespaceStack();
-      const ops2 = stack2.compiler.options;
+      const nsStack = stack.getNamespaceStack();
+      const ops2 = stack.compiler.options;
       ns = ops2.jsx.xmlns.default[nsStack.namespace.value()] || ns;
     }
   }
-  const node = ctx2.createNode(stack2);
+  const node = ctx.createNode(stack);
   node.namespace = ns;
   let name = null;
-  let value = stack2.value ? ctx2.createToken(stack2.value) : ctx2.createLiteral(true);
-  if (stack2.isMemberProperty) {
-    const eleClass = stack2.jsxElement.getSubClassDescription();
-    const propsDesc = stack2.getAttributeDescription(eleClass);
-    const resolveName = getMethodOrPropertyAlias(ctx2, propsDesc);
+  let value = stack.value ? ctx.createToken(stack.value) : ctx.createLiteral(true);
+  if (stack.isMemberProperty) {
+    const eleClass = stack.jsxElement.getSubClassDescription();
+    const propsDesc = stack.getAttributeDescription(eleClass);
+    const resolveName = getMethodOrPropertyAlias(ctx, propsDesc);
     if (resolveName) {
-      name = resolveName.includes("-") ? ctx2.createLiteral(resolveName) : ctx2.createIdentifier(resolveName);
+      name = resolveName.includes("-") ? ctx.createLiteral(resolveName) : ctx.createIdentifier(resolveName);
     }
-    const invoke = createJSXAttrHookNode(ctx2, stack2, propsDesc);
+    const invoke = createJSXAttrHookNode(ctx, stack, propsDesc);
     if (invoke)
       value = invoke;
   }
   if (!name) {
-    name = ctx2.createToken(stack2.name);
+    name = ctx.createToken(stack.name);
   }
-  if (ns === "@binding" && stack2.value) {
-    const desc2 = stack2.value.description();
+  if (ns === "@binding" && stack.value) {
+    const desc2 = stack.value.description();
     let has = false;
     if (desc2) {
       has = (desc2.isPropertyDefinition || desc2.isTypeObjectPropertyDefinition) && !desc2.isReadonly || desc2.isMethodGetterDefinition && desc2.module && desc2.module.getMember(desc2.key.value(), "set");
     }
-    if (!has && stack2.value.isJSXExpressionContainer) {
-      let expression2 = stack2.value.expression;
+    if (!has && stack.value.isJSXExpressionContainer) {
+      let expression2 = stack.value.expression;
       if (expression2) {
         if (expression2.isTypeAssertExpression) {
           expression2 = expression2.left;
@@ -8234,7 +8500,7 @@ function JSXAttribute_default(ctx2, stack2) {
       }
     }
     if (!has) {
-      stack2.value.error(1e4, stack2.value.raw());
+      stack.value.error(1e4, stack.value.raw());
     }
   }
   node.name = name;
@@ -8243,50 +8509,50 @@ function JSXAttribute_default(ctx2, stack2) {
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXCdata.js
-function JSXCdata_default(ctx2, stack2) {
-  let value = stack2.value();
+function JSXCdata_default(ctx, stack) {
+  let value = stack.value();
   if (value) {
     value = value.replace(/[\r\n]+/g, "").replace(/\u0022/g, '\\"');
     if (value) {
-      return ctx2.createLiteral(value);
+      return ctx.createLiteral(value);
     }
   }
   return null;
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXClosingElement.js
-function JSXClosingElement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.name = ctx2.createToken(stack2.name);
+function JSXClosingElement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.name = ctx.createToken(stack.name);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXClosingFragment.js
-function JSXClosingFragment_default(ctx2, stack2) {
-  return ctx2.createNode(stack2);
+function JSXClosingFragment_default(ctx, stack) {
+  return ctx.createNode(stack);
 }
 
 // node_modules/@easescript/transform/lib/core/ESX.js
 var import_Namespace6 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils10 = require("easescript/lib/core/Utils");
+var import_Utils11 = require("easescript/lib/core/Utils");
 init_Common();
-function createFragmentVNode(ctx2, children, props = null) {
+function createFragmentVNode(ctx, children, props = null) {
   const items = [
-    ctx2.getVNodeApi("Fragment"),
-    props ? props : ctx2.createLiteral(null),
+    ctx.getVNodeApi("Fragment"),
+    props ? props : ctx.createLiteral(null),
     children
   ];
-  return ctx2.createCallExpression(
-    ctx2.getVNodeApi("createVNode"),
+  return ctx.createCallExpression(
+    ctx.getVNodeApi("createVNode"),
     items
   );
 }
-function createWithDirectives(ctx2, node, directives) {
-  const array = ctx2.createArrayExpression(directives);
+function createWithDirectives(ctx, node, directives) {
+  const array = ctx.createArrayExpression(directives);
   array.newLine = true;
-  return ctx2.createCallExpression(
-    ctx2.createIdentifier(
-      ctx2.getVNodeApi("withDirectives")
+  return ctx.createCallExpression(
+    ctx.createIdentifier(
+      ctx.getVNodeApi("withDirectives")
     ),
     [
       node,
@@ -8294,51 +8560,51 @@ function createWithDirectives(ctx2, node, directives) {
     ]
   );
 }
-function createCommentVNode(ctx2, text) {
-  return ctx2.createCallExpression(
-    ctx2.createIdentifier(ctx2.getVNodeApi("createCommentVNode")),
+function createCommentVNode(ctx, text) {
+  return ctx.createCallExpression(
+    ctx.createIdentifier(ctx.getVNodeApi("createCommentVNode")),
     [
-      ctx2.createLiteral(text)
+      ctx.createLiteral(text)
     ]
   );
 }
-function createSlotNode(ctx2, stack2, ...args) {
-  if (stack2.isSlot && stack2.isSlotDeclared) {
-    const slots = ctx2.createCallExpression(
-      ctx2.createMemberExpression([
-        ctx2.createThisExpression(),
-        ctx2.createIdentifier("getAttribute")
+function createSlotNode(ctx, stack, ...args) {
+  if (stack.isSlot && stack.isSlotDeclared) {
+    const slots = ctx.createCallExpression(
+      ctx.createMemberExpression([
+        ctx.createThisExpression(),
+        ctx.createIdentifier("getAttribute")
       ]),
       [
-        ctx2.createLiteral("slots")
+        ctx.createLiteral("slots")
       ]
     );
-    const node = ctx2.createCallExpression(
-      ctx2.createIdentifier(
-        ctx2.getVNodeApi("renderSlot")
+    const node = ctx.createCallExpression(
+      ctx.createIdentifier(
+        ctx.getVNodeApi("renderSlot")
       ),
       [slots].concat(args)
     );
     node.isSlotNode = true;
     return node;
   } else {
-    const node = ctx2.createCallExpression(
-      ctx2.createIdentifier(ctx2.getVNodeApi("withCtx")),
+    const node = ctx.createCallExpression(
+      ctx.createIdentifier(ctx.getVNodeApi("withCtx")),
       args
     );
     node.isSlotNode = true;
     return node;
   }
 }
-function createWithCtxNode(ctx2, node) {
-  return ctx2.createCallExpression(
-    ctx2.createIdentifier(ctx2.getVNodeApi("withCtx")),
+function createWithCtxNode(ctx, node) {
+  return ctx.createCallExpression(
+    ctx.createIdentifier(ctx.getVNodeApi("withCtx")),
     [
       node
     ]
   );
 }
-function createForMapNode(ctx2, object, element, item, key, index, stack2) {
+function createForMapNode(ctx, object, element, item, key, index, stack) {
   const params = [item];
   if (key) {
     params.push(key);
@@ -8349,16 +8615,16 @@ function createForMapNode(ctx2, object, element, item, key, index, stack2) {
   if (element.type === "ArrayExpression" && element.elements.length === 1) {
     element = element.elements[0];
   }
-  const node = ctx2.createArrowFunctionExpression(element, params);
-  return ctx2.createCallExpression(
-    createStaticReferenceNode(ctx2, stack2, "System", "forMap"),
+  const node = ctx.createArrowFunctionExpression(element, params);
+  return ctx.createCallExpression(
+    createStaticReferenceNode(ctx, stack, "System", "forMap"),
     [
       object,
       node
     ]
   );
 }
-function createForEachNode(ctx2, refs, element, item, key) {
+function createForEachNode(ctx, refs, element, item, key) {
   const args = [item];
   if (key) {
     args.push(key);
@@ -8366,42 +8632,42 @@ function createForEachNode(ctx2, refs, element, item, key) {
   if (element.type === "ArrayExpression" && element.elements.length === 1) {
     element = element.elements[0];
   }
-  const node = ctx2.createCallExpression(
-    ctx2.createMemberExpression([
+  const node = ctx.createCallExpression(
+    ctx.createMemberExpression([
       refs,
-      ctx2.createIdentifier("map")
+      ctx.createIdentifier("map")
     ]),
     [
-      ctx2.createArrowFunctionExpression(element, args)
+      ctx.createArrowFunctionExpression(element, args)
     ]
   );
   if (element.type === "ArrayExpression") {
-    return ctx2.createCallExpression(
-      ctx2.createMemberExpression([
+    return ctx.createCallExpression(
+      ctx.createMemberExpression([
         node,
-        ctx2.createIdentifier("reduce")
+        ctx.createIdentifier("reduce")
       ]),
       [
-        ctx2.createArrowFunctionExpression([
-          ctx2.createIdentifier("acc"),
-          ctx2.createIdentifier("item")
-        ], ctx2.createCallee(
-          ctx2.createMemberExpression([
-            ctx2.createIdentifier("acc"),
-            ctx2.createIdentifier("concat")
+        ctx.createArrowFunctionExpression([
+          ctx.createIdentifier("acc"),
+          ctx.createIdentifier("item")
+        ], ctx.createCallee(
+          ctx.createMemberExpression([
+            ctx.createIdentifier("acc"),
+            ctx.createIdentifier("concat")
           ]),
           [
-            ctx2.createIdentifier("item")
+            ctx.createIdentifier("item")
           ]
         )),
-        ctx2.createArrayExpression()
+        ctx.createArrayExpression()
       ]
     );
   }
   return node;
 }
 function getComponentDirectiveAnnotation(module2) {
-  if (!(0, import_Utils10.isModule)(module2))
+  if (!(0, import_Utils11.isModule)(module2))
     return null;
   const annots = getModuleAnnotations(module2, ["define"]);
   for (let annot of annots) {
@@ -8418,7 +8684,7 @@ function getComponentDirectiveAnnotation(module2) {
 }
 var directiveInterface = null;
 function isDirectiveInterface(module2) {
-  if (!(0, import_Utils10.isModule)(module2))
+  if (!(0, import_Utils11.isModule)(module2))
     return false;
   directiveInterface = directiveInterface || import_Namespace6.default.globals.get("web.components.Directive");
   if (directiveInterface && directiveInterface.isInterface) {
@@ -8427,7 +8693,7 @@ function isDirectiveInterface(module2) {
   return false;
 }
 function getComponentEmitAnnotation(module2) {
-  if (!(0, import_Utils10.isModule)(module2))
+  if (!(0, import_Utils11.isModule)(module2))
     return null;
   const dataset = /* @__PURE__ */ Object.create(null);
   const annots = getModuleAnnotations(desc, ["define"]);
@@ -8470,19 +8736,19 @@ function getComponentEmitAnnotation(module2) {
   });
   return dataset;
 }
-function createChildNode(ctx2, stack2, childNode, prev = null) {
+function createChildNode(ctx, stack, childNode, prev = null) {
   if (!childNode)
     return null;
   const cmd = [];
   let content = [childNode];
-  if (!stack2.directives || !(stack2.directives.length > 0)) {
+  if (!stack.directives || !(stack.directives.length > 0)) {
     return {
       cmd,
-      child: stack2,
+      child: stack,
       content
     };
   }
-  const directives = stack2.directives.slice(0).sort((a, b) => {
+  const directives = stack.directives.slice(0).sort((a, b) => {
     const bb = b.name.value().toLowerCase();
     const aa = a.name.value().toLowerCase();
     const v1 = bb === "each" || bb === "for" ? 1 : 0;
@@ -8494,16 +8760,16 @@ function createChildNode(ctx2, stack2, childNode, prev = null) {
     const name = directive.name.value().toLowerCase();
     const valueArgument = directive.valueArgument;
     if (name === "each" || name === "for") {
-      let refs = ctx2.createToken(valueArgument.expression);
-      let item = ctx2.createIdentifier(valueArgument.declare.item);
-      let key = ctx2.createIdentifier(valueArgument.declare.key || "key");
+      let refs = ctx.createToken(valueArgument.expression);
+      let item = ctx.createIdentifier(valueArgument.declare.item);
+      let key = ctx.createIdentifier(valueArgument.declare.key || "key");
       let index = valueArgument.declare.index;
       if (index) {
-        index = ctx2.createIdentifier(index);
+        index = ctx.createIdentifier(index);
       }
       if (name === "each") {
         content[0] = createForEachNode(
-          ctx2,
+          ctx,
           refs,
           content[0],
           item,
@@ -8511,20 +8777,20 @@ function createChildNode(ctx2, stack2, childNode, prev = null) {
         );
       } else {
         content[0] = createForMapNode(
-          ctx2,
+          ctx,
           refs,
           content[0],
           item,
           key,
           index,
-          stack2
+          stack
         );
       }
       content[0].isForNode = true;
       cmd.push(name);
     } else if (name === "if") {
-      const node = ctx2.createNode("ConditionalExpression");
-      node.test = ctx2.createToken(valueArgument.expression);
+      const node = ctx.createNode("ConditionalExpression");
+      node.test = ctx.createToken(valueArgument.expression);
       node.consequent = content[0];
       content[0] = node;
       cmd.push(name);
@@ -8534,8 +8800,8 @@ function createChildNode(ctx2, stack2, childNode, prev = null) {
       } else {
         cmd.push(name);
       }
-      const node = ctx2.createNode("ConditionalExpression");
-      node.test = ctx2.createToken(valueArgument.expression);
+      const node = ctx.createNode("ConditionalExpression");
+      node.test = ctx.createToken(valueArgument.expression);
       node.consequent = content[0];
       content[0] = node;
     } else if (name === "else") {
@@ -8548,22 +8814,22 @@ function createChildNode(ctx2, stack2, childNode, prev = null) {
   }
   return {
     cmd,
-    child: stack2,
+    child: stack,
     content
   };
 }
-function createSlotCalleeNode(ctx2, stack2, child, ...args) {
-  if (stack2.isSlotDeclared) {
-    return ctx2.createCallExpression(
-      ctx2.createMemberExpression([
-        ctx2.createThisExpression(),
-        ctx2.createIdentifier("slot")
+function createSlotCalleeNode(ctx, stack, child, ...args) {
+  if (stack.isSlotDeclared) {
+    return ctx.createCallExpression(
+      ctx.createMemberExpression([
+        ctx.createThisExpression(),
+        ctx.createIdentifier("slot")
       ]),
       child ? args.concat(child) : args,
-      stack2
+      stack
     );
   } else {
-    return child || ctx2.createArrowFunctionExpression(ctx2.createArrayExpression());
+    return child || ctx.createArrowFunctionExpression(ctx.createArrayExpression());
   }
 }
 function getCascadeConditional(elements) {
@@ -8582,7 +8848,7 @@ function getCascadeConditional(elements) {
   }
   return lastElement;
 }
-function createChildren(ctx2, children, data) {
+function createChildren(ctx, children, data) {
   let content = [];
   let len = children.length;
   let index = 0;
@@ -8592,34 +8858,34 @@ function createChildren(ctx2, children, data) {
     if (index < len) {
       const child = children[index++];
       const childNode = createChildNode(
-        ctx2,
+        ctx,
         child,
-        ctx2.createToken(child),
+        ctx.createToken(child),
         last
       ) || next();
       if (child.hasAttributeSlot) {
         const attributeSlot = child.openingElement.attributes.find((attr) => attr.isAttributeSlot);
         if (attributeSlot) {
           const name = attributeSlot.name.value();
-          const scopeName = attributeSlot.value ? ctx2.createToken(
+          const scopeName = attributeSlot.value ? ctx.createToken(
             attributeSlot.parserSlotScopeParamsStack()
           ) : null;
           let childrenNodes = childNode.content;
           if (childrenNodes.length === 1 && childrenNodes[0].type === "ArrayExpression") {
             childrenNodes = childrenNodes[0];
           } else {
-            childrenNodes = ctx2.createArrayExpression(childrenNodes);
+            childrenNodes = ctx.createArrayExpression(childrenNodes);
           }
           const params = scopeName ? [
-            ctx2.createAssignmentExpression(
+            ctx.createAssignmentExpression(
               scopeName,
-              ctx2.createObjectExpression()
+              ctx.createObjectExpression()
             )
           ] : [];
           const renderSlots = createSlotCalleeNode(
-            ctx2,
+            ctx,
             child,
-            ctx2.createArrowFunctionExpression(childrenNodes, params)
+            ctx.createArrowFunctionExpression(childrenNodes, params)
           );
           data.slots[name] = renderSlots;
           return next();
@@ -8685,15 +8951,15 @@ function createChildren(ctx2, children, data) {
     if (content.length === 1 && (first.type == "ArrayExpression" || first.isForNode || first.isSlotNode)) {
       return first;
     }
-    let base = content.length > 1 ? content.shift() : ctx2.createArrayExpression();
+    let base = content.length > 1 ? content.shift() : ctx.createArrayExpression();
     if (base.type !== "ArrayExpression" && !base.isForNode) {
-      base = ctx2.createArrayExpression([base]);
+      base = ctx.createArrayExpression([base]);
       base.newLine = true;
     }
-    const node2 = ctx2.createCallExpression(
-      ctx2.createMemberExpression([
+    const node2 = ctx.createCallExpression(
+      ctx.createMemberExpression([
         base,
-        ctx2.createIdentifier("concat")
+        ctx.createIdentifier("concat")
       ]),
       content.reduce(function(acc, val) {
         if (val.type === "ArrayExpression") {
@@ -8707,56 +8973,56 @@ function createChildren(ctx2, children, data) {
     node2.indentation = true;
     return node2;
   }
-  const node = ctx2.createArrayExpression(content);
+  const node = ctx.createArrayExpression(content);
   if (content.length > 1 || !(content[0].type === "Literal" || content[0].type === "Identifier")) {
     node.newLine = true;
   }
   return node;
 }
-function createGetEventValueNode(ctx2, name = "e") {
-  return ctx2.createCallExpression(
-    ctx2.createMemberExpression([
-      ctx2.createThisExpression(),
-      ctx2.createIdentifier("getBindEventValue")
+function createGetEventValueNode(ctx, name = "e") {
+  return ctx.createCallExpression(
+    ctx.createMemberExpression([
+      ctx.createThisExpression(),
+      ctx.createIdentifier("getBindEventValue")
     ]),
     [
-      ctx2.createIdentifier(name)
+      ctx.createIdentifier(name)
     ]
   );
 }
-function createDirectiveArrayNode(ctx2, name, expression2, ...args) {
+function createDirectiveArrayNode(ctx, name, expression2, ...args) {
   const elems = [
-    ctx2.createIdentifier(ctx2.getVNodeApi(name)),
+    ctx.createIdentifier(ctx.getVNodeApi(name)),
     expression2,
     ...args
   ];
-  return ctx2.createArrayExpression(elems);
+  return ctx.createArrayExpression(elems);
 }
-function createResolveAttriubeDirective(ctx2, attrDirective) {
+function createResolveAttriubeDirective(ctx, attrDirective) {
   if (!attrDirective.value)
     return;
-  return ctx2.createCallExpression(
-    createStaticReferenceNode(ctx2, attrDirective, "web.components.Component", "resolveDirective"),
+  return ctx.createCallExpression(
+    createStaticReferenceNode(ctx, attrDirective, "web.components.Component", "resolveDirective"),
     [
-      ctx2.createToken(attrDirective.parserAttributeValueStack()),
-      attrDirective.module ? ctx2.createThisExpression() : ctx2.createLiteral(null)
+      ctx.createToken(attrDirective.parserAttributeValueStack()),
+      attrDirective.module ? ctx.createThisExpression() : ctx.createLiteral(null)
     ]
   );
 }
-function createAttributeBindingEventNode(ctx2, attribute, valueTokenNode) {
+function createAttributeBindingEventNode(ctx, attribute, valueTokenNode) {
   if (attribute.value.isJSXExpressionContainer) {
     const expr = attribute.value.expression;
     if (expr.isAssignmentExpression || expr.isSequenceExpression) {
-      return ctx2.createArrowFunctionExpression(valueTokenNode);
+      return ctx.createArrowFunctionExpression(valueTokenNode);
     } else if (!expr.isFunctionExpression) {
       if (expr.isCallExpression) {
         const isBind = expr.callee.isMemberExpression && expr.callee.property.value() === "bind" && expr.arguments.length > 0 && expr.arguments[0].isThisExpression;
         if (!isBind && valueTokenNode && valueTokenNode.type === "CallExpression") {
-          valueTokenNode.arguments.push(ctx2.createIdentifier("...args"));
-          return ctx2.createArrowFunctionExpression(
+          valueTokenNode.arguments.push(ctx.createIdentifier("...args"));
+          return ctx.createArrowFunctionExpression(
             valueTokenNode,
             [
-              ctx2.createIdentifier("...args")
+              ctx.createIdentifier("...args")
             ]
           );
         }
@@ -8764,12 +9030,12 @@ function createAttributeBindingEventNode(ctx2, attribute, valueTokenNode) {
         const desc2 = expr.description();
         const isMethod = desc2 && (desc2.isMethodDefinition && !desc2.isAccessor);
         if (isMethod) {
-          return ctx2.createCallExpression(
-            ctx2.createMemberExpression([
+          return ctx.createCallExpression(
+            ctx.createMemberExpression([
               valueTokenNode,
-              ctx2.createIdentifier("bind")
+              ctx.createIdentifier("bind")
             ]),
-            [ctx2.createThisExpression()]
+            [ctx.createThisExpression()]
           );
         }
       }
@@ -8777,8 +9043,8 @@ function createAttributeBindingEventNode(ctx2, attribute, valueTokenNode) {
   }
   return valueTokenNode;
 }
-function getBinddingEventName(stack2) {
-  const bindding = getMethodAnnotations(stack2, ["bindding"]);
+function getBinddingEventName(stack) {
+  const bindding = getMethodAnnotations(stack, ["bindding"]);
   if (bindding.length > 0) {
     const [annot] = bindding;
     const args = annot.getArguments();
@@ -8786,9 +9052,9 @@ function getBinddingEventName(stack2) {
   }
   return null;
 }
-function mergeElementPropsNode(ctx2, data, stack2) {
+function mergeElementPropsNode(ctx, data, stack) {
   const items = [];
-  const ssr = !!ctx2.options.ssr;
+  const ssr = !!ctx.options.ssr;
   Object.entries(data).map((item) => {
     const [key, value] = item;
     if (key === "slots" || key === "directives" || key === "keyProps") {
@@ -8809,11 +9075,11 @@ function mergeElementPropsNode(ctx2, data, stack2) {
               value.forEach((item2) => {
                 if (item2.type === "Property") {
                   if (item2.computed) {
-                    item2.key = ctx2.createTemplateLiteral([
-                      ctx2.createTemplateElement("on")
+                    item2.key = ctx.createTemplateLiteral([
+                      ctx.createTemplateElement("on")
                     ], [
-                      ctx2.createCallExpression(
-                        createStaticReferenceNode(ctx2, stack2, "System", "firstUpperCase"),
+                      ctx.createCallExpression(
+                        createStaticReferenceNode(ctx, stack, "System", "firstUpperCase"),
                         [
                           item2.key
                         ]
@@ -8828,16 +9094,16 @@ function mergeElementPropsNode(ctx2, data, stack2) {
               return;
             }
             items.push(
-              ctx2.createProperty(
-                ctx2.createIdentifier(key),
-                ctx2.createObjectExpression(value)
+              ctx.createProperty(
+                ctx.createIdentifier(key),
+                ctx.createObjectExpression(value)
               )
             );
           } else {
             items.push(
-              ctx2.createProperty(
-                ctx2.createIdentifier(key),
-                ctx2.createArrayExpression(value)
+              ctx.createProperty(
+                ctx.createIdentifier(key),
+                ctx.createArrayExpression(value)
               )
             );
           }
@@ -8847,8 +9113,8 @@ function mergeElementPropsNode(ctx2, data, stack2) {
           items.push(value);
         } else {
           items.push(
-            ctx2.createProperty(
-              ctx2.createIdentifier(key),
+            ctx.createProperty(
+              ctx.createIdentifier(key),
               value
             )
           );
@@ -8856,50 +9122,50 @@ function mergeElementPropsNode(ctx2, data, stack2) {
       }
     }
   });
-  const props = items.length > 0 ? ctx2.createObjectExpression(items) : null;
-  if (props && stack2 && stack2.isComponent) {
-    const desc2 = stack2.description();
-    if (desc2 && (0, import_Utils10.isModule)(desc2)) {
+  const props = items.length > 0 ? ctx.createObjectExpression(items) : null;
+  if (props && stack && stack.isComponent) {
+    const desc2 = stack.description();
+    if (desc2 && (0, import_Utils11.isModule)(desc2)) {
       let has = getModuleAnnotations(desc2, ["hook"]).some((annot) => {
-        let result = parseHookAnnotation(annot, ctx2.plugin.version, ctx2.options.metadata.versions);
+        let result = parseHookAnnotation(annot, ctx.plugin.version, ctx.options.metadata.versions);
         return result && result.type === "polyfills:props";
       });
       if (has) {
-        return createComponentPropsHookNode(ctx2, props, ctx2.createLiteral(desc2.getName()));
+        return createComponentPropsHookNode(ctx, props, ctx.createLiteral(desc2.getName()));
       }
     }
   }
   return props;
 }
-function createComponentPropsHookNode(ctx2, props, className) {
-  return ctx2.createCallExpression(
-    ctx2.createMemberExpression([
-      ctx2.createThisExpression(),
-      ctx2.createIdentifier("invokeHook")
+function createComponentPropsHookNode(ctx, props, className) {
+  return ctx.createCallExpression(
+    ctx.createMemberExpression([
+      ctx.createThisExpression(),
+      ctx.createIdentifier("invokeHook")
     ]),
     [
-      ctx2.createLiteral("polyfills:props"),
+      ctx.createLiteral("polyfills:props"),
       props,
       className
     ]
   );
 }
-function createAttributes(ctx2, stack2, data) {
+function createAttributes(ctx, stack, data) {
   const pushEvent = (name, node, category) => {
     let events = data[category] || (data[category] = []);
     if (!Node_default.is(name)) {
       name = String(name);
-      name = name.includes(":") ? ctx2.createLiteral(name) : ctx2.createIdentifier(name);
+      name = name.includes(":") ? ctx.createLiteral(name) : ctx.createIdentifier(name);
     }
-    let property = ctx2.createProperty(name, node);
+    let property = ctx.createProperty(name, node);
     if (property.key.computed) {
       property.computed = true;
       property.key.computed = false;
     }
     events.push(property);
   };
-  let isComponent = stack2.isComponent || stack2.isWebComponent;
-  let nodeType = !isComponent ? stack2.openingElement.name.value().toLowerCase() : null;
+  let isComponent = stack.isComponent || stack.isWebComponent;
+  let nodeType = !isComponent ? stack.openingElement.name.value().toLowerCase() : null;
   let binddingModelValue = null;
   let afterDirective = null;
   let custom = null;
@@ -8910,11 +9176,11 @@ function createAttributes(ctx2, stack2, data) {
   } else if (nodeType === "textarea") {
     afterDirective = "vModelText";
   }
-  const forStack = stack2.getParentStack((stack3) => {
-    return stack3.scope.isForContext || !(stack3.isJSXElement || stack3.isJSXExpressionContainer);
+  const forStack = stack.getParentStack((stack2) => {
+    return stack2.scope.isForContext || !(stack2.isJSXElement || stack2.isJSXExpressionContainer);
   }, true);
   const inFor = forStack && forStack.scope && forStack.scope.isForContext ? true : false;
-  const descModule2 = stack2.isWebComponent ? stack2.description() : null;
+  const descModule2 = stack.isWebComponent ? stack.description() : null;
   const definedEmits = getComponentEmitAnnotation(descModule2);
   const getDefinedEmitName = (name) => {
     if (definedEmits && Object.prototype.hasOwnProperty.call(definedEmits, name)) {
@@ -8922,7 +9188,7 @@ function createAttributes(ctx2, stack2, data) {
     }
     return name;
   };
-  stack2.openingElement.attributes.forEach((item) => {
+  stack.openingElement.attributes.forEach((item) => {
     if (item.isAttributeXmlns)
       return;
     if (item.isAttributeDirective) {
@@ -8931,15 +9197,15 @@ function createAttributes(ctx2, stack2, data) {
         if (compare(name2, "show")) {
           data.directives.push(
             createDirectiveArrayNode(
-              ctx2,
+              ctx,
               "vShow",
-              ctx2.createToken(item.valueArgument.expression)
+              ctx.createToken(item.valueArgument.expression)
             )
           );
         } else if (compare(name2, "custom")) {
           data.directives.push(
             createResolveAttriubeDirective(
-              ctx2,
+              ctx,
               item
             )
           );
@@ -8949,8 +9215,8 @@ function createAttributes(ctx2, stack2, data) {
     } else if (item.isJSXSpreadAttribute) {
       if (item.argument) {
         data.props.push(
-          ctx2.createSpreadElement(
-            ctx2.createToken(item.argument),
+          ctx.createSpreadElement(
+            ctx.createToken(item.argument),
             item
           )
         );
@@ -8959,7 +9225,7 @@ function createAttributes(ctx2, stack2, data) {
     } else if (item.isAttributeSlot) {
       return;
     }
-    let value = ctx2.createToken(item);
+    let value = ctx.createToken(item);
     if (!value)
       return;
     let ns = value.namespace;
@@ -8973,13 +9239,13 @@ function createAttributes(ctx2, stack2, data) {
     if (ns && ns.includes("::")) {
       let [seg, className] = ns.split("::", 2);
       ns = seg;
-      name = createStaticReferenceNode(ctx2, item, className, name);
+      name = createStaticReferenceNode(ctx, item, className, name);
       name.computed = true;
       custom = name;
     }
     let isDOMAttribute = false;
     if (item.isMemberProperty) {
-      let attrDesc = item.getAttributeDescription(stack2.getSubClassDescription());
+      let attrDesc = item.getAttributeDescription(stack.getSubClassDescription());
       if (attrDesc) {
         isDOMAttribute = getMethodAnnotations(attrDesc, ["domattribute"]).length > 0;
       }
@@ -8992,17 +9258,17 @@ function createAttributes(ctx2, stack2, data) {
       if (!binddingModelValue || !(binddingModelValue.type === "MemberExpression" || binddingModelValue.type === "Identifier")) {
         binddingModelValue = null;
         if (item.value && item.value.isJSXExpressionContainer) {
-          const stack3 = item.value.expression;
-          if (stack3 && stack3.isMemberExpression && !stack3.optional) {
-            binddingModelValue = ctx2.createCallExpression(
-              createStaticReferenceNode(ctx2, stack3, "Reflect", "set"),
+          const stack2 = item.value.expression;
+          if (stack2 && stack2.isMemberExpression && !stack2.optional) {
+            binddingModelValue = ctx.createCallExpression(
+              createStaticReferenceNode(ctx, stack2, "Reflect", "set"),
               [
-                stack3.module ? ctx2.createIdentifier(stack3.module.id) : ctx2.createLiteral(null),
-                ctx2.createToken(stack3.object),
-                stack3.computed ? ctx2.createToken(stack3.property) : ctx2.createLiteral(stack3.property.value()),
-                ctx2.createIdentifier("value")
+                stack2.module ? ctx.createIdentifier(stack2.module.id) : ctx.createLiteral(null),
+                ctx.createToken(stack2.object),
+                stack2.computed ? ctx.createToken(stack2.property) : ctx.createLiteral(stack2.property.value()),
+                ctx.createIdentifier("value")
               ],
-              stack3
+              stack2
             );
             binddingModelValue.isReflectSetter = true;
           }
@@ -9012,8 +9278,8 @@ function createAttributes(ctx2, stack2, data) {
     if (item.isMemberProperty) {
       if (ns === "@binding" && attrLowerName === "value") {
         data.props.push(
-          ctx2.createProperty(
-            ctx2.createIdentifier(
+          ctx.createProperty(
+            ctx.createIdentifier(
               propName,
               item.name
             ),
@@ -9024,8 +9290,8 @@ function createAttributes(ctx2, stack2, data) {
       }
       if (!isDOMAttribute) {
         data.props.push(
-          ctx2.createProperty(
-            ctx2.createIdentifier(
+          ctx.createProperty(
+            ctx.createIdentifier(
               propName,
               item.name
             ),
@@ -9047,20 +9313,20 @@ function createAttributes(ctx2, stack2, data) {
     if (ns === "@binding") {
       const createBinddingParams = (getEvent = false) => {
         return [
-          binddingModelValue.isReflectSetter ? binddingModelValue : ctx2.createAssignmentExpression(
+          binddingModelValue.isReflectSetter ? binddingModelValue : ctx.createAssignmentExpression(
             binddingModelValue,
-            getEvent ? createGetEventValueNode(ctx2) : ctx2.createIdentifier("e")
+            getEvent ? createGetEventValueNode(ctx) : ctx.createIdentifier("e")
           ),
           [
-            ctx2.createIdentifier("e")
+            ctx.createIdentifier("e")
           ]
         ];
       };
       if (custom && binddingModelValue) {
-        pushEvent(custom, ctx2.createArrowFunctionExpression(
-          ...createBinddingParams(!stack2.isWebComponent)
+        pushEvent(custom, ctx.createArrowFunctionExpression(
+          ...createBinddingParams(!stack.isWebComponent)
         ), "on");
-      } else if ((stack2.isWebComponent || afterDirective) && binddingModelValue) {
+      } else if ((stack.isWebComponent || afterDirective) && binddingModelValue) {
         let eventName = propName;
         if (propName === "modelValue") {
           eventName = "update:modelValue";
@@ -9073,15 +9339,15 @@ function createAttributes(ctx2, stack2, data) {
         }
         pushEvent(
           getDefinedEmitName(eventName),
-          ctx2.createArrowFunctionExpression(
+          ctx.createArrowFunctionExpression(
             ...createBinddingParams()
           ),
           "on"
         );
       } else if (binddingModelValue) {
         pushEvent(
-          ctx2.createIdentifier("input"),
-          ctx2.createArrowFunctionExpression(
+          ctx.createIdentifier("input"),
+          ctx.createArrowFunctionExpression(
             ...createBinddingParams(true)
           ),
           "on"
@@ -9089,7 +9355,7 @@ function createAttributes(ctx2, stack2, data) {
       }
       if (afterDirective && binddingModelValue) {
         data.directives.push(
-          createDirectiveArrayNode(ctx2, afterDirective, binddingModelValue)
+          createDirectiveArrayNode(ctx, afterDirective, binddingModelValue)
         );
       }
       return;
@@ -9098,29 +9364,29 @@ function createAttributes(ctx2, stack2, data) {
       name = propName = "ref";
       let useArray = inFor || attrLowerName === "refs";
       if (useArray) {
-        propValue = ctx2.createArrowFunctionExpression(
-          ctx2.createCallExpression(
-            ctx2.createMemberExpression([
-              ctx2.createThisExpression(),
-              ctx2.createIdentifierExpression("setRefNode")
+        propValue = ctx.createArrowFunctionExpression(
+          ctx.createCallExpression(
+            ctx.createMemberExpression([
+              ctx.createThisExpression(),
+              ctx.createIdentifierExpression("setRefNode")
             ]),
             [
               value.value,
-              ctx2.createIdentifier("node"),
-              ctx2.createLiteral(true)
+              ctx.createIdentifier("node"),
+              ctx.createLiteral(true)
             ]
           ),
           [
-            ctx2.createIdentifier("node")
+            ctx.createIdentifier("node")
           ]
         );
       }
     }
     if (name === "class" || name === "staticClass") {
       if (propValue && propValue.type !== "Literal") {
-        propValue = ctx2.createCallExpression(
-          ctx2.createIdentifier(
-            ctx2.getVNodeApi("normalizeClass")
+        propValue = ctx.createCallExpression(
+          ctx.createIdentifier(
+            ctx.getVNodeApi("normalizeClass")
           ),
           [
             propValue
@@ -9129,9 +9395,9 @@ function createAttributes(ctx2, stack2, data) {
       }
     } else if (name === "style" || name === "staticStyle") {
       if (propValue && !(propValue.type === "Literal" || propValue.type === "ObjectExpression")) {
-        propValue = ctx2.createCallExpression(
-          ctx2.createIdentifier(
-            ctx2.getVNodeApi("normalizeStyle")
+        propValue = ctx.createCallExpression(
+          ctx.createIdentifier(
+            ctx.getVNodeApi("normalizeStyle")
           ),
           [propValue]
         );
@@ -9139,8 +9405,8 @@ function createAttributes(ctx2, stack2, data) {
     } else if (attrLowerName === "key" || attrLowerName === "tag") {
       name = attrLowerName;
     }
-    const property = ctx2.createProperty(
-      ctx2.createIdentifier(
+    const property = ctx.createProperty(
+      ctx.createIdentifier(
         propName,
         item.name
       ),
@@ -9159,11 +9425,11 @@ function createAttributes(ctx2, stack2, data) {
     }
   });
   if (!data.key) {
-    data.key = createElementKeyPropertyNode(ctx2, stack2);
+    data.key = createElementKeyPropertyNode(ctx, stack);
   }
 }
-function createElementKeyPropertyNode(ctx2, stack2) {
-  const keys2 = ctx2.options.esx.complete.keys;
+function createElementKeyPropertyNode(ctx, stack) {
+  const keys2 = ctx.options.esx.complete.keys;
   const fills = Array.isArray(keys2) && keys2.length > 0 ? keys2 : null;
   const all = keys2 === true;
   if (fills || all) {
@@ -9171,8 +9437,8 @@ function createElementKeyPropertyNode(ctx2, stack2) {
     let direName = null;
     let isForContext = false;
     if (all || fills.includes("for") || fills.includes("each")) {
-      if (!stack2.isDirective && stack2.directives && Array.isArray(stack2.directives)) {
-        let directive = stack2.directives.find((directive2) => ["for", "each"].includes(directive2.name.value().toLowerCase()));
+      if (!stack.isDirective && stack.directives && Array.isArray(stack.directives)) {
+        let directive = stack.directives.find((directive2) => ["for", "each"].includes(directive2.name.value().toLowerCase()));
         if (directive) {
           isForContext = true;
           direName = directive.name.value().toLowerCase();
@@ -9182,11 +9448,11 @@ function createElementKeyPropertyNode(ctx2, stack2) {
           }
         }
       }
-      if (!direName && stack2.parentStack.isDirective && ["for", "each"].includes(stack2.parentStack.openingElement.name.value())) {
-        const attrs = stack2.parentStack.openingElement.attributes;
+      if (!direName && stack.parentStack.isDirective && ["for", "each"].includes(stack.parentStack.openingElement.name.value())) {
+        const attrs = stack.parentStack.openingElement.attributes;
         const argument = {};
         isForContext = true;
-        direName = stack2.parentStack.openingElement.name.value().toLowerCase();
+        direName = stack.parentStack.openingElement.name.value().toLowerCase();
         attrs.forEach((attr) => {
           argument[attr.name.value()] = attr.value.value();
         });
@@ -9194,70 +9460,70 @@ function createElementKeyPropertyNode(ctx2, stack2) {
       }
     }
     if (fills && fills.includes("condition")) {
-      if (!stack2.isDirective && stack2.directives && Array.isArray(stack2.directives)) {
-        let directive = stack2.directives.find((directive2) => ["if", "elseif", "else"].includes(directive2.name.value().toLowerCase()));
+      if (!stack.isDirective && stack.directives && Array.isArray(stack.directives)) {
+        let directive = stack.directives.find((directive2) => ["if", "elseif", "else"].includes(directive2.name.value().toLowerCase()));
         if (directive) {
           direName = directive.name.value().toLowerCase();
         }
       }
-      if (!isForContext && stack2.parentStack.isDirective && ["if", "elseif", "else"].includes(stack2.parentStack.openingElement.name.value())) {
-        direName = stack2.parentStack.openingElement.name.value().toLowerCase();
+      if (!isForContext && stack.parentStack.isDirective && ["if", "elseif", "else"].includes(stack.parentStack.openingElement.name.value())) {
+        direName = stack.parentStack.openingElement.name.value().toLowerCase();
       }
     }
     if (all || fills.includes(direName)) {
-      return ctx2.createProperty(
-        ctx2.createIdentifier("key"),
-        isForContext ? ctx2.createBinaryExpression(
-          ctx2.createLiteral(getDepth(stack2) + "."),
-          ctx2.createIdentifier(key || "key"),
+      return ctx.createProperty(
+        ctx.createIdentifier("key"),
+        isForContext ? ctx.createBinaryExpression(
+          ctx.createLiteral(getDepth(stack) + "."),
+          ctx.createIdentifier(key || "key"),
           "+"
-        ) : ctx2.createLiteral(getDepth(stack2))
+        ) : ctx.createLiteral(getDepth(stack))
       );
     }
   }
 }
-function createComponentDirectiveProperties(ctx2, stack2, data, callback = null) {
-  if (stack2) {
-    let desc2 = stack2.description();
+function createComponentDirectiveProperties(ctx, stack, data, callback = null) {
+  if (stack) {
+    let desc2 = stack.description();
     let parentIsComponentDirective = getComponentDirectiveAnnotation(desc2);
     if (!parentIsComponentDirective) {
       parentIsComponentDirective = isDirectiveInterface(desc2);
     }
     if (parentIsComponentDirective) {
-      let node = createResolveComponentDirective(ctx2, stack2, data, callback);
+      let node = createResolveComponentDirective(ctx, stack, data, callback);
       if (node) {
         data.directives.push(node);
       }
-      if (stack2.jsxRootElement !== stack2) {
-        createComponentDirectiveProperties(ctx2, stack2.parentStack, data, callback);
+      if (stack.jsxRootElement !== stack) {
+        createComponentDirectiveProperties(ctx, stack.parentStack, data, callback);
       }
       return true;
     }
   }
   return false;
 }
-function createCustomDirectiveProperties(ctx2, stack2, data, callback = null) {
-  const node = createResolveComponentDirective(ctx2, stack2, data, callback);
+function createCustomDirectiveProperties(ctx, stack, data, callback = null) {
+  const node = createResolveComponentDirective(ctx, stack, data, callback);
   if (node) {
     data.directives.push(node);
   }
-  if (stack2.parentStack && stack2.parentStack.isDirective && stack2.jsxRootElement !== stack2.parentStack) {
-    let dName = stack2.parentStack.openingElement.name.value().toLowerCase();
+  if (stack.parentStack && stack.parentStack.isDirective && stack.jsxRootElement !== stack.parentStack) {
+    let dName = stack.parentStack.openingElement.name.value().toLowerCase();
     if (dName === "custom") {
-      createCustomDirectiveProperties(ctx2, stack2.parentStack, data, callback);
+      createCustomDirectiveProperties(ctx, stack.parentStack, data, callback);
     }
   }
 }
-function createResolveComponentDirective(ctx2, stack2, data, callback = null) {
+function createResolveComponentDirective(ctx, stack, data, callback = null) {
   const props = [];
   const has = (items, name) => items && items.some((prop) => prop.key.value === name);
-  stack2.openingElement.attributes.forEach((attr) => {
+  stack.openingElement.attributes.forEach((attr) => {
     if (attr.isAttributeXmlns || attr.isAttributeDirective)
       return;
     const name = attr.name.value();
-    const property = ctx2.createProperty(
-      ctx2.createIdentifier(name),
-      attr.value ? ctx2.createToken(attr.value) : ctx2.createLiteral(true)
+    const property = ctx.createProperty(
+      ctx.createIdentifier(name),
+      attr.value ? ctx.createToken(attr.value) : ctx.createLiteral(true)
     );
     if (attr.isMemberProperty) {
       if (!has(data.props, name)) {
@@ -9274,44 +9540,44 @@ function createResolveComponentDirective(ctx2, stack2, data, callback = null) {
       callback(property);
     }
   });
-  const object = ctx2.createObjectExpression(props);
-  const node = ctx2.createCallExpression(
-    createStaticReferenceNode(ctx2, stack2, "web.components.Component", "resolveDirective"),
+  const object = ctx.createObjectExpression(props);
+  const node = ctx.createCallExpression(
+    createStaticReferenceNode(ctx, stack, "web.components.Component", "resolveDirective"),
     [
       object,
-      ctx2.createThisExpression()
+      ctx.createThisExpression()
     ]
   );
   node.isInheritComponentDirective = true;
   return node;
 }
-function createSlotElementNode(ctx2, stack2, children) {
-  const openingElement = ctx2.createToken(stack2.openingElement);
-  const args = [ctx2, stack2];
+function createSlotElementNode(ctx, stack, children) {
+  const openingElement = ctx.createToken(stack.openingElement);
+  const args = [ctx, stack];
   let props = null;
   let params = [];
-  if (stack2.isSlotDeclared) {
-    args.push(ctx2.createLiteral(stack2.openingElement.name.value()));
+  if (stack.isSlotDeclared) {
+    args.push(ctx.createLiteral(stack.openingElement.name.value()));
     if (openingElement.attributes.length > 0) {
       const properties = openingElement.attributes.map((attr) => {
-        return ctx2.createProperty(
+        return ctx.createProperty(
           attr.name,
           attr.value
         );
       });
-      props = ctx2.createObjectExpression(properties);
+      props = ctx.createObjectExpression(properties);
     } else {
-      props = ctx2.createObjectExpression();
+      props = ctx.createObjectExpression();
     }
     args.push(props);
-  } else if (stack2.openingElement.attributes.length > 0) {
-    const attribute = stack2.openingElement.attributes[0];
+  } else if (stack.openingElement.attributes.length > 0) {
+    const attribute = stack.openingElement.attributes[0];
     if (attribute.value) {
-      const stack3 = attribute.parserSlotScopeParamsStack();
+      const stack2 = attribute.parserSlotScopeParamsStack();
       params.push(
-        ctx2.createAssignmentExpression(
-          ctx2.createToken(stack3),
-          ctx2.createObjectExpression()
+        ctx.createAssignmentExpression(
+          ctx.createToken(stack2),
+          ctx.createObjectExpression()
         )
       );
     }
@@ -9323,13 +9589,13 @@ function createSlotElementNode(ctx2, stack2, children) {
       children = null;
     }
     if (children) {
-      args.push(ctx2.createArrowFunctionExpression(children, params));
+      args.push(ctx.createArrowFunctionExpression(children, params));
     }
   }
   return createSlotNode(...args);
 }
-function createDirectiveElementNode(ctx2, stack2, children) {
-  const openingElement = stack2.openingElement;
+function createDirectiveElementNode(ctx, stack, children) {
+  const openingElement = stack.openingElement;
   const name = openingElement.name.value().toLowerCase();
   switch (name) {
     case "custom":
@@ -9337,8 +9603,8 @@ function createDirectiveElementNode(ctx2, stack2, children) {
       return children;
     case "if":
     case "elseif": {
-      const condition = ctx2.createToken(stack2.attributes[0].parserAttributeValueStack());
-      const node = ctx2.createNode("ConditionalExpression");
+      const condition = ctx.createToken(stack.attributes[0].parserAttributeValueStack());
+      const node = ctx.createNode("ConditionalExpression");
       node.test = condition;
       node.consequent = children;
       return node;
@@ -9347,134 +9613,134 @@ function createDirectiveElementNode(ctx2, stack2, children) {
       return children;
     case "for":
     case "each": {
-      const attrs = stack2.openingElement.attributes;
+      const attrs = stack.openingElement.attributes;
       const argument = {};
       attrs.forEach((attr) => {
         if (attr.name.value() === "name") {
-          argument["refs"] = ctx2.createToken(attr.parserAttributeValueStack());
+          argument["refs"] = ctx.createToken(attr.parserAttributeValueStack());
         } else {
-          argument[attr.name.value()] = ctx2.createIdentifier(attr.value.value());
+          argument[attr.name.value()] = ctx.createIdentifier(attr.value.value());
         }
       });
-      let item = argument.item || ctx2.createIdentifier("item");
-      let key = argument.key || ctx2.createIdentifier("key");
-      let node = name === "for" ? createForMapNode(ctx2, argument.refs, children, item, key, argument.index, stack2) : createForEachNode(ctx2, argument.refs, children, item, key);
+      let item = argument.item || ctx.createIdentifier("item");
+      let key = argument.key || ctx.createIdentifier("key");
+      let node = name === "for" ? createForMapNode(ctx, argument.refs, children, item, key, argument.index, stack) : createForEachNode(ctx, argument.refs, children, item, key);
       node.isForNode = true;
       return node;
     }
   }
   return null;
 }
-function createHandleNode(ctx2, stack2, ...args) {
-  let handle = ctx2.createIdentifier(
-    ctx2.getLocalRefName(
-      stack2,
-      ctx2.options.esx.handle || "createVNode"
+function createHandleNode(ctx, stack, ...args) {
+  let handle = ctx.createIdentifier(
+    ctx.getLocalRefName(
+      stack,
+      ctx.options.esx.handle || "createVNode"
     )
   );
-  return ctx2.createCallExpression(handle, args);
+  return ctx.createCallExpression(handle, args);
 }
-function createElementNode(ctx2, stack2, data, children) {
+function createElementNode(ctx, stack, data, children) {
   let name = null;
-  if (stack2.isComponent) {
-    if (stack2.jsxRootElement === stack2 && stack2.parentStack.isProgram) {
-      name = ctx2.createLiteral("div");
+  if (stack.isComponent) {
+    if (stack.jsxRootElement === stack && stack.parentStack.isProgram) {
+      name = ctx.createLiteral("div");
     } else {
-      const desc2 = stack2.description();
-      if ((0, import_Utils10.isModule)(desc2)) {
-        ctx2.addDepend(desc2, stack2.module);
-        name = ctx2.createIdentifier(
-          ctx2.getModuleReferenceName(desc2, stack2.module)
+      const desc2 = stack.description();
+      if ((0, import_Utils11.isModule)(desc2)) {
+        ctx.addDepend(desc2, stack.module);
+        name = ctx.createIdentifier(
+          ctx.getModuleReferenceName(desc2, stack.module)
         );
       } else {
-        name = ctx2.createIdentifier(
-          stack2.openingElement.name.value(),
-          stack2.openingElement.name
+        name = ctx.createIdentifier(
+          stack.openingElement.name.value(),
+          stack.openingElement.name
         );
       }
     }
   } else {
-    name = ctx2.createLiteral(stack2.openingElement.name.value());
+    name = ctx.createLiteral(stack.openingElement.name.value());
   }
-  data = mergeElementPropsNode(ctx2, data, stack2);
+  data = mergeElementPropsNode(ctx, data, stack);
   if (children) {
-    return createHandleNode(ctx2, stack2, name, data || ctx2.createLiteral(null), children);
+    return createHandleNode(ctx, stack, name, data || ctx.createLiteral(null), children);
   } else if (data) {
-    return createHandleNode(ctx2, stack2, name, data);
+    return createHandleNode(ctx, stack, name, data);
   } else {
-    return createHandleNode(ctx2, stack2, name);
+    return createHandleNode(ctx, stack, name);
   }
 }
-function getDepth(stack2) {
-  let parentStack = stack2.parentStack;
+function getDepth(stack) {
+  let parentStack = stack.parentStack;
   while (parentStack) {
     if (parentStack.isJSXElement || parentStack.isJSXExpressionContainer || parentStack.isMethodDefinition || parentStack.isProgram)
       break;
     parentStack = parentStack.parentStack;
   }
   if (parentStack && (parentStack.isDirective || parentStack.isSlot || parentStack.isJSXExpressionContainer)) {
-    const index = stack2.childIndexAt;
+    const index = stack.childIndexAt;
     const prefix = getDepth(parentStack);
     return prefix ? prefix + "." + index : index;
   }
-  return stack2.childIndexAt;
+  return stack.childIndexAt;
 }
-function getChildren(stack2) {
-  return stack2.children.filter((child) => {
+function getChildren(stack) {
+  return stack.children.filter((child) => {
     return !(child.isJSXScript && child.isScriptProgram || child.isJSXStyle);
   });
 }
-function createElement(ctx2, stack2) {
+function createElement(ctx, stack) {
   let data = {
     directives: [],
     slots: {},
     attrs: [],
     props: []
   };
-  let isRoot = stack2.jsxRootElement === stack2;
-  let children = getChildren(stack2);
-  let childNodes = createChildren(ctx2, children, data, stack2);
-  let desc2 = stack2.description();
+  let isRoot = stack.jsxRootElement === stack;
+  let children = getChildren(stack);
+  let childNodes = createChildren(ctx, children, data, stack);
+  let desc2 = stack.description();
   let componentDirective = getComponentDirectiveAnnotation(desc2);
   let nodeElement = null;
-  if (stack2.isDirective && stack2.openingElement.name.value().toLowerCase() === "custom") {
+  if (stack.isDirective && stack.openingElement.name.value().toLowerCase() === "custom") {
     componentDirective = true;
-  } else if (stack2.isComponent && isDirectiveInterface(desc2)) {
+  } else if (stack.isComponent && isDirectiveInterface(desc2)) {
     componentDirective = true;
   }
   if (componentDirective) {
     return childNodes;
   }
-  if (stack2.parentStack && stack2.parentStack.isDirective) {
-    let dName = stack2.parentStack.openingElement.name.value().toLowerCase();
+  if (stack.parentStack && stack.parentStack.isDirective) {
+    let dName = stack.parentStack.openingElement.name.value().toLowerCase();
     if (dName === "show") {
-      const condition = stack2.parentStack.openingElement.attributes[0];
+      const condition = stack.parentStack.openingElement.attributes[0];
       data.directives.push(
         createDirectiveArrayNode(
-          ctx2,
+          ctx,
           "vShow",
-          ctx2.createToken(condition.parserAttributeValueStack())
+          ctx.createToken(condition.parserAttributeValueStack())
         )
       );
     } else if (dName === "custom") {
-      createCustomDirectiveProperties(ctx2, stack2.parentStack, data);
+      createCustomDirectiveProperties(ctx, stack.parentStack, data);
     }
   } else {
-    createComponentDirectiveProperties(ctx2, stack2.parentStack, data);
+    createComponentDirectiveProperties(ctx, stack.parentStack, data);
   }
-  if (!stack2.isJSXFragment) {
-    if (!(isRoot && stack2.openingElement.name.value() === "root")) {
-      createAttributes(ctx2, stack2, data);
+  if (!stack.isJSXFragment) {
+    if (!(isRoot && stack.openingElement.name.value() === "root")) {
+      createAttributes(ctx, stack, data);
     }
   }
-  const isWebComponent = stack2.isWebComponent && !(stack2.compilation.JSX && stack2.parentStack.isProgram);
+  const isWebComponent = stack.isWebComponent && !(stack.compilation.JSX && stack.parentStack.isProgram);
   if (isWebComponent) {
     const properties = [];
     if (childNodes) {
-      properties.push(ctx2.createProperty(
-        ctx2.createIdentifier("default"),
+      properties.push(ctx.createProperty(
+        ctx.createIdentifier("default"),
         createWithCtxNode(
-          ctx2.createArrowFunctionExpression(childNodes)
+          ctx.createArrowFunctionExpression(childNodes)
         )
       ));
       childNodes = null;
@@ -9482,53 +9748,53 @@ function createElement(ctx2, stack2) {
     if (data.slots) {
       for (let key in data.slots) {
         properties.push(
-          ctx2.createProperty(
-            ctx2.createIdentifier(key),
+          ctx.createProperty(
+            ctx.createIdentifier(key),
             data.slots[key]
           )
         );
       }
     }
     if (properties.length > 0) {
-      childNodes = ctx2.createObjectExpression(properties);
+      childNodes = ctx.createObjectExpression(properties);
     }
   }
-  if (stack2.isSlot) {
-    nodeElement = createSlotElementNode(ctx2, stack2, childNodes);
-  } else if (stack2.isDirective) {
-    nodeElement = createDirectiveElementNode(ctx2, stack2, childNodes);
+  if (stack.isSlot) {
+    nodeElement = createSlotElementNode(ctx, stack, childNodes);
+  } else if (stack.isDirective) {
+    nodeElement = createDirectiveElementNode(ctx, stack, childNodes);
   } else {
-    if (stack2.isJSXFragment || isRoot && !isWebComponent && stack2.openingElement.name.value() === "root") {
+    if (stack.isJSXFragment || isRoot && !isWebComponent && stack.openingElement.name.value() === "root") {
       if (Array.isArray(childNodes) && childNodes.length === 1) {
         nodeElement = childNodes[0];
       } else {
-        nodeElement = createFragmentVNode(ctx2, childNodes);
+        nodeElement = createFragmentVNode(ctx, childNodes);
       }
     } else {
-      nodeElement = createElementNode(ctx2, stack2, data, childNodes);
+      nodeElement = createElementNode(ctx, stack, data, childNodes);
     }
   }
   if (nodeElement && data.directives && data.directives.length > 0) {
-    nodeElement = createWithDirectives(ctx2, nodeElement, data.directives);
+    nodeElement = createWithDirectives(ctx, nodeElement, data.directives);
   }
   return nodeElement;
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXElement.js
-function JSXElement(ctx2, stack2) {
-  if (!ctx2.options.esx.enable)
+function JSXElement(ctx, stack) {
+  if (!ctx.options.esx.enable)
     return;
-  return createElement(ctx2, stack2);
+  return createElement(ctx, stack);
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXEmptyExpression.js
-function JSXEmptyExpression_default(ctx2, stack2) {
+function JSXEmptyExpression_default(ctx, stack) {
   return null;
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXExpressionContainer.js
-function JSXExpressionContainer_default(ctx2, stack2) {
-  return ctx2.createToken(stack2.expression);
+function JSXExpressionContainer_default(ctx, stack) {
+  return ctx.createToken(stack.expression);
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXFragment.js
@@ -9536,469 +9802,469 @@ var JSXFragment_default = JSXElement;
 
 // node_modules/@easescript/transform/lib/tokens/JSXIdentifier.js
 init_Common();
-function JSXIdentifier_default(ctx2, stack2) {
-  var name = stack2.value();
-  if (stack2.parentStack.parentStack.isJSXAttribute) {
+function JSXIdentifier_default(ctx, stack) {
+  var name = stack.value();
+  if (stack.parentStack.parentStack.isJSXAttribute) {
     if (name.includes("-")) {
-      return ctx2.createIdentifier(toCamelCase(name), stack2);
+      return ctx.createIdentifier(toCamelCase(name), stack);
     }
   }
-  const node = ctx2.createNode(stack2, "Identifier");
+  const node = ctx.createNode(stack, "Identifier");
   node.value = name;
   node.raw = name;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXMemberExpression.js
-function JSXMemberExpression_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.object = ctx2.createToken(stack2.object);
-  node.property = ctx2.createToken(stack2.property);
+function JSXMemberExpression_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.object = ctx.createToken(stack.object);
+  node.property = ctx.createToken(stack.property);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXNamespacedName.js
-function JSXNamespacedName_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.name = ctx2.createToken(stack2.name);
-  node.namespace = ctx2.createToken(stack2.namespace);
-  const xmlns = stack2.getXmlNamespace();
+function JSXNamespacedName_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.name = ctx.createToken(stack.name);
+  node.namespace = ctx.createToken(stack.namespace);
+  const xmlns = stack.getXmlNamespace();
   if (xmlns) {
     node.value = xmlns.value.value();
   } else {
-    const ops2 = stack2.compiler.options;
-    node.value = ops2.jsx.xmlns.default[stack2.namespace.value()] || null;
+    const ops2 = stack.compiler.options;
+    node.value = ops2.jsx.xmlns.default[stack.namespace.value()] || null;
   }
   node.raw = node.value;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXOpeningElement.js
-function JSXOpeningElement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.attributes = stack2.attributes.map((attr) => ctx2.createToken(attr));
-  node.selfClosing = !!stack2.selfClosing;
-  if (stack2.parentStack.isComponent) {
-    const desc2 = stack2.parentStack.description();
+function JSXOpeningElement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.attributes = stack.attributes.map((attr) => ctx.createToken(attr));
+  node.selfClosing = !!stack.selfClosing;
+  if (stack.parentStack.isComponent) {
+    const desc2 = stack.parentStack.description();
     if (desc2) {
-      if (stack2.hasNamespaced && desc2.isFragment) {
-        node.name = ctx2.createIdentifier(desc2.id, stack2.name);
+      if (stack.hasNamespaced && desc2.isFragment) {
+        node.name = ctx.createIdentifier(desc2.id, stack.name);
       } else {
-        node.name = ctx2.createIdentifier(ctx2.getModuleReferenceName(desc2, stack2.module), stack2.name);
+        node.name = ctx.createIdentifier(ctx.getModuleReferenceName(desc2, stack.module), stack.name);
       }
     } else {
-      node.name = ctx2.createIdentifier(stack2.name.value(), stack2.name);
+      node.name = ctx.createIdentifier(stack.name.value(), stack.name);
     }
   } else {
-    node.name = ctx2.createLiteral(stack2.name.value(), void 0, stack2.name);
+    node.name = ctx.createLiteral(stack.name.value(), void 0, stack.name);
   }
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXOpeningFragment.js
-function JSXOpeningFragment_default(ctx2, stack2) {
-  return ctx2.createNode(stack2);
+function JSXOpeningFragment_default(ctx, stack) {
+  return ctx.createNode(stack);
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXScript.js
-function JSXScript_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.openingElement = ctx2.createToken(stack2.openingElement);
-  node.closingElement = ctx2.createToken(stack2.closingElement);
-  node.body = (stack2.body || []).map((child) => ctx2.createToken(child));
+function JSXScript_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.openingElement = ctx.createToken(stack.openingElement);
+  node.closingElement = ctx.createToken(stack.closingElement);
+  node.body = (stack.body || []).map((child) => ctx.createToken(child));
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXSpreadAttribute.js
-function JSXSpreadAttribute_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.argument = ctx2.createToken(stack2.argument);
+function JSXSpreadAttribute_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.argument = ctx.createToken(stack.argument);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXStyle.js
-function JSXStyle_default(ctx2, stack2) {
+function JSXStyle_default(ctx, stack) {
   return null;
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXText.js
-function JSXText_default(ctx2, stack2) {
-  let value = stack2.value();
+function JSXText_default(ctx, stack) {
+  let value = stack.value();
   if (value) {
     value = value.replace(/\s+/g, " ").replace(/(\u0022|\u0027)/g, "\\$1");
     if (value) {
-      return ctx2.createLiteral(value);
+      return ctx.createLiteral(value);
     }
   }
   return null;
 }
 
 // node_modules/@easescript/transform/lib/tokens/LabeledStatement.js
-function LabeledStatement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.label = ctx2.createIdentifier(stack2.label.value(), stack2.label);
-  node.body = ctx2.createToken(stack2.body);
+function LabeledStatement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.label = ctx.createIdentifier(stack.label.value(), stack.label);
+  node.body = ctx.createToken(stack.body);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/Literal.js
-function Literal_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.raw = stack2.raw();
+function Literal_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.raw = stack.raw();
   const code = node.raw.charCodeAt(0);
   if (code === 34 || code === 39) {
     node.value = node.raw.slice(1, -1);
   } else {
-    node.value = stack2.value();
+    node.value = stack.value();
   }
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/LogicalExpression.js
-function LogicalExpression_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.left = ctx2.createToken(stack2.left);
-  node.right = ctx2.createToken(stack2.right);
-  node.operator = stack2.operator;
+function LogicalExpression_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.left = ctx.createToken(stack.left);
+  node.right = ctx.createToken(stack.right);
+  node.operator = stack.operator;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/MemberExpression.js
-var import_Utils11 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils12 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
-function addImportReference(ctx2, desc2, module2) {
-  if (import_Utils11.default.isStack(desc2) && (desc2.isDeclaratorVariable || desc2.isDeclaratorFunction)) {
+function addImportReference(ctx, desc2, module2) {
+  if (import_Utils12.default.isStack(desc2) && (desc2.isDeclaratorVariable || desc2.isDeclaratorFunction)) {
     let imports = desc2.imports;
     if (Array.isArray(imports)) {
       imports.forEach((item) => {
         if (item.source.isLiteral) {
-          parseImportDeclaration(ctx2, item, module2);
+          parseImportDeclaration(ctx, item, module2);
         }
       });
     }
   }
 }
-function MemberExpression(ctx2, stack2) {
-  const refsName = stack2.getReferenceName();
+function MemberExpression(ctx, stack) {
+  const refsName = stack.getReferenceName();
   if (refsName) {
-    return ctx2.createIdentifier(refsName, stack2);
+    return ctx.createIdentifier(refsName, stack);
   }
-  const module2 = stack2.module;
-  const description = stack2.descriptor();
-  const objectType = stack2.object.type();
-  if (description && description.isModule && objectType && !objectType.isLiteralObjectType && import_Utils11.default.isTypeModule(description)) {
-    ctx2.addDepend(description, stack2.module);
+  const module2 = stack.module;
+  const description = stack.descriptor();
+  const objectType = stack.object.type();
+  if (description && description.isModule && objectType && !objectType.isLiteralObjectType && import_Utils12.default.isTypeModule(description)) {
+    ctx.addDepend(description, stack.module);
   } else {
-    const objectDescriptor = stack2.object.descriptor();
-    if (import_Utils11.default.isTypeModule(objectDescriptor)) {
-      ctx2.addDepend(objectDescriptor, stack2.module);
+    const objectDescriptor = stack.object.descriptor();
+    if (import_Utils12.default.isTypeModule(objectDescriptor)) {
+      ctx.addDepend(objectDescriptor, stack.module);
     } else {
-      addImportReference(ctx2, objectDescriptor, module2 || stack2.compilation);
-      addImportReference(ctx2, description, module2 || stack2.compilation);
+      addImportReference(ctx, objectDescriptor, module2 || stack.compilation);
+      addImportReference(ctx, description, module2 || stack.compilation);
     }
   }
-  if (!description || import_Utils11.default.isType(description) && description.isAnyType && !stack2.optional) {
+  if (!description || import_Utils12.default.isType(description) && description.isAnyType && !stack.optional) {
     let isReflect = true;
     if (description) {
       isReflect = false;
       let hasDynamic = description.isComputeType && description.isPropertyExists();
-      if (!hasDynamic && !import_Utils11.default.isLiteralObjectType(objectType)) {
+      if (!hasDynamic && !import_Utils12.default.isLiteralObjectType(objectType)) {
         isReflect = true;
       }
     }
     if (isReflect) {
-      return ctx2.createCallExpression(
-        createStaticReferenceNode(ctx2, stack2, "Reflect", "get"),
+      return ctx.createCallExpression(
+        createStaticReferenceNode(ctx, stack, "Reflect", "get"),
         [
-          module2 ? ctx2.createIdentifier(module2.id) : ctx2.createLiteral(null),
-          ctx2.createToken(stack2.object),
-          stack2.computed ? ctx2.createToken(stack2.property) : ctx2.createLiteral(stack2.property.value())
+          module2 ? ctx.createIdentifier(module2.id) : ctx.createLiteral(null),
+          ctx.createToken(stack.object),
+          stack.computed ? ctx.createToken(stack.property) : ctx.createLiteral(stack.property.value())
         ],
-        stack2
+        stack
       );
     }
   }
-  const resolveName = getMethodOrPropertyAlias(ctx2, description);
-  const privateChain = ctx2.options.privateChain;
+  const resolveName = getMethodOrPropertyAlias(ctx, description);
+  const privateChain = ctx.options.privateChain;
   if (privateChain && description && description.isMethodDefinition && !(description.static || description.module.static)) {
-    const modifier = import_Utils11.default.getModifierValue(description);
+    const modifier = import_Utils12.default.getModifierValue(description);
     const refModule = description.module;
     if (modifier === "private" && refModule.children.length > 0) {
-      let property = resolveName ? ctx2.createIdentifier(resolveName, stack2.property) : ctx2.createToken(stack2.property);
-      return ctx2.createMemberExpression(
+      let property = resolveName ? ctx.createIdentifier(resolveName, stack.property) : ctx.createToken(stack.property);
+      return ctx.createMemberExpression(
         [
-          ctx2.createIdentifier(module2.id),
-          ctx2.createIdentifier("prototype"),
+          ctx.createIdentifier(module2.id),
+          ctx.createIdentifier("prototype"),
           property
         ],
-        stack2
+        stack
       );
     }
   }
-  if (objectType && !objectType.isLiteralObjectType && import_Utils11.default.isClassType(description)) {
-    ctx2.addDepend(description, stack2.module);
-    if (!stack2.hasMatchAutoImporter) {
-      return ctx2.createIdentifier(
-        ctx2.getModuleReferenceName(description, module2),
-        stack2
+  if (objectType && !objectType.isLiteralObjectType && import_Utils12.default.isClassType(description)) {
+    ctx.addDepend(description, stack.module);
+    if (!stack.hasMatchAutoImporter) {
+      return ctx.createIdentifier(
+        ctx.getModuleReferenceName(description, module2),
+        stack
       );
     }
   }
-  if (stack2.object.isSuperExpression) {
-    let property = resolveName ? ctx2.createIdentifier(resolveName, stack2.property) : ctx2.createToken(stack2.property);
+  if (stack.object.isSuperExpression) {
+    let property = resolveName ? ctx.createIdentifier(resolveName, stack.property) : ctx.createToken(stack.property);
     if (description && description.isMethodGetterDefinition) {
       if (property.type === "Identifier") {
-        property = ctx2.createLiteral(
+        property = ctx.createLiteral(
           property.value,
           void 0,
-          stack2.property
+          stack.property
         );
       }
       const args = [
-        ctx2.createIdentifier(module2.id),
-        ctx2.createThisExpression(),
+        ctx.createIdentifier(module2.id),
+        ctx.createThisExpression(),
         property
       ];
-      return ctx2.createCallExpression(
-        createStaticReferenceNode(ctx2, stack2, "Class", "callSuperGetter"),
+      return ctx.createCallExpression(
+        createStaticReferenceNode(ctx, stack, "Class", "callSuperGetter"),
         args
       );
     } else if (description && description.isMethodSetterDefinition) {
       if (property.type === "Identifier") {
-        property = ctx2.createLiteral(
+        property = ctx.createLiteral(
           property.value,
           void 0,
-          stack2.property
+          stack.property
         );
       }
       const args = [
-        ctx2.createIdentifier(module2.id),
-        ctx2.createThisExpression(),
+        ctx.createIdentifier(module2.id),
+        ctx.createThisExpression(),
         property
       ];
-      return ctx2.createCallExpression(
-        createStaticReferenceNode(ctx2, stack2, "Class", "callSuperSetter"),
+      return ctx.createCallExpression(
+        createStaticReferenceNode(ctx, stack, "Class", "callSuperSetter"),
         args
       );
     } else {
-      return ctx2.createMemberExpression([
-        ctx2.createToken(stack2.object),
-        ctx2.createIdentifier("prototype"),
+      return ctx.createMemberExpression([
+        ctx.createToken(stack.object),
+        ctx.createIdentifier("prototype"),
         property
       ]);
     }
   }
-  let propertyNode = resolveName ? ctx2.createIdentifier(resolveName, stack2.property) : ctx2.createToken(stack2.property);
+  let propertyNode = resolveName ? ctx.createIdentifier(resolveName, stack.property) : ctx.createToken(stack.property);
   if (privateChain && description && description.isPropertyDefinition && !(description.static || description.module.static)) {
-    const modifier = import_Utils11.default.getModifierValue(description);
+    const modifier = import_Utils12.default.getModifierValue(description);
     if ("private" === modifier) {
-      const object = ctx2.createMemberExpression([
-        ctx2.createToken(stack2.object),
-        ctx2.createIdentifier(
-          ctx2.getGlobalRefName(stack2, PRIVATE_NAME, stack2.module)
+      const object = ctx.createMemberExpression([
+        ctx.createToken(stack.object),
+        ctx.createIdentifier(
+          ctx.getGlobalRefName(stack, PRIVATE_NAME, stack.module)
         )
       ]);
       object.computed = true;
-      return ctx2.createMemberExpression([
+      return ctx.createMemberExpression([
         object,
         propertyNode
       ]);
     }
   }
   if (description && (!description.isAccessor && description.isMethodDefinition)) {
-    const pStack = stack2.getParentStack((stack3) => !!(stack3.jsxElement || stack3.isBlockStatement || stack3.isCallExpression || stack3.isExpressionStatement));
+    const pStack = stack.getParentStack((stack2) => !!(stack2.jsxElement || stack2.isBlockStatement || stack2.isCallExpression || stack2.isExpressionStatement));
     if (pStack && pStack.jsxElement) {
-      return ctx2.createCallExpression(
-        ctx2.createMemberExpression([
-          ctx2.createToken(stack2.object),
+      return ctx.createCallExpression(
+        ctx.createMemberExpression([
+          ctx.createToken(stack.object),
           propertyNode,
-          ctx2.createIdentifier("bind")
+          ctx.createIdentifier("bind")
         ]),
-        [ctx2.createThisExpression()]
+        [ctx.createThisExpression()]
       );
     }
   }
-  const node = ctx2.createNode(stack2);
-  node.computed = !!stack2.computed;
-  node.optional = !!stack2.optional;
-  node.object = ctx2.createToken(stack2.object);
+  const node = ctx.createNode(stack);
+  node.computed = !!stack.computed;
+  node.optional = !!stack.optional;
+  node.object = ctx.createToken(stack.object);
   node.property = propertyNode;
   return node;
 }
 var MemberExpression_default = MemberExpression;
 
 // node_modules/@easescript/transform/lib/tokens/MethodDefinition.js
-var import_Utils12 = __toESM(require("easescript/lib/core/Utils"));
-function MethodDefinition_default(ctx2, stack2, type) {
-  const node = FunctionDeclaration_default(ctx2, stack2, type);
-  node.async = stack2.expression.async ? true : false;
-  node.static = !!stack2.static;
-  node.modifier = import_Utils12.default.getModifierValue(stack2);
+var import_Utils13 = __toESM(require("easescript/lib/core/Utils"));
+function MethodDefinition_default(ctx, stack, type) {
+  const node = FunctionDeclaration_default(ctx, stack, type);
+  node.async = stack.expression.async ? true : false;
+  node.static = !!stack.static;
+  node.modifier = import_Utils13.default.getModifierValue(stack);
   node.kind = "method";
-  node.isAbstract = !!stack2.isAbstract;
-  node.isFinal = !!stack2.isFinal;
+  node.isAbstract = !!stack.isAbstract;
+  node.isFinal = !!stack.isFinal;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/MethodGetterDefinition.js
-function MethodGetterDefinition_default(ctx2, stack2, type) {
-  const node = MethodDefinition_default(ctx2, stack2, type);
+function MethodGetterDefinition_default(ctx, stack, type) {
+  const node = MethodDefinition_default(ctx, stack, type);
   node.kind = "get";
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/MethodSetterDefinition.js
-function MethodSetterDefinition_default(ctx2, stack2, type) {
-  const node = MethodDefinition_default(ctx2, stack2, type);
+function MethodSetterDefinition_default(ctx, stack, type) {
+  const node = MethodDefinition_default(ctx, stack, type);
   node.kind = "set";
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/NewExpression.js
-var import_Utils13 = __toESM(require("easescript/lib/core/Utils"));
-function NewExpression_default(ctx2, stack2) {
-  let desc2 = stack2.callee.type();
-  desc2 = import_Utils13.default.getOriginType(desc2);
-  if (desc2 !== stack2.module && import_Utils13.default.isTypeModule(desc2)) {
-    ctx2.addDepend(desc2, stack2.module);
+var import_Utils14 = __toESM(require("easescript/lib/core/Utils"));
+function NewExpression_default(ctx, stack) {
+  let desc2 = stack.callee.type();
+  desc2 = import_Utils14.default.getOriginType(desc2);
+  if (desc2 !== stack.module && import_Utils14.default.isTypeModule(desc2)) {
+    ctx.addDepend(desc2, stack.module);
   }
-  const node = ctx2.createNode(stack2);
-  node.callee = ctx2.createToken(stack2.callee);
-  node.arguments = stack2.arguments.map((item) => ctx2.createToken(item));
+  const node = ctx.createNode(stack);
+  node.callee = ctx.createToken(stack.callee);
+  node.arguments = stack.arguments.map((item) => ctx.createToken(item));
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ObjectExpression.js
-function ObjectExpression_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.properties = stack2.properties.map((item) => ctx2.createToken(item));
+function ObjectExpression_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.properties = stack.properties.map((item) => ctx.createToken(item));
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ObjectPattern.js
-function ObjectPattern_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.properties = stack2.properties.map((item) => ctx2.createToken(item));
+function ObjectPattern_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.properties = stack.properties.map((item) => ctx.createToken(item));
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/PackageDeclaration.js
-function PackageDeclaration_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
+function PackageDeclaration_default(ctx, stack) {
+  const node = ctx.createNode(stack);
   node.body = [];
-  ctx2.setNode(stack2, node);
-  stack2.body.forEach((item) => {
+  ctx.setNode(stack, node);
+  stack.body.forEach((item) => {
     if (item.isClassDeclaration || item.isDeclaratorDeclaration || item.isEnumDeclaration || item.isInterfaceDeclaration || item.isStructTableDeclaration) {
-      let child = ctx2.createToken(item);
+      let child = ctx.createToken(item);
       if (child) {
         node.body.push(child);
       }
     }
   });
-  ctx2.removeNode(stack2);
+  ctx.removeNode(stack);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ParenthesizedExpression.js
-function ParenthesizedExpression_default(ctx2, stack2) {
-  if (stack2.parentStack.isExpressionStatement) {
-    return ctx2.createToken(stack2.expression);
+function ParenthesizedExpression_default(ctx, stack) {
+  if (stack.parentStack.isExpressionStatement) {
+    return ctx.createToken(stack.expression);
   }
-  const node = ctx2.createNode(stack2);
-  node.expression = ctx2.createToken(stack2.expression);
+  const node = ctx.createNode(stack);
+  node.expression = ctx.createToken(stack.expression);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/Property.js
-function Property_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.computed = !!stack2.computed;
-  node.key = ctx2.createToken(stack2.key);
-  node.init = ctx2.createToken(stack2.init);
+function Property_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.computed = !!stack.computed;
+  node.key = ctx.createToken(stack.key);
+  node.init = ctx.createToken(stack.init);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/PropertyDefinition.js
-var import_Utils14 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils15 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
-function PropertyDefinition_default(ctx2, stack2) {
+function PropertyDefinition_default(ctx, stack) {
   let init = null;
-  if (stack2.annotations && stack2.annotations.length > 0) {
+  if (stack.annotations && stack.annotations.length > 0) {
     let items = [];
-    stack2.annotations.forEach((annot) => {
+    stack.annotations.forEach((annot) => {
       const name = annot.getLowerCaseName();
       if (name === "readfile") {
         items.push(
-          createReadfileAnnotationNode(ctx2, annot) || ctx2.createLiteral(null)
+          createReadfileAnnotationNode(ctx, annot) || ctx.createLiteral(null)
         );
       } else if (name === "embed") {
         items.push(
-          createEmbedAnnotationNode(ctx2, annot)
+          createEmbedAnnotationNode(ctx, annot)
         );
       } else if (name === "env") {
         items.push(
-          createEnvAnnotationNode(ctx2, annot)
+          createEnvAnnotationNode(ctx, annot)
         );
       } else if (name === "url") {
         items.push(
-          createUrlAnnotationNode(ctx2, annot)
+          createUrlAnnotationNode(ctx, annot)
         );
       }
     });
     if (items.length > 0) {
-      init = items.length > 1 ? ctx2.createArrayExpression(items) : items[0];
+      init = items.length > 1 ? ctx.createArrayExpression(items) : items[0];
     }
   }
-  const node = ctx2.createNode(stack2);
-  const decl = ctx2.createToken(stack2.declarations[0]);
-  node.modifier = import_Utils14.default.getModifierValue(stack2);
-  node.static = !!stack2.static;
-  node.kind = stack2.kind;
+  const node = ctx.createNode(stack);
+  const decl = ctx.createToken(stack.declarations[0]);
+  node.modifier = import_Utils15.default.getModifierValue(stack);
+  node.static = !!stack.static;
+  node.kind = stack.kind;
   node.key = decl.id;
   node.init = init || decl.init;
-  node.dynamic = stack2.dynamic;
-  node.isAbstract = !!stack2.isAbstract;
-  node.isFinal = !!stack2.isFinal;
+  node.dynamic = stack.dynamic;
+  node.isAbstract = !!stack.isAbstract;
+  node.isFinal = !!stack.isFinal;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/RestElement.js
-function RestElement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.value = stack2.value();
+function RestElement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.value = stack.value();
   node.raw = node.value;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ReturnStatement.js
-function ReturnStatement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.argument = ctx2.createToken(stack2.argument);
+function ReturnStatement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.argument = ctx.createToken(stack.argument);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/SequenceExpression.js
-function SequenceExpression_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.expressions = stack2.expressions.map((item) => ctx2.createToken(item));
+function SequenceExpression_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.expressions = stack.expressions.map((item) => ctx.createToken(item));
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/SpreadElement.js
-function SpreadElement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.argument = ctx2.createToken(stack2.argument);
+function SpreadElement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.argument = ctx.createToken(stack.argument);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/StructTableColumnDefinition.js
 init_Common();
-function StructTableColumnDefinition_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.key = ctx2.createIdentifier("`" + stack2.key.value() + "`", stack2.key);
+function StructTableColumnDefinition_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.key = ctx.createIdentifier("`" + stack.key.value() + "`", stack.key);
   node.properties = [];
-  const type = stack2.typename ? ctx2.createToken(stack2.typename) : ctx2.createIdentifier("varchar(255)");
-  const unsigned = stack2.unsigned ? ctx2.createIdentifier("unsigned") : null;
-  const notnull = !stack2.question ? ctx2.createIdentifier("not null") : null;
+  const type = stack.typename ? ctx.createToken(stack.typename) : ctx.createIdentifier("varchar(255)");
+  const unsigned = stack.unsigned ? ctx.createIdentifier("unsigned") : null;
+  const notnull = !stack.question ? ctx.createIdentifier("not null") : null;
   node.properties.push(type);
   if (unsigned) {
     node.properties.push(unsigned);
@@ -10007,8 +10273,8 @@ function StructTableColumnDefinition_default(ctx2, stack2) {
     node.properties.push(notnull);
   }
   {
-    (stack2.properties || []).forEach((item) => {
-      node.properties.push(createIdentNode(ctx2, item));
+    (stack.properties || []).forEach((item) => {
+      node.properties.push(createIdentNode(ctx, item));
     });
   }
   return node;
@@ -10031,18 +10297,18 @@ var TableBuilder = class {
   constructor(type) {
     this.#type = type;
   }
-  createTable(ctx2, stack2) {
-    if (!stack2.body.length)
+  createTable(ctx, stack) {
+    if (!stack.body.length)
       return false;
-    const module2 = stack2.module;
+    const module2 = stack.module;
     if (this.hasTable(module2.id))
       return false;
-    const node = ctx2.createNode(stack2);
-    node.id = ctx2.createIdentifier("`" + normalName(stack2.id.value()) + "`", stack2.id);
+    const node = ctx.createNode(stack);
+    node.id = ctx.createIdentifier("`" + normalName(stack.id.value()) + "`", stack.id);
     node.properties = [];
     node.body = [];
-    stack2.body.forEach((item) => {
-      const token = createIdentNode(ctx2, item);
+    stack.body.forEach((item) => {
+      const token = createIdentNode(ctx, item);
       if (token) {
         if (item.isStructTablePropertyDefinition) {
           node.properties.push(token);
@@ -10055,7 +10321,7 @@ var TableBuilder = class {
     gen.make(node);
     this.#records.set(module2.id, gen.toString());
     this.#changed = true;
-    this.build(ctx2);
+    this.build(ctx);
     return true;
   }
   get type() {
@@ -10079,13 +10345,13 @@ var TableBuilder = class {
   getTables() {
     return Array.from(this.#records.values());
   }
-  async build(ctx2) {
+  async build(ctx) {
     if (!this.#changed)
       return;
     this.#changed = false;
     let file = this.type + ".sql";
     let code = this.getTables().join("\n");
-    file = this.outfile || (this.outfile = ctx2.getOutputAbsolutePath(file));
+    file = this.outfile || (this.outfile = ctx.getOutputAbsolutePath(file));
     import_fs4.default.mkdirSync(import_path4.default.dirname(file), { recursive: true });
     import_fs4.default.writeFileSync(file, code);
   }
@@ -10110,25 +10376,25 @@ function getAllBuilder() {
 addBuilder("mysql", new TableBuilder("mysql"));
 
 // node_modules/@easescript/transform/lib/tokens/StructTableDeclaration.js
-function StructTableDeclaration_default(ctx2, stack2) {
-  getBuilder("mysql").createTable(ctx2, stack2);
+function StructTableDeclaration_default(ctx, stack) {
+  getBuilder("mysql").createTable(ctx, stack);
 }
 
 // node_modules/@easescript/transform/lib/tokens/StructTableKeyDefinition.js
 init_Common();
-function StructTableKeyDefinition_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.key = createIdentNode(ctx2, stack2.key);
-  const key = stack2.key.value().toLowerCase();
-  node.prefix = key === "primary" || key === "key" ? null : ctx2.createIdentifier("key");
-  node.local = ctx2.createToken(stack2.local);
-  node.properties = (stack2.properties || []).map((item) => createIdentNode(ctx2, item));
+function StructTableKeyDefinition_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.key = createIdentNode(ctx, stack.key);
+  const key = stack.key.value().toLowerCase();
+  node.prefix = key === "primary" || key === "key" ? null : ctx.createIdentifier("key");
+  node.local = ctx.createToken(stack.local);
+  node.properties = (stack.properties || []).map((item) => createIdentNode(ctx, item));
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/StructTableMethodDefinition.js
 var import_Namespace7 = __toESM(require("easescript/lib/core/Namespace"));
-function createNode(ctx2, item, isKey = false, toLower = false, type = null) {
+function createNode(ctx, item, isKey = false, toLower = false, type = null) {
   if (!item)
     return null;
   if (type === "enum") {
@@ -10140,7 +10406,7 @@ function createNode(ctx2, item, isKey = false, toLower = false, type = null) {
           const items = type2.descriptors.get(key);
           const item2 = items.find((item3) => item3.isEnumProperty);
           if (item2) {
-            list.push(ctx2.createLiteral(item2.init.value()));
+            list.push(ctx.createLiteral(item2.init.value()));
           }
         });
       }
@@ -10151,187 +10417,187 @@ function createNode(ctx2, item, isKey = false, toLower = false, type = null) {
     let value = item.value();
     if (toLower)
       value = value.toLowerCase();
-    return ctx2.createIdentifier(isKey ? "`" + value + "`" : value, item);
+    return ctx.createIdentifier(isKey ? "`" + value + "`" : value, item);
   }
-  return item.isLiteral ? ctx2.createLiteral(item.value()) : ctx2.createToken(item);
+  return item.isLiteral ? ctx.createLiteral(item.value()) : ctx.createToken(item);
 }
-function StructTableMethodDefinition_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  const name = stack2.key.value().toLowerCase();
+function StructTableMethodDefinition_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  const name = stack.key.value().toLowerCase();
   if (name === "text" || name === "longtext" || name === "tinytext" || name === "mediumtext") {
-    return ctx2.createIdentifier(stack2.key.value(), stack2.key);
+    return ctx.createIdentifier(stack.key.value(), stack.key);
   }
-  const key = stack2.key.isMemberExpression ? stack2.key.property : stack2.key;
-  node.key = createNode(ctx2, key, false);
-  const isKey = stack2.parentStack.isStructTableKeyDefinition;
-  node.params = (stack2.params || []).map((item) => createNode(ctx2, item, isKey, false, name)).flat().filter(Boolean);
+  const key = stack.key.isMemberExpression ? stack.key.property : stack.key;
+  node.key = createNode(ctx, key, false);
+  const isKey = stack.parentStack.isStructTableKeyDefinition;
+  node.params = (stack.params || []).map((item) => createNode(ctx, item, isKey, false, name)).flat().filter(Boolean);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/StructTablePropertyDefinition.js
 init_Common();
-function StructTablePropertyDefinition_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.assignment = !!stack2.assignment;
-  node.key = createIdentNode(ctx2, stack2.key);
-  node.init = createIdentNode(ctx2, stack2.init);
+function StructTablePropertyDefinition_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.assignment = !!stack.assignment;
+  node.key = createIdentNode(ctx, stack.key);
+  node.init = createIdentNode(ctx, stack.init);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/SuperExpression.js
-function SuperExpression_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  const parent = stack2.module.inherit;
-  node.value = ctx2.getModuleReferenceName(parent, stack2.module);
+function SuperExpression_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  const parent = stack.module.inherit;
+  node.value = ctx.getModuleReferenceName(parent, stack.module);
   node.raw = node.value;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/SwitchCase.js
-function SwitchCase_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.condition = ctx2.createToken(stack2.condition);
-  node.consequent = stack2.consequent.map((item) => ctx2.createToken(item));
+function SwitchCase_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.condition = ctx.createToken(stack.condition);
+  node.consequent = stack.consequent.map((item) => ctx.createToken(item));
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/SwitchStatement.js
-function SwitchStatement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.condition = ctx2.createToken(stack2.condition);
-  node.cases = stack2.cases.map((item) => ctx2.createToken(item));
+function SwitchStatement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.condition = ctx.createToken(stack.condition);
+  node.cases = stack.cases.map((item) => ctx.createToken(item));
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/TemplateElement.js
-function TemplateElement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.raw = stack2.raw();
+function TemplateElement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.raw = stack.raw();
   node.value = node.raw;
-  node.tail = stack2.tail;
+  node.tail = stack.tail;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/TemplateLiteral.js
-function TemplateLiteral_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.quasis = stack2.quasis.map((item) => ctx2.createToken(item));
-  node.expressions = stack2.expressions.map((item) => ctx2.createToken(item));
+function TemplateLiteral_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.quasis = stack.quasis.map((item) => ctx.createToken(item));
+  node.expressions = stack.expressions.map((item) => ctx.createToken(item));
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ThisExpression.js
-function ThisExpression_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
+function ThisExpression_default(ctx, stack) {
+  const node = ctx.createNode(stack);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/ThrowStatement.js
-function ThrowStatement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.argument = ctx2.createToken(stack2.argument);
+function ThrowStatement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.argument = ctx.createToken(stack.argument);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/TryStatement.js
-function TryStatement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.block = ctx2.createToken(stack2.block);
-  node.param = ctx2.createToken(stack2.param);
-  node.handler = ctx2.createToken(stack2.handler);
-  node.finalizer = ctx2.createToken(stack2.finalizer);
+function TryStatement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.block = ctx.createToken(stack.block);
+  node.param = ctx.createToken(stack.param);
+  node.handler = ctx.createToken(stack.handler);
+  node.finalizer = ctx.createToken(stack.finalizer);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/TypeAssertExpression.js
-function TypeAssertExpression_default(ctx2, stack2) {
-  return ctx2.createToken(stack2.left);
+function TypeAssertExpression_default(ctx, stack) {
+  return ctx.createToken(stack.left);
 }
 
 // node_modules/@easescript/transform/lib/tokens/TypeTransformExpression.js
-function TypeTransformExpression_default(ctx2, stack2) {
-  return ctx2.createToken(stack2.expression);
+function TypeTransformExpression_default(ctx, stack) {
+  return ctx.createToken(stack.expression);
 }
 
 // node_modules/@easescript/transform/lib/tokens/UnaryExpression.js
-var import_Utils15 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils16 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
-function UnaryExpression_default(ctx2, stack2) {
-  const operator = stack2.operator;
-  const prefix = stack2.prefix;
-  if (operator === "delete" && stack2.argument.isMemberExpression) {
-    const desc2 = stack2.argument.description();
+function UnaryExpression_default(ctx, stack) {
+  const operator = stack.operator;
+  const prefix = stack.prefix;
+  if (operator === "delete" && stack.argument.isMemberExpression) {
+    const desc2 = stack.argument.description();
     if (desc2 && desc2.isAnyType) {
       const hasDynamic = desc2 && desc2.isComputeType && desc2.isPropertyExists();
-      if (!hasDynamic && !import_Utils15.default.isLiteralObjectType(stack2.argument.object.type())) {
-        const property = stack2.argument.computed ? ctx2.createToken(stack2.argument.property) : ctx2.createLiteral(
-          stack2.argument.property.value(),
+      if (!hasDynamic && !import_Utils16.default.isLiteralObjectType(stack.argument.object.type())) {
+        const property = stack.argument.computed ? ctx.createToken(stack.argument.property) : ctx.createLiteral(
+          stack.argument.property.value(),
           void 0,
-          stack2.argument.property
+          stack.argument.property
         );
-        return ctx2.createCallExpression(
-          createStaticReferenceNode(ctx2, stack2, "Reflect", "deleteProperty"),
+        return ctx.createCallExpression(
+          createStaticReferenceNode(ctx, stack, "Reflect", "deleteProperty"),
           [
-            ctx2.createToken(stack2.argument.object),
+            ctx.createToken(stack.argument.object),
             property
           ]
         );
       }
     }
   }
-  const node = ctx2.createNode(stack2);
-  node.argument = ctx2.createToken(stack2.argument);
+  const node = ctx.createNode(stack);
+  node.argument = ctx.createToken(stack.argument);
   node.operator = operator;
   node.prefix = prefix;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/UpdateExpression.js
-var import_Utils16 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils17 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
-function UpdateExpression_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  const operator = stack2.operator;
-  const prefix = stack2.prefix;
-  const isMember = stack2.argument.isMemberExpression;
+function UpdateExpression_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  const operator = stack.operator;
+  const prefix = stack.prefix;
+  const isMember = stack.argument.isMemberExpression;
   if (isMember) {
-    const desc2 = stack2.argument.description();
-    const module2 = stack2.module;
+    const desc2 = stack.argument.description();
+    const module2 = stack.module;
     const scopeId = module2 ? module2.id : null;
     let isReflect = false;
-    if (stack2.argument.computed) {
+    if (stack.argument.computed) {
       const hasDynamic = desc2 && desc2.isComputeType && desc2.isPropertyExists();
-      if (!hasDynamic && !import_Utils16.default.isLiteralObjectType(stack2.argument.object.type())) {
+      if (!hasDynamic && !import_Utils17.default.isLiteralObjectType(stack.argument.object.type())) {
         isReflect = true;
       }
     } else if (desc2 && desc2.isAnyType) {
-      isReflect = !import_Utils16.default.isLiteralObjectType(stack2.argument.object.type());
+      isReflect = !import_Utils17.default.isLiteralObjectType(stack.argument.object.type());
     }
     if (isReflect) {
       const method = operator === "++" ? "incre" : "decre";
-      const callee = createStaticReferenceNode(ctx2, stack2, "Reflect", method);
-      return ctx2.createCallExpression(callee, [
-        ctx2.createIdentifier(scopeId),
-        ctx2.createToken(stack2.argument.object),
-        ctx2.createLiteral(stack2.argument.property.value()),
-        ctx2.createLiteral(!!prefix)
-      ], stack2);
+      const callee = createStaticReferenceNode(ctx, stack, "Reflect", method);
+      return ctx.createCallExpression(callee, [
+        ctx.createIdentifier(scopeId),
+        ctx.createToken(stack.argument.object),
+        ctx.createLiteral(stack.argument.property.value()),
+        ctx.createLiteral(!!prefix)
+      ], stack);
     }
   }
-  node.argument = ctx2.createToken(stack2.argument);
+  node.argument = ctx.createToken(stack.argument);
   node.operator = operator;
   node.prefix = prefix;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/VariableDeclaration.js
-function VariableDeclaration_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.inFor = stack2.flag;
-  node.kind = stack2.kind;
+function VariableDeclaration_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.inFor = stack.flag;
+  node.kind = stack.kind;
   node.declarations = [];
-  stack2.declarations.forEach((item) => {
-    const variable = ctx2.createToken(item);
+  stack.declarations.forEach((item) => {
+    const variable = ctx.createToken(item);
     if (variable) {
       node.declarations.push(variable);
     }
@@ -10344,94 +10610,94 @@ function VariableDeclaration_default(ctx2, stack2) {
 
 // node_modules/@easescript/transform/lib/tokens/VariableDeclarator.js
 init_Common();
-function VariableDeclarator_default(ctx2, stack2) {
-  if (!stack2.flag && !stack2.parentStack.isPropertyDefinition && !(stack2.id.isArrayPattern || stack2.id.isObjectPattern)) {
-    const pp = stack2.parentStack.parentStack;
-    if (pp && !(pp.isExportNamedDeclaration || pp.isExportDefaultDeclaration || pp.isExportSpecifier || pp.isForInStatement || pp.isForStatement || pp.isForOfStatement) && !stack2.useRefItems.size) {
-      if (!stack2.init)
+function VariableDeclarator_default(ctx, stack) {
+  if (!stack.flag && !stack.parentStack.isPropertyDefinition && !(stack.id.isArrayPattern || stack.id.isObjectPattern)) {
+    const pp = stack.parentStack.parentStack;
+    if (pp && !(pp.isExportNamedDeclaration || pp.isExportDefaultDeclaration || pp.isExportSpecifier || pp.isForInStatement || pp.isForStatement || pp.isForOfStatement) && !stack.useRefItems.size) {
+      if (!stack.init)
         return null;
     }
   }
-  const node = ctx2.createNode(stack2);
-  node.inFor = stack2.flag;
-  if (stack2.id.isIdentifier) {
-    let name = stack2.id.value();
-    if (stack2.parentStack && stack2.parentStack.isPropertyDefinition) {
-      name = getMethodOrPropertyAlias(ctx2, stack2.parentStack) || name;
+  const node = ctx.createNode(stack);
+  node.inFor = stack.flag;
+  if (stack.id.isIdentifier) {
+    let name = stack.id.value();
+    if (stack.parentStack && stack.parentStack.isPropertyDefinition) {
+      name = getMethodOrPropertyAlias(ctx, stack.parentStack) || name;
     }
-    node.id = ctx2.createIdentifier(name, stack2.id);
+    node.id = ctx.createIdentifier(name, stack.id);
   } else {
-    node.id = ctx2.createToken(stack2.id);
+    node.id = ctx.createToken(stack.id);
   }
-  node.init = ctx2.createToken(stack2.init);
+  node.init = ctx.createToken(stack.init);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/WhenStatement.js
 init_Common();
-function WhenStatement_default(ctx2, stack2) {
-  const check2 = (stack3) => {
-    if (stack3.isLogicalExpression) {
-      if (stack3.isAndOperator) {
-        return check2(stack3.left) && check2(stack3.right);
+function WhenStatement_default(ctx, stack) {
+  const check2 = (stack2) => {
+    if (stack2.isLogicalExpression) {
+      if (stack2.isAndOperator) {
+        return check2(stack2.left) && check2(stack2.right);
       } else {
-        return check2(stack3.left) || check2(stack3.right);
+        return check2(stack2.left) || check2(stack2.right);
       }
-    } else if (!stack3.isCallExpression) {
+    } else if (!stack2.isCallExpression) {
       throw new Error(`Macro condition must is an call expression`);
     }
-    const name = stack3.value();
+    const name = stack2.value();
     const lower = name.toLowerCase();
-    const argument = parseMacroMethodArguments(stack3.arguments, lower);
+    const argument = parseMacroMethodArguments(stack2.arguments, lower);
     if (!argument) {
-      ctx2.error(`The '${name}' macro is not supported`, stack3);
+      ctx.error(`The '${name}' macro is not supported`, stack2);
       return;
     }
     switch (lower) {
       case "runtime":
-        return isRuntime(argument.value, ctx2.options.metadata) === argument.expect;
+        return isRuntime(argument.value, ctx.options.metadata) === argument.expect;
       case "syntax":
-        return isSyntax(ctx2.plugin.name, argument.value) === argument.expect;
+        return isSyntax(ctx.plugin.name, argument.value) === argument.expect;
       case "env":
         {
           if (argument.name && argument.value) {
-            return isEnv(argument.name, argument.value, ctx2.options) === argument.expect;
+            return isEnv(argument.name, argument.value, ctx.options) === argument.expect;
           } else {
-            ctx2.error(`Missing name or value arguments. the '${name}' annotations.`, stack3);
+            ctx.error(`Missing name or value arguments. the '${name}' annotations.`, stack2);
           }
         }
         break;
       case "version":
         {
           if (argument.name && argument.version) {
-            let versions = ctx2.options.metadata.versions || {};
-            let left = argument.name === ctx2.plugin.name ? ctx2.plugin.version : versions[argument.name];
+            let versions = ctx.options.metadata.versions || {};
+            let left = argument.name === ctx.plugin.name ? ctx.plugin.version : versions[argument.name];
             let right = argument.version;
             return compareVersion(left, right, argument.operator) === argument.expect;
           } else {
-            ctx2.error(`Missing name or value arguments. the '${name}' annotations.`, stack3);
+            ctx.error(`Missing name or value arguments. the '${name}' annotations.`, stack2);
           }
         }
         break;
       default:
     }
   };
-  const node = ctx2.createToken(check2(stack2.condition) ? stack2.consequent : stack2.alternate);
+  const node = ctx.createToken(check2(stack.condition) ? stack.consequent : stack.alternate);
   node && (node.isWhenStatement = true);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/WhileStatement.js
-function WhileStatement_default(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.condition = ctx2.createToken(stack2.condition);
-  node.body = ctx2.createToken(stack2.body);
+function WhileStatement_default(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.condition = ctx.createToken(stack.condition);
+  node.body = ctx.createToken(stack.body);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/core/Builder.js
 var import_glob_path = __toESM(require("glob-path"));
-async function buildProgram(ctx2, compilation, graph) {
+async function buildProgram(ctx, compilation, graph) {
   let root = compilation.stack;
   if (!root) {
     throw new Error("Build program failed");
@@ -10440,11 +10706,11 @@ async function buildProgram(ctx2, compilation, graph) {
   let externals = [];
   let imports = [];
   let exports = [];
-  let emitFile = ctx2.options.emitFile;
-  ctx2.setNode(root, body);
+  let emitFile = ctx.options.emitFile;
+  ctx.setNode(root, body);
   root.body.forEach((item) => {
     if (item.isClassDeclaration || item.isEnumDeclaration || item.isInterfaceDeclaration || item.isStructTableDeclaration || item.isPackageDeclaration) {
-      const child = ctx2.createToken(item);
+      const child = ctx.createToken(item);
       if (child) {
         body.push(child);
       }
@@ -10453,51 +10719,51 @@ async function buildProgram(ctx2, compilation, graph) {
   if (root.imports && root.imports.length > 0) {
     root.imports.forEach((item) => {
       if (item.isImportDeclaration) {
-        ctx2.createToken(item);
+        ctx.createToken(item);
       }
     });
   }
   if (root.externals.length > 0) {
     root.externals.forEach((item) => {
       if (item.isImportDeclaration) {
-        ctx2.createToken(item);
+        ctx.createToken(item);
       } else {
-        const node = ctx2.createToken(item);
+        const node = ctx.createToken(item);
         if (node) {
           externals.push(node);
         }
       }
     });
   }
-  ctx2.removeNode(root);
+  ctx.removeNode(root);
   if (root.exports.length > 0) {
     root.exports.forEach((item) => {
-      ctx2.createToken(item);
+      ctx.createToken(item);
     });
   }
   if (emitFile) {
-    await ctx2.buildDeps();
+    await ctx.buildDeps();
   }
-  ctx2.crateRootAssets();
-  ctx2.createAllDependencies();
+  ctx.crateRootAssets();
+  ctx.createAllDependencies();
   let exportNodes = null;
   let importNodes = null;
-  if (ctx2.options.module === "cjs") {
-    importNodes = createCJSImports(ctx2, ctx2.imports);
-    exportNodes = createCJSExports(ctx2, ctx2.exports, graph);
+  if (ctx.options.module === "cjs") {
+    importNodes = createCJSImports(ctx, ctx.imports);
+    exportNodes = createCJSExports(ctx, ctx.exports, graph);
   } else {
-    importNodes = createESMImports(ctx2, ctx2.imports);
-    exportNodes = createESMExports(ctx2, ctx2.exports, graph);
+    importNodes = createESMImports(ctx, ctx.imports);
+    exportNodes = createESMExports(ctx, ctx.exports, graph);
   }
   imports.push(...importNodes, ...exportNodes.imports);
   body.push(...exportNodes.declares);
   exports.push(...exportNodes.exports);
-  let generator = new Generator_default(ctx2);
+  let generator = new Generator_default(ctx);
   let layout = [
     ...imports,
-    ...ctx2.beforeBody,
+    ...ctx.beforeBody,
     ...body,
-    ...ctx2.afterBody,
+    ...ctx.afterBody,
     ...externals,
     ...exports
   ];
@@ -10506,16 +10772,16 @@ async function buildProgram(ctx2, compilation, graph) {
     graph.code = generator.code;
     graph.sourcemap = generator.sourceMap;
     if (emitFile) {
-      graph.outfile = ctx2.getOutputAbsolutePath(compilation.mainModule || compilation);
+      graph.outfile = ctx.getOutputAbsolutePath(compilation.mainModule || compilation);
     }
   }
 }
-async function buildAssets(ctx2, buildGraph) {
+async function buildAssets(ctx, buildGraph) {
   let assets = buildGraph.assets;
   if (!assets)
     return;
   await Promise.all(
-    Array.from(assets.values()).map((asset) => asset.build(ctx2))
+    Array.from(assets.values()).map((asset) => asset.build(ctx))
   );
 }
 function getTokenManager(options) {
@@ -10524,13 +10790,13 @@ function getTokenManager(options) {
   let getToken = (type) => {
     return tokens_exports[type];
   };
-  let createToken = (ctx2, stack2, type) => {
+  let createToken = (ctx, stack, type) => {
     const token = getToken(type);
     if (!token) {
       throw new Error(`Token '${type}' is not exists.`);
     }
     try {
-      return token(ctx2, stack2, type);
+      return token(ctx, stack, type);
     } catch (e) {
       console.error(e);
     }
@@ -10544,9 +10810,9 @@ function getTokenManager(options) {
     };
   }
   if (_createToken && typeof _createToken === "function") {
-    createToken = (ctx2, stack2, type) => {
+    createToken = (ctx, stack, type) => {
       try {
-        return _createToken(ctx2, stack2, type);
+        return _createToken(ctx, stack, type);
       } catch (e) {
         console.error(e);
       }
@@ -10580,7 +10846,7 @@ function createBuildContext(plugin2, records3 = /* @__PURE__ */ new Map()) {
     if (records3.has(compiOrVModule)) {
       return records3.get(compiOrVModule);
     }
-    let ctx2 = new Context_default(
+    let ctx = new Context_default(
       compiOrVModule,
       plugin2,
       variables,
@@ -10591,39 +10857,39 @@ function createBuildContext(plugin2, records3 = /* @__PURE__ */ new Map()) {
       cache2,
       token
     );
-    let buildGraph = ctx2.getBuildGraph(compiOrVModule);
+    let buildGraph = ctx.getBuildGraph(compiOrVModule);
     records3.set(compiOrVModule, buildGraph);
     if (isVModule(compiOrVModule)) {
-      await compiOrVModule.build(ctx2, buildGraph);
+      await compiOrVModule.build(ctx, buildGraph);
     } else {
       if (!compiOrVModule.parserDoneFlag) {
         await compiOrVModule.ready();
       }
-      await buildProgram(ctx2, compiOrVModule, buildGraph);
+      await buildProgram(ctx, compiOrVModule, buildGraph);
     }
-    if (ctx2.options.emitFile) {
-      await ctx2.emit(buildGraph);
-      await buildAssets(ctx2, buildGraph, true);
+    if (ctx.options.emitFile) {
+      await ctx.emit(buildGraph);
+      await buildAssets(ctx, buildGraph);
     } else {
-      const deps = ctx2.getAllDependencies();
+      const deps = ctx.getAllDependencies();
       deps.forEach((dep) => {
-        if (import_Utils17.default.isModule(dep) && dep.isStructTable) {
-          dep.getStacks().forEach((stack2) => {
-            ctx2.createToken(stack2);
+        if (import_Utils18.default.isModule(dep) && dep.isStructTable) {
+          dep.getStacks().forEach((stack) => {
+            ctx.createToken(stack);
           });
         }
       });
-      await buildAssets(ctx2, buildGraph);
+      await buildAssets(ctx, buildGraph);
     }
     return buildGraph;
   }
-  async function buildDeps(ctx2) {
+  async function buildDeps(ctx) {
     const deps = /* @__PURE__ */ new Set();
-    ctx2.dependencies.forEach((dataset) => {
+    ctx.dependencies.forEach((dataset) => {
       dataset.forEach((dep) => {
-        if (import_Utils17.default.isModule(dep)) {
+        if (import_Utils18.default.isModule(dep)) {
           if (dep.isDeclaratorModule) {
-            dep = ctx2.getVModule(dep.getName());
+            dep = ctx.getVModule(dep.getName());
             if (dep) {
               deps.add(dep);
             }
@@ -10632,7 +10898,7 @@ function createBuildContext(plugin2, records3 = /* @__PURE__ */ new Map()) {
           }
         } else if (isVModule(dep)) {
           deps.add(dep);
-        } else if (import_Utils17.default.isCompilation(dep)) {
+        } else if (import_Utils18.default.isCompilation(dep)) {
           deps.add(dep);
         }
       });
@@ -10846,19 +11112,20 @@ var Plugin = class {
 var Plugin_default = Plugin;
 
 // lib/core/Builder.js
-var import_Utils33 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils37 = __toESM(require("easescript/lib/core/Utils"));
 
 // lib/core/Context.js
-var import_path7 = __toESM(require("path"));
+var import_path9 = __toESM(require("path"));
 init_Cache();
 
 // lib/core/AddressVariable.js
+var import_Utils19 = __toESM(require("easescript/lib/core/Utils"));
 var _AddressVariable = class {
-  constructor(target, ctx2) {
+  constructor(target, ctx) {
     this.dataset = /* @__PURE__ */ new Map();
     this.refs = /* @__PURE__ */ new Map();
     this.target = target;
-    this.ctx = ctx2;
+    this.ctx = ctx;
     this.cross = 0;
     this.last = null;
     this.indexName = null;
@@ -10881,21 +11148,25 @@ var _AddressVariable = class {
     }
     return null;
   }
-  createName(description) {
+  createName(stack, description) {
     if (!description)
+      description = stack;
+    if (!import_Utils19.default.isStack(description))
       return null;
     if (!this.refs.has(description)) {
-      const name = this.ctx.getLocalRefName(description, _AddressVariable.REFS_NAME);
+      const name = this.ctx.getLocalRefName(stack, _AddressVariable.REFS_NAME, description);
       this.setName(description, name);
       return name;
     }
     return this.getName(description);
   }
-  createIndexName(description) {
-    if (!description || !description.isStack)
+  createIndexName(stack, description = null) {
+    if (!description)
+      description = stack;
+    if (!import_Utils19.default.isStack(description))
       return null;
     if (this.indexName === null) {
-      const name = this.ctx.getLocalRefName(description, _AddressVariable.REFS_INDEX);
+      const name = this.ctx.getLocalRefName(stack, _AddressVariable.REFS_INDEX, description);
       this.indexName = name;
     }
     return this.indexName;
@@ -10924,30 +11195,120 @@ var _AddressVariable = class {
   }
 };
 var AddressVariable = _AddressVariable;
-__publicField(AddressVariable, "REFS_NAME", "__ARD");
-__publicField(AddressVariable, "REFS_INDEX", "__ARI");
+//引用数组的变量名
+__publicField(AddressVariable, "REFS_NAME", "__RAN");
+//引用数组的索引
+__publicField(AddressVariable, "REFS_INDEX", "__RAI");
+//引用数组的内存地址
+__publicField(AddressVariable, "REFS_MEMORY", "__RMA");
+//对一个变量的引用名
+__publicField(AddressVariable, "REFS_VALUE", "__RVN");
 var AddressVariable_default = AddressVariable;
 
 // lib/core/Context.js
-var import_Namespace8 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils18 = __toESM(require("easescript/lib/core/Utils"));
+var import_Namespace9 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Utils22 = __toESM(require("easescript/lib/core/Utils"));
+init_Common2();
+
+// lib/core/VirtualModule.js
+init_Common2();
+var import_Generator4 = __toESM(require_Generator());
+var VirtualModule2 = class extends VirtualModule {
+  constructor(id, ns, file) {
+    super(id, ns, file);
+  }
+  gen(ctx, graph, body = []) {
+    let imports = [];
+    let exports = [];
+    let exportNodes = null;
+    let importNodes = null;
+    importNodes = createESMImports2(ctx, ctx.imports);
+    exportNodes = createESMExports2(ctx, ctx.exports, graph);
+    imports.push(...importNodes, ...exportNodes.imports);
+    body.push(...exportNodes.declares);
+    exports.push(...exportNodes.exports);
+    const generator = new import_Generator4.default(ctx, false);
+    const layout = [
+      ...imports,
+      ...Array.from(ctx.usings.values()),
+      ...ctx.statments,
+      ctx.createChunkExpression(this.getContent()),
+      ...body,
+      ...exports
+    ];
+    let ns = this.ns;
+    ns = ctx.getModuleMappingNamespace(this.bindModule || this) || ns.join("\\");
+    if (ns) {
+      layout.unshift(ctx.createNamespaceStatement(ns));
+    }
+    layout.forEach((item) => generator.make(item));
+    return generator;
+  }
+  setContent(value) {
+    value = String(value).replace(/^([\s\r\n]+)?<\?php/, "");
+    super.setContent(value);
+  }
+  async build(ctx, graph) {
+    const module2 = this.bindModule;
+    let emitFile = ctx.options.emitFile;
+    if (!this.changed && graph.code)
+      return graph;
+    this.changed = false;
+    this.createImports(ctx);
+    this.createReferences(ctx);
+    let body = [];
+    if (module2) {
+      ctx.createModuleImportReferences(module2);
+    }
+    if (emitFile) {
+      await ctx.buildDeps();
+    }
+    ctx.createAllDependencies();
+    graph.code = ctx.getFormatCode(this.gen(ctx, graph, body).code);
+    graph.sourcemap = this.getSourcemap();
+    if (emitFile) {
+      graph.outfile = ctx.getOutputAbsolutePath(module2 || this);
+    }
+    return graph;
+  }
+};
+
+// lib/core/Context.js
 var cache = getCacheManager("php");
 var globalModules = ["Array", "Object", "Boolean", "Math", "Number", "String"];
 var Context2 = class extends Context_default {
   #usings = /* @__PURE__ */ new Map();
   #statments = [];
+  #moduleAlias = null;
   get usings() {
     return this.#usings;
   }
   get statments() {
     return this.#statments;
   }
-  createModuleUsing(depModule, module2) {
+  getFormatCode(code) {
+    if (this.options.strict) {
+      return "<?php\r\ndeclare (strict_types = 1);\r\n" + code;
+    } else {
+      return "<?php\r\n" + code;
+    }
+  }
+  getPublicDir() {
+    return this.options.publicPath || "public";
+  }
+  createModuleUsing(depModule, context) {
     if (!globalModules.includes(depModule.id)) {
-      const hasNs = depModule.namespace && depModule.namespace.isNamespace && depModule.namespace.parent;
-      let source = this.getModuleNamespace(depModule, depModule.id, !hasNs);
+      let source = this.getModuleNamespace(depModule);
       if (source) {
-        let local = this.getModuleAlias(depModule, module2);
+        source += "\\" + depModule.id;
+      } else if (import_Utils22.default.isModule(context) || import_Utils22.default.isCompilation(context)) {
+        let ns = context.namespace;
+        if (ns && ns.parent) {
+          source = "\\" + depModule.id;
+        }
+      }
+      if (source) {
+        let local = this.getModuleAlias(depModule, context);
         this.addUsing(source, local);
       }
     }
@@ -10961,12 +11322,12 @@ var Context2 = class extends Context_default {
   createAllDependencies() {
     const dependencies = this.dependencies;
     const target = this.target;
-    const compilation = import_Utils18.default.isCompilation(target) ? target : null;
+    const compilation = import_Utils22.default.isCompilation(target) ? target : null;
     const importFlag = this.options.import;
     dependencies.forEach((deps, moduleOrCompi) => {
       const graph = this.getBuildGraph(moduleOrCompi);
       deps.forEach((depModule) => {
-        if (!import_Utils18.default.isModule(depModule))
+        if (!import_Utils22.default.isModule(depModule))
           return;
         if (depModule === target || compilation && compilation.modules.has(depModule.getName())) {
           return;
@@ -10976,7 +11337,7 @@ var Context2 = class extends Context_default {
     });
   }
   createModuleDependencies(module2) {
-    if (!import_Utils18.default.isModule(module2))
+    if (!import_Utils22.default.isModule(module2))
       return;
     let deps = this.getDependencies(module2);
     if (!deps)
@@ -10985,7 +11346,7 @@ var Context2 = class extends Context_default {
     const compilation = module2.compilation;
     const importFlag = this.options.import;
     deps.forEach((depModule) => {
-      if (!import_Utils18.default.isModule(depModule))
+      if (!import_Utils22.default.isModule(depModule))
         return;
       if (compilation && compilation.modules && compilation.modules.has(depModule.getName())) {
         return;
@@ -10994,25 +11355,29 @@ var Context2 = class extends Context_default {
     });
   }
   createModuleImportAndUsing(graph, context, depModule, importFlag = true) {
-    if (context !== depModule && this.isNeedBuild(depModule) && import_Utils18.default.isModule(depModule)) {
-      graph.addDepend(depModule);
-      if (!depModule.isDeclaratorModule || this.isVModule(depModule)) {
-        if (importFlag) {
-          if (!this.checkModuleImportExclude(depModule)) {
-            const source = this.getModuleImportSource(depModule, context);
-            const importSource = this.addImport(source);
-            importSource.setSourceTarget(depModule);
-            importSource.setSourceContext(context);
-            graph.addImport(importSource);
-          }
-        }
+    if (context === depModule || !this.isNeedBuild(depModule))
+      return;
+    let isRM = import_Utils22.default.isModule(depModule);
+    let isVM = this.isVModule(depModule);
+    if (!(isVM || isRM))
+      return;
+    let isDRM = !isVM && isRM && depModule.isDeclaratorModule;
+    graph.addDepend(depModule);
+    if (isDRM) {
+      if (this.isModuleNeedUsing(depModule)) {
         this.createModuleUsing(depModule, context);
-      } else if (depModule.isDeclaratorModule) {
-        if (this.isModuleNeedUsing(depModule)) {
-          this.createModuleUsing(depModule, context);
-        }
-        this.createDeclaratorModuleImportReferences(depModule, context, graph);
       }
+      this.createDeclaratorModuleImportReferences(depModule, context, graph);
+    } else {
+      if (importFlag) {
+        if (!this.checkModuleImportExclude(depModule)) {
+          const source = this.getModuleImportSource(depModule, context);
+          const importSource = this.addImport(source);
+          importSource.setSourceTarget(depModule);
+          graph.addImport(importSource);
+        }
+      }
+      this.createModuleUsing(depModule, context);
     }
   }
   resolveUsingSource(id, group) {
@@ -11062,8 +11427,8 @@ var Context2 = class extends Context_default {
     }
     return this.glob.dest(id, data);
   }
-  insertTokenToBlock(stack2, token) {
-    let parent = stack2.getParentStack((stack3) => stack3.isBlockStatement || stack3.isProgram);
+  insertTokenToBlock(stack, token) {
+    let parent = stack.getParentStack((stack2) => stack2.isBlockStatement || stack2.isProgram);
     if (parent) {
       let node = this.getNode(parent);
       if (node) {
@@ -11080,12 +11445,22 @@ var Context2 = class extends Context_default {
     }
     throw new Error("Not find stack block-statement");
   }
+  getClassBuilder(stack) {
+    let parent = stack.getParentStack((stack2) => stack2.isClassDeclaration);
+    if (parent && parent.isClassDeclaration) {
+      let node = this.getNode(parent);
+      if (node) {
+        return node;
+      }
+    }
+    throw new Error("Not find stack class-builder");
+  }
   creaateAddressRefsNode(argument) {
     const node = this.createNode("AddressReferenceExpression");
     node.argument = argument;
     return node;
   }
-  getWasLocalRefsName(target, name) {
+  getWasLocalRefName(target, name) {
     let key = "getLocalRefName:" + name;
     if (this.cache.has(target, key)) {
       return this.cache.get(target, key);
@@ -11094,7 +11469,7 @@ var Context2 = class extends Context_default {
   }
   getAvailableOriginType(type) {
     if (type) {
-      const origin = import_Utils18.default.getOriginType(type);
+      const origin = import_Utils22.default.getOriginType(type);
       switch (origin.id) {
         case "String":
         case "Number":
@@ -11114,11 +11489,11 @@ var Context2 = class extends Context_default {
     }
     return null;
   }
-  addVariableRefs(stack2, desc2, refsName) {
-    if (!import_Utils18.default.isStack(desc2))
+  addVariableRefs(stack, desc2, refsName) {
+    if (!import_Utils22.default.isStack(desc2))
       return;
     const name = refsName || desc2.value();
-    let funScope = stack2.scope;
+    let funScope = stack.scope;
     const check2 = (scope) => {
       if (!scope)
         return;
@@ -11150,16 +11525,16 @@ var Context2 = class extends Context_default {
         if (!refsName && (desc2.isVariableDeclarator || desc2.isParamDeclarator)) {
           let addressRefObject = this.getAssignAddressRef(desc2);
           if (addressRefObject) {
-            dataset.add(addressRefObject.createIndexName(desc2));
+            dataset.add(addressRefObject.createIndexName(stack, desc2));
           }
         }
       }
       funScope = funScope.parent;
     }
   }
-  getVariableRefs(stack2) {
-    const isForContext = stack2.scope.isForContext;
-    const funScope = isForContext ? stack2.scope.getScopeByType("block") : stack2.scope.getScopeByType("function");
+  getVariableRefs(stack) {
+    const isForContext = stack.scope.isForContext;
+    const funScope = isForContext ? stack.scope.getScopeByType("block") : stack.scope.getScopeByType("function");
     return cache.get(funScope, "addVariableRefs");
   }
   addAssignAddressRef(desc2, value) {
@@ -11192,7 +11567,7 @@ var Context2 = class extends Context_default {
         return this.isArrayAddressRefsType(type.inherit.type());
       }
     }
-    return type && (type.isLiteralArrayType || type.isTupleType || import_Namespace8.default.globals.get("array") === type || import_Namespace8.default.globals.get("Array") === type);
+    return type && (type.isLiteralArrayType || type.isTupleType || import_Namespace9.default.globals.get("array") === type || import_Namespace9.default.globals.get("Array") === type);
   }
   isArrayMappingType(type) {
     if (!type)
@@ -11202,8 +11577,8 @@ var Context2 = class extends Context_default {
     }
     if (!type.isModule)
       return false;
-    if (type.dynamicProperties && type.dynamicProperties.size > 0 && import_Namespace8.default.globals.get("Array").is(type)) {
-      return type.dynamicProperties.has(import_Namespace8.default.globals.get("string")) || type.dynamicProperties.has(import_Namespace8.default.globals.get("number"));
+    if (type.dynamicProperties && type.dynamicProperties.size > 0 && import_Namespace9.default.globals.get("Array").is(type)) {
+      return type.dynamicProperties.has(import_Namespace9.default.globals.get("string")) || type.dynamicProperties.has(import_Namespace9.default.globals.get("number"));
     }
     return false;
   }
@@ -11238,13 +11613,13 @@ var Context2 = class extends Context_default {
         if (this.isArrayAccessor(inherit)) {
           return true;
         }
-        if (import_Namespace8.default.globals.get("ObjectProtector") === inherit) {
+        if (import_Namespace9.default.globals.get("ObjectProtector") === inherit) {
           return false;
         }
-        if (import_Namespace8.default.globals.get("ArrayProtector") === inherit) {
+        if (import_Namespace9.default.globals.get("ArrayProtector") === inherit) {
           return true;
         } else if (type.types.length > 0) {
-          if (import_Namespace8.default.globals.get("RMD") === inherit) {
+          if (import_Namespace9.default.globals.get("RMD") === inherit) {
             return this.isArrayAccessor(type.types[0].type());
           }
         }
@@ -11254,7 +11629,7 @@ var Context2 = class extends Context_default {
         }
       }
       const raw = this.compiler.callUtils("getOriginType", type);
-      if (raw === import_Namespace8.default.globals.get("Array") || this.isArrayMappingType(raw)) {
+      if (raw === import_Namespace9.default.globals.get("Array") || this.isArrayMappingType(raw)) {
         return true;
       }
     }
@@ -11286,37 +11661,37 @@ var Context2 = class extends Context_default {
     const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
     if (isWrapType) {
       const inherit = type.inherit.type();
-      if (import_Namespace8.default.globals.get("ArrayProtector") === inherit) {
+      if (import_Namespace9.default.globals.get("ArrayProtector") === inherit) {
         return false;
       }
       if (type.types.length > 0) {
-        if (import_Namespace8.default.globals.get("RMD") === inherit) {
+        if (import_Namespace9.default.globals.get("RMD") === inherit) {
           return this.isObjectAccessor(type.types[0].type());
         }
       }
-      return import_Namespace8.default.globals.get("ObjectProtector") === inherit;
+      return import_Namespace9.default.globals.get("ObjectProtector") === inherit;
     }
     return false;
   }
-  isPassableReferenceExpress(stack2, type) {
-    if (!stack2 || !stack2.isStack)
+  isPassableReferenceExpress(stack, type) {
+    if (!stack || !stack.isStack)
       return false;
-    if (stack2.isLiteral || stack2.isArrayExpression || stack2.isObjectExpression)
+    if (stack.isLiteral || stack.isArrayExpression || stack.isObjectExpression)
       return false;
-    if (stack2.isThisExpression || stack2.isTypeTransformExpression)
+    if (stack.isThisExpression || stack.isTypeTransformExpression)
       return false;
     if (type) {
-      return this.isAddressRefsType(type, stack2);
+      return this.isAddressRefsType(type, stack);
     }
     return true;
   }
-  isAddressRefsType(type, stack2) {
+  isAddressRefsType(type, stack) {
     const verify = (type2) => {
       if (type2 && type2.isClassGenericType && type2.inherit.isAliasType) {
         const inheritType = type2.inherit.type();
-        if (inheritType === import_Namespace8.default.globals.get("RMD")) {
+        if (inheritType === import_Namespace9.default.globals.get("RMD")) {
           return true;
-        } else if (type2.types.length > 0 && (inheritType === import_Namespace8.default.globals.get("ArrayProtector") || inheritType === import_Namespace8.default.globals.get("ObjectProtector"))) {
+        } else if (type2.types.length > 0 && (inheritType === import_Namespace9.default.globals.get("ArrayProtector") || inheritType === import_Namespace9.default.globals.get("ObjectProtector"))) {
           return verify(type2.types[0].type());
         }
       }
@@ -11327,10 +11702,10 @@ var Context2 = class extends Context_default {
     const result = this.isArrayAddressRefsType(type);
     if (!result)
       return false;
-    if (!stack2 || !stack2.isStack)
+    if (!stack || !stack.isStack)
       return result;
     const cache2 = /* @__PURE__ */ new WeakSet();
-    const check2 = (stack3, type2) => {
+    const check2 = (stack2, type2) => {
       if (type2) {
         if (verify(type2)) {
           return true;
@@ -11338,34 +11713,34 @@ var Context2 = class extends Context_default {
         if (!this.isArrayAddressRefsType(type2))
           return false;
       }
-      if (cache2.has(stack3))
+      if (cache2.has(stack2))
         return true;
-      cache2.add(stack3);
-      if (stack3.isIdentifier || stack3.isVariableDeclarator || stack3.isParamDeclarator || stack3.isArrayExpression)
+      cache2.add(stack2);
+      if (stack2.isIdentifier || stack2.isVariableDeclarator || stack2.isParamDeclarator || stack2.isArrayExpression)
         return true;
-      if (stack3.isMethodDefinition && stack3.expression) {
-        stack3 = stack3.expression;
+      if (stack2.isMethodDefinition && stack2.expression) {
+        stack2 = stack2.expression;
       }
-      if (stack3.isFunctionExpression) {
-        const fnScope = stack3.scope.getScopeByType("function");
+      if (stack2.isFunctionExpression) {
+        const fnScope = stack2.scope.getScopeByType("function");
         const returnItems = fnScope.returnItems;
         if (returnItems && returnItems.length > 0) {
           return returnItems.every((item) => {
             return item.isReturnStatement && check2(item.argument, item.argument.type());
           });
         }
-      } else if (stack3.isCallExpression) {
-        let desc2 = stack3.descriptor();
+      } else if (stack2.isCallExpression) {
+        let desc2 = stack2.descriptor();
         if (desc2) {
           if (desc2.isFunctionType) {
             desc2 = desc2.target && desc2.target.isFunctionExpression ? desc2.target : null;
           }
           if (desc2 && (desc2.isFunctionExpression || desc2.isMethodDefinition || desc2.isCallDefinition || desc2.isDeclaratorFunction)) {
-            return check2(desc2, stack3.type());
+            return check2(desc2, stack2.type());
           }
         }
-      } else if (stack3.isMemberExpression) {
-        let desc2 = stack3.description();
+      } else if (stack2.isMemberExpression) {
+        let desc2 = stack2.description();
         if (desc2 && (desc2.isPropertyDefinition || desc2.isVariableDeclarator || desc2.isParamDeclarator || desc2.isTypeObjectPropertyDefinition)) {
           return true;
         } else if (desc2 && desc2.isProperty && desc2.hasInit && desc2.init) {
@@ -11375,23 +11750,23 @@ var Context2 = class extends Context_default {
         } else {
           return true;
         }
-      } else if (stack3.isLogicalExpression) {
-        const isAnd = stack3.node.operator.charCodeAt(0) === 38;
+      } else if (stack2.isLogicalExpression) {
+        const isAnd = stack2.node.operator.charCodeAt(0) === 38;
         if (isAnd) {
-          return check2(stack3.right, stack3.right.type());
+          return check2(stack2.right, stack2.right.type());
         } else {
-          return check2(stack3.left, stack3.left.type()) || check2(stack3.right, stack3.right.type());
+          return check2(stack2.left, stack2.left.type()) || check2(stack2.right, stack2.right.type());
         }
-      } else if (stack3.isConditionalExpression) {
-        return check2(stack3.consequent, stack3.consequent.type()) || check2(stack3.alternate, stack3.alternate.type());
-      } else if (stack3.isParenthesizedExpression) {
-        return check2(stack3.expression);
-      } else if (stack3.isAssignmentExpression) {
-        return check2(stack3.right);
+      } else if (stack2.isConditionalExpression) {
+        return check2(stack2.consequent, stack2.consequent.type()) || check2(stack2.alternate, stack2.alternate.type());
+      } else if (stack2.isParenthesizedExpression) {
+        return check2(stack2.expression);
+      } else if (stack2.isAssignmentExpression) {
+        return check2(stack2.right);
       }
       return false;
     };
-    return check2(stack2);
+    return check2(stack);
   }
   hasCrossScopeAssignment(assignmentSet, inFor) {
     if (!assignmentSet)
@@ -11412,7 +11787,7 @@ var Context2 = class extends Context_default {
     });
   }
   getAccessorName(name, desc2, accessor = "get") {
-    if (import_Utils18.default.isStack(desc2) && desc2.module) {
+    if (import_Utils22.default.isStack(desc2) && desc2.module) {
       let module2 = desc2.module;
       let key = "accessor:" + accessor + ":" + name;
       let resolveName = cache.get(module2, key);
@@ -11422,12 +11797,13 @@ var Context2 = class extends Context_default {
       let suffix = name.substr(0, 1).toUpperCase() + name.substr(1);
       let isStatic = !!(desc2.static || module2.static);
       let index = 0;
-      resolveName = accessor + suffix;
+      let _name = accessor + suffix;
+      resolveName = _name;
       while (true) {
         const has = isStatic ? module2.getMethod(resolveName) : module2.getMember(resolveName);
         if (!has)
           break;
-        resolveName = key + index++;
+        resolveName = _name + index++;
       }
       cache.set(module2, key, resolveName);
       return resolveName;
@@ -11436,38 +11812,98 @@ var Context2 = class extends Context_default {
       return accessor + suffix;
     }
   }
-  getModuleAlias(module2, context) {
-    if (!import_Utils18.default.isModule(context))
+  getModuleReferenceName(module2, context = null) {
+    let name = null;
+    let vm = null;
+    let key = module2;
+    if (isVModule(module2)) {
+      let m = module2.bindModule;
+      if (!m) {
+        vm = module2;
+      } else {
+        module2 = m;
+        key = m;
+      }
+    } else if (!import_Utils22.default.isModule(module2)) {
       return null;
-    const alias = context.getModuleAlias(module2);
+    }
+    if (module2 === context) {
+      return module2.id;
+    }
+    if (vm) {
+      return vm.id;
+    }
+    if (!context)
+      context = this.target;
+    name = module2.id;
+    let hasDefined = false;
+    if (import_Utils22.default.isModule(context)) {
+      if (module2.required || context.imports && context.imports.has(module2.id)) {
+        hasDefined = true;
+      } else if (context.isDeclaratorModule) {
+        const vm2 = this.getVModule(context.getName());
+        if (vm2) {
+          let _name = vm2.getReferenceName(module2.getName());
+          if (_name) {
+            name = _name;
+            hasDefined = true;
+          }
+        }
+      }
+    }
+    if (hasDefined) {
+      return name;
+    }
+    let alias = this.getModuleAlias(module2, context);
+    if (alias) {
+      name = alias;
+    }
+    return name;
+  }
+  getModuleAlias(module2, context) {
+    if (!import_Utils22.default.isModule(module2))
+      return null;
+    const alias = import_Utils22.default.isCompilation(context) ? context.importModuleNameds.get(module2) : import_Utils22.default.isModule(context) ? context.getModuleAlias(module2) : null;
+    if (alias === module2.id)
+      return null;
     if (alias) {
       return alias;
     }
     return null;
   }
+  setModuleAlias(module2, name) {
+    let moduleAlias = this.#moduleAlias;
+    if (!moduleAlias) {
+      moduleAlias = this.#moduleAlias = /* @__PURE__ */ new Map();
+    }
+    moduleAlias.set(module2, name);
+    return name;
+  }
   getModuleMappingFolder(module2) {
-    let isRM = import_Utils18.default.isModule(module2);
-    let isVM = isRM ? false : this.isVModule(module2);
+    let isRM = import_Utils22.default.isModule(module2);
+    let isVM = isRM ? false : isVModule(module2);
     if (!(isRM || isVM))
       return null;
+    if (isVM) {
+      let bindM = module2.bindModule;
+      if (bindM && import_Utils22.default.isModule(bindM)) {
+        module2 = bindM;
+        isRM = true;
+        isVM = false;
+      }
+    }
     let file = module2.getName("/");
-    if (module2.isDeclaratorModule) {
+    if (isRM && module2.isDeclaratorModule) {
       let compilation = module2.compilation;
       if (compilation) {
         if (compilation.isGlobalFlag && compilation.pluginScopes.scope === "global") {
           file += ".global";
-        } else if (isVM) {
-          file += ".virtual";
         } else {
-          file += ".normal";
+          file += ".declare";
         }
       }
-    } else {
-      if (isVM) {
-        file += ".virtual";
-      } else {
-        file += ".normal";
-      }
+    } else if (isVM) {
+      file += ".virtual";
     }
     return this.resolveSourceFileMappingPath(file, "folders");
   }
@@ -11475,18 +11911,18 @@ var Context2 = class extends Context_default {
     const config = this.options;
     const isString = typeof source === "string";
     if (isString && source.includes("${__filename}")) {
-      const owner = import_Utils18.default.isModule(context) ? context.compilation : context;
-      source = source.replace("${__filename}", import_Utils18.default.isCompilation(owner) ? owner.file : this.target.file);
+      const owner = import_Utils22.default.isModule(context) ? context.compilation : context;
+      source = source.replace("${__filename}", import_Utils22.default.isCompilation(owner) ? owner.file : this.target.file);
     }
     if (isString && source.includes("/node_modules/")) {
-      if (import_path7.default.isAbsolute(source))
+      if (import_path9.default.isAbsolute(source))
         return source;
       if (!sourceId) {
         return this.resolveSourceFileMappingPath(source, "imports") || source;
       }
       return sourceId;
     }
-    if (isString && !import_path7.default.isAbsolute(source)) {
+    if (isString && !import_path9.default.isAbsolute(source)) {
       return source;
     }
     if (config.emitFile) {
@@ -11495,19 +11931,27 @@ var Context2 = class extends Context_default {
     return isString ? source : this.getModuleResourceId(source);
   }
   getModuleMappingNamespace(module2) {
-    let isRM = import_Utils18.default.isModule(module2);
-    let isVM = isRM ? false : this.isVModule(module2);
+    let isRM = import_Utils22.default.isModule(module2);
+    let isVM = isRM ? false : isVModule(module2);
     if (!(isRM || isVM))
       return null;
+    if (isVM) {
+      let bindM = module2.bindModule;
+      if (bindM && import_Utils22.default.isModule(bindM)) {
+        module2 = bindM;
+        isRM = true;
+        isVM = false;
+      }
+    }
     let ns = module2.id;
-    if (module2.isDeclaratorModule) {
+    if (isRM && module2.isDeclaratorModule) {
       ns = module2.getName("/");
       let compilation = module2.compilation;
       if (compilation) {
         if (compilation.isGlobalFlag && compilation.pluginScopes.scope === "global") {
           ns += ".global";
-        } else if (isVM) {
-          ns += ".virtual";
+        } else {
+          ns += ".declare";
         }
       }
     } else {
@@ -11532,7 +11976,7 @@ var Context2 = class extends Context_default {
   getMappingNamespace(id) {
     return this.resolveSourceId(id, "namespaces");
   }
-  getModuleNamespace(module2, suffix = null, imported = false) {
+  getModuleNamespace(module2, suffix = null) {
     if (!module2)
       return "";
     let folder = this.getModuleMappingNamespace(module2);
@@ -11544,7 +11988,7 @@ var Context2 = class extends Context_default {
     }
     if (module2.namespace && module2.namespace.isNamespace) {
       const items = module2.namespace.getChain();
-      if (items.length > 0 || !imported) {
+      if (items.length > 0) {
         if (suffix) {
           return "\\" + items.concat(suffix).join("\\");
         }
@@ -11556,38 +12000,55 @@ var Context2 = class extends Context_default {
       }
       return module2.ns.join("\\");
     }
-    return !imported && suffix ? "\\" + suffix : "";
+    return suffix ? "\\" + suffix : "";
   }
-  inferType(stack2, context) {
-    if (!stack2)
-      return stack2;
-    if (import_Utils18.default.isStack(stack2)) {
+  inferType(stack, context) {
+    if (!stack)
+      return stack;
+    if (import_Utils22.default.isStack(stack)) {
       if (!context)
-        context = stack2.getContext();
+        context = stack.getContext();
     }
     if (context) {
-      return context.apply(stack2.type());
+      return context.apply(stack.type());
     }
-    return stack2;
+    return stack;
   }
-  createVarIdentifier(value, stack2) {
-    const node = this.createIdentifier(value, stack2);
-    node.isVariable = true;
-    return node;
+  createThisExpression(stack = null) {
+    return this.createNode(stack, "ThisExpression");
   }
-  createSuperExpression() {
-    const node = this.createNode("SuperExpression");
+  createSuperExpression(stack = null) {
+    const node = this.createNode(stack, "SuperExpression");
     node.value = "parent";
     node.raw = "parent";
     return node;
   }
-  createStaticMemberExpression(items, stack2) {
-    const node = this.createMemberExpression(items, stack2);
+  createLiteral(value, raw, stack = null) {
+    const node = this.createNode(stack, "Literal");
+    node.value = value;
+    if (raw === void 0) {
+      if (typeof value === "string") {
+        node.raw = `'${value}'`;
+      } else {
+        node.raw = String(value);
+      }
+    } else {
+      node.raw = String(value);
+    }
+    return node;
+  }
+  createVarIdentifier(value, stack = null) {
+    const node = this.createIdentifier(value, stack);
+    node.isVariable = true;
+    return node;
+  }
+  createStaticMemberExpression(items, stack = null) {
+    const node = this.createMemberExpression(items, stack);
     node.isStatic = true;
     return node;
   }
-  createUsingStatement(source, local, stack2) {
-    const node = this.createNode(stack2, "UsingStatement");
+  createUsingStatement(source, local, stack = null) {
+    const node = this.createNode(stack, "UsingStatement");
     node.source = source;
     node.local = local;
     return node;
@@ -11597,7 +12058,16 @@ var Context2 = class extends Context_default {
     node.source = source;
     return node;
   }
-  createImportDeclaration(source, specifiers, isExpression = false) {
+  getNormalImportName(source) {
+    let ext = import_path9.default.extname(source);
+    let name = import_path9.default.basename(source, ext);
+    let refs = name.replace(/[\.\-]/g, "_");
+    return this.getGlobalRefName(null, "_" + refs);
+  }
+  createImportDeclaration(source, specifiers, isExpression = false, origin = null, imports = []) {
+    if (!isExpression) {
+      isExpression = Array.isArray(specifiers) && specifiers.length > 0;
+    }
     let node = this.createCallExpression(
       isExpression ? this.createIdentifier("include") : this.createIdentifier("include_once"),
       [
@@ -11609,74 +12079,89 @@ var Context2 = class extends Context_default {
       ]
     );
     if (specifiers && specifiers.length > 0) {
-      if (specifiers.length > 1) {
-        let refs = import_path7.default.basename(this.genUniFileName(source)).replace(/[\.\-]/g, "_");
-        refs = this.getGlobalRefName(null, "_" + refs);
-        node = this.createExpressionStatement(
-          this.createAssignmentExpression(this.createVarIdentifier(refs), node)
-        );
-        specifiers.forEach((spec) => {
-          if (spec.type === "ImportDefaultSpecifier" || spec.type === "ImportNamespaceSpecifier") {
-            this.statments.push(this.createExpressionStatement(
-              this.createAssignmentExpression(
-                spec.local,
-                this.createBinaryExpression(this.createComputeMemberExpression([
-                  this.createVarIdentifier(refs),
-                  this.createLiteral("default")
-                ]), this.createLiteral(null), "??")
-              )
-            ));
-          } else if (spec.type === "ImportSpecifier") {
-            let local = spec.local;
-            let imported = spec.imported;
-            if (!imported) {
-              if (local.type === "Identifier") {
-                imported = this.createLiteral(local.value);
+      let setScopeVariable = null;
+      let multi = specifiers.length > 1;
+      if (origin && import_Utils22.default.isCompilation(origin) && import_Utils22.default.isCompilation(this.target) && this.target.mainModule) {
+        let hashId = createUniqueHashId(this.target.file);
+        let added = false;
+        setScopeVariable = (local, value) => {
+          if (!added) {
+            added = true;
+            let deps = this.dependencies.get(this.target);
+            let System = import_Namespace9.default.globals.get("System");
+            let has = deps ? deps.has(System) : false;
+            if (!has && imports) {
+              this.addDepend(System, this.target);
+              const source2 = this.getModuleImportSource(System, this.target);
+              const node2 = this.createImportDeclaration(source2);
+              if (node2) {
+                this.createModuleUsing(System, this.target);
+                imports.push(this.createExpressionStatement(node2));
               }
-            } else if (imported.type === "Identifier") {
-              imported = this.createLiteral(imported.value);
             }
-            this.statments.push(this.createExpressionStatement(
-              this.createAssignmentExpression(
-                local,
-                this.createBinaryExpression(
-                  this.createComputeMemberExpression([this.createVarIdentifier(refs), imported]),
-                  this.createLiteral(null),
-                  "??"
-                )
-              )
-            ));
           }
-        });
-        return node;
-      } else {
-        if (specifiers[0].type === "ImportDefaultSpecifier" || specifiers[0].type === "ImportNamespaceSpecifier") {
-          return this.createAssignmentExpression(specifiers[0].local, node);
-        } else if (specifiers[0].type === "ImportSpecifier") {
-          if (specifiers[0].imported && specifiers[0].imported.value !== specifiers[0].local.value) {
-            let refs = import_path7.default.basename(this.genUniFileName(source)).replace(/[\.\-]/g, "_");
-            refs = this.getGlobalRefName(null, "_" + refs);
-            node = this.createAssignmentExpression(
-              this.createVarIdentifier(refs),
-              node
-            );
-            this.statments.push(this.createExpressionStatement(
-              this.createAssignmentExpression(
-                specifiers[0].local,
-                this.createBinaryExpression(
-                  this.createComputeMemberExpression([
-                    this.createVarIdentifier(refs),
-                    specifiers[0].imported
-                  ]),
-                  this.createLiteral(null),
-                  "??"
-                )
-              )
-            ));
-          } else {
-            return this.createAssignmentExpression(specifiers[0].local, node);
+          return this.createExpressionStatement(this.createCallExpression(
+            createStaticReferenceNode2(this, this.target, "System", "registerScopeVariables"),
+            [
+              this.createLiteral(hashId),
+              local,
+              value
+            ]
+          ));
+        };
+      }
+      let refs = this.getNormalImportName(source);
+      let nameNode = this.createVarIdentifier(refs);
+      node = this.createExpressionStatement(
+        this.createAssignmentExpression(nameNode, node)
+      );
+      specifiers.forEach((spec) => {
+        if (spec.type === "ImportDefaultSpecifier" || spec.type === "ImportNamespaceSpecifier") {
+          let refValue = multi ? this.createBinaryExpression(
+            this.createComputeMemberExpression([
+              nameNode,
+              this.createLiteral("default")
+            ]),
+            this.createLiteral(null),
+            "??"
+          ) : nameNode;
+          let refNode = this.createAssignmentExpression(
+            spec.local,
+            refValue
+          );
+          this.statments.push(this.createExpressionStatement(refNode));
+          if (setScopeVariable) {
+            this.statments.push(setScopeVariable(this.createLiteral(spec.local.value), spec.local));
+          }
+        } else if (spec.type === "ImportSpecifier") {
+          let local = spec.local;
+          let imported = spec.imported;
+          if (!imported) {
+            if (local.type === "Identifier") {
+              imported = this.createLiteral(local.value);
+            }
+          } else if (imported.type === "Identifier") {
+            imported = this.createLiteral(imported.value);
+          }
+          this.statments.push(this.createExpressionStatement(this.createAssignmentExpression(
+            local,
+            this.createBinaryExpression(
+              this.createComputeMemberExpression([
+                nameNode,
+                imported
+              ]),
+              this.createLiteral(null),
+              "??"
+            )
+          )));
+          if (setScopeVariable) {
+            this.statments.push(setScopeVariable(this.createLiteral(local.value), local));
           }
         }
+      });
+      if (isExpression) {
+        this.statments.unshift(node);
+        return null;
       }
     }
     return node;
@@ -11704,77 +12189,8 @@ var Context_default2 = Context2;
 
 // lib/core/Builder.js
 var import_Generator5 = __toESM(require_Generator());
-
-// lib/core/VirtualModule.js
 init_Common2();
-var import_Generator4 = __toESM(require_Generator());
-var VirtualModule2 = class extends VirtualModule {
-  constructor(id, ns, file) {
-    super(id, ns, file);
-  }
-  gen(ctx2, graph, body = []) {
-    let imports = [];
-    let exports = [];
-    let exportNodes = null;
-    let importNodes = null;
-    importNodes = createESMImports2(ctx2, ctx2.imports);
-    exportNodes = createESMExports2(ctx2, ctx2.exports, graph);
-    imports.push(...importNodes, ...exportNodes.imports);
-    body.push(...exportNodes.declares);
-    exports.push(...exportNodes.exports);
-    const generator = new import_Generator4.default(ctx2, false);
-    const layout = [
-      ...imports,
-      ...Array.from(ctx2.usings.values()),
-      ...ctx2.statments,
-      ctx2.createChunkExpression(this.getContent()),
-      ...body,
-      ...exports
-    ];
-    let ns = this.ns;
-    ns = ctx2.getModuleMappingNamespace(this.bindModule || this) || ns.join("\\");
-    if (ns) {
-      layout.unshift(ctx2.createNamespaceStatement(ns));
-    }
-    layout.forEach((item) => generator.make(item));
-    return generator;
-  }
-  setContent(value) {
-    value = String(value).replace(/^([\s\r\n]+)?<\?php/, "");
-    super.setContent(value);
-  }
-  async build(ctx2, graph) {
-    const module2 = this.bindModule;
-    let emitFile = ctx2.options.emitFile;
-    if (!this.changed && graph.code)
-      return graph;
-    this.changed = false;
-    this.createImports(ctx2);
-    this.createReferences(ctx2);
-    let body = [];
-    if (module2) {
-      ctx2.createModuleImportReferences(module2);
-    }
-    if (emitFile) {
-      await ctx2.buildDeps();
-    }
-    ctx2.createAllDependencies();
-    graph.code = this.gen(ctx2, graph, body).code;
-    graph.sourcemap = this.getSourcemap();
-    if (ctx2.options.strict) {
-      graph.code = "<?php\r\ndeclare (strict_types = 1);\r\n" + graph.code;
-    } else {
-      graph.code = "<?php\r\n" + graph.code;
-    }
-    if (emitFile) {
-      graph.outfile = ctx2.getOutputAbsolutePath(module2 || this);
-    }
-    return graph;
-  }
-};
-
-// lib/core/Builder.js
-init_Common2();
+init_Asset2();
 init_Cache();
 
 // lib/tokens/index.js
@@ -11885,26 +12301,26 @@ function AnnotationDeclaration_default2() {
 
 // lib/tokens/AnnotationExpression.js
 init_Common2();
-function AnnotationExpression_default2(ctx2, stack2) {
-  const name = stack2.getLowerCaseName();
+function AnnotationExpression_default2(ctx, stack) {
+  const name = stack.getLowerCaseName();
   switch (name) {
     case "http": {
-      return createHttpAnnotationNode(ctx2, stack2) || ctx2.createLiteral(null);
+      return createHttpAnnotationNode(ctx, stack) || ctx.createLiteral(null);
     }
     case "router": {
-      return createRouterAnnotationNode(ctx2, stack2) || ctx2.createLiteral(null);
+      return createRouterAnnotationNode(ctx, stack) || ctx.createLiteral(null);
     }
     case "url": {
-      return createUrlAnnotationNode(ctx2, stack2);
+      return createUrlAnnotationNode2(ctx, stack);
     }
     case "env": {
-      return createEnvAnnotationNode(ctx2, stack2);
+      return createEnvAnnotationNode(ctx, stack);
     }
     case "readfile": {
-      return createReadfileAnnotationNode(ctx2, stack2) || ctx2.createLiteral(null);
+      return createReadfileAnnotationNode2(ctx, stack) || ctx.createLiteral(null);
     }
     default:
-      ctx2.error(`The '${name}' annotations is not supported.`);
+      ctx.error(`The '${name}' annotations is not supported.`);
   }
   return null;
 }
@@ -11916,231 +12332,231 @@ init_Common2();
 init_Object();
 init_Common2();
 var import_Namespace11 = __toESM(require("easescript/lib/core/Namespace"));
-function createMethodFunctionNode2(ctx2, name) {
-  return ctx2.createLiteral(name);
+function createMethodFunctionNode2(ctx, name) {
+  return ctx.createLiteral(name);
 }
-function createObjectNodeRefs(ctx2, object, name) {
+function createObjectNodeRefs(ctx, object, name) {
   return object;
 }
-function createCommonCalledNode2(name, stack2, ctx2, object, args, called = true, checkRefs = false) {
+function createCommonCalledNode2(name, stack, ctx, object, args, called = true, checkRefs = false) {
   if (!called)
-    return createMethodFunctionNode2(ctx2, name);
+    return createMethodFunctionNode2(ctx, name);
   if (checkRefs && object && object.type === "ArrayExpression") {
-    const refs = ctx2.getLocalRefName(stack2, "ref");
-    ctx2.insertTokenToBlock(
-      stack2,
-      ctx2.createAssignmentExpression(ctx2.createVarIdentifier(refs), object)
+    const refs = ctx.getLocalRefName(stack, "ref");
+    ctx.insertTokenToBlock(
+      stack,
+      ctx.createAssignmentExpression(ctx.createVarIdentifier(refs), object)
     );
-    object = ctx2.createVarIdentifier(refs);
+    object = ctx.createVarIdentifier(refs);
   }
-  const obj = createObjectNodeRefs(ctx2, object, name);
-  return ctx2.createCallExpression(
-    ctx2.createIdentifier(name),
+  const obj = createObjectNodeRefs(ctx, object, name);
+  return ctx.createCallExpression(
+    ctx.createIdentifier(name),
     [obj].concat(args).filter((v) => !!v)
   );
 }
 var methods = {
-  isArray(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("is_array"),
+  isArray(stack, ctx, object, args, called = false, isStatic = false) {
+    return ctx.createCallExpression(
+      ctx.createIdentifier("is_array"),
       args
     );
   },
-  from(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return ctx2.createCallExpression(
-      createStaticReferenceNode2(ctx2, stack2, "System", "toArray"),
+  from(stack, ctx, object, args, called = false, isStatic = false) {
+    return ctx.createCallExpression(
+      createStaticReferenceNode2(ctx, stack, "System", "toArray"),
       args
     );
   },
-  of(stack2, ctx2, object, args, called = false, isStatic = false) {
+  of(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier(ctx2.getModuleNamespace(module2, "es_array_new")),
+    ctx.addDepend(module2);
+    return ctx.createCallExpression(
+      ctx.createIdentifier(ctx.getModuleNamespace(module2, "es_array_new")),
       args
     );
   },
-  push(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode2("array_push", stack2, ctx2, object, args, called, true);
+  push(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode2("array_push", stack, ctx, object, args, called, true);
   },
-  unshift(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode2("array_unshift", stack2, ctx2, object, args, called, true);
+  unshift(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode2("array_unshift", stack, ctx, object, args, called, true);
   },
-  pop(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode2("array_pop", stack2, ctx2, object, args, called, true);
+  pop(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode2("array_pop", stack, ctx, object, args, called, true);
   },
-  shift(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode2("array_shift", stack2, ctx2, object, args, called);
+  shift(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode2("array_shift", stack, ctx, object, args, called);
   },
-  splice(stack2, ctx2, object, args, called = false, isStatic = false) {
+  splice(stack, ctx, object, args, called = false, isStatic = false) {
     if (args.length > 3) {
-      args = args.slice(0, 2).concat(ctx2.createArrayExpression(args.slice(2)));
+      args = args.slice(0, 2).concat(ctx.createArrayExpression(args.slice(2)));
     }
-    return createCommonCalledNode2("array_splice", stack2, ctx2, object, args, called, true);
+    return createCommonCalledNode2("array_splice", stack, ctx, object, args, called, true);
   },
-  slice(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode2("array_slice", stack2, ctx2, object, args, called);
+  slice(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode2("array_slice", stack, ctx, object, args, called);
   },
-  map(stack2, ctx2, object, args, called = false, isStatic = false) {
+  map(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_map");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_map");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  find(stack2, ctx2, object, args, called = false, isStatic = false) {
+  find(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_find");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_find");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  findIndex(stack2, ctx2, object, args, called = false, isStatic = false) {
+  findIndex(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_find_index");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_find_index");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  filter(stack2, ctx2, object, args, called = false, isStatic = false) {
+  filter(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_filter");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_filter");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  indexOf(stack2, ctx2, object, args, called = false, isStatic = false) {
+  indexOf(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_find_index");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_find_index");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  lastIndexOf(stack2, ctx2, object, args, called = false, isStatic = false) {
+  lastIndexOf(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_search_last_index");
-    return createCommonCalledNode2(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_search_last_index");
+    return createCommonCalledNode2(name, ctx, object, args, called);
   },
-  copyWithin(stack2, ctx2, object, args, called = false, isStatic = false) {
+  copyWithin(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_copy_within");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_copy_within");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  concat(stack2, ctx2, object, args, called = false, isStatic = false) {
+  concat(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_concat");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_concat");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  every(stack2, ctx2, object, args, called = false, isStatic = false) {
+  every(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_every");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_every");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  some(stack2, ctx2, object, args, called = false, isStatic = false) {
+  some(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_some");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_some");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  forEach(stack2, ctx2, object, args, called = false, isStatic = false) {
+  forEach(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_foreach");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_foreach");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  flat(stack2, ctx2, object, args, called = false, isStatic = false) {
+  flat(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_flat");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_flat");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  flatMap(stack2, ctx2, object, args, called = false, isStatic = false) {
+  flatMap(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_flat_map");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_flat_map");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  reduce(stack2, ctx2, object, args, called = false, isStatic = false) {
+  reduce(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_reduce");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_reduce");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  reduceRight(stack2, ctx2, object, args, called = false, isStatic = false) {
+  reduceRight(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_reduce_right");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_reduce_right");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  fill(stack2, ctx2, object, args, called = false, isStatic = false) {
+  fill(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_fill");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_fill");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
-  sort(stack2, ctx2, object, args, called = false, isStatic = false) {
+  sort(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace11.default.globals.get("Array");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_array_sort");
-    return createCommonCalledNode2(name, stack2, ctx2, object, args, called, true);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_array_sort");
+    return createCommonCalledNode2(name, stack, ctx, object, args, called, true);
   },
-  join(stack2, ctx2, object, args, called = false, isStatic = false) {
+  join(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called)
-      return ctx2.createChunkExpression(`function($target,$delimiter){return implode($delimiter,$target);}`);
-    object = createObjectNodeRefs(ctx2, object, "implode");
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("implode"),
+      return ctx.createChunkExpression(`function($target,$delimiter){return implode($delimiter,$target);}`);
+    object = createObjectNodeRefs(ctx, object, "implode");
+    return ctx.createCallExpression(
+      ctx.createIdentifier("implode"),
       args.concat(object)
     );
   },
-  entries(stack2, ctx2, object, args, called = false, isStatic = false) {
+  entries(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called)
-      return createMethodFunctionNode2(ctx2, "array_values");
-    object = createObjectNodeRefs(ctx2, object, "array_values");
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("array_values"),
+      return createMethodFunctionNode2(ctx, "array_values");
+    object = createObjectNodeRefs(ctx, object, "array_values");
+    return ctx.createCallExpression(
+      ctx.createIdentifier("array_values"),
       [object]
     );
   },
-  values(stack2, ctx2, object, args, called = false, isStatic = false) {
+  values(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called)
-      return createMethodFunctionNode2(ctx2, "array_values");
-    object = createObjectNodeRefs(ctx2, object, "array_values");
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("array_values"),
+      return createMethodFunctionNode2(ctx, "array_values");
+    object = createObjectNodeRefs(ctx, object, "array_values");
+    return ctx.createCallExpression(
+      ctx.createIdentifier("array_values"),
       [object]
     );
   },
-  keys(stack2, ctx2, object, args, called = false, isStatic = false) {
+  keys(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called)
-      return createMethodFunctionNode2(ctx2, "array_keys");
-    object = createObjectNodeRefs(ctx2, object, "array_keys");
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("array_keys"),
+      return createMethodFunctionNode2(ctx, "array_keys");
+    object = createObjectNodeRefs(ctx, object, "array_keys");
+    return ctx.createCallExpression(
+      ctx.createIdentifier("array_keys"),
       [object]
     );
   },
-  reverse(stack2, ctx2, object, args, called = false, isStatic = false) {
+  reverse(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called)
-      return createMethodFunctionNode2(ctx2, "array_reverse");
-    object = createObjectNodeRefs(ctx2, object, "array_reverse");
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("array_reverse"),
+      return createMethodFunctionNode2(ctx, "array_reverse");
+    object = createObjectNodeRefs(ctx, object, "array_reverse");
+    return ctx.createCallExpression(
+      ctx.createIdentifier("array_reverse"),
       args.concat(object)
     );
   },
-  includes(stack2, ctx2, object, args, called = false, isStatic = false) {
+  includes(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called)
-      return createMethodFunctionNode2(ctx2, "in_array");
-    object = createObjectNodeRefs(ctx2, object, "in_array");
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("in_array"),
+      return createMethodFunctionNode2(ctx, "in_array");
+    object = createObjectNodeRefs(ctx, object, "in_array");
+    return ctx.createCallExpression(
+      ctx.createIdentifier("in_array"),
       args.concat(object)
     );
   },
-  length(stack2, ctx2, object, args, called = false, isStatic = false) {
-    const obj = createObjectNodeRefs(ctx2, object, "count");
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("count"),
+  length(stack, ctx, object, args, called = false, isStatic = false) {
+    const obj = createObjectNodeRefs(ctx, object, "count");
+    return ctx.createCallExpression(
+      ctx.createIdentifier("count"),
       [obj]
     );
   }
@@ -12153,16 +12569,16 @@ var methods = {
 var Array_default = methods;
 
 // lib/tokens/ArrayExpression.js
-function ArrayExpression_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
+function ArrayExpression_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
   let hasSpread = false;
-  node.elements = stack2.elements.map((stack3, index) => {
-    let item = ctx2.createToken(stack3);
-    if (item && stack3.isSpreadElement) {
+  node.elements = stack.elements.map((stack2, index) => {
+    let item = ctx.createToken(stack2);
+    if (item && stack2.isSpreadElement) {
       hasSpread = true;
     } else {
-      if (ctx2.isPassableReferenceExpress(stack3, stack3.type())) {
-        item = createAddressRefsNode(ctx2, item);
+      if (ctx.isPassableReferenceExpress(stack2, stack2.type())) {
+        item = createAddressRefsNode(ctx, item);
       }
     }
     return item;
@@ -12171,63 +12587,63 @@ function ArrayExpression_default2(ctx2, stack2) {
     if (node.elements.length === 1) {
       return node.elements[0];
     }
-    return Array_default.concat(stack2, ctx2, ctx2.createArrayExpression(), node.elements, true, false);
+    return Array_default.concat(stack, ctx, ctx.createArrayExpression(), node.elements, true, false);
   }
   return node;
 }
 
 // lib/tokens/ArrayPattern.js
-function ArrayPattern_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.elements = stack2.elements.map((item) => ctx2.createToken(item));
+function ArrayPattern_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.elements = stack.elements.map((item) => ctx.createToken(item));
   return node;
 }
 
 // lib/tokens/FunctionExpression.js
 var import_Namespace12 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils20 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils23 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
-function createInitNode(ctx2, name, initValue, defaultValue, operator, forceType = null) {
-  let init = defaultValue ? ctx2.createBinaryExpression(initValue, defaultValue, operator) : initValue;
+function createInitNode(ctx, name, initValue, defaultValue, operator, forceType = null) {
+  let init = defaultValue ? ctx.createBinaryExpression(initValue, defaultValue, operator) : initValue;
   if (forceType) {
-    let node = ctx2.createNode("TypeTransformExpression");
+    let node = ctx.createNode("TypeTransformExpression");
     node.typeName = forceType;
-    node.expression = ctx2.createParenthesizedExpression(init);
+    node.expression = ctx.createParenthesizedExpression(init);
     init = node;
   }
-  return ctx2.createExpressionStatement(
-    ctx2.createAssignmentExpression(
-      Node_default.is(name) ? name : ctx2.createVarIdentifier(name),
+  return ctx.createExpressionStatement(
+    ctx.createAssignmentExpression(
+      Node_default.is(name) ? name : ctx.createVarIdentifier(name),
       init
     )
   );
 }
-function createRefsMemberNode(ctx2, object, property, computed = false) {
-  const node = ctx2.createMemberExpression([
-    ctx2.createVarIdentifier(object),
-    typeof property === "number" ? ctx2.createLiteral(property) : ctx2.createIdentifier(property)
+function createRefsMemberNode(ctx, object, property, computed = false) {
+  const node = ctx.createMemberExpression([
+    ctx.createVarIdentifier(object),
+    typeof property === "number" ? ctx.createLiteral(property) : ctx.createIdentifier(property)
   ]);
   node.computed = computed;
   return node;
 }
-function createParamNode(ctx2, name, prefix) {
-  const node = ctx2.createNode("ParamDeclarator");
-  node.argument = Node_default.is(name) ? name : ctx2.createVarIdentifier(name);
+function createParamNode(ctx, name, prefix) {
+  const node = ctx.createNode("ParamDeclarator");
+  node.argument = Node_default.is(name) ? name : ctx.createVarIdentifier(name);
   node.argument.isVariable = true;
   node.prefix = prefix;
   return node;
 }
-function createParamNodes(ctx2, stack2, params) {
+function createParamNodes(ctx, stack, params) {
   const before = [];
   const items = params.map((item, index) => {
     if (item.isObjectPattern) {
-      let sName = ctx2.getLocalRefName(stack2, "_s");
+      let sName = ctx.getLocalRefName(stack, "_s", item);
       before.push(
         createInitNode(
-          ctx2,
+          ctx,
           sName,
-          ctx2.createVarIdentifier(sName),
-          ctx2.createNewExpression(ctx2.createIdentifier("\\stdClass")),
+          ctx.createVarIdentifier(sName),
+          ctx.createNewExpression(ctx.createIdentifier("\\stdClass")),
           "?:",
           "object"
         )
@@ -12238,29 +12654,29 @@ function createParamNodes(ctx2, stack2, params) {
         let defaultValue2 = null;
         if (property.hasInit) {
           if (property.init.isAssignmentPattern) {
-            defaultValue2 = ctx2.createToken(property.init.right);
+            defaultValue2 = ctx.createToken(property.init.right);
           } else {
-            alias = ctx2.createToken(property.init);
+            alias = ctx.createToken(property.init);
           }
         } else {
-          defaultValue2 = ctx2.createLiteral(null);
+          defaultValue2 = ctx.createLiteral(null);
         }
         before.push(createInitNode(
-          ctx2,
+          ctx,
           alias || key,
-          createRefsMemberNode(ctx2, sName, key),
+          createRefsMemberNode(ctx, sName, key),
           defaultValue2,
           "??"
         ));
       });
-      return createParamNode(ctx2, sName);
+      return createParamNode(ctx, sName);
     } else if (item.isArrayPattern) {
-      const sName = ctx2.getLocalRefName(stack2, "_s");
+      const sName = ctx.getLocalRefName(stack, "_s", item);
       before.push(createInitNode(
-        ctx2,
+        ctx,
         sName,
-        ctx2.createVarIdentifier(sName),
-        ctx2.createArrayExpression([]),
+        ctx.createVarIdentifier(sName),
+        ctx.createArrayExpression([]),
         "?:",
         "array"
       ));
@@ -12269,20 +12685,20 @@ function createParamNodes(ctx2, stack2, params) {
         let defaultValue2 = null;
         if (property.isAssignmentPattern) {
           key = property.left.value();
-          defaultValue2 = ctx2.createToken(property.right);
+          defaultValue2 = ctx.createToken(property.right);
         } else {
           key = property.value();
-          defaultValue2 = ctx2.createLiteral(null);
+          defaultValue2 = ctx.createLiteral(null);
         }
         before.push(createInitNode(
-          ctx2,
-          ctx2.createVarIdentifier(key),
-          createRefsMemberNode(ctx2, sName, index2, true),
+          ctx,
+          ctx.createVarIdentifier(key),
+          createRefsMemberNode(ctx, sName, index2, true),
           defaultValue2,
           "??"
         ));
       });
-      return createParamNode(ctx2, sName);
+      return createParamNode(ctx, sName);
     }
     const oType = item.acceptType && item.acceptType.type();
     let acceptType = null;
@@ -12294,23 +12710,23 @@ function createParamNodes(ctx2, stack2, params) {
         _alias = _alias.inherit.type();
       }
       if (!_alias || !_alias.isLiteralObjectType) {
-        acceptType = import_Utils20.default.getOriginType(oType);
+        acceptType = import_Utils23.default.getOriginType(oType);
       }
     }
     let typeName = "";
     let defaultValue = null;
     let nameNode = null;
     if (item.isAssignmentPattern) {
-      nameNode = ctx2.createVarIdentifier(item.left.value(), item.left);
-      defaultValue = ctx2.createToken(item.right);
+      nameNode = ctx.createVarIdentifier(item.left.value(), item.left);
+      defaultValue = ctx.createToken(item.right);
     } else if (item.question) {
-      nameNode = ctx2.createToken(item);
-      defaultValue = ctx2.createLiteral(null);
+      nameNode = ctx.createToken(item);
+      defaultValue = ctx.createLiteral(null);
     } else {
-      nameNode = ctx2.createToken(item);
+      nameNode = ctx.createToken(item);
     }
-    if (acceptType && import_Utils20.default.isModule(acceptType) && !acceptType.isEnum) {
-      const originType = ctx2.getAvailableOriginType(acceptType);
+    if (acceptType && import_Utils23.default.isModule(acceptType) && !acceptType.isEnum) {
+      const originType = ctx.getAvailableOriginType(acceptType);
       if (originType === "String" || originType === "Array" || originType === "Object") {
         typeName = originType.toLowerCase();
       } else if (originType === "Function") {
@@ -12319,74 +12735,77 @@ function createParamNodes(ctx2, stack2, params) {
         typeName = "bool";
       }
       if (!typeName && !originType) {
-        typeName = ctx2.getModuleReferenceName(acceptType, stack2.module || stack2.compilation);
+        typeName = ctx.getModuleReferenceName(acceptType, stack.module || stack.compilation);
         if (typeName && (acceptType.isClass || acceptType.isInterface)) {
-          ctx2.addDepend(acceptType);
+          ctx.addDepend(acceptType);
         }
       }
     }
     if (oType && !item.isRestElement && !oType.isGenericType) {
-      const isAddress = ctx2.isAddressRefsType(oType, item);
+      const isAddress = ctx.isAddressRefsType(oType, item);
       if (isAddress) {
-        nameNode = createAddressRefsNode(ctx2, nameNode);
+        nameNode = createAddressRefsNode(ctx, nameNode);
       }
     }
     if (defaultValue) {
-      nameNode = ctx2.createAssignmentExpression(nameNode, defaultValue);
+      nameNode = ctx.createAssignmentExpression(nameNode, defaultValue);
     }
-    return createParamNode(ctx2, nameNode, typeName);
+    return createParamNode(ctx, nameNode, typeName);
   });
   return [items, before];
 }
-function FunctionExpression_default2(ctx2, stack2, type) {
-  const node = ctx2.createNode(stack2, type);
-  const [params, before] = createParamNodes(ctx2, stack2, stack2.params);
-  let block = ctx2.createToken(stack2.body);
-  if (stack2.expression && stack2.expression.async || stack2.async) {
+function FunctionExpression_default2(ctx, stack, type) {
+  const node = ctx.createNode(stack, type);
+  const [params, before] = createParamNodes(ctx, stack, stack.params);
+  let block = ctx.createToken(stack.body);
+  if (stack.expression && stack.expression.async || stack.async) {
     const promiseModule = import_Namespace12.default.globals.get("Promise");
-    const promiseRefs = ctx2.getModuleReferenceName(promiseModule, stack2.module || stack2.compilation);
-    ctx2.addDepend(promiseModule, stack2.module || stack2.compilation);
-    const content = ctx2.createFunctionExpression(block, params);
+    const promiseRefs = ctx.getModuleReferenceName(promiseModule, stack.module || stack.compilation);
+    ctx.addDepend(promiseModule, stack.module || stack.compilation);
+    if (block.type !== "BlockStatement") {
+      block = ctx.createBlockStatement([block]);
+    }
+    const content = ctx.createFunctionExpression(block);
     if (params.length > 0) {
       content.using = params.map((item) => {
         return createAddressRefsNode(
-          ctx2,
-          ctx2.createVarIdentifier(item.argument.value)
+          ctx,
+          ctx.createVarIdentifier(item.argument.value)
         );
       });
     }
-    const resolve = ctx2.createCallExpression(
-      ctx2.createVarIdentifier("resolve"),
+    const resolve = ctx.createCallExpression(
+      ctx.createVarIdentifier("resolve"),
       [
-        ctx2.createCallExpression(
-          ctx2.createIdentifier("call_user_func"),
+        ctx.createCallExpression(
+          ctx.createIdentifier("call_user_func"),
           [content]
         )
       ]
     );
-    const reject = ctx2.createCallExpression(
-      ctx2.createVarIdentifier("reject"),
+    const reject = ctx.createCallExpression(
+      ctx.createVarIdentifier("reject"),
       [
-        ctx2.createVarIdentifier("e")
+        ctx.createVarIdentifier("e")
       ]
     );
-    const tryNode = ctx2.createNode("TryStatement");
-    tryNode.param = createParamNode(ctx2, "e", "\\Exception");
-    tryNode.block = ctx2.createBlockStatement([ctx2.createExpressionStatement(resolve)]);
-    tryNode.handler = ctx2.createBlockStatement([ctx2.createExpressionStatement(reject)]);
-    const executer = ctx2.createFunctionExpression(tryNode, [
-      ctx2.createIdentifier("resolve"),
-      ctx2.createIdentifier("reject")
+    const tryNode = ctx.createNode("TryStatement");
+    tryNode.param = createParamNode(ctx, "e", "\\Exception");
+    tryNode.block = ctx.createBlockStatement([ctx.createExpressionStatement(resolve)]);
+    tryNode.handler = ctx.createBlockStatement([ctx.createExpressionStatement(reject)]);
+    const executer = ctx.createFunctionExpression(ctx.createBlockStatement([tryNode]), [
+      ctx.createVarIdentifier("resolve"),
+      ctx.createVarIdentifier("reject")
     ]);
     if (params.length > 0) {
       executer.using = params.map((item) => {
-        return createAddressRefsNode(ctx2, ctx2.createVarIdentifier(item.argument.value));
+        return createAddressRefsNode(ctx, ctx.createVarIdentifier(item.argument.value));
       });
     }
-    block = ctx2.createBlockStatement([
-      ctx2.createReturnStatement(
-        ctx2.createNewExpression(
-          ctx2.createIdentifier(promiseRefs),
+    block = ctx.createBlockStatement([
+      ctx.createReturnStatement(
+        ctx.createNewExpression(
+          ctx.createIdentifier(promiseRefs),
           [executer]
         )
       )
@@ -12395,16 +12814,16 @@ function FunctionExpression_default2(ctx2, stack2, type) {
   if (before.length > 0) {
     block.body.unshift(...before);
   }
-  const method = !!stack2.parentStack.isMethodDefinition;
-  const variableRefs = !method ? ctx2.getVariableRefs(stack2) : null;
+  const method = !!stack.parentStack.isMethodDefinition;
+  const variableRefs = !method ? ctx.getVariableRefs(stack) : null;
   if (variableRefs) {
     node.using = Array.from(variableRefs.values()).map((item) => {
-      const refs = typeof item === "string" ? ctx2.createVarIdentifier(item) : ctx2.createVarIdentifier(item.value(), item);
-      return createAddressRefsNode(ctx2, refs);
+      const refs = typeof item === "string" ? ctx.createVarIdentifier(item) : ctx.createVarIdentifier(item.value(), item);
+      return createAddressRefsNode(ctx, refs);
     });
   }
-  const returnType = stack2.getReturnedType();
-  if (ctx2.isAddressRefsType(returnType, stack2)) {
+  const returnType = stack.getReturnedType();
+  if (ctx.isAddressRefsType(returnType, stack)) {
     node.prefix = "&";
   }
   node.params = params;
@@ -12413,32 +12832,32 @@ function FunctionExpression_default2(ctx2, stack2, type) {
 }
 
 // lib/tokens/ArrowFunctionExpression.js
-function ArrowFunctionExpression_default2(ctx2, stack2, type) {
-  const node = FunctionExpression_default2(ctx2, stack2, type);
+function ArrowFunctionExpression_default2(ctx, stack, type) {
+  const node = FunctionExpression_default2(ctx, stack, type);
   node.type = type;
   return node;
 }
 
 // lib/tokens/AssignmentExpression.js
-var import_Utils22 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils25 = __toESM(require("easescript/lib/core/Utils"));
 
 // lib/transforms/Base64.js
 var Base64_default = {
-  decode(stack2, ctx2, object, args, called = false, isStatic = false) {
+  decode(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called) {
-      return ctx2.createChunkExpression(`function($value){return base64_decode( $value );}`);
+      return ctx.createChunkExpression(`function($value){return base64_decode( $value );}`);
     }
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("base64_decode"),
+    return ctx.createCallExpression(
+      ctx.createIdentifier("base64_decode"),
       args
     );
   },
-  encode(stack2, ctx2, object, args, called = false, isStatic = false) {
+  encode(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called) {
-      return ctx2.createChunkExpression(`function($value){return base64_encode( $value );}`);
+      return ctx.createChunkExpression(`function($value){return base64_encode( $value );}`);
     }
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("base64_encode"),
+    return ctx.createCallExpression(
+      ctx.createIdentifier("base64_encode"),
       args
     );
   }
@@ -12448,64 +12867,64 @@ var Base64_default = {
 var import_Namespace13 = __toESM(require("easescript/lib/core/Namespace"));
 init_Common2();
 var ConsoleInterface_default = {
-  log(stack2, ctx2, object, args, called = false, isStatic = false) {
+  log(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace13.default.globals.get("System");
-    ctx2.addDepend(module2);
+    ctx.addDepend(module2);
     if (!called) {
-      return ctx2.createChunkExpression(`function(...$args){System::print(...$args);}`);
+      return ctx.createChunkExpression(`function(...$args){System::print(...$args);}`);
     }
-    return ctx2.createCallExpression(
-      createStaticReferenceNode2(ctx2, stack2, "System", "print"),
+    return ctx.createCallExpression(
+      createStaticReferenceNode2(ctx, stack, "System", "print"),
       args
     );
   },
-  trace(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return this.log(stack2, ctx2, object, args, called, isStatic);
+  trace(stack, ctx, object, args, called = false, isStatic = false) {
+    return this.log(stack, ctx, object, args, called, isStatic);
   }
 };
 
 // lib/transforms/Error.js
 init_Common2();
 var Error_default = {
-  message(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return ctx2.createCalleeExpression(
-      ctx2.createMemberExpression([
+  message(stack, ctx, object, args, called = false, isStatic = false) {
+    return ctx.createCalleeExpression(
+      ctx.createMemberExpression([
         object,
-        ctx2.createIdentifier("getMessage")
+        ctx.createIdentifier("getMessage")
       ])
     );
   },
-  cause(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return ctx2.createCalleeExpression(
-      ctx2.createMemberExpression([
+  cause(stack, ctx, object, args, called = false, isStatic = false) {
+    return ctx.createCalleeExpression(
+      ctx.createMemberExpression([
         object,
-        ctx2.createIdentifier("getPrevious")
+        ctx.createIdentifier("getPrevious")
       ])
     );
   },
-  name(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return ctx2.createCalleeExpression(
-      ctx2.createIdentifier("get_class"),
+  name(stack, ctx, object, args, called = false, isStatic = false) {
+    return ctx.createCalleeExpression(
+      ctx.createIdentifier("get_class"),
       [
         object
       ]
     );
   },
-  toString(stack2, ctx2, object, args, called = false, isStatic = false) {
+  toString(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called) {
-      return ctx2.createCalleeExpression(
-        createStaticReferenceNode2(ctx2, object.stack, "Reflect", "get"),
+      return ctx.createCalleeExpression(
+        createStaticReferenceNode2(ctx, object.stack, "Reflect", "get"),
         [
-          ctx2.createLiteral(null),
+          ctx.createLiteral(null),
           object,
-          ctx2.createIdentifier("__toString")
+          ctx.createIdentifier("__toString")
         ]
       );
     }
-    return ctx2.createCalleeExpression(
-      ctx2.createMemberExpression([
+    return ctx.createCalleeExpression(
+      ctx.createMemberExpression([
         object,
-        ctx2.createIdentifier("__toString")
+        ctx.createIdentifier("__toString")
       ])
     );
   }
@@ -12513,67 +12932,67 @@ var Error_default = {
 
 // lib/transforms/Function.js
 var import_Namespace14 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils21 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils24 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
 init_Object();
-function createCallNode(stack2, ctx2, target, args) {
-  return ctx2.createCallExpression(
-    createStaticReferenceNode2(ctx2, stack2, "Reflect", "apply"),
+function createCallNode(stack, ctx, target, args) {
+  return ctx.createCallExpression(
+    createStaticReferenceNode2(ctx, stack, "Reflect", "apply"),
     [target].concat(args)
   );
 }
 var methods2 = {
-  apply(stack2, ctx2, object, args, called = false, isStatic = false) {
+  apply(stack, ctx, object, args, called = false, isStatic = false) {
     const callee = object.type === "MemberExpression" ? object.object : object;
     if (!called) {
       return callee;
     }
     const _arguments = [args[0]];
     if (args.length > 1) {
-      _arguments.push(ctx2.createArrayExpression(args.slice(1)));
+      _arguments.push(ctx.createArrayExpression(args.slice(1)));
     }
-    return createCallNode(stack2, ctx2, callee, _arguments);
+    return createCallNode(stack, ctx, callee, _arguments);
   },
-  call(stack2, ctx2, object, args, called = false, isStatic = false) {
+  call(stack, ctx, object, args, called = false, isStatic = false) {
     const callee = object.type === "MemberExpression" ? object.object : object;
     if (!called) {
       return callee;
     }
     const _arguments = [args[0]];
     if (args.length > 1) {
-      _arguments.push(ctx2.createArrayExpression(args.slice(1)));
+      _arguments.push(ctx.createArrayExpression(args.slice(1)));
     }
-    return createCallNode(stack2, ctx2, callee, _arguments);
+    return createCallNode(stack, ctx, callee, _arguments);
   },
-  bind(stack2, ctx2, object, args, called = false, isStatic = false) {
+  bind(stack, ctx, object, args, called = false, isStatic = false) {
     args = args.slice();
     let System = import_Namespace14.default.globals.get("System");
-    ctx2.addDepend(System);
+    ctx.addDepend(System);
     if (!called) {
-      return ctx2.createArrayExpression([
-        createClassRefsNode(ctx2, System, stack2),
-        ctx2.createLiteral("bind")
+      return ctx.createArrayExpression([
+        createClassRefsNode(ctx, System, stack),
+        ctx.createLiteral("bind")
       ]);
     }
-    const _arguments = stack2.arguments || [];
-    let flagNode = ctx2.createLiteral(null);
+    const _arguments = stack.arguments || [];
+    let flagNode = ctx.createLiteral(null);
     if (_arguments[0]) {
-      const type = ctx2.inferType(_arguments[0]);
-      if (type.isLiteralArrayType || import_Namespace14.default.globals.get("Array") === import_Utils21.default.getOriginType(type)) {
-        flagNode = ctx2.createLiteral(true);
+      const type = ctx.inferType(_arguments[0]);
+      if (type.isLiteralArrayType || import_Namespace14.default.globals.get("Array") === import_Utils24.default.getOriginType(type)) {
+        flagNode = ctx.createLiteral(true);
       } else if (!type.isAnyType) {
-        flagNode = ctx2.createLiteral(false);
+        flagNode = ctx.createLiteral(false);
       }
     }
     args.splice(1, 0, flagNode);
     if (object.type === "MemberExpression") {
-      object = ctx2.createArrayExpression([
+      object = ctx.createArrayExpression([
         object.object,
         object.createLiteral(object.property.value)
       ]);
     }
-    return ctx2.createCallExpression(
-      createStaticReferenceNode2(ctx2, stack2, "System", "bind"),
+    return ctx.createCallExpression(
+      createStaticReferenceNode2(ctx, stack, "System", "bind"),
       [object].concat(args)
     );
   }
@@ -12608,68 +13027,68 @@ var global_default = {
   //         return ctx;
   //     }
   // },
-  setInterval(stack2, ctx2, object, args, called = false, isStatic = false) {
-    ctx2.callee = ctx2.createIdentifier("call_user_func");
-    ctx2.arguments = args.slice(0, 1);
-    return ctx2;
+  setInterval(stack, ctx, object, args, called = false, isStatic = false) {
+    ctx.callee = ctx.createIdentifier("call_user_func");
+    ctx.arguments = args.slice(0, 1);
+    return ctx;
   },
-  setTimeout(stack2, ctx2, object, args, called = false, isStatic = false) {
-    ctx2.callee = ctx2.createIdentifier("call_user_func");
-    ctx2.arguments = args.slice(0, 1);
-    return ctx2;
+  setTimeout(stack, ctx, object, args, called = false, isStatic = false) {
+    ctx.callee = ctx.createIdentifier("call_user_func");
+    ctx.arguments = args.slice(0, 1);
+    return ctx;
   },
-  clearTimeout(stack2, ctx2, object, args, called = false, isStatic = false) {
+  clearTimeout(stack, ctx, object, args, called = false, isStatic = false) {
     return null;
   },
-  clearInterval(stack2, ctx2, object, args, called = false, isStatic = false) {
+  clearInterval(stack, ctx, object, args, called = false, isStatic = false) {
     return null;
   },
-  parseInt(stack2, ctx2, object, args, called = false, isStatic = false) {
+  parseInt(stack, ctx, object, args, called = false, isStatic = false) {
     if (called) {
-      ctx2.callee = ctx2.createIdentifier("intval");
-      ctx2.arguments = args.slice(0, 2);
-      return ctx2;
+      ctx.callee = ctx.createIdentifier("intval");
+      ctx.arguments = args.slice(0, 2);
+      return ctx;
     } else {
       return null;
     }
   },
-  parseFloat(stack2, ctx2, object, args, called = false, isStatic = false) {
+  parseFloat(stack, ctx, object, args, called = false, isStatic = false) {
     if (called) {
-      ctx2.callee = ctx2.createIdentifier("floatval");
-      ctx2.arguments = args.slice(0, 1);
-      return ctx2;
+      ctx.callee = ctx.createIdentifier("floatval");
+      ctx.arguments = args.slice(0, 1);
+      return ctx;
     } else {
       return null;
     }
   },
-  isNaN(stack2, ctx2, object, args, called = false, isStatic = false) {
-    ctx2.addDepend(import_Namespace15.default.globals.get("System"));
+  isNaN(stack, ctx, object, args, called = false, isStatic = false) {
+    ctx.addDepend(import_Namespace15.default.globals.get("System"));
     if (!called) {
-      ctx2.createChunkExpression(`function($target){return System::isNaN($target);}`);
+      ctx.createChunkExpression(`function($target){return System::isNaN($target);}`);
     }
-    return ctx2.createCallExpression(
-      createStaticReferenceNode2(ctx2, stack2, "System", "isNaN"),
+    return ctx.createCallExpression(
+      createStaticReferenceNode2(ctx, stack, "System", "isNaN"),
       args
     );
   },
-  isFinite(stack2, ctx2, object, args, called = false, isStatic = false) {
+  isFinite(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called) {
-      return ctx2.createLiteral("is_finite");
+      return ctx.createLiteral("is_finite");
     }
-    ctx2.callee = ctx2.createIdentifier("is_finite");
-    ctx2.arguments = args.slice(0, 1);
-    return ctx2;
+    ctx.callee = ctx.createIdentifier("is_finite");
+    ctx.arguments = args.slice(0, 1);
+    return ctx;
   }
 };
 
 // lib/transforms/IArguments.js
 init_Object();
 var methods3 = {
-  length(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return ctx2.createCallExpression(ctx2.createIdentifier("func_num_args"));
+  length(stack, ctx, object, args, called = false, isStatic = false) {
+    return ctx.createCallExpression(ctx.createIdentifier("func_num_args"));
   },
-  $computed(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return ctx2.createCallExpression(ctx2.createIdentifier("func_get_arg"), args);
+  $computed(stack, ctx, object, args, called = false, isStatic = false) {
+    return ctx.createCallExpression(ctx.createIdentifier("func_get_arg"), args);
   }
 };
 ["propertyIsEnumerable", "hasOwnProperty", "valueOf", "toLocaleString", "toString"].forEach((name) => {
@@ -12681,135 +13100,137 @@ var IArguments_default = methods3;
 
 // lib/transforms/JSON.js
 var JSON_default = {
-  parse(stack2, ctx2, object, args, called = false, isStatic = false) {
+  parse(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called) {
-      return ctx2.createChunkExpression(`function($target){return json_decode($target);}`);
+      return ctx.createChunkExpression(`function($target){return json_decode($target);}`);
     }
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("json_decode"),
+    return ctx.createCallExpression(
+      ctx.createIdentifier("json_decode"),
       args.slice(0, 1)
     );
   },
-  stringify(stack2, ctx2, object, args, called = false, isStatic = false) {
+  stringify(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called) {
-      return ctx2.createChunkExpression(`function($target){return json_encode($target,JSON_UNESCAPED_UNICODE);}`);
+      return ctx.createChunkExpression(`function($target){return json_encode($target,JSON_UNESCAPED_UNICODE);}`);
     }
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("json_encode"),
-      args.slice(0, 1).concat(ctx2.createIdentifier(`JSON_UNESCAPED_UNICODE`))
+    return ctx.createCallExpression(
+      ctx.createIdentifier("json_encode"),
+      args.slice(0, 1).concat(ctx.createIdentifier(`JSON_UNESCAPED_UNICODE`))
     );
   }
 };
 
 // lib/transforms/Math.js
-function createCommonCalledNode3(name, stack2, ctx2, object, args, called, params) {
+function createCommonCalledNode3(name, stack, ctx, object, args, called, params) {
   if (!called) {
-    return createCalleeFunctionNode(ctx2, params || ["value"], name);
+    return createCalleeFunctionNode(ctx, params || ["value"], name);
   }
   let len = 1;
   if (params && Array.isArray(params)) {
     len = params[0] === "..." ? args.length : params.length;
   }
-  return ctx2.createCallExpression(
-    ctx2.createIdentifier(name),
+  return ctx.createCallExpression(
+    ctx.createIdentifier(name),
     args.slice(0, len)
   );
 }
-function createCalleeFunctionNode(ctx2, args, callName) {
+function createCalleeFunctionNode(ctx, args, callName) {
   const cratePparams = () => args.map((name) => {
     if (name === "...") {
-      const node = ctx2.createNode("RestElement");
+      const node = ctx.createNode("RestElement");
       node.value = "args";
       node.raw = "args";
       return node;
     }
-    return ctx2.createVarIdentifier(name);
+    return ctx.createVarIdentifier(name);
   });
-  return ctx2.createFunctionExpression(
-    ctx2.createReturnStatement(
-      ctx2.createCallExpression(
-        ctx2.createIdentifier(callName),
-        cratePparams()
+  return ctx.createFunctionExpression(
+    ctx.createBlockStatement([
+      ctx.createReturnStatement(
+        ctx.createCallExpression(
+          ctx.createIdentifier(callName),
+          cratePparams()
+        )
       )
-    ),
+    ]),
     cratePparams()
   );
 }
 var Math_default = {
-  E(stack2, ctx2) {
-    return ctx2.createLiteral(2.718281828459045);
+  E(stack, ctx) {
+    return ctx.createLiteral(2.718281828459045);
   },
-  LN10(stack2, ctx2) {
-    return ctx2.createLiteral(2.302585092994046);
+  LN10(stack, ctx) {
+    return ctx.createLiteral(2.302585092994046);
   },
-  LN2(stack2, ctx2) {
-    return ctx2.createLiteral(0.6931471805599453);
+  LN2(stack, ctx) {
+    return ctx.createLiteral(0.6931471805599453);
   },
-  LOG2E(stack2, ctx2) {
-    return ctx2.createLiteral(1.4426950408889634);
+  LOG2E(stack, ctx) {
+    return ctx.createLiteral(1.4426950408889634);
   },
-  LOG10E(stack2, ctx2) {
-    return ctx2.createLiteral(0.4342944819032518);
+  LOG10E(stack, ctx) {
+    return ctx.createLiteral(0.4342944819032518);
   },
-  PI(stack2, ctx2) {
-    return ctx2.createLiteral(3.141592653589793);
+  PI(stack, ctx) {
+    return ctx.createLiteral(3.141592653589793);
   },
-  SQRT1_2(stack2, ctx2) {
-    return ctx2.createLiteral(0.7071067811865476);
+  SQRT1_2(stack, ctx) {
+    return ctx.createLiteral(0.7071067811865476);
   },
-  SQRT2(stack2, ctx2) {
-    return ctx2.createLiteral(1.4142135623730951);
+  SQRT2(stack, ctx) {
+    return ctx.createLiteral(1.4142135623730951);
   },
-  abs(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("abs", stack2, ctx2, object, args, called);
+  abs(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("abs", stack, ctx, object, args, called);
   },
-  acos(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("acos", stack2, ctx2, object, args, called);
+  acos(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("acos", stack, ctx, object, args, called);
   },
-  asin(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("asin", stack2, ctx2, object, args, called);
+  asin(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("asin", stack, ctx, object, args, called);
   },
-  atan2(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("atan2", stack2, ctx2, object, args, called, ["a", "b"]);
+  atan2(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("atan2", stack, ctx, object, args, called, ["a", "b"]);
   },
-  ceil(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("ceil", stack2, ctx2, object, args, called);
+  ceil(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("ceil", stack, ctx, object, args, called);
   },
-  cos(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("cos", stack2, ctx2, object, args, called);
+  cos(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("cos", stack, ctx, object, args, called);
   },
-  log(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("log", stack2, ctx2, object, args, called);
+  log(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("log", stack, ctx, object, args, called);
   },
-  max(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("max", stack2, ctx2, object, args, called, ["..."]);
+  max(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("max", stack, ctx, object, args, called, ["..."]);
   },
-  min(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("min", stack2, ctx2, object, args, called, ["..."]);
+  min(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("min", stack, ctx, object, args, called, ["..."]);
   },
-  pow(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("pow", stack2, ctx2, object, args, called, ["a", "b"]);
+  pow(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("pow", stack, ctx, object, args, called, ["a", "b"]);
   },
-  sin(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("sin", stack2, ctx2, object, args, called);
+  sin(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("sin", stack, ctx, object, args, called);
   },
-  sqrt(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("sqrt", stack2, ctx2, object, args, called);
+  sqrt(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("sqrt", stack, ctx, object, args, called);
   },
-  tan(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("tan", stack2, ctx2, object, args, called);
+  tan(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("tan", stack, ctx, object, args, called);
   },
-  round(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("round", stack2, ctx2, object, args, called);
+  round(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("round", stack, ctx, object, args, called);
   },
-  floor(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode3("floor", stack2, ctx2, object, args, called);
+  floor(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode3("floor", stack, ctx, object, args, called);
   },
-  random(stack2, ctx2, object, args, called = false, isStatic = false) {
+  random(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called) {
-      return ctx2.createChunkExpression(`function(){return mt_rand(1,2147483647) / 2147483647;}`);
+      return ctx.createChunkExpression(`function(){return mt_rand(1,2147483647) / 2147483647;}`);
     }
-    return ctx2.createChunkExpression(`(mt_rand(1,2147483647) / 2147483647)`);
+    return ctx.createChunkExpression(`(mt_rand(1,2147483647) / 2147483647)`);
   }
 };
 
@@ -12820,196 +13241,196 @@ init_Object();
 // lib/transforms/String.js
 var import_Namespace17 = __toESM(require("easescript/lib/core/Namespace"));
 init_Object();
-function createMethodFunctionNode3(ctx2, name) {
-  return ctx2.createLiteral(name);
+function createMethodFunctionNode3(ctx, name) {
+  return ctx.createLiteral(name);
 }
-function createCommonCalledNode5(name, ctx2, object, args, called) {
+function createCommonCalledNode5(name, ctx, object, args, called) {
   if (!called)
-    return createMethodFunctionNode3(ctx2, name);
-  return ctx2.createCallExpression(
-    ctx2.createIdentifier(name),
+    return createMethodFunctionNode3(ctx, name);
+  return ctx.createCallExpression(
+    ctx.createIdentifier(name),
     object ? [object].concat(args) : args
   );
 }
 var methods5 = {
-  fromCodePoint(stack2, ctx2, object, args, called = false, isStatic = false) {
+  fromCodePoint(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_from_code_point");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_from_code_point");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  raw(stack2, ctx2, object, args, called = false, isStatic = false) {
+  raw(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_raw");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_raw");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  fromCharCode(stack2, ctx2, object, args, called = false, isStatic = false) {
+  fromCharCode(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called) {
       const module3 = import_Namespace17.default.globals.get("String");
-      ctx2.addDepend(module3);
-      return ctx2.createChunkExpression(`function(...$code){return es_string_from_char_code(...$code);}`);
+      ctx.addDepend(module3);
+      return ctx.createChunkExpression(`function(...$code){return es_string_from_char_code(...$code);}`);
     }
     if (args.length === 1) {
-      return createCommonCalledNode5("chr", ctx2, null, args, true);
+      return createCommonCalledNode5("chr", ctx, null, args, true);
     }
     const module2 = import_Namespace17.default.globals.get("String");
-    const name = ctx2.getModuleNamespace(module2, "es_string_from_char_code");
-    ctx2.addDepend(module2);
-    return createCommonCalledNode5(name, ctx2, null, args, true);
+    const name = ctx.getModuleNamespace(module2, "es_string_from_char_code");
+    ctx.addDepend(module2);
+    return createCommonCalledNode5(name, ctx, null, args, true);
   },
-  charAt(stack2, ctx2, object, args, called = false, isStatic = false) {
+  charAt(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_char_at");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_char_at");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  charCodeAt(stack2, ctx2, object, args, called = false, isStatic = false) {
+  charCodeAt(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_char_code_at");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_char_code_at");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  concat(stack2, ctx2, object, args, called = false, isStatic = false) {
+  concat(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_concat");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_concat");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  includes(stack2, ctx2, object, args, called = false, isStatic = false) {
+  includes(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_includes");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_includes");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  indexOf(stack2, ctx2, object, args, called = false, isStatic = false) {
+  indexOf(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_index_of");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_index_of");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  lastIndexOf(stack2, ctx2, object, args, called = false, isStatic = false) {
+  lastIndexOf(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_last_index_of");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_last_index_of");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  localeCompare(stack2, ctx2, object, args, called = false, isStatic = false) {
+  localeCompare(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_locale_compare");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_locale_compare");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  match(stack2, ctx2, object, args, called = false, isStatic = false) {
+  match(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_match");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_match");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  matchAll(stack2, ctx2, object, args, called = false, isStatic = false) {
+  matchAll(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_match_all");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_match_all");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  search(stack2, ctx2, object, args, called = false, isStatic = false) {
+  search(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_search");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_search");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  replace(stack2, ctx2, object, args, called = false, isStatic = false) {
+  replace(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_replace");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_replace");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  replaceAll(stack2, ctx2, object, args, called = false, isStatic = false) {
+  replaceAll(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_replace_all");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_replace_all");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  slice(stack2, ctx2, object, args, called = false, isStatic = false) {
+  slice(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_slice");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_slice");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  repeat(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode5("str_repeat", ctx2, object, args, called);
+  repeat(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode5("str_repeat", ctx, object, args, called);
   },
-  length(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode5("mb_strlen", ctx2, object, args, true);
+  length(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode5("mb_strlen", ctx, object, args, true);
   },
-  substr(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode5("mb_substr", ctx2, object, args, called);
+  substr(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode5("mb_substr", ctx, object, args, called);
   },
-  substring(stack2, ctx2, object, args, called = false, isStatic = false) {
+  substring(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_substring");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_substring");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  toLowerCase(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode5("mb_strtolower", ctx2, object, args, called);
+  toLowerCase(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode5("mb_strtolower", ctx, object, args, called);
   },
-  toLocaleLowerCase(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode5("mb_strtolower", ctx2, object, args, called);
+  toLocaleLowerCase(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode5("mb_strtolower", ctx, object, args, called);
   },
-  toUpperCase(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode5("mb_strtoupper", ctx2, object, args, called);
+  toUpperCase(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode5("mb_strtoupper", ctx, object, args, called);
   },
-  toLocaleUpperCase(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode5("mb_strtoupper", ctx2, object, args, called);
+  toLocaleUpperCase(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode5("mb_strtoupper", ctx, object, args, called);
   },
-  trim(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode5("trim", ctx2, object, args, called);
+  trim(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode5("trim", ctx, object, args, called);
   },
-  trimEnd(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode5("rtrim", ctx2, object, args, called);
+  trimEnd(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode5("rtrim", ctx, object, args, called);
   },
-  trimStart(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode5("ltrim", ctx2, object, args, called);
+  trimStart(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode5("ltrim", ctx, object, args, called);
   },
-  split(stack2, ctx2, object, args, called = false, isStatic = false) {
+  split(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called) {
-      return ctx2.createChunkExpression(`function($target,$delimit){return explode($delimit,$target);}`);
+      return ctx.createChunkExpression(`function($target,$delimit){return explode($delimit,$target);}`);
     }
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("explode"),
+    return ctx.createCallExpression(
+      ctx.createIdentifier("explode"),
       [args[0], object]
     );
   },
-  padStart(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode5("str_pad", ctx2, object, [args[0], ctx2.createIdentifier("STR_PAD_LEFT")], called);
+  padStart(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode5("str_pad", ctx, object, [args[0], ctx.createIdentifier("STR_PAD_LEFT")], called);
   },
-  padEnd(stack2, ctx2, object, args, called = false, isStatic = false) {
-    return createCommonCalledNode5("str_pad", ctx2, object, [args[0], ctx2.createIdentifier("STR_PAD_RIGHT")], called);
+  padEnd(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode5("str_pad", ctx, object, [args[0], ctx.createIdentifier("STR_PAD_RIGHT")], called);
   },
-  normalize(stack2, ctx2, object, args, called = false, isStatic = false) {
+  normalize(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_normalize");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_normalize");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  valueOf(stack2, ctx2, object, args, called = false, isStatic = false) {
+  valueOf(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called) {
-      return ctx2.createChunkExpression(`function($target){return $target;}`);
+      return ctx.createChunkExpression(`function($target){return $target;}`);
     }
-    return createCommonCalledNode5("strval", ctx2, object, [], called);
+    return createCommonCalledNode5("strval", ctx, object, [], called);
   },
-  startsWith(stack2, ctx2, object, args, called = false, isStatic = false) {
+  startsWith(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_starts_with");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_starts_with");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   },
-  endsWith(stack2, ctx2, object, args, called = false, isStatic = false) {
+  endsWith(stack, ctx, object, args, called = false, isStatic = false) {
     const module2 = import_Namespace17.default.globals.get("String");
-    ctx2.addDepend(module2);
-    const name = ctx2.getModuleNamespace(module2, "es_string_ends_with");
-    return createCommonCalledNode5(name, ctx2, object, args, called);
+    ctx.addDepend(module2);
+    const name = ctx.getModuleNamespace(module2, "es_string_ends_with");
+    return createCommonCalledNode5(name, ctx, object, args, called);
   }
 };
 ["propertyIsEnumerable", "hasOwnProperty", "valueOf", "toLocaleString", "toString"].forEach((name) => {
@@ -13022,18 +13443,18 @@ var String_default = methods5;
 // lib/transforms/System.js
 init_Common2();
 var methods6 = {
-  merge(stack2, ctx2, object, args) {
+  merge(stack, ctx, object, args) {
     let target = object;
     if (object.type !== "Identifier") {
-      const refs = ctx2.getLocalRefName(stack2, "ref");
-      ctx2.insertTokenToBlock(
-        stack2,
-        ctx2.createAssignmentExpression(ctx2.createVarIdentifier(refs), object)
+      const refs = ctx.getLocalRefName(stack, "ref");
+      ctx.insertTokenToBlock(
+        stack,
+        ctx.createAssignmentExpression(ctx.createVarIdentifier(refs), object)
       );
-      target = ctx2.createVarIdentifier(refs);
+      target = ctx.createVarIdentifier(refs);
     }
-    return ctx2.createCallExpression(
-      createStaticReferenceNode2(ctx2, stack2, "System", "merge"),
+    return ctx.createCallExpression(
+      createStaticReferenceNode2(ctx, stack, "System", "merge"),
       [target].concat(args)
     );
   }
@@ -13092,35 +13513,35 @@ var transforms_default = modules;
 // lib/tokens/AssignmentExpression.js
 init_Common2();
 var hasOwn = Object.prototype.hasOwnProperty;
-function createNode2(ctx2, stack2) {
-  let node = ctx2.createNode(stack2);
-  let desc2 = stack2.left.description();
-  let module2 = stack2.module;
-  let isMember = stack2.left.isMemberExpression;
-  let operator = stack2.operator;
+function createNode2(ctx, stack) {
+  let node = ctx.createNode(stack);
+  let desc2 = stack.left.description();
+  let module2 = stack.module;
+  let isMember = stack.left.isMemberExpression;
+  let operator = stack.operator;
   node.operator = operator;
-  let refsNode = ctx2.createToken(stack2.right);
+  let refsNode = ctx.createToken(stack.right);
   let leftNode = null;
   let isReflect = false;
   if (isMember) {
-    const objectType = stack2.left.object.type();
+    const objectType = stack.left.object.type();
     if (desc2 && desc2.isStack && (desc2.isMethodSetterDefinition || desc2.isPropertyDefinition)) {
-      const property = stack2.left.property.value();
-      let typename = ctx2.getAvailableOriginType(objectType) || objectType.toString();
-      if ((objectType.isUnionType || objectType.isIntersectionType) && import_Utils22.default.isModule(desc2.module)) {
+      const property = stack.left.property.value();
+      let typename = ctx.getAvailableOriginType(objectType) || objectType.toString();
+      if ((objectType.isUnionType || objectType.isIntersectionType) && import_Utils25.default.isModule(desc2.module)) {
         typename = desc2.module.id;
       }
       const map = {
         "Array": {
           "length": () => {
-            let lengthNode = ctx2.createToken(stack2.left);
-            if (!stack2.right.isLiteral || stack2.right.value() != 0) {
-              lengthNode = ctx2.createBinaryExpression(lengthNode, refsNode, "-");
+            let lengthNode = ctx.createToken(stack.left);
+            if (!stack.right.isLiteral || stack.right.value() != 0) {
+              lengthNode = ctx.createBinaryExpression(lengthNode, refsNode, "-");
             }
             return transforms_default.get("Array").splice(
-              stack2,
-              ctx2,
-              ctx2.createToken(stack2.left.object),
+              stack,
+              ctx,
+              ctx.createToken(stack.left.object),
               [refsNode, lengthNode],
               true
             );
@@ -13136,149 +13557,149 @@ function createNode2(ctx2, stack2) {
         return map[typename][property]();
       }
     }
-    if (stack2.left.computed) {
+    if (stack.left.computed) {
       let hasDynamic = desc2 && desc2.isComputeType && desc2.isPropertyExists();
       if (!hasDynamic && desc2 && (desc2.isProperty && desc2.computed || desc2.isPropertyDefinition && desc2.dynamic)) {
         hasDynamic = true;
       }
-      if (!hasDynamic && !import_Utils22.default.isLiteralObjectType(objectType)) {
+      if (!hasDynamic && !import_Utils25.default.isLiteralObjectType(objectType)) {
         isReflect = true;
       }
     } else if (desc2 && desc2.isAnyType) {
-      isReflect = !import_Utils22.default.isLiteralObjectType(objectType);
+      isReflect = !import_Utils25.default.isLiteralObjectType(objectType);
     }
   }
-  if (desc2 && !isReflect && stack2.right) {
-    const addressRefObject = desc2.isVariableDeclarator || desc2.isParamDeclarator ? ctx2.getAssignAddressRef(desc2) : null;
-    if (addressRefObject && stack2.left.isIdentifier) {
-      const index = addressRefObject.add(stack2.right);
-      const left = addressRefObject.createIndexName(desc2);
-      const key = ctx2.createAssignmentExpression(
-        ctx2.createVarIdentifier(left),
-        ctx2.createLiteral(index)
+  if (desc2 && !isReflect && stack.right) {
+    const addressRefObject = desc2.isVariableDeclarator || desc2.isParamDeclarator ? ctx.getAssignAddressRef(desc2) : null;
+    if (addressRefObject && stack.left.isIdentifier) {
+      const index = addressRefObject.add(stack.right);
+      const left = addressRefObject.createIndexName(stack, desc2);
+      const key = ctx.createAssignmentExpression(
+        ctx.createVarIdentifier(left),
+        ctx.createLiteral(index)
       );
-      ctx2.addVariableRefs(stack2, left);
+      ctx.addVariableRefs(stack, left);
       let isAddressRefs = false;
-      if (ctx2.isPassableReferenceExpress(stack2.right, stack2.right.type())) {
+      if (ctx.isPassableReferenceExpress(stack.right, stack.right.type())) {
         if (refsNode.type === "ParenthesizedExpression") {
           refsNode = refsNode.expression;
         }
         if (refsNode.type === "AssignmentExpression") {
-          ctx2.insertTokenToBlock(stack2, refsNode);
+          ctx.insertTokenToBlock(stack, refsNode);
           refsNode = refsNode.left;
         }
-        refsNode = createAddressRefsNode(ctx2, refsNode);
+        refsNode = createAddressRefsNode(ctx, refsNode);
         isAddressRefs = true;
       }
-      if (!stack2.right.isIdentifier) {
-        const refs = ctx2.getLocalRefName(stack2, "__REF");
-        ctx2.insertTokenToBlock(
-          stack2,
-          ctx2.createAssignmentExpression(ctx2.createVarIdentifier(refs), refsNode)
+      if (!stack.right.isIdentifier) {
+        const refs = ctx.getLocalRefName(stack, AddressVariable_default.REFS_VALUE, stack);
+        ctx.insertTokenToBlock(
+          stack,
+          ctx.createAssignmentExpression(ctx.createVarIdentifier(refs), refsNode)
         );
-        refsNode = ctx2.createVarIdentifier(refs);
+        refsNode = ctx.createVarIdentifier(refs);
         if (isAddressRefs) {
-          refsNode = createAddressRefsNode(ctx2, refsNode);
+          refsNode = createAddressRefsNode(ctx, refsNode);
         }
       }
-      leftNode = ctx2.createComputeMemberExpression([
-        ctx2.createToken(stack2.left),
+      leftNode = ctx.createComputeMemberExpression([
+        ctx.createToken(stack.left),
         key
       ], null, true);
-    } else if (ctx2.isPassableReferenceExpress(stack2.right, stack2.right.type())) {
-      refsNode = createAddressRefsNode(ctx2, refsNode);
+    } else if (ctx.isPassableReferenceExpress(stack.right, stack.right.type())) {
+      refsNode = createAddressRefsNode(ctx, refsNode);
     }
   }
   if (isReflect) {
     if (operator && operator.charCodeAt(0) !== 61 && operator.charCodeAt(operator.length - 1) === 61) {
       operator = operator.slice(0, -1);
-      const value = ctx2.createCallExpression(
-        createStaticReferenceNode2(ctx2, stack2, "Reflect", "get"),
+      const value = ctx.createCallExpression(
+        createStaticReferenceNode2(ctx, stack, "Reflect", "get"),
         [
-          createScopeIdNode(ctx2, module2),
-          ctx2.createToken(stack2.left.object),
-          createComputedPropertyNode(ctx2, stack2.left)
+          createScopeIdNode(ctx, module2),
+          ctx.createToken(stack.left.object),
+          createComputedPropertyNode(ctx, stack.left)
         ],
-        stack2
+        stack
       );
-      refsNode = ctx2.createBinaryExpression(value, refsNode, operator);
+      refsNode = ctx.createBinaryExpression(value, refsNode, operator);
     }
-    let target = ctx2.createToken(stack2.left.object);
-    if (!stack2.left.object.isIdentifier) {
-      const refs = ctx2.getLocalRefName(stack2, "__REF");
-      ctx2.insertTokenToBlock(
-        stack2,
-        ctx2.createAssignmentExpression(
-          ctx2.createVarIdentifier(refs),
+    let target = ctx.createToken(stack.left.object);
+    if (!stack.left.object.isIdentifier) {
+      const refs = ctx.getLocalRefName(stack, AddressVariable_default.REFS_VALUE, stack);
+      ctx.insertTokenToBlock(
+        stack,
+        ctx.createAssignmentExpression(
+          ctx.createVarIdentifier(refs),
           target
         )
       );
-      target = ctx2.createVarIdentifier(refs);
+      target = ctx.createVarIdentifier(refs);
     }
-    return ctx2.createCallExpression(
-      createStaticReferenceNode2(ctx2, stack2, "Reflect", "set"),
+    return ctx.createCallExpression(
+      createStaticReferenceNode2(ctx, stack, "Reflect", "set"),
       [
-        createScopeIdNode(ctx2, module2),
+        createScopeIdNode(ctx, module2),
         target,
-        createComputedPropertyNode(ctx2, stack2.left),
+        createComputedPropertyNode(ctx, stack.left),
         refsNode
       ],
-      stack2
+      stack
     );
   } else if (desc2 && desc2.isMethodSetterDefinition) {
-    return ctx2.createCallExpression(
-      leftNode || ctx2.createToken(stack2.left),
+    return ctx.createCallExpression(
+      leftNode || ctx.createToken(stack.left),
       [
         refsNode
       ],
-      stack2
+      stack
     );
   } else {
-    node.left = leftNode || ctx2.createToken(stack2.left);
+    node.left = leftNode || ctx.createToken(stack.left);
     node.right = refsNode;
     return node;
   }
 }
-function AssignmentExpression_default2(ctx2, stack2) {
-  const node = createNode2(ctx2, stack2);
-  let operator = stack2.operator;
+function AssignmentExpression_default2(ctx, stack) {
+  const node = createNode2(ctx, stack);
+  let operator = stack.operator;
   if (operator === "??=") {
-    const test = ctx2.createCallExpression(
-      ctx2.createIdentifier("!isset"),
+    const test = ctx.createCallExpression(
+      ctx.createIdentifier("!isset"),
       [
-        ctx2.createToken(stack2.left)
+        ctx.createToken(stack.left)
       ],
-      stack2
+      stack
     );
     node.operator = "=";
-    return ctx2.createConditionalExpression(test, node, ctx2.createLiteral(null));
+    return ctx.createConditionalExpression(test, node, ctx.createLiteral(null));
   }
   return node;
 }
 
 // lib/tokens/AssignmentPattern.js
-function AssignmentPattern_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.left = ctx2.createVarIdentifier(stack2.left.value(), stack2.left);
-  node.right = ctx2.createToken(stack2.right);
+function AssignmentPattern_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.left = ctx.createVarIdentifier(stack.left.value(), stack.left);
+  node.right = ctx.createToken(stack.right);
   return node;
 }
 
 // lib/tokens/AwaitExpression.js
 init_Common2();
-function AwaitExpression_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.argument = ctx2.createCallExpression(
-    createStaticReferenceNode2(ctx2, stack2, "Promise", "sent"),
+function AwaitExpression_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.argument = ctx.createCallExpression(
+    createStaticReferenceNode2(ctx, stack, "Promise", "sent"),
     [
-      ctx2.createToken(stack2.argument)
+      ctx.createToken(stack.argument)
     ]
   );
   return node;
 }
 
 // lib/tokens/BinaryExpression.js
-var import_Utils23 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils26 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
 var mapset = {
   "String": "is_string",
@@ -13288,102 +13709,102 @@ var mapset = {
   "Object": "is_object",
   "Boolean": "is_bool"
 };
-function createNode3(ctx2, stack2) {
-  let maybeArrayRef = stack2.isMemberExpression || stack2.isCallExpression || stack2.isIdentifier;
+function createNode3(ctx, stack) {
+  let maybeArrayRef = stack.isMemberExpression || stack.isCallExpression || stack.isIdentifier;
   if (maybeArrayRef) {
-    if (stack2.isIdentifier || stack2.isMemberExpression) {
-      let desc2 = stack2.description();
-      if (import_Utils23.default.isTypeModule(desc2)) {
-        return ctx2.createToken(stack2);
+    if (stack.isIdentifier || stack.isMemberExpression) {
+      let desc2 = stack.description();
+      if (import_Utils26.default.isTypeModule(desc2)) {
+        return ctx.createToken(stack);
       }
     }
-    let originType = ctx2.getAvailableOriginType(stack2.type());
+    let originType = ctx.getAvailableOriginType(stack.type());
     if (originType && originType.toLowerCase() === "array") {
-      let desc2 = stack2.description();
-      if (stack2.isIdentifier) {
-        return createArrayAddressRefsNode(ctx2, desc2, stack2.value());
+      let desc2 = stack.description();
+      if (stack.isIdentifier) {
+        return createArrayAddressRefsNode(ctx, stack, desc2, stack.value());
       } else {
-        let name = ctx2.getLocalRefName(stack2, "_RD");
-        let left = ctx2.createVarIdentifier(name);
-        let right = createAddressRefsNode(ctx2, ctx2.createToken(stack2));
-        ctx2.insertTokenToBlock(stack2, ctx2.createAssignmentExpression(left, right));
-        return ctx2.createVarIdentifier(name);
+        let name = ctx.getLocalRefName(stack, AddressVariable_default.REFS_MEMORY, stack);
+        let left = ctx.createVarIdentifier(name);
+        let right = createAddressRefsNode(ctx, ctx.createToken(stack));
+        ctx.insertTokenToBlock(stack, ctx.createAssignmentExpression(left, right));
+        return ctx.createVarIdentifier(name);
       }
     }
   }
-  return ctx2.createToken(stack2);
+  return ctx.createToken(stack);
 }
-function BinaryExpression_default2(ctx2, stack2) {
-  let operator = stack2.node.operator;
+function BinaryExpression_default2(ctx, stack) {
+  let operator = stack.node.operator;
   if (operator === "is" || operator === "instanceof") {
-    let type = stack2.right.type();
-    let name = ctx2.getAvailableOriginType(type);
+    let type = stack.right.type();
+    let name = ctx.getAvailableOriginType(type);
     if (mapset[name]) {
-      return ctx2.createCallExpression(
-        ctx2.createIdentifier(mapset[name]),
+      return ctx.createCallExpression(
+        ctx.createIdentifier(mapset[name]),
         [
-          ctx2.createToken(stack2.left)
+          ctx.createToken(stack.left)
         ],
-        stack2
+        stack
       );
     } else if (operator === "is") {
-      ctx2.addDepend(type);
-      return ctx2.createCallExpression(
-        ctx2.createIdentifier("is_a"),
+      ctx.addDepend(type);
+      return ctx.createCallExpression(
+        ctx.createIdentifier("is_a"),
         [
-          ctx2.createToken(stack2.left),
-          ctx2.createToken(stack2.right)
+          ctx.createToken(stack.left),
+          ctx.createToken(stack.right)
         ],
-        stack2
+        stack
       );
     }
   }
   if (operator.charCodeAt(0) === 43) {
-    let leftType = stack2.left.type();
-    let rightType = stack2.right.type();
+    let leftType = stack.left.type();
+    let rightType = stack.right.type();
     let oLeftType = leftType;
     let oRightType = rightType;
     let isNumber = leftType.isLiteralType && rightType.isLiteralType;
     if (isNumber) {
-      leftType = ctx2.getAvailableOriginType(leftType);
-      rightType = ctx2.getAvailableOriginType(rightType);
+      leftType = ctx.getAvailableOriginType(leftType);
+      rightType = ctx.getAvailableOriginType(rightType);
       isNumber = leftType === "Number" && leftType === rightType;
     }
     if (!isNumber) {
       if (oLeftType.toString() === "string" || oRightType.toString() === "string") {
         operator = operator.length > 1 ? "." + operator.substr(1) : ".";
       } else {
-        return ctx2.createCallExpression(
-          createStaticReferenceNode2(ctx2, stack2, "System", "addition"),
+        return ctx.createCallExpression(
+          createStaticReferenceNode2(ctx, stack, "System", "addition"),
           [
-            ctx2.createToken(stack2.left),
-            ctx2.createToken(stack2.right)
+            ctx.createToken(stack.left),
+            ctx.createToken(stack.right)
           ],
-          stack2
+          stack
         );
       }
     }
   }
-  const node = ctx2.createNode(stack2);
-  node.left = createNode3(ctx2, stack2.left);
-  node.right = createNode3(ctx2, stack2.right);
+  const node = ctx.createNode(stack);
+  node.left = createNode3(ctx, stack.left);
+  node.right = createNode3(ctx, stack.right);
   node.operator = operator;
-  if (stack2.left && stack2.left.isMemberExpression && node.left && node.left.type === "BinaryExpression") {
-    node.left = ctx2.createParenthesizedExpression(node.left);
+  if (stack.left && stack.left.isMemberExpression && node.left && node.left.type === "BinaryExpression") {
+    node.left = ctx.createParenthesizedExpression(node.left);
   }
-  if (stack2.right && stack2.right.isMemberExpression && node.right && node.right.type === "BinaryExpression") {
-    node.right = ctx2.createParenthesizedExpression(node.right);
+  if (stack.right && stack.right.isMemberExpression && node.right && node.right.type === "BinaryExpression") {
+    node.right = ctx.createParenthesizedExpression(node.right);
   }
   return node;
 }
 
 // lib/tokens/BlockStatement.js
-function BlockStatement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
+function BlockStatement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
   node.body = [];
-  ctx2.setNode(stack2, node);
-  for (let child of stack2.body) {
-    const token = ctx2.createToken(child);
+  ctx.setNode(stack, node);
+  for (let child of stack.body) {
+    const token = ctx.createToken(child);
     if (token) {
       node.body.push(token);
       if (child.isWhenStatement) {
@@ -13400,109 +13821,109 @@ function BlockStatement_default2(ctx2, stack2) {
     }
   }
   ;
-  ctx2.removeNode(stack2);
+  ctx.removeNode(stack);
   return node;
 }
 
 // lib/tokens/BreakStatement.js
-function BreakStatement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
+function BreakStatement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
   var index = 0;
-  if (stack2.label) {
-    const label = stack2.label.value();
-    stack2.getParentStack((stack3) => {
-      if (stack3.isForOfStatement || stack3.isForInStatement || stack3.isForStatement || stack3.isSwitchStatement || stack3.isDoWhileStatement || stack3.isWhileStatement) {
+  if (stack.label) {
+    const label = stack.label.value();
+    stack.getParentStack((stack2) => {
+      if (stack2.isForOfStatement || stack2.isForInStatement || stack2.isForStatement || stack2.isSwitchStatement || stack2.isDoWhileStatement || stack2.isWhileStatement) {
         index++;
       }
-      if (stack3.isLabeledStatement && stack3.label.value() === label) {
+      if (stack2.isLabeledStatement && stack2.label.value() === label) {
         return true;
       }
-      return !!stack3.isFunctionExpression;
+      return !!stack2.isFunctionExpression;
     });
   }
   if (index > 0) {
-    node.label = ctx2.createLiteral(index);
-  } else if (stack2.label) {
-    node.label = ctx2.createIdentifier(stack2.label.value(), stack2.label);
+    node.label = ctx.createLiteral(index);
+  } else if (stack.label) {
+    node.label = ctx.createIdentifier(stack.label.value(), stack.label);
   }
   return node;
 }
 
 // lib/tokens/CallExpression.js
 init_Common2();
-var import_Utils24 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils27 = __toESM(require("easescript/lib/core/Utils"));
 var import_Namespace18 = __toESM(require("easescript/lib/core/Namespace"));
-function createArgumentNodes(ctx2, stack2, args, declareParams) {
+function createArgumentNodes(ctx, stack, args, declareParams) {
   return args.map((item, index) => {
-    const node = ctx2.createToken(item);
+    const node = ctx.createToken(item);
     if (declareParams && declareParams[index] && !item.isIdentifier) {
       const declareParam = declareParams[index];
       if (!(declareParam.isRestElement || declareParam.isObjectPattern || declareParam.isArrayPattern)) {
-        if (ctx2.isAddressRefsType(declareParam.type())) {
-          const name = ctx2.getLocalRefName(stack2, "arg");
-          ctx2.insertTokenToBlock(
-            stack2,
-            ctx2.createAssignmentExpression(
-              ctx2.createVarIdentifier(name),
+        if (ctx.isAddressRefsType(declareParam.type())) {
+          const name = ctx.getLocalRefName(stack, "arg");
+          ctx.insertTokenToBlock(
+            stack,
+            ctx.createAssignmentExpression(
+              ctx.createVarIdentifier(name),
               node
             )
           );
-          return ctx2.createVarIdentifier(name);
+          return ctx.createVarIdentifier(name);
         }
       }
     }
     return node;
   });
 }
-function CallExpression(ctx2, stack2) {
-  const isMember = stack2.callee.isMemberExpression;
-  const desc2 = stack2.descriptor();
-  const module2 = stack2.module;
+function CallExpression(ctx, stack) {
+  const isMember = stack.callee.isMemberExpression;
+  const desc2 = stack.descriptor();
+  const module2 = stack.module;
   const declareParams = desc2 && desc2.params;
-  const node = ctx2.createNode(stack2);
-  const args = createArgumentNodes(ctx2, stack2, stack2.arguments, declareParams);
-  if (stack2.callee.isFunctionExpression) {
-    node.callee = ctx2.createIdentifier("call_user_func");
-    node.arguments = [ctx2.createToken(stack2.callee)].concat(args);
+  const node = ctx.createNode(stack);
+  const args = createArgumentNodes(ctx, stack, stack.arguments, declareParams);
+  if (stack.callee.isFunctionExpression) {
+    node.callee = ctx.createIdentifier("call_user_func");
+    node.arguments = [ctx.createToken(stack.callee)].concat(args);
     return node;
   }
-  if (!stack2.callee.isSuperExpression) {
-    let context = isMember ? stack2.callee.object.getContext() : stack2.callee.getContext();
-    let objectType = isMember ? ctx2.inferType(stack2.callee.object, context) : null;
+  if (!stack.callee.isSuperExpression) {
+    let context = isMember ? stack.callee.object.getContext() : stack.callee.getContext();
+    let objectType = isMember ? ctx.inferType(stack.callee.object, context) : null;
     if (objectType && objectType.isClassGenericType && objectType.inherit.isAliasType) {
-      objectType = ctx2.inferType(objectType.inherit.inherit.type(), context);
+      objectType = ctx.inferType(objectType.inherit.inherit.type(), context);
     }
     if (isMember && desc2 && !objectType.isNamespace) {
       if (desc2.isType && desc2.isAnyType) {
-        const propValue = stack2.callee.property.value();
-        const property = ctx2.createLiteral(propValue, void 0, stack2.callee.property);
-        let target = ctx2.createToken(stack2.callee.object);
-        if (!stack2.callee.object.isIdentifier && target.type !== "Literal") {
-          const refs = ctx2.getLocalRefName(stack2, "ref");
-          ctx2.insertTokenToBlock(
-            stack2,
-            ctx2.createAssignmentExpression(
-              ctx2.createVarIdentifier(refs),
+        const propValue = stack.callee.property.value();
+        const property = ctx.createLiteral(propValue, void 0, stack.callee.property);
+        let target = ctx.createToken(stack.callee.object);
+        if (!stack.callee.object.isIdentifier && target.type !== "Literal") {
+          const refs = ctx.getLocalRefName(stack, "ref");
+          ctx.insertTokenToBlock(
+            stack,
+            ctx.createAssignmentExpression(
+              ctx.createVarIdentifier(refs),
               target
             )
           );
-          target = ctx2.createVarIdentifier(refs);
+          target = ctx.createVarIdentifier(refs);
         }
         let _args = [
-          createScopeIdNode(ctx2, module2),
+          createScopeIdNode(ctx, module2),
           target,
           property
         ];
         if (args.length > 0) {
-          _args.push(ctx2.createArrayExpression(args));
+          _args.push(ctx.createArrayExpression(args));
         }
-        return ctx2.createCallExpression(
-          createStaticReferenceNode2(ctx2, stack2, "Reflect", "call"),
+        return ctx.createCallExpression(
+          createStaticReferenceNode2(ctx, stack, "Reflect", "call"),
           _args,
-          stack2
+          stack
         );
-      } else if (import_Utils24.default.isStack(desc2)) {
-        let name = ctx2.getAvailableOriginType(objectType) || objectType.toString();
+      } else if (import_Utils27.default.isStack(desc2)) {
+        let name = ctx.getAvailableOriginType(objectType) || objectType.toString();
         if ((objectType.isUnionType || objectType.isIntersectionType) && (desc2.isMethodDefinition || desc2.isCallDefinition) && desc2.module && desc2.module.isModule) {
           name = desc2.module.id;
           descModule = desc2.module;
@@ -13518,30 +13939,30 @@ function CallExpression(ctx2, stack2) {
         }
         if (transforms_default.has(name)) {
           const object = transforms_default.get(name);
-          const key = stack2.callee.property.value();
+          const key = stack.callee.property.value();
           if (Object.prototype.hasOwnProperty.call(object, key)) {
             if (desc2.static) {
               return object[key](
-                stack2,
-                ctx2,
+                stack,
+                ctx,
                 null,
                 args,
                 true,
                 true
               );
             } else {
-              let callee = ctx2.createToken(stack2.callee.object);
+              let callee = ctx.createToken(stack.callee.object);
               if (newWrapObject && isStringNewWrapObject) {
-                callee = ctx2.createCallExpression(
-                  ctx2.createMemberExpression([
+                callee = ctx.createCallExpression(
+                  ctx.createMemberExpression([
                     callee,
-                    ctx2.createIdentifier("toString")
+                    ctx.createIdentifier("toString")
                   ])
                 );
               }
               return object[key](
-                stack2,
-                ctx2,
+                stack,
+                ctx,
                 callee,
                 args,
                 true,
@@ -13551,58 +13972,58 @@ function CallExpression(ctx2, stack2) {
           }
         }
         if (!(desc2.isMethodDefinition || desc2.isCallDefinition)) {
-          node.callee = ctx2.createIdentifier("call_user_func");
+          node.callee = ctx.createIdentifier("call_user_func");
           node.arguments = [
-            ctx2.createToken(stack2.callee)
+            ctx.createToken(stack.callee)
           ].concat(args);
           return node;
         }
       }
     } else if (desc2) {
       if (desc2.isType && desc2.isAnyType) {
-        const Reflect2 = stack2.getGlobalTypeById("Reflect");
-        ctx2.addDepend(Reflect2, stack2.module);
-        let target = ctx2.createToken(stack2.callee);
-        if (!stack2.callee.isIdentifier) {
-          const refs = ctx2.getLocalRefName(stack2, "ref");
-          ctx2.insertTokenToBlock(
-            stack2,
-            ctx2.createAssignmentExpression(
-              ctx2.createVarIdentifier(refs),
+        const Reflect2 = stack.getGlobalTypeById("Reflect");
+        ctx.addDepend(Reflect2, stack.module);
+        let target = ctx.createToken(stack.callee);
+        if (!stack.callee.isIdentifier) {
+          const refs = ctx.getLocalRefName(stack, "ref");
+          ctx.insertTokenToBlock(
+            stack,
+            ctx.createAssignmentExpression(
+              ctx.createVarIdentifier(refs),
               target
             )
           );
-          target = ctx2.createVarIdentifier(refs);
+          target = ctx.createVarIdentifier(refs);
         }
-        return ctx2.createCallExpression(
-          createStaticReferenceNode2(ctx2, stack2, "Reflect", "apply"),
+        return ctx.createCallExpression(
+          createStaticReferenceNode2(ctx, stack, "Reflect", "apply"),
           [
-            createScopeIdNode(ctx2, module2),
+            createScopeIdNode(ctx, module2),
             target,
-            args.length > 0 ? ctx2.createArrayExpression(args) : null
+            args.length > 0 ? ctx.createArrayExpression(args) : null
           ],
-          stack2
+          stack
         );
       } else if (desc2.isStack && desc2.isDeclaratorFunction) {
-        const callee = ctx2.createToken(stack2.callee);
+        const callee = ctx.createToken(stack.callee);
         const object = transforms_default.get("global");
         if (Object.prototype.hasOwnProperty.call(object, callee.value)) {
           return object[callee.value](
-            stack2,
-            ctx2,
+            stack,
+            ctx,
             callee,
             args,
             true,
             false
           );
         }
-      } else if ((desc2.isCallDefinition || import_Utils24.default.isModule(desc2)) && args.length === 1) {
-        const name = desc2.isCallDefinition && desc2.module ? desc2.module.id : ctx2.getAvailableOriginType(desc2) || desc2.toString();
+      } else if ((desc2.isCallDefinition || import_Utils27.default.isModule(desc2)) && args.length === 1) {
+        const name = desc2.isCallDefinition && desc2.module ? desc2.module.id : ctx.getAvailableOriginType(desc2) || desc2.toString();
         if (name && transforms_default.has(name)) {
           const object = transforms_default.get(name);
           return object.valueOf(
-            stack2,
-            ctx2,
+            stack,
+            ctx,
             args[0],
             [],
             true,
@@ -13612,16 +14033,14 @@ function CallExpression(ctx2, stack2) {
       }
     }
   }
-  if (stack2.callee.isSuperExpression) {
-    if (!ctx2.isActiveModule(module2.inherit, module2)) {
-      return null;
-    }
-    node.callee = ctx2.createStaticMemberExpression([
-      ctx2.createToken(stack2.callee),
-      ctx2.createIdentifier("__construct")
+  if (stack.callee.isSuperExpression) {
+    node.callee = ctx.createStaticMemberExpression([
+      ctx.createToken(stack.callee),
+      ctx.createIdentifier("__construct")
     ]);
+    node.isSuperExpression = true;
   } else {
-    node.callee = ctx2.createToken(stack2.callee);
+    node.callee = ctx.createToken(stack.callee);
   }
   node.arguments = args;
   return node;
@@ -13629,29 +14048,29 @@ function CallExpression(ctx2, stack2) {
 var CallExpression_default2 = CallExpression;
 
 // lib/tokens/ChainExpression.js
-function ChainExpression_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  if (stack2.expression.isCallExpression || stack2.expression.isNewExpression) {
-    const test = ctx2.createCallExpression(
-      ctx2.createIdentifier("isset"),
+function ChainExpression_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  if (stack.expression.isCallExpression || stack.expression.isNewExpression) {
+    const test = ctx.createCallExpression(
+      ctx.createIdentifier("isset"),
       [
-        ctx2.createToken(stack2.expression.callee)
+        ctx.createToken(stack.expression.callee)
       ],
-      stack2
+      stack
     );
-    node.expression = ctx2.createConditionalExpression(test, ctx2.createToken(stack2.expression), ctx2.createLiteral(null));
+    node.expression = ctx.createConditionalExpression(test, ctx.createToken(stack.expression), ctx.createLiteral(null));
   } else {
-    if (stack2.expression.computed) {
-      const test = ctx2.createCallExpression(
-        ctx2.createIdentifier("isset"),
+    if (stack.expression.computed) {
+      const test = ctx.createCallExpression(
+        ctx.createIdentifier("isset"),
         [
-          ctx2.createToken(stack2.expression.object)
+          ctx.createToken(stack.expression.object)
         ],
-        stack2
+        stack
       );
-      node.expression = ctx2.createConditionalExpression(test, ctx2.createToken(stack2.expression), ctx2.createLiteral(null));
+      node.expression = ctx.createConditionalExpression(test, ctx.createToken(stack.expression), ctx.createLiteral(null));
     } else {
-      node.expression = ctx2.createBinaryExpression(ctx2.createToken(stack2.expression), ctx2.createLiteral(null), "??");
+      node.expression = ctx.createBinaryExpression(ctx.createToken(stack.expression), ctx.createLiteral(null), "??");
     }
   }
   return node;
@@ -13660,74 +14079,75 @@ function ChainExpression_default2(ctx2, stack2) {
 // lib/core/ClassBuilder.js
 var import_crypto4 = require("crypto");
 init_Common2();
-var import_Namespace19 = __toESM(require("easescript/lib/core/Namespace"));
 var ClassBuilder2 = class {
-  constructor(stack2) {
-    this.stack = stack2;
-    this.compilation = stack2.compilation;
-    this.module = stack2.module;
+  constructor(stack) {
+    this.stack = stack;
+    this.compilation = stack.compilation;
+    this.module = stack.module;
     this.body = [];
     this.beforeBody = [];
     this.afterBody = [];
     this.methods = [];
     this.members = [];
+    this.initAfterProperties = [];
+    this.initBeforeProperties = [];
     this.construct = null;
     this.implements = [];
     this.inherit = null;
     this.mainEnter = null;
   }
-  create(ctx2) {
-    let node = ctx2.createNode("ClassDeclaration");
-    ctx2.setNode(this.stack, this);
+  create(ctx) {
+    let node = ctx.createNode("ClassDeclaration");
+    ctx.setNode(this.stack, this);
     const module2 = this.module;
-    const stack2 = this.stack;
-    this.createInherit(ctx2, module2, stack2);
-    this.createImplements(ctx2, module2, stack2);
-    this.createBody(ctx2, module2, stack2);
-    ctx2.crateModuleAssets(module2);
-    ctx2.createModuleImportReferences(module2);
-    node.id = ctx2.createIdentifier(module2.id);
+    const stack = this.stack;
+    this.createInherit(ctx, module2, stack);
+    this.createImplements(ctx, module2, stack);
+    this.createBody(ctx, module2, stack);
+    ctx.crateModuleAssets(module2);
+    ctx.createModuleImportReferences(module2);
+    node.static = !!module2.static;
+    node.id = ctx.createIdentifier(module2.id);
     node.inherit = this.inherit;
     node.implements = this.implements;
-    node.body = [
+    node.body = ctx.createBlockStatement([
       ...this.beforeBody,
       ...this.methods,
       ...this.members,
       ...this.afterBody
-    ];
+    ]);
     if (this.construct) {
-      node.body.unshift(this.construct);
+      node.body.body.unshift(this.construct);
     }
     if (this.mainEnter) {
-      ctx2.addNodeToAfterBody(
-        ctx2.createExpressionStatement(
-          ctx2.createExpressionStatement(this.mainEnter)
+      ctx.addNodeToAfterBody(
+        ctx.createExpressionStatement(
+          ctx.createExpressionStatement(this.mainEnter)
         )
       );
     }
-    ctx2.removeNode(this.stack);
+    ctx.removeNode(this.stack);
     return node;
   }
-  createBody(ctx2, module2, stack2) {
-    this.createMemebers(ctx2, stack2);
+  createBody(ctx, module2, stack) {
+    this.createMemebers(ctx, stack);
+    this.checkConstructor(ctx, this.construct, module2);
   }
-  createInherit(ctx2, module2, stack2 = null) {
+  createInherit(ctx, module2, stack = null) {
     let inherit = module2.inherit;
     if (inherit) {
-      ctx2.addDepend(inherit, module2);
-      if (ctx2.isActiveModule(inherit, module2)) {
-        this.inherit = ctx2.createIdentifier(
-          ctx2.getModuleReferenceName(inherit, module2)
-        );
-      }
+      ctx.addDepend(inherit, module2);
+      this.inherit = ctx.createIdentifier(
+        ctx.getModuleReferenceName(inherit, module2)
+      );
     }
   }
-  createImplements(ctx2, module2, stack2 = null) {
+  createImplements(ctx, module2, stack = null) {
     this.implements = module2.implements.map((impModule) => {
-      ctx2.addDepend(impModule, module2);
-      if (impModule.isInterface && ctx2.isActiveModule(impModule, module2) && import_Namespace19.default.globals.get("Iterator") !== impModule) {
-        return ctx2.createIdentifier(
-          ctx2.getModuleReferenceName(impModule, module2)
+      if (impModule.isInterface && !impModule.isStructTable) {
+        ctx.addDepend(impModule, module2);
+        return ctx.createIdentifier(
+          ctx.getModuleReferenceName(impModule, module2)
         );
       }
       return null;
@@ -13742,14 +14162,48 @@ var ClassBuilder2 = class {
     }
     return moduleHashId;
   }
-  checkConstructor(ctx2, construct, module2) {
+  checkConstructor(ctx, construct, module2) {
+    if (this.initAfterProperties.length > 0 || this.initBeforeProperties.length > 0) {
+      if (!construct) {
+        construct = this.construct = ctx.createMethodDefinition("__construct", ctx.createBlockStatement());
+        if (this.inherit) {
+          construct.body.body.push(
+            ctx.createExpressionStatement(
+              ctx.createCallExpression(
+                ctx.createMemberExpression([
+                  ctx.createSuperExpression(),
+                  ctx.createIdentifier("__construct")
+                ]),
+                []
+              )
+            )
+          );
+        }
+      }
+      if (this.initBeforeProperties.length > 0) {
+        let index = construct.body.body.findIndex((item) => {
+          if (item.type === "ExpressionStatement") {
+            item = item.expression;
+          }
+          if (item.type === "CallExpression" && item.callee.type === "MemberExpression") {
+            if (item.callee.object.value === "parent" && item.callee.property.value === "__construct") {
+              return true;
+            }
+          }
+        });
+        construct.body.body.splice(index + 1, 0, ...this.initBeforeProperties);
+      }
+      if (this.initAfterProperties.length > 0) {
+        construct.body.body.push(...this.initAfterProperties);
+      }
+    }
   }
-  createMemebers(ctx2, stack2) {
-    stack2.body.forEach((item) => {
-      const child = this.createMemeber(ctx2, item, !!stack2.static);
+  createMemebers(ctx, stack) {
+    stack.body.forEach((item) => {
+      const child = this.createMemeber(ctx, item, !!stack.static);
       if (!child)
         return;
-      const staticFlag = !!(stack2.static || child.static);
+      const staticFlag = !!(stack.static || child.static);
       const refs = staticFlag ? this.methods : this.members;
       if (item.isConstructor && item.isMethodDefinition) {
         this.construct = child;
@@ -13758,36 +14212,36 @@ var ClassBuilder2 = class {
       }
     });
   }
-  createAnnotations(ctx2, stack2, node, staticFlag = false) {
-    if (staticFlag && stack2.isMethodDefinition && stack2.isEnterMethod && node.modifier === "public" && !this.mainEnter) {
-      this.mainEnter = createMainAnnotationNode(ctx2, stack2);
+  createAnnotations(ctx, stack, node, staticFlag = false) {
+    if (staticFlag && stack.isMethodDefinition && stack.isEnterMethod && node.modifier.value === "public") {
+      this.mainEnter = createMainAnnotationNode2(ctx, stack);
     }
     return node;
   }
-  createMemeber(ctx2, stack2, staticFlag = false) {
-    const node = ctx2.createToken(stack2);
+  createMemeber(ctx, stack, staticFlag = false) {
+    const node = ctx.createToken(stack);
     if (node) {
-      this.createAnnotations(ctx2, stack2, node, !!(staticFlag || node.static));
+      this.createAnnotations(ctx, stack, node, !!(staticFlag || node.static));
     }
     return node;
   }
-  createDefaultConstructor(ctx2, name, inherit = null, params = []) {
-    const block = ctx2.createBlockStatement();
+  createDefaultConstructor(ctx, name, inherit = null, params = []) {
+    const block = ctx.createBlockStatement();
     if (inherit) {
-      const args = ctx2.createArrayExpression(params);
+      const args = ctx.createArrayExpression(params);
       block.body.push(
-        ctx2.createExpressionStatement(
-          ctx2.createCallExpression(
-            ctx2.createStaticMemberExpression([
-              ctx2.createSuperExpression(),
-              ctx2.createIdentifier(name)
+        ctx.createExpressionStatement(
+          ctx.createCallExpression(
+            ctx.createStaticMemberExpression([
+              ctx.createSuperExpression(),
+              ctx.createIdentifier(name)
             ]),
             args
           )
         )
       );
     }
-    return ctx2.createMethodDefinition(
+    return ctx.createMethodDefinition(
       name,
       block,
       params
@@ -13797,98 +14251,98 @@ var ClassBuilder2 = class {
 var ClassBuilder_default2 = ClassBuilder2;
 
 // lib/tokens/ClassDeclaration.js
-function ClassDeclaration_default2(ctx2, stack2) {
-  const builder = new ClassBuilder_default2(stack2);
-  return builder.create(ctx2);
+function ClassDeclaration_default2(ctx, stack) {
+  const builder = new ClassBuilder_default2(stack);
+  return builder.create(ctx);
 }
 
 // lib/tokens/ConditionalExpression.js
 init_Common2();
-function createConditionalNode(ctx2, stack2) {
-  const node = ctx2.createNode("IfStatement");
-  const result = ctx2.getLocalRefName(stack2, AddressVariable_default.REFS_NAME);
-  let consequent = ctx2.createToken(stack2.consequent);
-  let alternate = ctx2.createToken(stack2.alternate);
-  let assignName = ctx2.getLocalRefName(stack2, AddressVariable_default.REFS_INDEX);
-  const key0 = ctx2.createAssignmentExpression(
-    ctx2.createVarIdentifier(assignName),
-    ctx2.createLiteral(0)
+function createConditionalNode(ctx, stack) {
+  const node = ctx.createNode("IfStatement");
+  const result = ctx.getLocalRefName(stack, AddressVariable_default.REFS_NAME, stack);
+  let consequent = ctx.createToken(stack.consequent);
+  let alternate = ctx.createToken(stack.alternate);
+  let assignName = ctx.getLocalRefName(stack, AddressVariable_default.REFS_INDEX, stack);
+  const key0 = ctx.createAssignmentExpression(
+    ctx.createVarIdentifier(assignName),
+    ctx.createLiteral(0)
   );
-  const key1 = ctx2.createAssignmentExpression(
-    ctx2.createVarIdentifier(assignName),
-    ctx2.createLiteral(1)
+  const key1 = ctx.createAssignmentExpression(
+    ctx.createVarIdentifier(assignName),
+    ctx.createLiteral(1)
   );
-  if (ctx2.isPassableReferenceExpress(stack2.consequent, stack2.consequent.type())) {
-    consequent = createAddressRefsNode(ctx2, consequent);
+  if (ctx.isPassableReferenceExpress(stack.consequent, stack.consequent.type())) {
+    consequent = createAddressRefsNode(ctx, consequent);
   }
-  if (ctx2.isPassableReferenceExpress(stack2.alternate, stack2.alternate.type())) {
-    alternate = createAddressRefsNode(ctx2, alternate);
+  if (ctx.isPassableReferenceExpress(stack.alternate, stack.alternate.type())) {
+    alternate = createAddressRefsNode(ctx, alternate);
   }
-  node.condition = createExpressionTransformBooleanValueNode(ctx2, stack2.test);
-  node.consequent = ctx2.createAssignmentExpression(
-    ctx2.createComputeMemberExpression([
-      ctx2.createVarIdentifier(result),
+  node.condition = createExpressionTransformBooleanValueNode(ctx, stack.test);
+  node.consequent = ctx.createAssignmentExpression(
+    ctx.createComputeMemberExpression([
+      ctx.createVarIdentifier(result),
       key0
     ]),
     consequent
   );
-  node.alternate = ctx2.createAssignmentExpression(
-    ctx2.createComputeMemberExpression([
-      ctx2.createVarIdentifier(result),
+  node.alternate = ctx.createAssignmentExpression(
+    ctx.createComputeMemberExpression([
+      ctx.createVarIdentifier(result),
       key1
     ]),
     alternate
   );
-  ctx2.insertTokenToBlock(stack2, node);
-  return ctx2.createComputeMemberExpression([
-    ctx2.createVarIdentifier(result),
-    ctx2.createVarIdentifier(assignName)
+  ctx.insertTokenToBlock(stack, node);
+  return ctx.createComputeMemberExpression([
+    ctx.createVarIdentifier(result),
+    ctx.createVarIdentifier(assignName)
   ]);
 }
-function check(ctx2, stack2) {
-  if (stack2.isConditionalExpression) {
-    return check(ctx2, stack2.consequent) || check(ctx2, stack2.alternate);
+function check(ctx, stack) {
+  if (stack.isConditionalExpression) {
+    return check(ctx, stack.consequent) || check(ctx, stack.alternate);
   }
-  const type = stack2.type();
-  return ctx2.isAddressRefsType(type, stack2);
+  const type = stack.type();
+  return ctx.isAddressRefsType(type, stack);
 }
-function ConditionalExpression_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  if (check(ctx2, stack2)) {
-    return createConditionalNode(ctx2, stack2);
+function ConditionalExpression_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  if (check(ctx, stack)) {
+    return createConditionalNode(ctx, stack);
   } else {
-    node.test = createExpressionTransformBooleanValueNode(ctx2, stack2.test);
-    node.consequent = ctx2.createToken(stack2.consequent);
-    node.alternate = ctx2.createToken(stack2.alternate);
+    node.test = createExpressionTransformBooleanValueNode(ctx, stack.test);
+    node.consequent = ctx.createToken(stack.consequent);
+    node.alternate = ctx.createToken(stack.alternate);
     return node;
   }
 }
 
 // lib/tokens/ContinueStatement.js
-function ContinueStatement_default2(ctx2, stack2) {
-  const node = ctx2.createToken(stack2);
-  node.label = ctx2.createToken(stack2.label);
+function ContinueStatement_default2(ctx, stack) {
+  const node = ctx.createToken(stack);
+  node.label = ctx.createToken(stack.label);
   return node;
 }
 
 // lib/tokens/Declarator.js
-function Declarator_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2, "Identifier");
-  node.value = node.raw = stack2.value();
+function Declarator_default2(ctx, stack) {
+  const node = ctx.createNode(stack, "Identifier");
+  node.value = node.raw = stack.value();
   node.isVariable = true;
   return node;
 }
 
 // lib/tokens/DeclaratorDeclaration.js
-function DeclaratorDeclaration_default2(ctx2, stack2, type) {
+function DeclaratorDeclaration_default2(ctx, stack, type) {
 }
 
 // lib/tokens/DoWhileStatement.js
 init_Common2();
-function DoWhileStatement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.condition = createExpressionTransformBooleanValueNode(ctx2, stack2.condition);
-  node.body = ctx2.createToken(stack2.body);
+function DoWhileStatement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.condition = createExpressionTransformBooleanValueNode(ctx, stack.condition);
+  node.body = ctx.createToken(stack.body);
   return node;
 }
 
@@ -13897,316 +14351,295 @@ function EmptyStatement_default2() {
 }
 
 // lib/core/EnumBuilder.js
-var import_Namespace20 = __toESM(require("easescript/lib/core/Namespace.js"));
+var import_Namespace19 = __toESM(require("easescript/lib/core/Namespace.js"));
 var EnumBuilder2 = class extends ClassBuilder_default2 {
-  create(ctx2) {
-    let node = ctx2.createNode("ClassDeclaration");
-    ctx2.setNode(this.stack, this);
+  create(ctx) {
+    let node = ctx.createNode("ClassDeclaration");
+    ctx.setNode(this.stack, this);
     const module2 = this.module;
-    const stack2 = this.stack;
-    this.createInherit(ctx2, module2, stack2);
-    this.createImplements(ctx2, module2, stack2);
-    this.createBody(ctx2, module2, stack2);
-    ctx2.crateModuleAssets(module2);
-    node.id = ctx2.createIdentifier(module2.id);
+    const stack = this.stack;
+    this.createInherit(ctx, module2, stack);
+    this.createImplements(ctx, module2, stack);
+    this.createBody(ctx, module2, stack);
+    ctx.crateModuleAssets(module2);
+    node.id = ctx.createIdentifier(module2.id);
     node.inherit = this.inherit;
     node.implements = this.implements;
-    ctx2.removeNode(this.stack);
-    node.body = [
+    ctx.removeNode(this.stack);
+    node.body = ctx.createBlockStatement([
       ...this.beforeBody,
       ...this.methods,
       ...this.members,
       ...this.afterBody
-    ];
+    ]);
     if (this.construct) {
-      node.body.unshift(this.construct);
+      node.body.body.unshift(this.construct);
     }
     return node;
   }
-  createEnumExpression(ctx2) {
-    let stack2 = this.stack;
-    const name = stack2.value();
-    const init = ctx2.createAssignmentExpression(
-      ctx2.createIdentifier(name, stack2),
-      ctx2.createObjectExpression()
-    );
-    const properties = stack2.properties.map((item) => {
-      const initNode = ctx2.createMemberExpression([
-        ctx2.createIdentifier(name, item.key),
-        ctx2.createLiteral(
-          item.key.value(),
-          void 0,
-          item.key
-        )
-      ]);
-      initNode.computed = true;
-      const initAssignmentNode = ctx2.createAssignmentExpression(
-        initNode,
-        ctx2.createLiteral(
-          item.init.value(),
-          item.init.value(),
-          item.init
+  createEnumExpression(ctx) {
+    const stack = this.stack;
+    const name = stack.value();
+    const keys2 = [];
+    const values = [];
+    stack.properties.forEach((item) => {
+      keys2.push(
+        ctx.createProperty(
+          ctx.createLiteral(item.key.value()),
+          ctx.createLiteral(item.init.value())
         )
       );
-      const left = ctx2.createMemberExpression([
-        ctx2.createIdentifier(name),
-        initAssignmentNode
-      ]);
-      left.computed = true;
-      return ctx2.createAssignmentExpression(
-        left,
-        ctx2.createLiteral(
-          item.key.value(),
-          void 0,
-          item.key
+      values.push(
+        ctx.createProperty(
+          ctx.createLiteral(String(item.init.value())),
+          ctx.createLiteral(item.key.value())
         )
       );
     });
-    properties.push(ctx2.createIdentifier(name));
-    return ctx2.createVariableDeclaration("var", [
-      ctx2.createVariableDeclarator(
-        ctx2.createIdentifier(name, stack2),
-        ctx2.createParenthesizedExpression(
-          ctx2.createSequenceExpression([init, ...properties])
-        )
+    return ctx.createExpressionStatement(
+      ctx.createAssignmentExpression(
+        ctx.createVarIdentifier(name),
+        ctx.createObjectExpression(values.concat(keys2))
       )
-    ]);
+    );
   }
-  createBody(ctx2, module2, stack2) {
-    this.createMemebers(ctx2, stack2);
+  createBody(ctx, module2, stack) {
+    this.createMemebers(ctx, stack);
   }
-  createInherit(ctx2, module2, stack2 = null) {
+  createInherit(ctx, module2, stack = null) {
     let inherit = module2.inherit;
     if (inherit) {
-      ctx2.addDepend(inherit, stack2.module);
-      if (ctx2.isActiveModule(inherit, stack2.module)) {
-        this.inherit = ctx2.createIdentifier(
-          ctx2.getModuleReferenceName(inherit, module2),
-          stack2.inherit
+      ctx.addDepend(inherit, stack.module);
+      if (ctx.isActiveModule(inherit, stack.module)) {
+        this.inherit = ctx.createIdentifier(
+          ctx.getModuleReferenceName(inherit, module2),
+          stack.inherit
         );
       }
     }
     if (!this.inherit) {
-      const inherit2 = import_Namespace20.default.globals.get("Enumeration");
-      ctx2.addDepend(inherit2, stack2.module);
-      this.inherit = ctx2.createIdentifier(
-        ctx2.getModuleReferenceName(inherit2, module2)
+      const inherit2 = import_Namespace19.default.globals.get("Enumeration");
+      ctx.addDepend(inherit2, stack.module);
+      this.inherit = ctx.createIdentifier(
+        ctx.getModuleReferenceName(inherit2, module2)
       );
     }
   }
-  createMemebers(ctx2, stack2) {
+  createMemebers(ctx, stack) {
     let methods7 = this.methods;
-    stack2.properties.forEach((item) => {
-      const child = this.createMemeber(ctx2, item);
+    stack.properties.forEach((item) => {
+      const child = this.createMemeber(ctx, item);
       if (child) {
         methods7.push(child);
       }
     });
-    super.createMemebers(ctx2, stack2);
+    super.createMemebers(ctx, stack);
   }
 };
 var EnumBuilder_default2 = EnumBuilder2;
 
 // lib/tokens/EnumDeclaration.js
-function EnumDeclaration_default2(ctx2, stack2) {
-  const builder = new EnumBuilder_default2(stack2);
-  if (stack2.isExpression) {
-    return builder.createEnumExpression(ctx2);
+function EnumDeclaration_default2(ctx, stack) {
+  const builder = new EnumBuilder_default2(stack);
+  if (stack.isExpression) {
+    return builder.createEnumExpression(ctx);
   } else {
-    return builder.create(ctx2);
+    return builder.create(ctx);
   }
 }
 
 // lib/tokens/EnumProperty.js
-function EnumProperty_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.key = ctx2.createToken(stack2.key);
-  node.init = ctx2.createToken(stack2.init);
+var import_Utils28 = __toESM(require("easescript/lib/core/Utils"));
+init_Common2();
+function EnumProperty_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.key = ctx.createToken(stack.key);
+  node.init = ctx.createToken(stack.init);
+  node.comments = createCommentsNode(ctx, stack, node);
+  node.modifier = ctx.createIdentifier(import_Utils28.default.getModifierValue(stack) || "public");
   return node;
 }
 
 // lib/tokens/ExportAllDeclaration.js
-function ExportAllDeclaration_default2(ctx2, stack2) {
-  if (stack2.getResolveJSModule() || !stack2.source) {
+function ExportAllDeclaration_default2(ctx, stack) {
+  if (stack.getResolveJSModule() || !stack.source) {
     return null;
   }
-  let source = stack2.source.value();
-  const compilation = stack2.getResolveCompilation();
+  let source = stack.source.value();
+  const compilation = stack.getResolveCompilation();
   if (compilation && compilation.stack) {
-    ctx2.addDepend(compilation);
-    source = ctx2.getModuleImportSource(stack2.getResolveFile(), stack2.compilation.file);
+    ctx.addDepend(compilation);
+    source = ctx.getModuleImportSource(stack.getResolveFile(), stack.compilation.file);
   } else {
-    source = ctx2.getModuleImportSource(source, stack2.compilation.file);
+    source = ctx.getModuleImportSource(source, stack.compilation.file);
   }
-  let importSource = ctx2.getImport(source, true);
+  let importSource = ctx.getImport(source, true);
   if (!importSource) {
-    importSource = ctx2.addImport(source, null, "*");
+    importSource = ctx.addImport(source, null, "*");
     importSource.setExportSource();
     importSource.setSourceTarget(compilation);
-    importSource.setSourceContext(stack2.compilation);
   }
-  ctx2.addExport(stack2.exported ? stack2.exported.value() : null, "*", importSource, stack2);
+  ctx.addExport(stack.exported ? stack.exported.value() : null, "*", importSource, stack);
 }
 
 // lib/tokens/ExportAssignmentDeclaration.js
-function ExportAssignmentDeclaration_default(ctx2, stack2) {
-  let declaration = ctx2.createToken(stack2.expression);
+function ExportAssignmentDeclaration_default(ctx, stack) {
+  let declaration = ctx.createToken(stack.expression);
   if (declaration) {
-    ctx2.addExport("default", declaration, null, stack2);
+    ctx.addExport("default", declaration, null, stack);
   }
 }
 
 // lib/tokens/ExportDefaultDeclaration.js
-function ExportDefaultDeclaration_default2(ctx2, stack2) {
-  let declaration = ctx2.createToken(stack2.declaration);
+function ExportDefaultDeclaration_default2(ctx, stack) {
+  let declaration = ctx.createToken(stack.declaration);
   if (declaration) {
-    ctx2.addExport("default", declaration, null, stack2);
+    ctx.addExport("default", declaration, null, stack);
   }
 }
 
 // lib/tokens/ExportNamedDeclaration.js
-function ExportNamedDeclaration_default2(ctx2, stack2) {
-  if (stack2.getResolveJSModule()) {
+function ExportNamedDeclaration_default2(ctx, stack) {
+  if (stack.getResolveJSModule()) {
     return null;
   }
   let exportSource = null;
-  if (stack2.declaration) {
-    const decl = stack2.declaration;
+  if (stack.declaration) {
+    const decl = stack.declaration;
     if (decl.isVariableDeclaration) {
       let decls = decl.declarations.map((decl2) => decl2.id.value());
-      exportSource = ctx2.addExport(decls.shift(), ctx2.createToken(decl), null, decl);
+      exportSource = ctx.addExport(decls.shift(), ctx.createToken(decl), null, decl);
       exportSource.bindExport(decls);
     } else if (decl.isFunctionDeclaration) {
-      exportSource = ctx2.addExport(decl.key.value(), ctx2.createToken(decl), null, decl);
+      exportSource = ctx.addExport(decl.key.value(), ctx.createToken(decl), null, decl);
     } else {
       throw new Error(`Export declaration type only support 'var' or 'function'`);
     }
-  } else if (stack2.specifiers && stack2.specifiers.length > 0) {
+  } else if (stack.specifiers && stack.specifiers.length > 0) {
     let source = null;
-    if (stack2.source) {
-      source = stack2.source.value();
-      let compilation = stack2.getResolveCompilation();
+    if (stack.source) {
+      source = stack.source.value();
+      let compilation = stack.getResolveCompilation();
       if (compilation && compilation.stack) {
-        ctx2.addDepend(compilation);
-        source = ctx2.getModuleImportSource(stack2.getResolveFile(), stack2.compilation.file);
+        ctx.addDepend(compilation);
+        source = ctx.getModuleImportSource(stack.getResolveFile(), stack.compilation.file);
       } else {
-        source = ctx2.getModuleImportSource(source, stack2.compilation.file);
+        source = ctx.getModuleImportSource(source, stack.compilation.file);
       }
-      let importSource = ctx2.getImport(source);
+      let importSource = ctx.getImport(source);
       if (!importSource) {
-        importSource = ctx2.addImport(source);
+        importSource = ctx.addImport(source);
         importSource.setExportSource();
         importSource.setSourceTarget(compilation);
-        importSource.setSourceContext(stack2.compilation);
       }
       source = importSource;
     }
-    stack2.specifiers.forEach((spec) => {
+    stack.specifiers.forEach((spec) => {
       let exported = spec.exported || spec.local;
-      exportSource = ctx2.addExport(exported.value(), spec.local.value(), source, spec);
+      exportSource = ctx.addExport(exported.value(), spec.local.value(), source, spec);
     });
   }
   if (exportSource) {
-    exportSource.stack = stack2;
+    exportSource.stack = stack;
   }
 }
 
 // lib/tokens/ExportSpecifier.js
-function ExportSpecifier_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.exported = ctx2.createToken(stack2.exported);
-  node.local = ctx2.createToken(stack2.local);
+function ExportSpecifier_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.exported = ctx.createToken(stack.exported);
+  node.local = ctx.createToken(stack.local);
   return node;
 }
 
 // lib/tokens/ExpressionStatement.js
-function ExpressionStatement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.expression = ctx2.createToken(stack2.expression);
+function ExpressionStatement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.expression = ctx.createToken(stack.expression);
   return node;
 }
 
 // lib/tokens/ForInStatement.js
-function ForInStatement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.right = ctx2.createToken(stack2.right);
-  const type = stack2.right.type();
+function ForInStatement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.right = ctx.createToken(stack.right);
+  const type = stack.right.type();
   if (type.isAnyType || type.toString() === "string") {
-    node.right = transforms_default.get("Object").keys(stack2, ctx2, null, [node.right], true, false);
-    node.value = ctx2.createToken(stack2.left);
+    node.right = transforms_default.get("Object").keys(stack, ctx, null, [node.right], true, false);
+    node.value = ctx.createToken(stack.left);
   } else {
-    node.left = ctx2.createToken(stack2.left);
+    node.left = ctx.createToken(stack.left);
   }
-  node.body = ctx2.createToken(stack2.body);
+  node.body = ctx.createToken(stack.body);
   return node;
 }
 
 // lib/tokens/ForOfStatement.js
-var import_Namespace21 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils25 = __toESM(require("easescript/lib/core/Utils"));
+var import_Namespace20 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Utils29 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
-function createConditionNode(ctx2, obj, refs) {
-  const assignment = ctx2.createAssignmentPattern(
-    ctx2.createVarIdentifier(refs),
-    createExpressionTransformTypeNode(ctx2, "object", ctx2.createCallExpression(
-      ctx2.createMemberExpression([
-        ctx2.createVarIdentifier(obj),
-        ctx2.createIdentifier("next")
+function createConditionNode(ctx, obj, refs) {
+  const assignment = ctx.createAssignmentPattern(
+    ctx.createVarIdentifier(refs),
+    createExpressionTransformTypeNode(ctx, "object", ctx.createCallExpression(
+      ctx.createMemberExpression([
+        ctx.createVarIdentifier(obj),
+        ctx.createIdentifier("next")
       ])
     ))
   );
-  const init = ctx2.createVarIdentifier(obj);
-  const next = ctx2.createParenthesizedExpression(assignment);
-  const done = ctx2.createUnaryExpression(
-    ctx2.createMemberExpression([
-      ctx2.createVarIdentifier(refs),
-      ctx2.createIdentifier("done")
+  const init = ctx.createVarIdentifier(obj);
+  const next = ctx.createParenthesizedExpression(assignment);
+  const done = ctx.createUnaryExpression(
+    ctx.createMemberExpression([
+      ctx.createVarIdentifier(refs),
+      ctx.createIdentifier("done")
     ]),
     "!",
     true
   );
-  const left = ctx2.createLogicalExpression(init, next);
-  return ctx2.createLogicalExpression(left, done);
+  const left = ctx.createLogicalExpression(init, next);
+  return ctx.createLogicalExpression(left, done);
 }
-function createAddressRefsNode2(addressRefObject, ctx2, desc2, value, stack2) {
-  const index = addressRefObject.add(stack2);
+function createAddressRefsNode2(addressRefObject, ctx, desc2, value, stack) {
+  const index = addressRefObject.add(stack);
   const name = addressRefObject.getName(desc2);
-  const left = addressRefObject.createIndexName(desc2);
-  const key = ctx2.createAssignmentExpression(
-    ctx2.createVarIdentifier(left),
-    ctx2.createLiteral(index)
+  const left = addressRefObject.createIndexName(stack, desc2);
+  const key = ctx.createAssignmentExpression(
+    ctx.createVarIdentifier(left),
+    ctx.createLiteral(index)
   );
   key.computed = true;
-  ctx2.addVariableRefs(stack2, left);
-  return ctx2.createAssignmentExpression(
-    ctx2.createVarIdentifier(name),
-    ctx2.createObjectExpression([
-      ctx2.createProperty(key, value)
+  ctx.addVariableRefs(stack, left);
+  return ctx.createAssignmentExpression(
+    ctx.createVarIdentifier(name),
+    ctx.createObjectExpression([
+      ctx.createProperty(key, value)
     ])
   );
 }
-function ForOfStatement_default2(ctx2, stack2) {
-  let type = stack2.right.type();
-  if (!(type.isLiteralArrayType || type.isTupleType || type === import_Namespace21.default.globals.get("array") || ctx2.isArrayMappingType(import_Utils25.default.getOriginType(type)))) {
-    let node2 = ctx2.createNode(stack2, "ForStatement");
-    let isIterableIteratorType = import_Utils25.default.isIterableIteratorType(type, import_Namespace21.default.globals.get("Iterator"));
-    let declDesc = stack2.left.isVariableDeclaration ? stack2.left.declarations[0] : null;
-    let init = ctx2.createToken(stack2.left);
-    let obj = ctx2.getLocalRefName(stack2, "_o");
-    let res = ctx2.getLocalRefName(stack2, "_v");
-    let object = ctx2.createAssignmentExpression(
-      ctx2.createVarIdentifier(obj),
-      isIterableIteratorType ? ctx2.createToken(stack2.right) : ctx2.createCallExpression(
-        createStaticReferenceNode2(ctx2, stack2, "System", "getIterator"),
+function ForOfStatement_default2(ctx, stack) {
+  let type = stack.right.type();
+  if (!(type.isLiteralArrayType || type.isTupleType || type === import_Namespace20.default.globals.get("array") || ctx.isArrayMappingType(import_Utils29.default.getOriginType(type)))) {
+    let node2 = ctx.createNode(stack, "ForStatement");
+    let isIterableIteratorType = import_Utils29.default.isIterableIteratorType(type, import_Namespace20.default.globals.get("Iterator"));
+    let declDesc = stack.left.isVariableDeclaration ? stack.left.declarations[0] : null;
+    let init = ctx.createToken(stack.left);
+    let obj = ctx.getLocalRefName(stack, "_o");
+    let res = ctx.getLocalRefName(stack, "_v");
+    let object = ctx.createAssignmentExpression(
+      ctx.createVarIdentifier(obj),
+      isIterableIteratorType ? ctx.createToken(stack.right) : ctx.createCallExpression(
+        createStaticReferenceNode2(ctx, stack, "System", "getIterator"),
         [
-          ctx2.createToken(stack2.right)
+          ctx.createToken(stack.right)
         ]
       )
     );
-    let rewind = ctx2.createCallExpression(
-      ctx2.createMemberExpression([
-        ctx2.createVarIdentifier(obj),
-        ctx2.createIdentifier("rewind")
+    let rewind = ctx.createCallExpression(
+      ctx.createMemberExpression([
+        ctx.createVarIdentifier(obj),
+        ctx.createIdentifier("rewind")
       ])
     );
     let decl = init.declarations[0];
@@ -14216,25 +14649,25 @@ function ForOfStatement_default2(ctx2, stack2) {
       isAddress = true;
       decl = decl.argument;
     }
-    let condition = createConditionNode(ctx2, obj, res);
+    let condition = createConditionNode(ctx, obj, res);
     let assignment = null;
-    let forValue = ctx2.createMemberExpression([
-      ctx2.createVarIdentifier(res),
-      ctx2.createIdentifier("value")
+    let forValue = ctx.createMemberExpression([
+      ctx.createVarIdentifier(res),
+      ctx.createIdentifier("value")
     ]);
-    let address = ctx2.getAssignAddressRef(declDesc);
+    let address = ctx.getAssignAddressRef(declDesc);
     if (address) {
-      forValue = ctx2.creaateAddressRefsNode(forValue);
-      assignment = ctx2.createExpressionStatement(
-        createAddressRefsNode2(address, ctx2, declDesc, forValue, stack2)
+      forValue = ctx.creaateAddressRefsNode(forValue);
+      assignment = ctx.createExpressionStatement(
+        createAddressRefsNode2(address, ctx, declDesc, forValue, stack)
       );
     } else {
       if (isAddress) {
-        forValue = createAddressRefsNode(ctx2, forValue);
+        forValue = createAddressRefsNode(ctx, forValue);
       }
-      assignment = ctx2.createExpressionStatement(
-        ctx2.createAssignmentExpression(
-          ctx2.createVarIdentifier(decl.id.value),
+      assignment = ctx.createExpressionStatement(
+        ctx.createAssignmentExpression(
+          ctx.createVarIdentifier(decl.id.value),
           forValue
         )
       );
@@ -14242,11 +14675,11 @@ function ForOfStatement_default2(ctx2, stack2) {
     node2.init = init;
     node2.condition = condition;
     node2.update = null;
-    node2.body = ctx2.createToken(stack2.body);
-    if (stack2.body.isBlockStatement) {
+    node2.body = ctx.createToken(stack.body);
+    if (stack.body.isBlockStatement) {
       node2.body.body.splice(0, 0, assignment);
     } else {
-      const block = ctx2.createNode("BlockStatement");
+      const block = ctx.createNode("BlockStatement");
       block.body = [
         assignment,
         node2.body
@@ -14255,123 +14688,122 @@ function ForOfStatement_default2(ctx2, stack2) {
     }
     return node2;
   }
-  let node = ctx2.createNode(stack2);
-  node.left = ctx2.createToken(stack2.left);
-  node.right = ctx2.createToken(stack2.right);
-  node.body = ctx2.createToken(stack2.body);
+  let node = ctx.createNode(stack);
+  node.left = ctx.createToken(stack.left);
+  node.right = ctx.createToken(stack.right);
+  node.body = ctx.createToken(stack.body);
   return node;
 }
 
 // lib/tokens/ForStatement.js
-function ForStatement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.init = ctx2.createToken(stack2.init);
-  node.condition = ctx2.createToken(stack2.condition);
-  node.update = ctx2.createToken(stack2.update);
-  node.body = ctx2.createToken(stack2.body);
+function ForStatement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.init = ctx.createToken(stack.init);
+  node.condition = ctx.createToken(stack.condition);
+  node.update = ctx.createToken(stack.update);
+  node.body = ctx.createToken(stack.body);
   return node;
 }
 
 // lib/tokens/FunctionDeclaration.js
-function FunctionDeclaration_default2(ctx2, stack2, type) {
-  const node = FunctionExpression_default2(ctx2, stack2, type);
+function FunctionDeclaration_default2(ctx, stack, type) {
+  const node = FunctionExpression_default2(ctx, stack, type);
   if (type === "FunctionDeclaration") {
     node.type = "FunctionExpression";
-    let _node = ctx2.createExpressionStatement(
-      ctx2.createAssignmentExpression(
-        ctx2.createVarIdentifier(stack2.key.value(), stack2.key),
+    let _node = ctx.createExpressionStatement(
+      ctx.createAssignmentExpression(
+        ctx.createVarIdentifier(stack.key.value(), stack.key),
         node
       )
     );
     _node.isFunctionDeclaration = true;
-    _node.key = stack2.key.value();
+    _node.key = stack.key.value();
     return _node;
   }
-  if (stack2.isConstructor) {
-    node.key = ctx2.createIdentifier("__construct", stack2.key);
-  } else if (stack2.key) {
-    node.key = ctx2.createIdentifier(stack2.key.value(), stack2.key);
+  if (stack.isConstructor) {
+    node.key = ctx.createIdentifier("__construct", stack.key);
+  } else if (stack.key) {
+    node.key = ctx.createIdentifier(stack.key.value(), stack.key);
   }
   return node;
 }
 
 // lib/tokens/Identifier.js
-var import_Utils26 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils30 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
 var globals2 = ["String", "Number", "Boolean", "Object", "Array"];
-function Identifier_default2(ctx2, stack2) {
-  if (!stack2.parentStack.isMemberExpression) {
+function Identifier_default2(ctx, stack) {
+  if (!stack.parentStack.isMemberExpression) {
     let isRefs = true;
-    if (stack2.parentStack.isCallExpression || stack2.parentStack.isNewExpression) {
-      isRefs = stack2.parentStack.callee !== stack2;
+    if (stack.parentStack.isCallExpression || stack.parentStack.isNewExpression) {
+      isRefs = stack.parentStack.callee !== stack;
     }
     if (isRefs) {
-      if (stack2.value() === "arguments") {
-        return ctx2.createCallExpression(ctx2.createIdentifier("func_get_args"));
-      } else if (stack2.value() === "undefined") {
-        return ctx2.createLiteral(null);
+      if (stack.value() === "arguments") {
+        return ctx.createCallExpression(ctx.createIdentifier("func_get_args"));
+      } else if (stack.value() === "undefined") {
+        return ctx.createLiteral(null);
       }
     }
   }
   let desc2 = null;
-  if (stack2.parentStack.isMemberExpression) {
-    if (stack2.parentStack.object === stack2) {
-      desc2 = stack2.description();
+  if (stack.parentStack.isMemberExpression) {
+    if (stack.parentStack.object === stack) {
+      desc2 = stack.description();
     }
   } else {
-    desc2 = stack2.description();
+    desc2 = stack.description();
   }
   if (desc2 && desc2.isImportDeclaration) {
     desc2 = desc2.description();
   }
-  if (desc2 && (desc2.isPropertyDefinition || desc2.isMethodDefinition || desc2.isEnumProperty) && !(stack2.parentStack.isProperty && stack2.parentStack.key === stack2)) {
+  if (desc2 && (desc2.isPropertyDefinition || desc2.isMethodDefinition || desc2.isEnumProperty) && !(stack.parentStack.isProperty && stack.parentStack.key === stack)) {
     const ownerModule = desc2.module;
     const isStatic = !!(desc2.static || ownerModule.static || desc2.isEnumProperty);
-    const inMember = stack2.parentStack.isMemberExpression;
-    let propertyName = stack2.value();
+    const inMember = stack.parentStack.isMemberExpression;
+    let propertyName = stack.value();
     if (!inMember && (desc2.isMethodGetterDefinition || desc2.isMethodSetterDefinition)) {
-      propertyName = ctx2.getAccessorName(stack2.value(), desc2, desc2.isMethodGetterDefinition ? "get" : "set");
+      propertyName = ctx.getAccessorName(stack.value(), desc2, desc2.isMethodGetterDefinition ? "get" : "set");
     }
     let propertyNode = null;
     if (isStatic) {
-      propertyNode = ctx2.createStaticMemberExpression([
-        ctx2.createIdentifier(ctx2.getModuleReferenceName(ownerModule, stack2.module)),
-        ctx2.createIdentifier(propertyName, stack2)
+      propertyNode = ctx.createStaticMemberExpression([
+        ctx.createIdentifier(ctx.getModuleReferenceName(ownerModule, stack.module)),
+        ctx.createIdentifier(propertyName, stack)
       ]);
     } else {
-      propertyNode = ctx2.createMemberExpression([
-        ctx2.createThisExpression(),
-        ctx2.createIdentifier(propertyName, stack2)
+      propertyNode = ctx.createMemberExpression([
+        ctx.createThisExpression(),
+        ctx.createIdentifier(propertyName, stack)
       ]);
     }
-    if (!inMember && !stack2.parentStack.isAssignmentExpression && desc2.isMethodGetterDefinition) {
-      return ctx2.createCallExpression(propertyNode);
+    if (!inMember && !stack.parentStack.isAssignmentExpression && desc2.isMethodGetterDefinition) {
+      return ctx.createCallExpression(propertyNode);
     }
     return propertyNode;
   }
-  if (import_Utils26.default.isTypeModule(desc2)) {
-    if (desc2 !== stack2.module) {
-      ctx2.addDepend(desc2);
+  if (import_Utils30.default.isTypeModule(desc2)) {
+    if (desc2 !== stack.module && stack.value() !== "arguments") {
+      ctx.addDepend(desc2);
     }
-    if (stack2.parentStack.isMemberExpression && stack2.parentStack.object === stack2 || stack2.parentStack.isNewExpression && !globals2.includes(desc2.getName()) || stack2.parentStack.isBinaryExpression && stack2.parentStack.right === stack2 && stack2.parentStack.node.operator === "instanceof") {
-      if (!stack2.hasLocalDefined()) {
-        return ctx2.createIdentifier(ctx2.getModuleReferenceName(desc2, stack2.module), stack2);
+    if (stack.parentStack.isMemberExpression && stack.parentStack.object === stack || stack.parentStack.isNewExpression && !globals2.includes(desc2.getName()) || stack.parentStack.isBinaryExpression && stack.parentStack.right === stack && stack.parentStack.node.operator === "instanceof") {
+      if (!stack.hasLocalDefined()) {
+        return ctx.createIdentifier(ctx.getModuleReferenceName(desc2, stack.module), stack);
       } else {
-        return ctx2.createIdentifier(stack2.value(), stack2);
+        return ctx.createIdentifier(stack.value(), stack);
       }
     } else {
-      return createClassRefsNode(ctx2, desc2, stack2);
+      return createClassRefsNode(ctx, desc2, stack);
     }
   }
   let isDeclarator = desc2 && (desc2.isDeclarator || desc2.isProperty && (desc2.parentStack.isObjectPattern || desc2.parentStack.isObjectExpression));
   if (isDeclarator) {
-    if (desc2.parentStack.isImportDeclaration && stack2.compilation.mainModule) {
-      let resolve = desc2.parentStack.getResolveFile();
-      return ctx2.createCallExpression(
-        createStaticReferenceNode2(ctx2, stack2, "System", "getScopeVariable"),
+    if (desc2.parentStack.isImportDeclaration && stack.compilation.mainModule && stack.module) {
+      return ctx.createCallExpression(
+        createStaticReferenceNode2(ctx, stack, "System", "getScopeVariable"),
         [
-          ctx2.createLiteral(createDocumentScopeId(stack2.compilation, resolve)),
-          ctx2.createLiteral(stack2.value())
+          ctx.createLiteral(createUniqueHashId(stack.compilation.file)),
+          ctx.createLiteral(stack.value())
         ]
       );
     } else if (desc2.parentStack.isAnnotationDeclaration) {
@@ -14380,20 +14812,20 @@ function Identifier_default2(ctx2, stack2) {
       if (name === "require" || name === "import" || name === "embed") {
         const argument = annotation.getArguments().find((item) => !!item.resolveFile);
         if (argument) {
-          const asset = ctx2.assets.getAsset(argument.resolveFile);
+          const asset = ctx.assets.getAsset(argument.resolveFile);
           if (asset) {
-            return ctx2.createCallExpression(
-              createStaticReferenceNode2(ctx2, stack2, "asset.Files", "get"),
+            return ctx.createCallExpression(
+              createStaticReferenceNode2(ctx, stack, "asset.Files", "get"),
               [
-                ctx2.createLiteral(asset.sourceId)
+                ctx.createLiteral(asset.sourceId)
               ]
             );
           }
         }
       }
-      return ctx2.createLiteral(null);
+      return ctx.createLiteral(null);
     } else {
-      ctx2.addVariableRefs(stack2, desc2);
+      ctx.addVariableRefs(stack, desc2);
     }
   } else if (desc2 && (desc2.isFunctionDeclaration || desc2.isDeclaratorVariable)) {
     isDeclarator = true;
@@ -14403,157 +14835,158 @@ function Identifier_default2(ctx2, stack2) {
       }
     }
   }
-  if (stack2.parentStack.isNewExpression) {
+  if (stack.parentStack.isNewExpression) {
     if (!desc2 || !(desc2.isDeclaratorVariable || isDeclarator)) {
-      return ctx2.createLiteral(stack2.raw());
+      return ctx.createLiteral(stack.raw());
     }
   }
-  if (stack2.parentStack.isMemberExpression) {
+  if (stack.parentStack.isMemberExpression) {
     isDeclarator = false;
-    if (stack2.parentStack.computed && stack2.parentStack.property === stack2) {
+    if (stack.parentStack.computed && stack.parentStack.property === stack) {
       isDeclarator = true;
-    } else if (stack2.parentStack.object === stack2) {
+    } else if (stack.parentStack.object === stack) {
       isDeclarator = true;
     }
-  } else if (stack2.parentStack.isJSXExpressionContainer && stack2.scope.define(stack2.value())) {
+  } else if (stack.parentStack.isJSXExpressionContainer && stack.scope.define(stack.value())) {
     if (desc2 && desc2.isIdentifier) {
-      ctx2.addVariableRefs(desc2);
+      ctx.addVariableRefs(desc2);
     }
     isDeclarator = true;
   }
   if (desc2 && (desc2.isVariableDeclarator || desc2.isParamDeclarator)) {
+    isDeclarator = true;
     let isRefs = true;
-    if (stack2.parentStack.isMemberExpression) {
-      isRefs = stack2.parentStack.object === stack2;
-    } else if (stack2.parentStack.isVariableDeclarator) {
-      isRefs = stack2.parentStack.init === stack2;
-    } else if (stack2.parentStack.isAssignmentExpression) {
-      isRefs = stack2.parentStack.right === stack2;
+    if (stack.parentStack.isMemberExpression) {
+      isRefs = stack.parentStack.object === stack;
+    } else if (stack.parentStack.isVariableDeclarator) {
+      isRefs = stack.parentStack.init === stack;
+    } else if (stack.parentStack.isAssignmentExpression) {
+      isRefs = stack.parentStack.right === stack;
     }
     if (isRefs) {
-      const assignAddress = ctx2.getAssignAddressRef(desc2);
+      const assignAddress = ctx.getAssignAddressRef(desc2);
       if (assignAddress) {
-        const name = assignAddress.getName(desc2) || stack2.value();
-        const index = assignAddress.createIndexName(desc2);
+        const name = assignAddress.getName(desc2) || stack.value();
+        const index = assignAddress.createIndexName(stack, desc2);
         if (index) {
-          return ctx2.createComputeMemberExpression([
-            ctx2.createIdentifier(name),
-            ctx2.createIdentifier(index)
+          return ctx.createComputeMemberExpression([
+            ctx.createVarIdentifier(name),
+            ctx.createVarIdentifier(index)
           ]);
         }
       }
     }
   }
   if (isDeclarator) {
-    return ctx2.createVarIdentifier(stack2.value(), stack2);
+    return ctx.createVarIdentifier(stack.value(), stack);
   }
-  return ctx2.createIdentifier(stack2.value(), stack2);
+  return ctx.createIdentifier(stack.value(), stack);
 }
 
 // lib/tokens/IfStatement.js
 init_Common2();
-function IfStatement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.condition = createExpressionTransformBooleanValueNode(ctx2, stack2.condition);
-  node.consequent = ctx2.createToken(stack2.consequent);
-  node.alternate = ctx2.createToken(stack2.alternate);
+function IfStatement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.condition = createExpressionTransformBooleanValueNode(ctx, stack.condition);
+  node.consequent = ctx.createToken(stack.consequent);
+  node.alternate = ctx.createToken(stack.alternate);
   return node;
 }
 
 // lib/tokens/ImportDeclaration.js
 init_Common2();
-function ImportDeclaration_default2(ctx2, stack2) {
-  let module2 = stack2.additional ? stack2.additional.module : null;
-  parseImportDeclaration(ctx2, stack2, module2);
+function ImportDeclaration_default2(ctx, stack) {
+  let module2 = stack.additional ? stack.additional.module : null;
+  parseImportDeclaration(ctx, stack, module2 || stack.compilation);
   return null;
 }
 
 // lib/tokens/ImportDefaultSpecifier.js
-function ImportDefaultSpecifier_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.local = stack2.local ? ctx2.createToken(stack2.local) : ctx2.createIdentifier(stack2.value(), stack2);
+function ImportDefaultSpecifier_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.local = stack.local ? ctx.createToken(stack.local) : ctx.createIdentifier(stack.value(), stack);
   return node;
 }
 
 // lib/tokens/ImportExpression.js
-function ImportExpression_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  const desc2 = stack2.description();
+function ImportExpression_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  const desc2 = stack.description();
   if (desc2) {
-    const source = ctx2.getModuleImportSource(desc2, stack2.compilation.file, stack2.source.value());
-    node.source = ctx2.createLiteral(source, void 0, stack2.source);
+    const source = ctx.getModuleImportSource(desc2, stack.compilation.file, stack.source.value());
+    node.source = ctx.createLiteral(source, void 0, stack.source);
   } else {
-    node.source = ctx2.createToken(stack2.source);
+    node.source = ctx.createToken(stack.source);
   }
   return node;
 }
 
 // lib/tokens/ImportNamespaceSpecifier.js
-function ImportNamespaceSpecifier_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.local = stack2.local ? ctx2.createToken(stack2.local) : ctx2.createIdentifier(stack2.value(), stack2);
+function ImportNamespaceSpecifier_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.local = stack.local ? ctx.createToken(stack.local) : ctx.createIdentifier(stack.value(), stack);
   return node;
 }
 
 // lib/tokens/ImportSpecifier.js
-function ImportSpecifier_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.imported = ctx2.createToken(stack2.imported);
-  node.local = stack2.local ? ctx2.createToken(stack2.local) : ctx2.createIdentifier(stack2.value(), stack2);
+function ImportSpecifier_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.imported = ctx.createToken(stack.imported);
+  node.local = stack.local ? ctx.createToken(stack.local) : ctx.createIdentifier(stack.value(), stack);
   return node;
 }
 
 // lib/core/InterfaceBuilder.js
 var import_crypto5 = require("crypto");
 var InterfaceBuilder2 = class {
-  constructor(stack2) {
-    this.stack = stack2;
-    this.compilation = stack2.compilation;
-    this.module = stack2.module;
+  constructor(stack) {
+    this.stack = stack;
+    this.compilation = stack.compilation;
+    this.module = stack.module;
     this.body = [];
     this.methods = [];
     this.members = [];
     this.implements = [];
     this.inherit = null;
   }
-  create(ctx2) {
-    let node = ctx2.createNode("InterfaceDeclaration");
-    ctx2.setNode(this.stack, this);
+  create(ctx) {
+    let node = ctx.createNode("InterfaceDeclaration");
+    ctx.setNode(this.stack, this);
     const module2 = this.module;
-    const stack2 = this.stack;
-    this.createInherit(ctx2, module2, stack2);
-    this.createImplements(ctx2, module2, stack2);
-    this.createBody(ctx2, module2, stack2);
-    node.id = ctx2.createIdentifier(module2.id);
+    const stack = this.stack;
+    this.createInherit(ctx, module2, stack);
+    this.createImplements(ctx, module2, stack);
+    this.createBody(ctx, module2, stack);
+    node.id = ctx.createIdentifier(module2.id);
     node.inherit = this.inherit;
     node.implements = this.implements;
-    node.body = [
+    node.body = ctx.createBlockStatement([
       ...this.methods,
       ...this.members
-    ];
-    ctx2.removeNode(this.stack);
+    ]);
+    ctx.removeNode(this.stack);
     return node;
   }
-  createBody(ctx2, module2, stack2) {
-    this.createMemebers(ctx2, stack2);
+  createBody(ctx, module2, stack) {
+    this.createMemebers(ctx, stack);
   }
-  createInherit(ctx2, module2, stack2 = null) {
+  createInherit(ctx, module2, stack = null) {
     let inherit = module2.inherit;
     if (inherit) {
-      ctx2.addDepend(inherit, module2);
-      if (ctx2.isActiveModule(inherit, module2)) {
-        this.inherit = ctx2.createIdentifier(
-          ctx2.getModuleReferenceName(inherit, module2)
+      ctx.addDepend(inherit, module2);
+      if (ctx.isActiveModule(inherit, module2)) {
+        this.inherit = ctx.createIdentifier(
+          ctx.getModuleReferenceName(inherit, module2)
         );
       }
     }
   }
-  createImplements(ctx2, module2, stack2 = null) {
+  createImplements(ctx, module2, stack = null) {
     this.implements = module2.implements.map((impModule) => {
-      ctx2.addDepend(impModule, module2);
-      if (impModule.isInterface && ctx2.isActiveModule(impModule, module2)) {
-        return ctx2.createIdentifier(
-          ctx2.getModuleReferenceName(impModule, module2)
+      ctx.addDepend(impModule, module2);
+      if (impModule.isInterface && ctx.isActiveModule(impModule, module2)) {
+        return ctx.createIdentifier(
+          ctx.getModuleReferenceName(impModule, module2)
         );
       }
       return null;
@@ -14568,15 +15001,15 @@ var InterfaceBuilder2 = class {
     }
     return moduleHashId;
   }
-  checkConstructor(ctx2, construct, module2) {
+  checkConstructor(ctx, construct, module2) {
   }
-  createMemebers(ctx2, stack2) {
-    stack2.body.forEach((item) => {
-      const child = this.createMemeber(ctx2, item, !!stack2.static);
+  createMemebers(ctx, stack) {
+    stack.body.forEach((item) => {
+      const child = this.createMemeber(ctx, item, !!stack.static);
       if (!child)
         return;
       child.isInterfaceMember = true;
-      const staticFlag = !!(stack2.static || child.static);
+      const staticFlag = !!(stack.static || child.static);
       const refs = staticFlag ? this.methods : this.members;
       if (item.isConstructor && item.isMethodDefinition) {
         this.construct = child;
@@ -14585,71 +15018,71 @@ var InterfaceBuilder2 = class {
       }
     });
   }
-  createMemeber(ctx2, stack2, staticFlag = false) {
-    return ctx2.createToken(stack2);
+  createMemeber(ctx, stack, staticFlag = false) {
+    return ctx.createToken(stack);
   }
 };
 var InterfaceBuilder_default2 = InterfaceBuilder2;
 
 // lib/tokens/InterfaceDeclaration.js
-function InterfaceDeclaration_default2(ctx2, stack2) {
-  const builder = new InterfaceBuilder_default2(stack2);
-  return builder.create(ctx2);
+function InterfaceDeclaration_default2(ctx, stack) {
+  const builder = new InterfaceBuilder_default2(stack);
+  return builder.create(ctx);
 }
 
 // lib/tokens/JSXAttribute.js
-var import_Namespace22 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Namespace21 = __toESM(require("easescript/lib/core/Namespace"));
 init_Common2();
-function JSXAttribute_default2(ctx2, stack2) {
+function JSXAttribute_default2(ctx, stack) {
   let ns = null;
-  if (stack2.hasNamespaced) {
-    const xmlns = stack2.getXmlNamespace();
+  if (stack.hasNamespaced) {
+    const xmlns = stack.getXmlNamespace();
     if (xmlns) {
       ns = xmlns.value.value();
     } else {
-      const nsStack = stack2.getNamespaceStack();
-      const ops2 = stack2.compiler.options;
+      const nsStack = stack.getNamespaceStack();
+      const ops2 = stack.compiler.options;
       ns = ops2.jsx.xmlns.default[nsStack.namespace.value()] || ns;
     }
   }
-  const node = ctx2.createNode(stack2);
+  const node = ctx.createNode(stack);
   node.namespace = ns;
   let name = null;
-  let value = stack2.value ? ctx2.createToken(stack2.value) : ctx2.createLiteral(true);
-  if (stack2.isMemberProperty) {
-    const eleClass = stack2.jsxElement.getSubClassDescription();
-    const propsDesc = stack2.getAttributeDescription(eleClass);
-    const resolveName = getMethodOrPropertyAlias(ctx2, propsDesc);
+  let value = stack.value ? ctx.createToken(stack.value) : ctx.createLiteral(true);
+  if (stack.isMemberProperty) {
+    const eleClass = stack.jsxElement.getSubClassDescription();
+    const propsDesc = stack.getAttributeDescription(eleClass);
+    const resolveName = getMethodOrPropertyAlias(ctx, propsDesc);
     if (resolveName) {
-      name = resolveName.includes("-") ? ctx2.createLiteral(resolveName) : ctx2.createIdentifier(resolveName);
+      name = resolveName.includes("-") ? ctx.createLiteral(resolveName) : ctx.createIdentifier(resolveName);
     }
-    const invoke = createJSXAttrHookNode(ctx2, stack2, propsDesc);
+    const invoke = createJSXAttrHookNode(ctx, stack, propsDesc);
     if (invoke)
       value = invoke;
   }
   if (!name) {
-    name = ctx2.createToken(stack2.name);
+    name = ctx.createToken(stack.name);
   }
-  if (ns === "@binding" && stack2.value) {
-    const desc2 = stack2.value.description();
+  if (ns === "@binding" && stack.value) {
+    const desc2 = stack.value.description();
     let has = false;
     if (desc2) {
       has = (desc2.isPropertyDefinition || desc2.isTypeObjectPropertyDefinition) && !desc2.isReadonly || desc2.isMethodGetterDefinition && desc2.module && desc2.module.getMember(desc2.key.value(), "set");
     }
-    if (!has && stack2.value.isJSXExpressionContainer) {
-      let expression2 = stack2.value.expression;
+    if (!has && stack.value.isJSXExpressionContainer) {
+      let expression2 = stack.value.expression;
       if (expression2) {
         if (expression2.isTypeAssertExpression) {
           expression2 = expression2.left;
         }
         if (expression2.isMemberExpression) {
-          const objectType = import_Namespace22.default.globals.get("Object");
+          const objectType = import_Namespace21.default.globals.get("Object");
           has = objectType && objectType.is(expression2.object.type());
         }
       }
     }
     if (!has) {
-      stack2.value.error(1e4, stack2.value.raw());
+      stack.value.error(1e4, stack.value.raw());
     }
   }
   node.name = name;
@@ -14658,50 +15091,50 @@ function JSXAttribute_default2(ctx2, stack2) {
 }
 
 // lib/tokens/JSXCdata.js
-function JSXCdata_default2(ctx2, stack2) {
-  let value = stack2.value();
+function JSXCdata_default2(ctx, stack) {
+  let value = stack.value();
   if (value) {
     value = value.replace(/[\r\n]+/g, "").replace(/\u0022/g, '\\"');
     if (value) {
-      return ctx2.createLiteral(value);
+      return ctx.createLiteral(value);
     }
   }
   return null;
 }
 
 // lib/tokens/JSXClosingElement.js
-function JSXClosingElement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.name = ctx2.createToken(stack2.name);
+function JSXClosingElement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.name = ctx.createToken(stack.name);
   return node;
 }
 
 // lib/tokens/JSXClosingFragment.js
-function JSXClosingFragment_default2(ctx2, stack2) {
-  return ctx2.createNode(stack2);
+function JSXClosingFragment_default2(ctx, stack) {
+  return ctx.createNode(stack);
 }
 
 // lib/core/ESX.js
-var import_Namespace23 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils27 = require("easescript/lib/core/Utils");
+var import_Namespace22 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Utils31 = require("easescript/lib/core/Utils");
 init_Common2();
-function createFragmentVNode2(ctx2, children, props = null) {
+function createFragmentVNode2(ctx, children, props = null) {
   const items = [
-    ctx2.getVNodeApi("Fragment"),
-    props ? props : ctx2.createLiteral(null),
+    ctx.getVNodeApi("Fragment"),
+    props ? props : ctx.createLiteral(null),
     children
   ];
-  return ctx2.createCallExpression(
-    ctx2.getVNodeApi("createVNode"),
+  return ctx.createCallExpression(
+    ctx.getVNodeApi("createVNode"),
     items
   );
 }
-function createWithDirectives2(ctx2, node, directives) {
-  const array = ctx2.createArrayExpression(directives);
+function createWithDirectives2(ctx, node, directives) {
+  const array = ctx.createArrayExpression(directives);
   array.newLine = true;
-  return ctx2.createCallExpression(
-    ctx2.createIdentifier(
-      ctx2.getVNodeApi("withDirectives")
+  return ctx.createCallExpression(
+    ctx.createIdentifier(
+      ctx.getVNodeApi("withDirectives")
     ),
     [
       node,
@@ -14709,51 +15142,51 @@ function createWithDirectives2(ctx2, node, directives) {
     ]
   );
 }
-function createCommentVNode2(ctx2, text) {
-  return ctx2.createCallExpression(
-    ctx2.createIdentifier(ctx2.getVNodeApi("createCommentVNode")),
+function createCommentVNode2(ctx, text) {
+  return ctx.createCallExpression(
+    ctx.createIdentifier(ctx.getVNodeApi("createCommentVNode")),
     [
-      ctx2.createLiteral(text)
+      ctx.createLiteral(text)
     ]
   );
 }
-function createSlotNode2(ctx2, stack2, ...args) {
-  if (stack2.isSlot && stack2.isSlotDeclared) {
-    const slots = ctx2.createCallExpression(
-      ctx2.createMemberExpression([
-        ctx2.createThisExpression(),
-        ctx2.createIdentifier("getAttribute")
+function createSlotNode2(ctx, stack, ...args) {
+  if (stack.isSlot && stack.isSlotDeclared) {
+    const slots = ctx.createCallExpression(
+      ctx.createMemberExpression([
+        ctx.createThisExpression(),
+        ctx.createIdentifier("getAttribute")
       ]),
       [
-        ctx2.createLiteral("slots")
+        ctx.createLiteral("slots")
       ]
     );
-    const node = ctx2.createCallExpression(
-      ctx2.createIdentifier(
-        ctx2.getVNodeApi("renderSlot")
+    const node = ctx.createCallExpression(
+      ctx.createIdentifier(
+        ctx.getVNodeApi("renderSlot")
       ),
       [slots].concat(args)
     );
     node.isSlotNode = true;
     return node;
   } else {
-    const node = ctx2.createCallExpression(
-      ctx2.createIdentifier(ctx2.getVNodeApi("withCtx")),
+    const node = ctx.createCallExpression(
+      ctx.createIdentifier(ctx.getVNodeApi("withCtx")),
       args
     );
     node.isSlotNode = true;
     return node;
   }
 }
-function createWithCtxNode2(ctx2, node) {
-  return ctx2.createCallExpression(
-    ctx2.createIdentifier(ctx2.getVNodeApi("withCtx")),
+function createWithCtxNode2(ctx, node) {
+  return ctx.createCallExpression(
+    ctx.createIdentifier(ctx.getVNodeApi("withCtx")),
     [
       node
     ]
   );
 }
-function createForMapNode2(ctx2, object, element, item, key, index, stack2) {
+function createForMapNode2(ctx, object, element, item, key, index, stack) {
   const params = [item];
   if (key) {
     params.push(key);
@@ -14764,16 +15197,16 @@ function createForMapNode2(ctx2, object, element, item, key, index, stack2) {
   if (element.type === "ArrayExpression" && element.elements.length === 1) {
     element = element.elements[0];
   }
-  const node = ctx2.createArrowFunctionExpression(element, params);
-  return ctx2.createCallExpression(
-    createStaticReferenceNode2(ctx2, stack2, "System", "forMap"),
+  const node = ctx.createArrowFunctionExpression(element, params);
+  return ctx.createCallExpression(
+    createStaticReferenceNode2(ctx, stack, "System", "forMap"),
     [
       object,
       node
     ]
   );
 }
-function createForEachNode2(ctx2, refs, element, item, key) {
+function createForEachNode2(ctx, refs, element, item, key) {
   const args = [item];
   if (key) {
     args.push(key);
@@ -14781,42 +15214,42 @@ function createForEachNode2(ctx2, refs, element, item, key) {
   if (element.type === "ArrayExpression" && element.elements.length === 1) {
     element = element.elements[0];
   }
-  const node = ctx2.createCallExpression(
-    ctx2.createMemberExpression([
+  const node = ctx.createCallExpression(
+    ctx.createMemberExpression([
       refs,
-      ctx2.createIdentifier("map")
+      ctx.createIdentifier("map")
     ]),
     [
-      ctx2.createArrowFunctionExpression(element, args)
+      ctx.createArrowFunctionExpression(element, args)
     ]
   );
   if (element.type === "ArrayExpression") {
-    return ctx2.createCallExpression(
-      ctx2.createMemberExpression([
+    return ctx.createCallExpression(
+      ctx.createMemberExpression([
         node,
-        ctx2.createIdentifier("reduce")
+        ctx.createIdentifier("reduce")
       ]),
       [
-        ctx2.createArrowFunctionExpression([
-          ctx2.createIdentifier("acc"),
-          ctx2.createIdentifier("item")
-        ], ctx2.createCallee(
-          ctx2.createMemberExpression([
-            ctx2.createIdentifier("acc"),
-            ctx2.createIdentifier("concat")
+        ctx.createArrowFunctionExpression([
+          ctx.createIdentifier("acc"),
+          ctx.createIdentifier("item")
+        ], ctx.createCallee(
+          ctx.createMemberExpression([
+            ctx.createIdentifier("acc"),
+            ctx.createIdentifier("concat")
           ]),
           [
-            ctx2.createIdentifier("item")
+            ctx.createIdentifier("item")
           ]
         )),
-        ctx2.createArrayExpression()
+        ctx.createArrayExpression()
       ]
     );
   }
   return node;
 }
 function getComponentDirectiveAnnotation2(module2) {
-  if (!(0, import_Utils27.isModule)(module2))
+  if (!(0, import_Utils31.isModule)(module2))
     return null;
   const annots = getModuleAnnotations(module2, ["define"]);
   for (let annot of annots) {
@@ -14833,16 +15266,16 @@ function getComponentDirectiveAnnotation2(module2) {
 }
 var directiveInterface2 = null;
 function isDirectiveInterface2(module2) {
-  if (!(0, import_Utils27.isModule)(module2))
+  if (!(0, import_Utils31.isModule)(module2))
     return false;
-  directiveInterface2 = directiveInterface2 || import_Namespace23.default.globals.get("web.components.Directive");
+  directiveInterface2 = directiveInterface2 || import_Namespace22.default.globals.get("web.components.Directive");
   if (directiveInterface2 && directiveInterface2.isInterface) {
     return directiveInterface2.type().isof(module2);
   }
   return false;
 }
 function getComponentEmitAnnotation2(module2) {
-  if (!(0, import_Utils27.isModule)(module2))
+  if (!(0, import_Utils31.isModule)(module2))
     return null;
   const dataset = /* @__PURE__ */ Object.create(null);
   const annots = getModuleAnnotations(desc, ["define"]);
@@ -14885,19 +15318,19 @@ function getComponentEmitAnnotation2(module2) {
   });
   return dataset;
 }
-function createChildNode2(ctx2, stack2, childNode, prev = null) {
+function createChildNode2(ctx, stack, childNode, prev = null) {
   if (!childNode)
     return null;
   const cmd = [];
   let content = [childNode];
-  if (!stack2.directives || !(stack2.directives.length > 0)) {
+  if (!stack.directives || !(stack.directives.length > 0)) {
     return {
       cmd,
-      child: stack2,
+      child: stack,
       content
     };
   }
-  const directives = stack2.directives.slice(0).sort((a, b) => {
+  const directives = stack.directives.slice(0).sort((a, b) => {
     const bb = b.name.value().toLowerCase();
     const aa = a.name.value().toLowerCase();
     const v1 = bb === "each" || bb === "for" ? 1 : 0;
@@ -14909,16 +15342,16 @@ function createChildNode2(ctx2, stack2, childNode, prev = null) {
     const name = directive.name.value().toLowerCase();
     const valueArgument = directive.valueArgument;
     if (name === "each" || name === "for") {
-      let refs = ctx2.createToken(valueArgument.expression);
-      let item = ctx2.createIdentifier(valueArgument.declare.item);
-      let key = ctx2.createIdentifier(valueArgument.declare.key || "key");
+      let refs = ctx.createToken(valueArgument.expression);
+      let item = ctx.createIdentifier(valueArgument.declare.item);
+      let key = ctx.createIdentifier(valueArgument.declare.key || "key");
       let index = valueArgument.declare.index;
       if (index) {
-        index = ctx2.createIdentifier(index);
+        index = ctx.createIdentifier(index);
       }
       if (name === "each") {
         content[0] = createForEachNode2(
-          ctx2,
+          ctx,
           refs,
           content[0],
           item,
@@ -14926,20 +15359,20 @@ function createChildNode2(ctx2, stack2, childNode, prev = null) {
         );
       } else {
         content[0] = createForMapNode2(
-          ctx2,
+          ctx,
           refs,
           content[0],
           item,
           key,
           index,
-          stack2
+          stack
         );
       }
       content[0].isForNode = true;
       cmd.push(name);
     } else if (name === "if") {
-      const node = ctx2.createNode("ConditionalExpression");
-      node.test = ctx2.createToken(valueArgument.expression);
+      const node = ctx.createNode("ConditionalExpression");
+      node.test = ctx.createToken(valueArgument.expression);
       node.consequent = content[0];
       content[0] = node;
       cmd.push(name);
@@ -14949,8 +15382,8 @@ function createChildNode2(ctx2, stack2, childNode, prev = null) {
       } else {
         cmd.push(name);
       }
-      const node = ctx2.createNode("ConditionalExpression");
-      node.test = ctx2.createToken(valueArgument.expression);
+      const node = ctx.createNode("ConditionalExpression");
+      node.test = ctx.createToken(valueArgument.expression);
       node.consequent = content[0];
       content[0] = node;
     } else if (name === "else") {
@@ -14963,22 +15396,22 @@ function createChildNode2(ctx2, stack2, childNode, prev = null) {
   }
   return {
     cmd,
-    child: stack2,
+    child: stack,
     content
   };
 }
-function createSlotCalleeNode2(ctx2, stack2, child, ...args) {
-  if (stack2.isSlotDeclared) {
-    return ctx2.createCallExpression(
-      ctx2.createMemberExpression([
-        ctx2.createThisExpression(),
-        ctx2.createIdentifier("slot")
+function createSlotCalleeNode2(ctx, stack, child, ...args) {
+  if (stack.isSlotDeclared) {
+    return ctx.createCallExpression(
+      ctx.createMemberExpression([
+        ctx.createThisExpression(),
+        ctx.createIdentifier("slot")
       ]),
       child ? args.concat(child) : args,
-      stack2
+      stack
     );
   } else {
-    return child || ctx2.createArrowFunctionExpression(ctx2.createArrayExpression());
+    return child || ctx.createArrowFunctionExpression(ctx.createArrayExpression());
   }
 }
 function getCascadeConditional2(elements) {
@@ -14997,7 +15430,7 @@ function getCascadeConditional2(elements) {
   }
   return lastElement;
 }
-function createChildren2(ctx2, children, data) {
+function createChildren2(ctx, children, data) {
   let content = [];
   let len = children.length;
   let index = 0;
@@ -15007,34 +15440,34 @@ function createChildren2(ctx2, children, data) {
     if (index < len) {
       const child = children[index++];
       const childNode = createChildNode2(
-        ctx2,
+        ctx,
         child,
-        ctx2.createToken(child),
+        ctx.createToken(child),
         last
       ) || next();
       if (child.hasAttributeSlot) {
         const attributeSlot = child.openingElement.attributes.find((attr) => attr.isAttributeSlot);
         if (attributeSlot) {
           const name = attributeSlot.name.value();
-          const scopeName = attributeSlot.value ? ctx2.createToken(
+          const scopeName = attributeSlot.value ? ctx.createToken(
             attributeSlot.parserSlotScopeParamsStack()
           ) : null;
           let childrenNodes = childNode.content;
           if (childrenNodes.length === 1 && childrenNodes[0].type === "ArrayExpression") {
             childrenNodes = childrenNodes[0];
           } else {
-            childrenNodes = ctx2.createArrayExpression(childrenNodes);
+            childrenNodes = ctx.createArrayExpression(childrenNodes);
           }
           const params = scopeName ? [
-            ctx2.createAssignmentExpression(
+            ctx.createAssignmentExpression(
               scopeName,
-              ctx2.createObjectExpression()
+              ctx.createObjectExpression()
             )
           ] : [];
           const renderSlots = createSlotCalleeNode2(
-            ctx2,
+            ctx,
             child,
-            ctx2.createArrowFunctionExpression(childrenNodes, params)
+            ctx.createArrowFunctionExpression(childrenNodes, params)
           );
           data.slots[name] = renderSlots;
           return next();
@@ -15100,15 +15533,15 @@ function createChildren2(ctx2, children, data) {
     if (content.length === 1 && (first.type == "ArrayExpression" || first.isForNode || first.isSlotNode)) {
       return first;
     }
-    let base = content.length > 1 ? content.shift() : ctx2.createArrayExpression();
+    let base = content.length > 1 ? content.shift() : ctx.createArrayExpression();
     if (base.type !== "ArrayExpression" && !base.isForNode) {
-      base = ctx2.createArrayExpression([base]);
+      base = ctx.createArrayExpression([base]);
       base.newLine = true;
     }
-    const node2 = ctx2.createCallExpression(
-      ctx2.createMemberExpression([
+    const node2 = ctx.createCallExpression(
+      ctx.createMemberExpression([
         base,
-        ctx2.createIdentifier("concat")
+        ctx.createIdentifier("concat")
       ]),
       content.reduce(function(acc, val) {
         if (val.type === "ArrayExpression") {
@@ -15122,56 +15555,56 @@ function createChildren2(ctx2, children, data) {
     node2.indentation = true;
     return node2;
   }
-  const node = ctx2.createArrayExpression(content);
+  const node = ctx.createArrayExpression(content);
   if (content.length > 1 || !(content[0].type === "Literal" || content[0].type === "Identifier")) {
     node.newLine = true;
   }
   return node;
 }
-function createGetEventValueNode2(ctx2, name = "e") {
-  return ctx2.createCallExpression(
-    ctx2.createMemberExpression([
-      ctx2.createThisExpression(),
-      ctx2.createIdentifier("getBindEventValue")
+function createGetEventValueNode2(ctx, name = "e") {
+  return ctx.createCallExpression(
+    ctx.createMemberExpression([
+      ctx.createThisExpression(),
+      ctx.createIdentifier("getBindEventValue")
     ]),
     [
-      ctx2.createIdentifier(name)
+      ctx.createIdentifier(name)
     ]
   );
 }
-function createDirectiveArrayNode2(ctx2, name, expression2, ...args) {
+function createDirectiveArrayNode2(ctx, name, expression2, ...args) {
   const elems = [
-    ctx2.createIdentifier(ctx2.getVNodeApi(name)),
+    ctx.createIdentifier(ctx.getVNodeApi(name)),
     expression2,
     ...args
   ];
-  return ctx2.createArrayExpression(elems);
+  return ctx.createArrayExpression(elems);
 }
-function createResolveAttriubeDirective2(ctx2, attrDirective) {
+function createResolveAttriubeDirective2(ctx, attrDirective) {
   if (!attrDirective.value)
     return;
-  return ctx2.createCallExpression(
-    createStaticReferenceNode2(ctx2, attrDirective, "web.components.Component", "resolveDirective"),
+  return ctx.createCallExpression(
+    createStaticReferenceNode2(ctx, attrDirective, "web.components.Component", "resolveDirective"),
     [
-      ctx2.createToken(attrDirective.parserAttributeValueStack()),
-      attrDirective.module ? ctx2.createThisExpression() : ctx2.createLiteral(null)
+      ctx.createToken(attrDirective.parserAttributeValueStack()),
+      attrDirective.module ? ctx.createThisExpression() : ctx.createLiteral(null)
     ]
   );
 }
-function createAttributeBindingEventNode2(ctx2, attribute, valueTokenNode) {
+function createAttributeBindingEventNode2(ctx, attribute, valueTokenNode) {
   if (attribute.value.isJSXExpressionContainer) {
     const expr = attribute.value.expression;
     if (expr.isAssignmentExpression || expr.isSequenceExpression) {
-      return ctx2.createArrowFunctionExpression(valueTokenNode);
+      return ctx.createArrowFunctionExpression(valueTokenNode);
     } else if (!expr.isFunctionExpression) {
       if (expr.isCallExpression) {
         const isBind = expr.callee.isMemberExpression && expr.callee.property.value() === "bind" && expr.arguments.length > 0 && expr.arguments[0].isThisExpression;
         if (!isBind && valueTokenNode && valueTokenNode.type === "CallExpression") {
-          valueTokenNode.arguments.push(ctx2.createIdentifier("...args"));
-          return ctx2.createArrowFunctionExpression(
+          valueTokenNode.arguments.push(ctx.createIdentifier("...args"));
+          return ctx.createArrowFunctionExpression(
             valueTokenNode,
             [
-              ctx2.createIdentifier("...args")
+              ctx.createIdentifier("...args")
             ]
           );
         }
@@ -15179,12 +15612,12 @@ function createAttributeBindingEventNode2(ctx2, attribute, valueTokenNode) {
         const desc2 = expr.description();
         const isMethod = desc2 && (desc2.isMethodDefinition && !desc2.isAccessor);
         if (isMethod) {
-          return ctx2.createCallExpression(
-            ctx2.createMemberExpression([
+          return ctx.createCallExpression(
+            ctx.createMemberExpression([
               valueTokenNode,
-              ctx2.createIdentifier("bind")
+              ctx.createIdentifier("bind")
             ]),
-            [ctx2.createThisExpression()]
+            [ctx.createThisExpression()]
           );
         }
       }
@@ -15192,8 +15625,8 @@ function createAttributeBindingEventNode2(ctx2, attribute, valueTokenNode) {
   }
   return valueTokenNode;
 }
-function getBinddingEventName2(stack2) {
-  const bindding = getMethodAnnotations(stack2, ["bindding"]);
+function getBinddingEventName2(stack) {
+  const bindding = getMethodAnnotations(stack, ["bindding"]);
   if (bindding.length > 0) {
     const [annot] = bindding;
     const args = annot.getArguments();
@@ -15201,9 +15634,9 @@ function getBinddingEventName2(stack2) {
   }
   return null;
 }
-function mergeElementPropsNode2(ctx2, data, stack2) {
+function mergeElementPropsNode2(ctx, data, stack) {
   const items = [];
-  const ssr = !!ctx2.options.ssr;
+  const ssr = !!ctx.options.ssr;
   Object.entries(data).map((item) => {
     const [key, value] = item;
     if (key === "slots" || key === "directives" || key === "keyProps") {
@@ -15224,11 +15657,11 @@ function mergeElementPropsNode2(ctx2, data, stack2) {
               value.forEach((item2) => {
                 if (item2.type === "Property") {
                   if (item2.computed) {
-                    item2.key = ctx2.createTemplateLiteral([
-                      ctx2.createTemplateElement("on")
+                    item2.key = ctx.createTemplateLiteral([
+                      ctx.createTemplateElement("on")
                     ], [
-                      ctx2.createCallExpression(
-                        createStaticReferenceNode2(ctx2, stack2, "System", "firstUpperCase"),
+                      ctx.createCallExpression(
+                        createStaticReferenceNode2(ctx, stack, "System", "firstUpperCase"),
                         [
                           item2.key
                         ]
@@ -15243,16 +15676,16 @@ function mergeElementPropsNode2(ctx2, data, stack2) {
               return;
             }
             items.push(
-              ctx2.createProperty(
-                ctx2.createIdentifier(key),
-                ctx2.createObjectExpression(value)
+              ctx.createProperty(
+                ctx.createIdentifier(key),
+                ctx.createObjectExpression(value)
               )
             );
           } else {
             items.push(
-              ctx2.createProperty(
-                ctx2.createIdentifier(key),
-                ctx2.createArrayExpression(value)
+              ctx.createProperty(
+                ctx.createIdentifier(key),
+                ctx.createArrayExpression(value)
               )
             );
           }
@@ -15262,8 +15695,8 @@ function mergeElementPropsNode2(ctx2, data, stack2) {
           items.push(value);
         } else {
           items.push(
-            ctx2.createProperty(
-              ctx2.createIdentifier(key),
+            ctx.createProperty(
+              ctx.createIdentifier(key),
               value
             )
           );
@@ -15271,50 +15704,50 @@ function mergeElementPropsNode2(ctx2, data, stack2) {
       }
     }
   });
-  const props = items.length > 0 ? ctx2.createObjectExpression(items) : null;
-  if (props && stack2 && stack2.isComponent) {
-    const desc2 = stack2.description();
-    if (desc2 && (0, import_Utils27.isModule)(desc2)) {
+  const props = items.length > 0 ? ctx.createObjectExpression(items) : null;
+  if (props && stack && stack.isComponent) {
+    const desc2 = stack.description();
+    if (desc2 && (0, import_Utils31.isModule)(desc2)) {
       let has = getModuleAnnotations(desc2, ["hook"]).some((annot) => {
-        let result = parseHookAnnotation(annot, ctx2.plugin.version, ctx2.options.metadata.versions);
+        let result = parseHookAnnotation(annot, ctx.plugin.version, ctx.options.metadata.versions);
         return result && result.type === "polyfills:props";
       });
       if (has) {
-        return createComponentPropsHookNode2(ctx2, props, ctx2.createLiteral(desc2.getName()));
+        return createComponentPropsHookNode2(ctx, props, ctx.createLiteral(desc2.getName()));
       }
     }
   }
   return props;
 }
-function createComponentPropsHookNode2(ctx2, props, className) {
-  return ctx2.createCallExpression(
-    ctx2.createMemberExpression([
-      ctx2.createThisExpression(),
-      ctx2.createIdentifier("invokeHook")
+function createComponentPropsHookNode2(ctx, props, className) {
+  return ctx.createCallExpression(
+    ctx.createMemberExpression([
+      ctx.createThisExpression(),
+      ctx.createIdentifier("invokeHook")
     ]),
     [
-      ctx2.createLiteral("polyfills:props"),
+      ctx.createLiteral("polyfills:props"),
       props,
       className
     ]
   );
 }
-function createAttributes2(ctx2, stack2, data) {
+function createAttributes2(ctx, stack, data) {
   const pushEvent = (name, node, category) => {
     let events = data[category] || (data[category] = []);
     if (!Node_default.is(name)) {
       name = String(name);
-      name = name.includes(":") ? ctx2.createLiteral(name) : ctx2.createIdentifier(name);
+      name = name.includes(":") ? ctx.createLiteral(name) : ctx.createIdentifier(name);
     }
-    let property = ctx2.createProperty(name, node);
+    let property = ctx.createProperty(name, node);
     if (property.key.computed) {
       property.computed = true;
       property.key.computed = false;
     }
     events.push(property);
   };
-  let isComponent = stack2.isComponent || stack2.isWebComponent;
-  let nodeType = !isComponent ? stack2.openingElement.name.value().toLowerCase() : null;
+  let isComponent = stack.isComponent || stack.isWebComponent;
+  let nodeType = !isComponent ? stack.openingElement.name.value().toLowerCase() : null;
   let binddingModelValue = null;
   let afterDirective = null;
   let custom = null;
@@ -15325,11 +15758,11 @@ function createAttributes2(ctx2, stack2, data) {
   } else if (nodeType === "textarea") {
     afterDirective = "vModelText";
   }
-  const forStack = stack2.getParentStack((stack3) => {
-    return stack3.scope.isForContext || !(stack3.isJSXElement || stack3.isJSXExpressionContainer);
+  const forStack = stack.getParentStack((stack2) => {
+    return stack2.scope.isForContext || !(stack2.isJSXElement || stack2.isJSXExpressionContainer);
   }, true);
   const inFor = forStack && forStack.scope && forStack.scope.isForContext ? true : false;
-  const descModule2 = stack2.isWebComponent ? stack2.description() : null;
+  const descModule2 = stack.isWebComponent ? stack.description() : null;
   const definedEmits = getComponentEmitAnnotation2(descModule2);
   const getDefinedEmitName = (name) => {
     if (definedEmits && Object.prototype.hasOwnProperty.call(definedEmits, name)) {
@@ -15337,7 +15770,7 @@ function createAttributes2(ctx2, stack2, data) {
     }
     return name;
   };
-  stack2.openingElement.attributes.forEach((item) => {
+  stack.openingElement.attributes.forEach((item) => {
     if (item.isAttributeXmlns)
       return;
     if (item.isAttributeDirective) {
@@ -15346,15 +15779,15 @@ function createAttributes2(ctx2, stack2, data) {
         if (compare(name2, "show")) {
           data.directives.push(
             createDirectiveArrayNode2(
-              ctx2,
+              ctx,
               "vShow",
-              ctx2.createToken(item.valueArgument.expression)
+              ctx.createToken(item.valueArgument.expression)
             )
           );
         } else if (compare(name2, "custom")) {
           data.directives.push(
             createResolveAttriubeDirective2(
-              ctx2,
+              ctx,
               item
             )
           );
@@ -15364,8 +15797,8 @@ function createAttributes2(ctx2, stack2, data) {
     } else if (item.isJSXSpreadAttribute) {
       if (item.argument) {
         data.props.push(
-          ctx2.createSpreadElement(
-            ctx2.createToken(item.argument),
+          ctx.createSpreadElement(
+            ctx.createToken(item.argument),
             item
           )
         );
@@ -15374,7 +15807,7 @@ function createAttributes2(ctx2, stack2, data) {
     } else if (item.isAttributeSlot) {
       return;
     }
-    let value = ctx2.createToken(item);
+    let value = ctx.createToken(item);
     if (!value)
       return;
     let ns = value.namespace;
@@ -15388,13 +15821,13 @@ function createAttributes2(ctx2, stack2, data) {
     if (ns && ns.includes("::")) {
       let [seg, className] = ns.split("::", 2);
       ns = seg;
-      name = createStaticReferenceNode2(ctx2, item, className, name);
+      name = createStaticReferenceNode2(ctx, item, className, name);
       name.computed = true;
       custom = name;
     }
     let isDOMAttribute = false;
     if (item.isMemberProperty) {
-      let attrDesc = item.getAttributeDescription(stack2.getSubClassDescription());
+      let attrDesc = item.getAttributeDescription(stack.getSubClassDescription());
       if (attrDesc) {
         isDOMAttribute = getMethodAnnotations(attrDesc, ["domattribute"]).length > 0;
       }
@@ -15407,17 +15840,17 @@ function createAttributes2(ctx2, stack2, data) {
       if (!binddingModelValue || !(binddingModelValue.type === "MemberExpression" || binddingModelValue.type === "Identifier")) {
         binddingModelValue = null;
         if (item.value && item.value.isJSXExpressionContainer) {
-          const stack3 = item.value.expression;
-          if (stack3 && stack3.isMemberExpression && !stack3.optional) {
-            binddingModelValue = ctx2.createCallExpression(
-              createStaticReferenceNode2(ctx2, stack3, "Reflect", "set"),
+          const stack2 = item.value.expression;
+          if (stack2 && stack2.isMemberExpression && !stack2.optional) {
+            binddingModelValue = ctx.createCallExpression(
+              createStaticReferenceNode2(ctx, stack2, "Reflect", "set"),
               [
-                stack3.module ? ctx2.createIdentifier(stack3.module.id) : ctx2.createLiteral(null),
-                ctx2.createToken(stack3.object),
-                stack3.computed ? ctx2.createToken(stack3.property) : ctx2.createLiteral(stack3.property.value()),
-                ctx2.createIdentifier("value")
+                stack2.module ? ctx.createIdentifier(stack2.module.id) : ctx.createLiteral(null),
+                ctx.createToken(stack2.object),
+                stack2.computed ? ctx.createToken(stack2.property) : ctx.createLiteral(stack2.property.value()),
+                ctx.createIdentifier("value")
               ],
-              stack3
+              stack2
             );
             binddingModelValue.isReflectSetter = true;
           }
@@ -15427,8 +15860,8 @@ function createAttributes2(ctx2, stack2, data) {
     if (item.isMemberProperty) {
       if (ns === "@binding" && attrLowerName === "value") {
         data.props.push(
-          ctx2.createProperty(
-            ctx2.createIdentifier(
+          ctx.createProperty(
+            ctx.createIdentifier(
               propName,
               item.name
             ),
@@ -15439,8 +15872,8 @@ function createAttributes2(ctx2, stack2, data) {
       }
       if (!isDOMAttribute) {
         data.props.push(
-          ctx2.createProperty(
-            ctx2.createIdentifier(
+          ctx.createProperty(
+            ctx.createIdentifier(
               propName,
               item.name
             ),
@@ -15462,20 +15895,20 @@ function createAttributes2(ctx2, stack2, data) {
     if (ns === "@binding") {
       const createBinddingParams = (getEvent = false) => {
         return [
-          binddingModelValue.isReflectSetter ? binddingModelValue : ctx2.createAssignmentExpression(
+          binddingModelValue.isReflectSetter ? binddingModelValue : ctx.createAssignmentExpression(
             binddingModelValue,
-            getEvent ? createGetEventValueNode2(ctx2) : ctx2.createIdentifier("e")
+            getEvent ? createGetEventValueNode2(ctx) : ctx.createIdentifier("e")
           ),
           [
-            ctx2.createIdentifier("e")
+            ctx.createIdentifier("e")
           ]
         ];
       };
       if (custom && binddingModelValue) {
-        pushEvent(custom, ctx2.createArrowFunctionExpression(
-          ...createBinddingParams(!stack2.isWebComponent)
+        pushEvent(custom, ctx.createArrowFunctionExpression(
+          ...createBinddingParams(!stack.isWebComponent)
         ), "on");
-      } else if ((stack2.isWebComponent || afterDirective) && binddingModelValue) {
+      } else if ((stack.isWebComponent || afterDirective) && binddingModelValue) {
         let eventName = propName;
         if (propName === "modelValue") {
           eventName = "update:modelValue";
@@ -15488,15 +15921,15 @@ function createAttributes2(ctx2, stack2, data) {
         }
         pushEvent(
           getDefinedEmitName(eventName),
-          ctx2.createArrowFunctionExpression(
+          ctx.createArrowFunctionExpression(
             ...createBinddingParams()
           ),
           "on"
         );
       } else if (binddingModelValue) {
         pushEvent(
-          ctx2.createIdentifier("input"),
-          ctx2.createArrowFunctionExpression(
+          ctx.createIdentifier("input"),
+          ctx.createArrowFunctionExpression(
             ...createBinddingParams(true)
           ),
           "on"
@@ -15504,7 +15937,7 @@ function createAttributes2(ctx2, stack2, data) {
       }
       if (afterDirective && binddingModelValue) {
         data.directives.push(
-          createDirectiveArrayNode2(ctx2, afterDirective, binddingModelValue)
+          createDirectiveArrayNode2(ctx, afterDirective, binddingModelValue)
         );
       }
       return;
@@ -15513,29 +15946,29 @@ function createAttributes2(ctx2, stack2, data) {
       name = propName = "ref";
       let useArray = inFor || attrLowerName === "refs";
       if (useArray) {
-        propValue = ctx2.createArrowFunctionExpression(
-          ctx2.createCallExpression(
-            ctx2.createMemberExpression([
-              ctx2.createThisExpression(),
-              ctx2.createIdentifierExpression("setRefNode")
+        propValue = ctx.createArrowFunctionExpression(
+          ctx.createCallExpression(
+            ctx.createMemberExpression([
+              ctx.createThisExpression(),
+              ctx.createIdentifierExpression("setRefNode")
             ]),
             [
               value.value,
-              ctx2.createIdentifier("node"),
-              ctx2.createLiteral(true)
+              ctx.createIdentifier("node"),
+              ctx.createLiteral(true)
             ]
           ),
           [
-            ctx2.createIdentifier("node")
+            ctx.createIdentifier("node")
           ]
         );
       }
     }
     if (name === "class" || name === "staticClass") {
       if (propValue && propValue.type !== "Literal") {
-        propValue = ctx2.createCallExpression(
-          ctx2.createIdentifier(
-            ctx2.getVNodeApi("normalizeClass")
+        propValue = ctx.createCallExpression(
+          ctx.createIdentifier(
+            ctx.getVNodeApi("normalizeClass")
           ),
           [
             propValue
@@ -15544,9 +15977,9 @@ function createAttributes2(ctx2, stack2, data) {
       }
     } else if (name === "style" || name === "staticStyle") {
       if (propValue && !(propValue.type === "Literal" || propValue.type === "ObjectExpression")) {
-        propValue = ctx2.createCallExpression(
-          ctx2.createIdentifier(
-            ctx2.getVNodeApi("normalizeStyle")
+        propValue = ctx.createCallExpression(
+          ctx.createIdentifier(
+            ctx.getVNodeApi("normalizeStyle")
           ),
           [propValue]
         );
@@ -15554,8 +15987,8 @@ function createAttributes2(ctx2, stack2, data) {
     } else if (attrLowerName === "key" || attrLowerName === "tag") {
       name = attrLowerName;
     }
-    const property = ctx2.createProperty(
-      ctx2.createIdentifier(
+    const property = ctx.createProperty(
+      ctx.createIdentifier(
         propName,
         item.name
       ),
@@ -15574,11 +16007,11 @@ function createAttributes2(ctx2, stack2, data) {
     }
   });
   if (!data.key) {
-    data.key = createElementKeyPropertyNode2(ctx2, stack2);
+    data.key = createElementKeyPropertyNode2(ctx, stack);
   }
 }
-function createElementKeyPropertyNode2(ctx2, stack2) {
-  const keys2 = ctx2.options.esx.complete.keys;
+function createElementKeyPropertyNode2(ctx, stack) {
+  const keys2 = ctx.options.esx.complete.keys;
   const fills = Array.isArray(keys2) && keys2.length > 0 ? keys2 : null;
   const all = keys2 === true;
   if (fills || all) {
@@ -15586,8 +16019,8 @@ function createElementKeyPropertyNode2(ctx2, stack2) {
     let direName = null;
     let isForContext = false;
     if (all || fills.includes("for") || fills.includes("each")) {
-      if (!stack2.isDirective && stack2.directives && Array.isArray(stack2.directives)) {
-        let directive = stack2.directives.find((directive2) => ["for", "each"].includes(directive2.name.value().toLowerCase()));
+      if (!stack.isDirective && stack.directives && Array.isArray(stack.directives)) {
+        let directive = stack.directives.find((directive2) => ["for", "each"].includes(directive2.name.value().toLowerCase()));
         if (directive) {
           isForContext = true;
           direName = directive.name.value().toLowerCase();
@@ -15597,11 +16030,11 @@ function createElementKeyPropertyNode2(ctx2, stack2) {
           }
         }
       }
-      if (!direName && stack2.parentStack.isDirective && ["for", "each"].includes(stack2.parentStack.openingElement.name.value())) {
-        const attrs = stack2.parentStack.openingElement.attributes;
+      if (!direName && stack.parentStack.isDirective && ["for", "each"].includes(stack.parentStack.openingElement.name.value())) {
+        const attrs = stack.parentStack.openingElement.attributes;
         const argument = {};
         isForContext = true;
-        direName = stack2.parentStack.openingElement.name.value().toLowerCase();
+        direName = stack.parentStack.openingElement.name.value().toLowerCase();
         attrs.forEach((attr) => {
           argument[attr.name.value()] = attr.value.value();
         });
@@ -15609,70 +16042,70 @@ function createElementKeyPropertyNode2(ctx2, stack2) {
       }
     }
     if (fills && fills.includes("condition")) {
-      if (!stack2.isDirective && stack2.directives && Array.isArray(stack2.directives)) {
-        let directive = stack2.directives.find((directive2) => ["if", "elseif", "else"].includes(directive2.name.value().toLowerCase()));
+      if (!stack.isDirective && stack.directives && Array.isArray(stack.directives)) {
+        let directive = stack.directives.find((directive2) => ["if", "elseif", "else"].includes(directive2.name.value().toLowerCase()));
         if (directive) {
           direName = directive.name.value().toLowerCase();
         }
       }
-      if (!isForContext && stack2.parentStack.isDirective && ["if", "elseif", "else"].includes(stack2.parentStack.openingElement.name.value())) {
-        direName = stack2.parentStack.openingElement.name.value().toLowerCase();
+      if (!isForContext && stack.parentStack.isDirective && ["if", "elseif", "else"].includes(stack.parentStack.openingElement.name.value())) {
+        direName = stack.parentStack.openingElement.name.value().toLowerCase();
       }
     }
     if (all || fills.includes(direName)) {
-      return ctx2.createProperty(
-        ctx2.createIdentifier("key"),
-        isForContext ? ctx2.createBinaryExpression(
-          ctx2.createLiteral(getDepth2(stack2) + "."),
-          ctx2.createIdentifier(key || "key"),
+      return ctx.createProperty(
+        ctx.createIdentifier("key"),
+        isForContext ? ctx.createBinaryExpression(
+          ctx.createLiteral(getDepth2(stack) + "."),
+          ctx.createIdentifier(key || "key"),
           "+"
-        ) : ctx2.createLiteral(getDepth2(stack2))
+        ) : ctx.createLiteral(getDepth2(stack))
       );
     }
   }
 }
-function createComponentDirectiveProperties2(ctx2, stack2, data, callback = null) {
-  if (stack2) {
-    let desc2 = stack2.description();
+function createComponentDirectiveProperties2(ctx, stack, data, callback = null) {
+  if (stack) {
+    let desc2 = stack.description();
     let parentIsComponentDirective = getComponentDirectiveAnnotation2(desc2);
     if (!parentIsComponentDirective) {
       parentIsComponentDirective = isDirectiveInterface2(desc2);
     }
     if (parentIsComponentDirective) {
-      let node = createResolveComponentDirective2(ctx2, stack2, data, callback);
+      let node = createResolveComponentDirective2(ctx, stack, data, callback);
       if (node) {
         data.directives.push(node);
       }
-      if (stack2.jsxRootElement !== stack2) {
-        createComponentDirectiveProperties2(ctx2, stack2.parentStack, data, callback);
+      if (stack.jsxRootElement !== stack) {
+        createComponentDirectiveProperties2(ctx, stack.parentStack, data, callback);
       }
       return true;
     }
   }
   return false;
 }
-function createCustomDirectiveProperties2(ctx2, stack2, data, callback = null) {
-  const node = createResolveComponentDirective2(ctx2, stack2, data, callback);
+function createCustomDirectiveProperties2(ctx, stack, data, callback = null) {
+  const node = createResolveComponentDirective2(ctx, stack, data, callback);
   if (node) {
     data.directives.push(node);
   }
-  if (stack2.parentStack && stack2.parentStack.isDirective && stack2.jsxRootElement !== stack2.parentStack) {
-    let dName = stack2.parentStack.openingElement.name.value().toLowerCase();
+  if (stack.parentStack && stack.parentStack.isDirective && stack.jsxRootElement !== stack.parentStack) {
+    let dName = stack.parentStack.openingElement.name.value().toLowerCase();
     if (dName === "custom") {
-      createCustomDirectiveProperties2(ctx2, stack2.parentStack, data, callback);
+      createCustomDirectiveProperties2(ctx, stack.parentStack, data, callback);
     }
   }
 }
-function createResolveComponentDirective2(ctx2, stack2, data, callback = null) {
+function createResolveComponentDirective2(ctx, stack, data, callback = null) {
   const props = [];
   const has = (items, name) => items && items.some((prop) => prop.key.value === name);
-  stack2.openingElement.attributes.forEach((attr) => {
+  stack.openingElement.attributes.forEach((attr) => {
     if (attr.isAttributeXmlns || attr.isAttributeDirective)
       return;
     const name = attr.name.value();
-    const property = ctx2.createProperty(
-      ctx2.createIdentifier(name),
-      attr.value ? ctx2.createToken(attr.value) : ctx2.createLiteral(true)
+    const property = ctx.createProperty(
+      ctx.createIdentifier(name),
+      attr.value ? ctx.createToken(attr.value) : ctx.createLiteral(true)
     );
     if (attr.isMemberProperty) {
       if (!has(data.props, name)) {
@@ -15689,44 +16122,44 @@ function createResolveComponentDirective2(ctx2, stack2, data, callback = null) {
       callback(property);
     }
   });
-  const object = ctx2.createObjectExpression(props);
-  const node = ctx2.createCallExpression(
-    createStaticReferenceNode2(ctx2, stack2, "web.components.Component", "resolveDirective"),
+  const object = ctx.createObjectExpression(props);
+  const node = ctx.createCallExpression(
+    createStaticReferenceNode2(ctx, stack, "web.components.Component", "resolveDirective"),
     [
       object,
-      ctx2.createThisExpression()
+      ctx.createThisExpression()
     ]
   );
   node.isInheritComponentDirective = true;
   return node;
 }
-function createSlotElementNode2(ctx2, stack2, children) {
-  const openingElement = ctx2.createToken(stack2.openingElement);
-  const args = [ctx2, stack2];
+function createSlotElementNode2(ctx, stack, children) {
+  const openingElement = ctx.createToken(stack.openingElement);
+  const args = [ctx, stack];
   let props = null;
   let params = [];
-  if (stack2.isSlotDeclared) {
-    args.push(ctx2.createLiteral(stack2.openingElement.name.value()));
+  if (stack.isSlotDeclared) {
+    args.push(ctx.createLiteral(stack.openingElement.name.value()));
     if (openingElement.attributes.length > 0) {
       const properties = openingElement.attributes.map((attr) => {
-        return ctx2.createProperty(
+        return ctx.createProperty(
           attr.name,
           attr.value
         );
       });
-      props = ctx2.createObjectExpression(properties);
+      props = ctx.createObjectExpression(properties);
     } else {
-      props = ctx2.createObjectExpression();
+      props = ctx.createObjectExpression();
     }
     args.push(props);
-  } else if (stack2.openingElement.attributes.length > 0) {
-    const attribute = stack2.openingElement.attributes[0];
+  } else if (stack.openingElement.attributes.length > 0) {
+    const attribute = stack.openingElement.attributes[0];
     if (attribute.value) {
-      const stack3 = attribute.parserSlotScopeParamsStack();
+      const stack2 = attribute.parserSlotScopeParamsStack();
       params.push(
-        ctx2.createAssignmentExpression(
-          ctx2.createToken(stack3),
-          ctx2.createObjectExpression()
+        ctx.createAssignmentExpression(
+          ctx.createToken(stack2),
+          ctx.createObjectExpression()
         )
       );
     }
@@ -15738,13 +16171,13 @@ function createSlotElementNode2(ctx2, stack2, children) {
       children = null;
     }
     if (children) {
-      args.push(ctx2.createArrowFunctionExpression(children, params));
+      args.push(ctx.createArrowFunctionExpression(children, params));
     }
   }
   return createSlotNode2(...args);
 }
-function createDirectiveElementNode2(ctx2, stack2, children) {
-  const openingElement = stack2.openingElement;
+function createDirectiveElementNode2(ctx, stack, children) {
+  const openingElement = stack.openingElement;
   const name = openingElement.name.value().toLowerCase();
   switch (name) {
     case "custom":
@@ -15752,8 +16185,8 @@ function createDirectiveElementNode2(ctx2, stack2, children) {
       return children;
     case "if":
     case "elseif": {
-      const condition = ctx2.createToken(stack2.attributes[0].parserAttributeValueStack());
-      const node = ctx2.createNode("ConditionalExpression");
+      const condition = ctx.createToken(stack.attributes[0].parserAttributeValueStack());
+      const node = ctx.createNode("ConditionalExpression");
       node.test = condition;
       node.consequent = children;
       return node;
@@ -15762,134 +16195,134 @@ function createDirectiveElementNode2(ctx2, stack2, children) {
       return children;
     case "for":
     case "each": {
-      const attrs = stack2.openingElement.attributes;
+      const attrs = stack.openingElement.attributes;
       const argument = {};
       attrs.forEach((attr) => {
         if (attr.name.value() === "name") {
-          argument["refs"] = ctx2.createToken(attr.parserAttributeValueStack());
+          argument["refs"] = ctx.createToken(attr.parserAttributeValueStack());
         } else {
-          argument[attr.name.value()] = ctx2.createIdentifier(attr.value.value());
+          argument[attr.name.value()] = ctx.createIdentifier(attr.value.value());
         }
       });
-      let item = argument.item || ctx2.createIdentifier("item");
-      let key = argument.key || ctx2.createIdentifier("key");
-      let node = name === "for" ? createForMapNode2(ctx2, argument.refs, children, item, key, argument.index, stack2) : createForEachNode2(ctx2, argument.refs, children, item, key);
+      let item = argument.item || ctx.createIdentifier("item");
+      let key = argument.key || ctx.createIdentifier("key");
+      let node = name === "for" ? createForMapNode2(ctx, argument.refs, children, item, key, argument.index, stack) : createForEachNode2(ctx, argument.refs, children, item, key);
       node.isForNode = true;
       return node;
     }
   }
   return null;
 }
-function createHandleNode2(ctx2, stack2, ...args) {
-  let handle = ctx2.createIdentifier(
-    ctx2.getLocalRefName(
-      stack2,
-      ctx2.options.esx.handle || "createVNode"
+function createHandleNode2(ctx, stack, ...args) {
+  let handle = ctx.createIdentifier(
+    ctx.getLocalRefName(
+      stack,
+      ctx.options.esx.handle || "createVNode"
     )
   );
-  return ctx2.createCallExpression(handle, args);
+  return ctx.createCallExpression(handle, args);
 }
-function createElementNode2(ctx2, stack2, data, children) {
+function createElementNode2(ctx, stack, data, children) {
   let name = null;
-  if (stack2.isComponent) {
-    if (stack2.jsxRootElement === stack2 && stack2.parentStack.isProgram) {
-      name = ctx2.createLiteral("div");
+  if (stack.isComponent) {
+    if (stack.jsxRootElement === stack && stack.parentStack.isProgram) {
+      name = ctx.createLiteral("div");
     } else {
-      const desc2 = stack2.description();
-      if ((0, import_Utils27.isModule)(desc2)) {
-        ctx2.addDepend(desc2, stack2.module);
-        name = ctx2.createIdentifier(
-          ctx2.getModuleReferenceName(desc2, stack2.module)
+      const desc2 = stack.description();
+      if ((0, import_Utils31.isModule)(desc2)) {
+        ctx.addDepend(desc2, stack.module);
+        name = ctx.createIdentifier(
+          ctx.getModuleReferenceName(desc2, stack.module)
         );
       } else {
-        name = ctx2.createIdentifier(
-          stack2.openingElement.name.value(),
-          stack2.openingElement.name
+        name = ctx.createIdentifier(
+          stack.openingElement.name.value(),
+          stack.openingElement.name
         );
       }
     }
   } else {
-    name = ctx2.createLiteral(stack2.openingElement.name.value());
+    name = ctx.createLiteral(stack.openingElement.name.value());
   }
-  data = mergeElementPropsNode2(ctx2, data, stack2);
+  data = mergeElementPropsNode2(ctx, data, stack);
   if (children) {
-    return createHandleNode2(ctx2, stack2, name, data || ctx2.createLiteral(null), children);
+    return createHandleNode2(ctx, stack, name, data || ctx.createLiteral(null), children);
   } else if (data) {
-    return createHandleNode2(ctx2, stack2, name, data);
+    return createHandleNode2(ctx, stack, name, data);
   } else {
-    return createHandleNode2(ctx2, stack2, name);
+    return createHandleNode2(ctx, stack, name);
   }
 }
-function getDepth2(stack2) {
-  let parentStack = stack2.parentStack;
+function getDepth2(stack) {
+  let parentStack = stack.parentStack;
   while (parentStack) {
     if (parentStack.isJSXElement || parentStack.isJSXExpressionContainer || parentStack.isMethodDefinition || parentStack.isProgram)
       break;
     parentStack = parentStack.parentStack;
   }
   if (parentStack && (parentStack.isDirective || parentStack.isSlot || parentStack.isJSXExpressionContainer)) {
-    const index = stack2.childIndexAt;
+    const index = stack.childIndexAt;
     const prefix = getDepth2(parentStack);
     return prefix ? prefix + "." + index : index;
   }
-  return stack2.childIndexAt;
+  return stack.childIndexAt;
 }
-function getChildren2(stack2) {
-  return stack2.children.filter((child) => {
+function getChildren2(stack) {
+  return stack.children.filter((child) => {
     return !(child.isJSXScript && child.isScriptProgram || child.isJSXStyle);
   });
 }
-function createElement2(ctx2, stack2) {
+function createElement2(ctx, stack) {
   let data = {
     directives: [],
     slots: {},
     attrs: [],
     props: []
   };
-  let isRoot = stack2.jsxRootElement === stack2;
-  let children = getChildren2(stack2);
-  let childNodes = createChildren2(ctx2, children, data, stack2);
-  let desc2 = stack2.description();
+  let isRoot = stack.jsxRootElement === stack;
+  let children = getChildren2(stack);
+  let childNodes = createChildren2(ctx, children, data, stack);
+  let desc2 = stack.description();
   let componentDirective = getComponentDirectiveAnnotation2(desc2);
   let nodeElement = null;
-  if (stack2.isDirective && stack2.openingElement.name.value().toLowerCase() === "custom") {
+  if (stack.isDirective && stack.openingElement.name.value().toLowerCase() === "custom") {
     componentDirective = true;
-  } else if (stack2.isComponent && isDirectiveInterface2(desc2)) {
+  } else if (stack.isComponent && isDirectiveInterface2(desc2)) {
     componentDirective = true;
   }
   if (componentDirective) {
     return childNodes;
   }
-  if (stack2.parentStack && stack2.parentStack.isDirective) {
-    let dName = stack2.parentStack.openingElement.name.value().toLowerCase();
+  if (stack.parentStack && stack.parentStack.isDirective) {
+    let dName = stack.parentStack.openingElement.name.value().toLowerCase();
     if (dName === "show") {
-      const condition = stack2.parentStack.openingElement.attributes[0];
+      const condition = stack.parentStack.openingElement.attributes[0];
       data.directives.push(
         createDirectiveArrayNode2(
-          ctx2,
+          ctx,
           "vShow",
-          ctx2.createToken(condition.parserAttributeValueStack())
+          ctx.createToken(condition.parserAttributeValueStack())
         )
       );
     } else if (dName === "custom") {
-      createCustomDirectiveProperties2(ctx2, stack2.parentStack, data);
+      createCustomDirectiveProperties2(ctx, stack.parentStack, data);
     }
   } else {
-    createComponentDirectiveProperties2(ctx2, stack2.parentStack, data);
+    createComponentDirectiveProperties2(ctx, stack.parentStack, data);
   }
-  if (!stack2.isJSXFragment) {
-    if (!(isRoot && stack2.openingElement.name.value() === "root")) {
-      createAttributes2(ctx2, stack2, data);
+  if (!stack.isJSXFragment) {
+    if (!(isRoot && stack.openingElement.name.value() === "root")) {
+      createAttributes2(ctx, stack, data);
     }
   }
-  const isWebComponent = stack2.isWebComponent && !(stack2.compilation.JSX && stack2.parentStack.isProgram);
+  const isWebComponent = stack.isWebComponent && !(stack.compilation.JSX && stack.parentStack.isProgram);
   if (isWebComponent) {
     const properties = [];
     if (childNodes) {
-      properties.push(ctx2.createProperty(
-        ctx2.createIdentifier("default"),
+      properties.push(ctx.createProperty(
+        ctx.createIdentifier("default"),
         createWithCtxNode2(
-          ctx2.createArrowFunctionExpression(childNodes)
+          ctx.createArrowFunctionExpression(childNodes)
         )
       ));
       childNodes = null;
@@ -15897,53 +16330,53 @@ function createElement2(ctx2, stack2) {
     if (data.slots) {
       for (let key in data.slots) {
         properties.push(
-          ctx2.createProperty(
-            ctx2.createIdentifier(key),
+          ctx.createProperty(
+            ctx.createIdentifier(key),
             data.slots[key]
           )
         );
       }
     }
     if (properties.length > 0) {
-      childNodes = ctx2.createObjectExpression(properties);
+      childNodes = ctx.createObjectExpression(properties);
     }
   }
-  if (stack2.isSlot) {
-    nodeElement = createSlotElementNode2(ctx2, stack2, childNodes);
-  } else if (stack2.isDirective) {
-    nodeElement = createDirectiveElementNode2(ctx2, stack2, childNodes);
+  if (stack.isSlot) {
+    nodeElement = createSlotElementNode2(ctx, stack, childNodes);
+  } else if (stack.isDirective) {
+    nodeElement = createDirectiveElementNode2(ctx, stack, childNodes);
   } else {
-    if (stack2.isJSXFragment || isRoot && !isWebComponent && stack2.openingElement.name.value() === "root") {
+    if (stack.isJSXFragment || isRoot && !isWebComponent && stack.openingElement.name.value() === "root") {
       if (Array.isArray(childNodes) && childNodes.length === 1) {
         nodeElement = childNodes[0];
       } else {
-        nodeElement = createFragmentVNode2(ctx2, childNodes);
+        nodeElement = createFragmentVNode2(ctx, childNodes);
       }
     } else {
-      nodeElement = createElementNode2(ctx2, stack2, data, childNodes);
+      nodeElement = createElementNode2(ctx, stack, data, childNodes);
     }
   }
   if (nodeElement && data.directives && data.directives.length > 0) {
-    nodeElement = createWithDirectives2(ctx2, nodeElement, data.directives);
+    nodeElement = createWithDirectives2(ctx, nodeElement, data.directives);
   }
   return nodeElement;
 }
 
 // lib/tokens/JSXElement.js
-function JSXElement2(ctx2, stack2) {
-  if (!ctx2.options.esx.enable)
+function JSXElement2(ctx, stack) {
+  if (!ctx.options.esx.enable)
     return;
-  return createElement2(ctx2, stack2);
+  return createElement2(ctx, stack);
 }
 
 // lib/tokens/JSXEmptyExpression.js
-function JSXEmptyExpression_default2(ctx2, stack2) {
+function JSXEmptyExpression_default2(ctx, stack) {
   return null;
 }
 
 // lib/tokens/JSXExpressionContainer.js
-function JSXExpressionContainer_default2(ctx2, stack2) {
-  return ctx2.createToken(stack2.expression);
+function JSXExpressionContainer_default2(ctx, stack) {
+  return ctx.createToken(stack.expression);
 }
 
 // lib/tokens/JSXFragment.js
@@ -15951,126 +16384,126 @@ var JSXFragment_default2 = JSXElement2;
 
 // lib/tokens/JSXIdentifier.js
 init_Common2();
-function JSXIdentifier_default2(ctx2, stack2) {
-  var name = stack2.value();
-  if (stack2.parentStack.parentStack.isJSXAttribute) {
+function JSXIdentifier_default2(ctx, stack) {
+  var name = stack.value();
+  if (stack.parentStack.parentStack.isJSXAttribute) {
     if (name.includes("-")) {
-      return ctx2.createIdentifier(toCamelCase(name), stack2);
+      return ctx.createIdentifier(toCamelCase(name), stack);
     }
   }
-  const node = ctx2.createNode(stack2, "Identifier");
+  const node = ctx.createNode(stack, "Identifier");
   node.value = name;
   node.raw = name;
   return node;
 }
 
 // lib/tokens/JSXMemberExpression.js
-function JSXMemberExpression_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.object = ctx2.createToken(stack2.object);
-  node.property = ctx2.createToken(stack2.property);
+function JSXMemberExpression_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.object = ctx.createToken(stack.object);
+  node.property = ctx.createToken(stack.property);
   return node;
 }
 
 // lib/tokens/JSXNamespacedName.js
-function JSXNamespacedName_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.name = ctx2.createToken(stack2.name);
-  node.namespace = ctx2.createToken(stack2.namespace);
-  const xmlns = stack2.getXmlNamespace();
+function JSXNamespacedName_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.name = ctx.createToken(stack.name);
+  node.namespace = ctx.createToken(stack.namespace);
+  const xmlns = stack.getXmlNamespace();
   if (xmlns) {
     node.value = xmlns.value.value();
   } else {
-    const ops2 = stack2.compiler.options;
-    node.value = ops2.jsx.xmlns.default[stack2.namespace.value()] || null;
+    const ops2 = stack.compiler.options;
+    node.value = ops2.jsx.xmlns.default[stack.namespace.value()] || null;
   }
   node.raw = node.value;
   return node;
 }
 
 // lib/tokens/JSXOpeningElement.js
-function JSXOpeningElement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.attributes = stack2.attributes.map((attr) => ctx2.createToken(attr));
-  node.selfClosing = !!stack2.selfClosing;
-  if (stack2.parentStack.isComponent) {
-    const desc2 = stack2.parentStack.description();
+function JSXOpeningElement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.attributes = stack.attributes.map((attr) => ctx.createToken(attr));
+  node.selfClosing = !!stack.selfClosing;
+  if (stack.parentStack.isComponent) {
+    const desc2 = stack.parentStack.description();
     if (desc2) {
-      if (stack2.hasNamespaced && desc2.isFragment) {
-        node.name = ctx2.createIdentifier(desc2.id, stack2.name);
+      if (stack.hasNamespaced && desc2.isFragment) {
+        node.name = ctx.createIdentifier(desc2.id, stack.name);
       } else {
-        node.name = ctx2.createIdentifier(ctx2.getModuleReferenceName(desc2, stack2.module), stack2.name);
+        node.name = ctx.createIdentifier(ctx.getModuleReferenceName(desc2, stack.module), stack.name);
       }
     } else {
-      node.name = ctx2.createIdentifier(stack2.name.value(), stack2.name);
+      node.name = ctx.createIdentifier(stack.name.value(), stack.name);
     }
   } else {
-    node.name = ctx2.createLiteral(stack2.name.value(), void 0, stack2.name);
+    node.name = ctx.createLiteral(stack.name.value(), void 0, stack.name);
   }
   return node;
 }
 
 // lib/tokens/JSXOpeningFragment.js
-function JSXOpeningFragment_default2(ctx2, stack2) {
-  return ctx2.createNode(stack2);
+function JSXOpeningFragment_default2(ctx, stack) {
+  return ctx.createNode(stack);
 }
 
 // lib/tokens/JSXScript.js
-function JSXScript_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.openingElement = ctx2.createToken(stack2.openingElement);
-  node.closingElement = ctx2.createToken(stack2.closingElement);
-  node.body = (stack2.body || []).map((child) => ctx2.createToken(child));
+function JSXScript_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.openingElement = ctx.createToken(stack.openingElement);
+  node.closingElement = ctx.createToken(stack.closingElement);
+  node.body = (stack.body || []).map((child) => ctx.createToken(child));
 }
 
 // lib/tokens/JSXSpreadAttribute.js
-function JSXSpreadAttribute_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.argument = ctx2.createToken(stack2.argument);
+function JSXSpreadAttribute_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.argument = ctx.createToken(stack.argument);
   return node;
 }
 
 // lib/tokens/JSXStyle.js
-function JSXStyle_default2(ctx2, stack2) {
+function JSXStyle_default2(ctx, stack) {
   return null;
 }
 
 // lib/tokens/JSXText.js
-function JSXText_default2(ctx2, stack2) {
-  let value = stack2.value();
+function JSXText_default2(ctx, stack) {
+  let value = stack.value();
   if (value) {
     value = value.replace(/\s+/g, " ").replace(/(\u0022|\u0027)/g, "\\$1");
     if (value) {
-      return ctx2.createLiteral(value);
+      return ctx.createLiteral(value);
     }
   }
   return null;
 }
 
 // lib/tokens/LabeledStatement.js
-function LabeledStatement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.label = ctx2.createIdentifier(stack2.label.value(), stack2.label);
-  node.body = ctx2.createToken(stack2.body);
+function LabeledStatement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.label = ctx.createIdentifier(stack.label.value(), stack.label);
+  node.body = ctx.createToken(stack.body);
   return node;
 }
 
 // lib/tokens/Literal.js
-function Literal_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.raw = stack2.raw();
+function Literal_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.raw = stack.raw();
   const code = node.raw.charCodeAt(0);
   if (code === 34 || code === 39) {
     node.value = node.raw.slice(1, -1);
   } else {
-    node.value = stack2.value();
+    node.value = stack.value();
   }
   if (code === 34) {
     node.raw = `'${node.value.replace("'", "\\'")}'`;
   }
-  const type = stack2.type();
+  const type = stack.type();
   if (type && type.toString().toLowerCase() === "regexp") {
-    ctx2.addDepend(type.inherit, stack2.module || stack2.compilation);
+    ctx.addDepend(type.inherit, stack.module || stack.compilation);
     let pattern = node.raw.trim();
     let index = node.raw.lastIndexOf("/");
     if (pattern.charCodeAt(0) !== 47 || !(index > 0)) {
@@ -16079,12 +16512,12 @@ function Literal_default2(ctx2, stack2) {
       let glog = pattern.slice(index + 1);
       pattern = pattern.slice(1, index);
       const args = [pattern, glog].filter((item) => !!item);
-      const newNode = ctx2.createNewExpression(
-        ctx2.createIdentifier(ctx2.getModuleReferenceName(type.inherit, stack2.module)),
-        args.map((item) => ctx2.createLiteral(item))
+      const newNode = ctx.createNewExpression(
+        ctx.createIdentifier(ctx.getModuleReferenceName(type.inherit, stack.module)),
+        args.map((item) => ctx.createLiteral(item))
       );
-      if (stack2.parentStack.isMemberExpression) {
-        return ctx2.createParenthesizedExpression(newNode);
+      if (stack.parentStack.isMemberExpression) {
+        return ctx.createParenthesizedExpression(newNode);
       } else {
         return newNode;
       }
@@ -16095,50 +16528,50 @@ function Literal_default2(ctx2, stack2) {
 
 // lib/tokens/LogicalExpression.js
 init_Common2();
-function isBooleanExpression(stack2) {
-  if (!stack2 || !stack2.parentStack)
+function isBooleanExpression(stack) {
+  if (!stack || !stack.parentStack)
     return false;
-  if (stack2.parentStack.isLogicalExpression || stack2.parentStack.isUnaryExpression || stack2.parentStack.isParenthesizedExpression) {
-    return isBooleanExpression(stack2.parentStack);
+  if (stack.parentStack.isLogicalExpression || stack.parentStack.isUnaryExpression || stack.parentStack.isParenthesizedExpression) {
+    return isBooleanExpression(stack.parentStack);
   }
-  return stack2.parentStack.isIfStatement || stack2.parentStack.isWhileStatement || stack2.parentStack.isArrowFunctionExpression || stack2.parentStack.isForStatement || stack2.parentStack.isBinaryExpression || stack2.parentStack.isDoWhileStatement;
+  return stack.parentStack.isIfStatement || stack.parentStack.isWhileStatement || stack.parentStack.isArrowFunctionExpression || stack.parentStack.isForStatement || stack.parentStack.isBinaryExpression || stack.parentStack.isDoWhileStatement;
 }
-function LogicalExpression_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  const isAnd = stack2.node.operator.charCodeAt(0) === 38;
-  const isBoolean = isBooleanExpression(stack2);
+function LogicalExpression_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  const isAnd = stack.node.operator.charCodeAt(0) === 38;
+  const isBoolean = isBooleanExpression(stack);
   if (!isBoolean) {
-    const needRefs = !stack2.parentStack.isSwitchCase;
-    const type = stack2.left.type();
-    const createRefs2 = !isAnd && !stack2.left.isIdentifier;
+    const needRefs = !stack.parentStack.isSwitchCase;
+    const type = stack.left.type();
+    const createRefs2 = !isAnd && !stack.left.isIdentifier;
     let refs = null;
     if (needRefs) {
-      let left = ctx2.createToken(stack2.left);
-      let right = ctx2.createToken(stack2.right);
+      let left = ctx.createToken(stack.left);
+      let right = ctx.createToken(stack.right);
       let condition = left;
       let isAddress = false;
-      if (!isAnd && ctx2.isPassableReferenceExpress(stack2.left, type)) {
+      if (!isAnd && ctx.isPassableReferenceExpress(stack.left, type)) {
         isAddress = true;
       }
       if (createRefs2) {
-        refs = ctx2.getLocalRefName(stack2, "__REF");
-        ctx2.insertTokenToBlock(
-          stack2,
-          ctx2.createAssignmentExpression(
-            ctx2.createVarIdentifier(refs),
-            isAddress ? createAddressRefsNode(ctx2, left) : left
+        refs = ctx.getLocalRefName(stack, AddressVariable_default.REFS_VALUE, stack);
+        ctx.insertTokenToBlock(
+          stack,
+          ctx.createAssignmentExpression(
+            ctx.createVarIdentifier(refs),
+            isAddress ? createAddressRefsNode(ctx, left) : left
           )
         );
-        left = ctx2.createVarIdentifier(refs);
-        condition = createExpressionTransformBooleanValueNode(ctx2, stack2.left, null, type, null, left);
+        left = ctx.createVarIdentifier(refs);
+        condition = createExpressionTransformBooleanValueNode(ctx, stack.left, null, type, null, left);
       } else {
-        condition = createExpressionTransformBooleanValueNode(ctx2, stack2.left, null, type, null, left);
+        condition = createExpressionTransformBooleanValueNode(ctx, stack.left, null, type, null, left);
       }
       if (isAddress) {
-        left = createAddressRefsNode(ctx2, left);
+        left = createAddressRefsNode(ctx, left);
       }
       let rightInitial = null;
-      if (ctx2.isPassableReferenceExpress(stack2.right, stack2.right.type())) {
+      if (ctx.isPassableReferenceExpress(stack.right, stack.right.type())) {
         if (right.type === "ParenthesizedExpression") {
           right = right.expression;
         }
@@ -16146,129 +16579,129 @@ function LogicalExpression_default2(ctx2, stack2) {
           rightInitial = right;
           right = right.left;
         }
-        right = createAddressRefsNode(ctx2, right);
+        right = createAddressRefsNode(ctx, right);
         isAddress = true;
       }
       if (isAddress) {
-        const result = ctx2.getLocalRefName(stack2, AddressVariable_default.REFS_NAME);
-        const assignName = ctx2.getLocalRefName(stack2, AddressVariable_default.REFS_INDEX);
-        const key0 = ctx2.createAssignmentExpression(
-          ctx2.createVarIdentifier(assignName),
-          ctx2.createLiteral(0)
+        const result = ctx.getLocalRefName(stack, AddressVariable_default.REFS_NAME, stack);
+        const assignName = ctx.getLocalRefName(stack, AddressVariable_default.REFS_INDEX, stack);
+        const key0 = ctx.createAssignmentExpression(
+          ctx.createVarIdentifier(assignName),
+          ctx.createLiteral(0)
         );
-        const key1 = ctx2.createAssignmentExpression(
-          ctx2.createVarIdentifier(assignName),
-          ctx2.createLiteral(1)
+        const key1 = ctx.createAssignmentExpression(
+          ctx.createVarIdentifier(assignName),
+          ctx.createLiteral(1)
         );
-        const key2 = ctx2.createAssignmentExpression(
-          ctx2.createVarIdentifier(assignName),
-          ctx2.createLiteral(2)
+        const key2 = ctx.createAssignmentExpression(
+          ctx.createVarIdentifier(assignName),
+          ctx.createLiteral(2)
         );
-        ctx2.insertTokenToBlock(
-          stack2,
-          ctx2.createAssignmentExpression(
-            ctx2.createComputeMemberExpression([
-              ctx2.createVarIdentifier(result),
+        ctx.insertTokenToBlock(
+          stack,
+          ctx.createAssignmentExpression(
+            ctx.createComputeMemberExpression([
+              ctx.createVarIdentifier(result),
               key0
             ]),
-            ctx2.createLiteral(null)
+            ctx.createLiteral(null)
           )
         );
-        let consequent = ctx2.createAssignmentExpression(
-          ctx2.createComputeMemberExpression([
-            ctx2.createVarIdentifier(result),
+        let consequent = ctx.createAssignmentExpression(
+          ctx.createComputeMemberExpression([
+            ctx.createVarIdentifier(result),
             key1
           ]),
           right
         );
         if (rightInitial) {
-          const block = ctx2.createNode("BlockStatement");
+          const block = ctx.createNode("BlockStatement");
           block.body = [
-            ctx2.createExpressionStatement(rightInitial),
-            ctx2.createExpressionStatement(consequent)
+            ctx.createExpressionStatement(rightInitial),
+            ctx.createExpressionStatement(consequent)
           ];
           consequent = block;
         }
         let alternate = null;
         if (!isAnd) {
           alternate = consequent;
-          consequent = ctx2.createAssignmentExpression(
-            ctx2.createComputeMemberExpression([
-              ctx2.createVarIdentifier(result),
+          consequent = ctx.createAssignmentExpression(
+            ctx.createComputeMemberExpression([
+              ctx.createVarIdentifier(result),
               key2
             ], null, true),
             left
           );
         }
-        ctx2.insertTokenToBlock(
-          stack2,
-          ctx2.createIfStatement(condition, consequent, alternate)
+        ctx.insertTokenToBlock(
+          stack,
+          ctx.createIfStatement(condition, consequent, alternate)
         );
-        return ctx2.createComputeMemberExpression([
-          ctx2.createVarIdentifier(result),
-          ctx2.createVarIdentifier(assignName)
+        return ctx.createComputeMemberExpression([
+          ctx.createVarIdentifier(result),
+          ctx.createVarIdentifier(assignName)
         ]);
       }
     }
-    if (isAnd || stack2.left.isIdentifier) {
+    if (isAnd || stack.left.isIdentifier) {
       if (isAnd) {
-        return ctx2.createConditionalExpression(
-          createExpressionTransformBooleanValueNode(ctx2, stack2.left, null, type),
-          ctx2.createToken(stack2.right),
-          ctx2.createLiteral(null)
+        return ctx.createConditionalExpression(
+          createExpressionTransformBooleanValueNode(ctx, stack.left, null, type),
+          ctx.createToken(stack.right),
+          ctx.createLiteral(null)
         );
       }
-      return ctx2.createConditionalExpression(
-        createExpressionTransformBooleanValueNode(ctx2, stack2.left, null, type),
-        ctx2.createToken(stack2.left),
-        ctx2.createToken(stack2.right)
+      return ctx.createConditionalExpression(
+        createExpressionTransformBooleanValueNode(ctx, stack.left, null, type),
+        ctx.createToken(stack.left),
+        ctx.createToken(stack.right)
       );
     } else {
-      return ctx2.createConditionalExpression(
-        createRefs2 && needRefs ? createExpressionTransformBooleanValueNode(ctx2, stack2.left, null, type, null, ctx2.createVarIdentifier(refs)) : createExpressionTransformBooleanValueNode(ctx2, stack2.left, refs, type),
-        ctx2.createVarIdentifier(refs),
-        ctx2.createToken(stack2.right)
+      return ctx.createConditionalExpression(
+        createRefs2 && needRefs ? createExpressionTransformBooleanValueNode(ctx, stack.left, null, type, null, ctx.createVarIdentifier(refs)) : createExpressionTransformBooleanValueNode(ctx, stack.left, refs, type),
+        ctx.createVarIdentifier(refs),
+        ctx.createToken(stack.right)
       );
     }
   }
-  node.left = createExpressionTransformBooleanValueNode(ctx2, stack2.left);
-  node.right = createExpressionTransformBooleanValueNode(ctx2, stack2.right);
-  node.operator = stack2.operator;
+  node.left = createExpressionTransformBooleanValueNode(ctx, stack.left);
+  node.right = createExpressionTransformBooleanValueNode(ctx, stack.right);
+  node.operator = stack.operator;
   return node;
 }
 
 // lib/tokens/MemberExpression.js
-var import_Utils28 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils32 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
-function trans(ctx2, stack2, description, aliasAnnotation, objectType) {
+function trans(ctx, stack, description, aliasAnnotation, objectType) {
   var type = objectType;
-  var name = ctx2.getAvailableOriginType(type) || type.toString();
+  var name = ctx.getAvailableOriginType(type) || type.toString();
   if (objectType && (objectType.isUnionType || objectType.isIntersectionType) && description && description.isMethodDefinition && description.module && description.module.isModule) {
     name = description.module.id;
   }
   if (transforms_default.has(name)) {
     const object = transforms_default.get(name);
-    let key = stack2.computed ? "$computed" : stack2.property.value();
+    let key = stack.computed ? "$computed" : stack.property.value();
     if (description && (description.isPropertyDefinition || description.isMethodDefinition)) {
-      if (description.value() === stack2.property.value()) {
-        key = stack2.property.value();
+      if (description.value() === stack.property.value()) {
+        key = stack.property.value();
       }
     }
     if (Object.prototype.hasOwnProperty.call(object, key)) {
-      if (stack2.computed) {
+      if (stack.computed) {
         return object[key](
-          stack2,
-          ctx2,
-          ctx2.createToken(stack2.object),
-          [ctx2.createToken(stack2.property)],
+          stack,
+          ctx,
+          ctx.createToken(stack.object),
+          [ctx.createToken(stack.property)],
           false,
           false
         );
       }
       if (description.static) {
         return object[key](
-          stack2,
-          ctx2,
+          stack,
+          ctx,
           null,
           [],
           false,
@@ -16276,9 +16709,9 @@ function trans(ctx2, stack2, description, aliasAnnotation, objectType) {
         );
       } else {
         return object[key](
-          stack2,
-          ctx2,
-          ctx2.createToken(stack2.object),
+          stack,
+          ctx,
+          ctx.createToken(stack.object),
           [],
           false,
           false
@@ -16293,78 +16726,78 @@ function getAliasAnnotation(desc2) {
     return null;
   return desc2.getAnnotationAlias();
 }
-function MemberExpression2(ctx2, stack2) {
-  let module2 = stack2.module;
-  let description = stack2.descriptor();
+function MemberExpression2(ctx, stack) {
+  let module2 = stack.module;
+  let description = stack.descriptor();
   let computed = false;
-  if (description && import_Utils28.default.isTypeModule(description)) {
-    ctx2.addDepend(description);
-    if (stack2.parentStack.isMemberExpression || stack2.parentStack.isNewExpression || stack2.parentStack.isCallExpression) {
-      return ctx2.createIdentifier(ctx2.getModuleReferenceName(description, module2), stack2);
+  if (description && import_Utils32.default.isTypeModule(description)) {
+    ctx.addDepend(description);
+    if (stack.parentStack.isMemberExpression || stack.parentStack.isNewExpression || stack.parentStack.isCallExpression) {
+      return ctx.createIdentifier(ctx.getModuleReferenceName(description, module2), stack);
     } else {
-      return createClassRefsNode(ctx2, description, stack2);
+      return createClassRefsNode(ctx, description, stack);
     }
   }
-  let objCtx = stack2.object.getContext();
-  let objectType = ctx2.inferType(stack2.object, objCtx);
-  let objectDescription = stack2.object.descriptor();
+  let objCtx = stack.object.getContext();
+  let objectType = ctx.inferType(stack.object, objCtx);
+  let objectDescription = stack.object.descriptor();
   let rawObjectType = objectType;
   let isWrapType = false;
   if (objectType.isClassGenericType && objectType.inherit.isAliasType) {
-    objectType = ctx2.inferType(objectType.inherit.inherit.type(), objCtx);
+    objectType = ctx.inferType(objectType.inherit.inherit.type(), objCtx);
     isWrapType = true;
   }
-  if (objectType.isNamespace && !stack2.parentStack.isMemberExpression) {
-    let mappingNs = ctx2.getMappingNamespace(stack2.value());
+  if (objectType.isNamespace && !stack.parentStack.isMemberExpression) {
+    let mappingNs = ctx.getMappingNamespace(stack.value());
     if (mappingNs === false)
-      return ctx2.createLiteral(null);
+      return ctx.createLiteral(null);
     if (mappingNs) {
-      return ctx2.createIdentifier(mappingNs);
+      return ctx.createIdentifier(mappingNs);
     }
-    return ctx2.createIdentifier("\\" + stack2.value().replace(/\./g, "\\"));
+    return ctx.createIdentifier("\\" + stack.value().replace(/\./g, "\\"));
   }
   if (!description || description.isType && description.isAnyType) {
-    let isCall = stack2.parentStack.parentStack.isCallExpression;
-    if (!description || isCall) {
-      let mappingNs = ctx2.getMappingNamespace(stack2.value());
+    let isCall = stack.parentStack.parentStack.isCallExpression;
+    if (!description && isCall) {
+      let mappingNs = ctx.getMappingNamespace(stack.value());
       if (mappingNs === false)
-        return ctx2.createLiteral(null);
+        return ctx.createLiteral(null);
       if (mappingNs) {
-        return ctx2.createLiteral(mappingNs.replace(/\\/g, "\\\\"));
+        return ctx.createLiteral(mappingNs.replace(/\\/g, "\\\\"));
       }
-      return ctx2.createLiteral("\\\\" + stack2.value().replace(/\./g, "\\\\"));
+      return ctx.createLiteral("\\\\" + stack.value().replace(/\./g, "\\\\"));
     }
     let isReflect = !!objectType.isAnyType;
     let hasDynamic = description && description.isComputeType && description.isPropertyExists();
-    if (!hasDynamic && !import_Utils28.default.isLiteralObjectType(objectType)) {
+    if (!hasDynamic && !import_Utils32.default.isLiteralObjectType(objectType)) {
       isReflect = true;
     }
     if (isReflect) {
-      return ctx2.createCallExpression(
-        createStaticReferenceNode2(ctx2, stack2, "Reflect", "get"),
+      return ctx.createCallExpression(
+        createStaticReferenceNode2(ctx, stack, "Reflect", "get"),
         [
-          createScopeIdNode(ctx2, module2),
-          ctx2.createToken(stack2.object),
-          createComputedPropertyNode(ctx2, stack2)
+          createScopeIdNode(ctx, module2),
+          ctx.createToken(stack.object),
+          createComputedPropertyNode(ctx, stack)
         ],
-        stack2
+        stack
       );
     }
     computed = true;
   }
-  let isNewObject = !!stack2.object.isNewExpression;
-  if (!isNewObject && stack2.object.isParenthesizedExpression) {
-    let op = stack2.object.expression;
+  let isNewObject = !!stack.object.isNewExpression;
+  if (!isNewObject && stack.object.isParenthesizedExpression) {
+    let op = stack.object.expression;
     while (op.isParenthesizedExpression) {
       op = op.expression;
     }
     isNewObject = !!op.isNewExpression;
   }
-  let isStatic = stack2.object.isSuperExpression || objectType.isClassType || !isNewObject && stack2.compiler.callUtils("isClassType", objectDescription);
+  let isStatic = stack.object.isSuperExpression || objectType.isClassType || !isNewObject && stack.compiler.callUtils("isClassType", objectDescription);
   let objectNode = null;
   let propertyNode = null;
-  if (isStatic && !(objectType.isClassType || stack2.object.isSuperExpression)) {
-    if (stack2.object.isCallExpression) {
+  if (isStatic && !(objectType.isClassType || stack.object.isSuperExpression)) {
+    if (stack.object.isCallExpression) {
       isStatic = false;
     }
   }
@@ -16372,91 +16805,91 @@ function MemberExpression2(ctx2, stack2) {
   let isMember = description && description.isEnumProperty;
   if (description && (description.isMethodGetterDefinition || description.isMethodSetterDefinition)) {
     aliasAnnotation = getAliasAnnotation(description);
-    const result = trans(ctx2, stack2, description, aliasAnnotation, objectType);
+    const result = trans(ctx, stack, description, aliasAnnotation, objectType);
     if (result)
       return result;
     const members = [
-      ctx2.createToken(stack2.object),
-      ctx2.createIdentifier(ctx2.getAccessorName(aliasAnnotation || stack2.property.value(), description, description.isMethodGetterDefinition ? "get" : "set"))
+      ctx.createToken(stack.object),
+      ctx.createIdentifier(ctx.getAccessorName(aliasAnnotation || stack.property.value(), description, description.isMethodGetterDefinition ? "get" : "set"))
     ];
-    const callee = isStatic ? ctx2.createStaticMemberExpression(members, stack2) : ctx2.createMemberExpression(members, stack2);
-    return description.isMethodGetterDefinition ? ctx2.createCallExpression(callee, [], stack2) : callee;
+    const callee = isStatic ? ctx.createStaticMemberExpression(members, stack) : ctx.createMemberExpression(members, stack);
+    return description.isMethodGetterDefinition ? ctx.createCallExpression(callee, [], stack) : callee;
   } else if (description && description.isMethodDefinition) {
     aliasAnnotation = getAliasAnnotation(description);
-    const result = trans(ctx2, stack2, description, aliasAnnotation, objectType);
+    const result = trans(ctx, stack, description, aliasAnnotation, objectType);
     if (result)
       return result;
-    let pp = stack2.parentStack;
+    let pp = stack.parentStack;
     while (pp && (pp.isTypeAssertExpression || pp.isParenthesizedExpression)) {
       pp = pp.parentStack;
     }
     if (pp && !(pp.isCallExpression || pp.isMemberExpression)) {
-      return ctx2.createArrayExpression([
-        ctx2.createToken(stack2.object),
-        ctx2.createLiteral(aliasAnnotation || stack2.property.value())
+      return ctx.createArrayExpression([
+        ctx.createToken(stack.object),
+        ctx.createLiteral(aliasAnnotation || stack.property.value())
       ]);
     }
-    const pStack = stack2.getParentStack((stack3) => !!(stack3.jsxElement || stack3.isBlockStatement || stack3.isCallExpression || stack3.isExpressionStatement));
+    const pStack = stack.getParentStack((stack2) => !!(stack2.jsxElement || stack2.isBlockStatement || stack2.isCallExpression || stack2.isExpressionStatement));
     if (pStack && pStack.jsxElement) {
-      return ctx2.createCallExpression(
-        createStaticReferenceNode2(ctx2, stack2, "System", "bind"),
+      return ctx.createCallExpression(
+        createStaticReferenceNode2(ctx, stack, "System", "bind"),
         [
-          ctx2.createArrayExpression([
-            ctx2.createToken(stack2.object),
-            ctx2.createLiteral(aliasAnnotation || stack2.property.value(), void 0, stack2.property)
+          ctx.createArrayExpression([
+            ctx.createToken(stack.object),
+            ctx.createLiteral(aliasAnnotation || stack.property.value(), void 0, stack.property)
           ]),
-          ctx2.createThisExpression()
+          ctx.createThisExpression()
         ]
       );
     }
     isMember = true;
   } else if (description && description.isPropertyDefinition) {
     aliasAnnotation = getAliasAnnotation(description);
-    const result = trans(ctx2, stack2, description, aliasAnnotation, objectType);
+    const result = trans(ctx, stack, description, aliasAnnotation, objectType);
     if (result)
       return result;
     isMember = true;
     if (isStatic && description.kind !== "const") {
-      propertyNode = ctx2.createVarIdentifier(stack2.property.value(), stack2.property);
+      propertyNode = ctx.createVarIdentifier(stack.property.value(), stack.property);
     }
   }
-  const node = ctx2.createNode(stack2);
+  const node = ctx.createNode(stack);
   node.computed = computed;
-  node.optional = stack2.optional;
+  node.optional = stack.optional;
   if (aliasAnnotation) {
-    propertyNode = ctx2.createIdentifier(aliasAnnotation, stack2.property);
+    propertyNode = ctx.createIdentifier(aliasAnnotation, stack.property);
   }
-  if (stack2.computed) {
-    const result = trans(ctx2, stack2, description, aliasAnnotation, objectType);
+  if (stack.computed) {
+    const result = trans(ctx, stack, description, aliasAnnotation, objectType);
     if (result)
       return result;
-    if (!isStatic && rawObjectType && ctx2.isArrayAccessor(rawObjectType)) {
+    if (!isStatic && rawObjectType && ctx.isArrayAccessor(rawObjectType)) {
       node.computed = true;
     } else if (rawObjectType) {
-      node.computed = !ctx2.isObjectAccessor(rawObjectType);
+      node.computed = !ctx.isObjectAccessor(rawObjectType);
     }
-  } else if (!isStatic && rawObjectType && (rawObjectType.isEnumType || ctx2.isArrayAccessor(rawObjectType))) {
+  } else if (!isStatic && rawObjectType && (rawObjectType.isEnumType || ctx.isArrayAccessor(rawObjectType))) {
     node.computed = true;
-    propertyNode = ctx2.createLiteral(stack2.property.value());
+    propertyNode = ctx.createLiteral(stack.property.value());
   }
-  if (stack2.object.isNewExpression) {
-    objectNode = ctx2.createParenthesizedExpression(ctx2.createToken(stack2.object));
+  if (stack.object.isNewExpression) {
+    objectNode = ctx.createParenthesizedExpression(ctx.createToken(stack.object));
   }
-  node.object = objectNode || ctx2.createToken(stack2.object);
-  node.property = propertyNode || ctx2.createToken(stack2.property);
+  node.object = objectNode || ctx.createToken(stack.object);
+  node.property = propertyNode || ctx.createToken(stack.property);
   node.isStatic = isStatic;
   if (node.computed || !isMember) {
-    let pStack = stack2.getParentStack((p) => !p.isMemberExpression);
+    let pStack = stack.getParentStack((p) => !p.isMemberExpression);
     if (pStack) {
       let optionalChain = pStack.isAssignmentExpression || pStack.isChainExpression;
       if (pStack.isCallExpression || pStack.isNewExpression) {
-        optionalChain = !pStack.arguments.includes(stack2);
+        optionalChain = !pStack.arguments.includes(stack);
       }
       if (!optionalChain && pStack.isCallExpression) {
         optionalChain = pStack.callee.value() === "isset";
       }
       if (!optionalChain) {
-        return ctx2.createBinaryExpression(node, ctx2.createLiteral(null), "??");
+        return ctx.createBinaryExpression(node, ctx.createLiteral(null), "??");
       }
     }
   }
@@ -16465,152 +16898,152 @@ function MemberExpression2(ctx2, stack2) {
 var MemberExpression_default2 = MemberExpression2;
 
 // lib/tokens/MethodDefinition.js
-var import_Utils29 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils33 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
-function MethodDefinition_default2(ctx2, stack2, type) {
-  const alias = getMethodOrPropertyAlias(ctx2, stack2);
-  const node = FunctionDeclaration_default2(ctx2, stack2, type);
-  node.async = stack2.expression.async ? true : false;
-  node.static = stack2.static ? ctx2.createIdentifier("static") : null;
-  node.final = stack2.final ? ctx2.createIdentifier("final") : null;
-  node.modifier = ctx2.createIdentifier(import_Utils29.default.getModifierValue(stack2));
+function MethodDefinition_default2(ctx, stack, type) {
+  const alias = getMethodOrPropertyAlias(ctx, stack);
+  const node = FunctionDeclaration_default2(ctx, stack, type);
+  node.async = stack.expression.async ? true : false;
+  node.static = stack.static ? ctx.createIdentifier("static") : null;
+  node.final = stack.final ? ctx.createIdentifier("final") : null;
+  node.modifier = ctx.createIdentifier(import_Utils33.default.getModifierValue(stack));
   node.kind = "method";
   if (alias && node.key) {
     node.key.value = alias;
     node.key.raw = alias;
   }
-  node.comments = createCommentsNode(ctx2, stack2, node);
+  node.comments = createCommentsNode(ctx, stack, node);
   return node;
 }
 
 // lib/tokens/MethodGetterDefinition.js
 init_Common2();
-function MethodGetterDefinition_default2(ctx2, stack2, type) {
-  const alias = getMethodOrPropertyAlias(ctx2, stack2);
-  const node = MethodDefinition_default2(ctx2, stack2, type);
+function MethodGetterDefinition_default2(ctx, stack, type) {
+  const alias = getMethodOrPropertyAlias(ctx, stack);
+  const node = MethodDefinition_default2(ctx, stack, type);
   node.isAccessor = true;
   node.kind = "get";
-  node.key.value = ctx2.getAccessorName(alias || node.key.value, stack2, "get");
+  node.key.value = ctx.getAccessorName(alias || node.key.value, stack, "get");
   return node;
 }
 
 // lib/tokens/MethodSetterDefinition.js
 init_Common2();
-function MethodSetterDefinition_default2(ctx2, stack2, type) {
-  const alias = getMethodOrPropertyAlias(ctx2, stack2);
-  const node = MethodDefinition_default2(ctx2, stack2, type);
+function MethodSetterDefinition_default2(ctx, stack, type) {
+  const alias = getMethodOrPropertyAlias(ctx, stack);
+  const node = MethodDefinition_default2(ctx, stack, type);
   node.isAccessor = true;
   node.kind = "set";
-  node.key.value = ctx2.getAccessorName(alias || node.key.value, stack2, "set");
+  node.key.value = ctx.getAccessorName(alias || node.key.value, stack, "set");
   return node;
 }
 
 // lib/tokens/NewExpression.js
-var import_Namespace24 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils30 = __toESM(require("easescript/lib/core/Utils"));
+var import_Namespace23 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Utils34 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
-function createArgumentNodes2(ctx2, stack2, args, declareParams) {
+function createArgumentNodes2(ctx, stack, args, declareParams) {
   return args.map((item, index) => {
-    const node = ctx2.createToken(item);
+    const node = ctx.createToken(item);
     if (declareParams && declareParams[index] && !item.isIdentifier) {
       const declareParam = declareParams[index];
       if (!(declareParam.isRestElement || declareParam.isObjectPattern || declareParam.isArrayPattern)) {
-        if (ctx2.isAddressRefsType(declareParam.type())) {
-          const name = ctx2.getLocalRefName(stack2, "arg");
-          ctx2.insertTokenToBlock(
-            stack2,
-            ctx2.createAssignmentExpression(ctx2.createVarIdentifier(name), node)
+        if (ctx.isAddressRefsType(declareParam.type())) {
+          const name = ctx.getLocalRefName(stack, "arg");
+          ctx.insertTokenToBlock(
+            stack,
+            ctx.createAssignmentExpression(ctx.createVarIdentifier(name), node)
           );
-          return ctx2.createVarIdentifier(name);
+          return ctx.createVarIdentifier(name);
         }
       }
     }
     return node;
   });
 }
-function NewExpression_default2(ctx2, stack2) {
-  let type = stack2.callee.type();
-  let [classModule, desc2] = stack2.getConstructMethod(type);
+function NewExpression_default2(ctx, stack) {
+  let type = stack.callee.type();
+  let [classModule, desc2] = stack.getConstructMethod(type);
   let wrapType = null;
   if (desc2 && desc2.isNewDefinition && desc2.module) {
     type = desc2.module;
   }
   if (type) {
-    type = import_Utils30.default.getOriginType(type);
-    if (import_Utils30.default.isTypeModule(type)) {
-      ctx2.addDepend(type);
+    type = import_Utils34.default.getOriginType(type);
+    if (import_Utils34.default.isTypeModule(type)) {
+      ctx.addDepend(type);
     }
-    if (type === import_Namespace24.default.globals.get("Array")) {
+    if (type === import_Namespace23.default.globals.get("Array")) {
       return transforms_default.get("Array").of(
-        stack2,
-        ctx2,
+        stack,
+        ctx,
         null,
-        createArgumentNodes2(ctx2, stack2, stack2.arguments, desc2 && desc2.params),
+        createArgumentNodes2(ctx, stack, stack.arguments, desc2 && desc2.params),
         true,
         false
       );
     }
-    if (type === import_Namespace24.default.globals.get("String")) {
+    if (type === import_Namespace23.default.globals.get("String")) {
       wrapType = "String";
-    } else if (type === import_Namespace24.default.globals.get("Number")) {
+    } else if (type === import_Namespace23.default.globals.get("Number")) {
       wrapType = "Number";
-    } else if (type === import_Namespace24.default.globals.get("Boolean")) {
+    } else if (type === import_Namespace23.default.globals.get("Boolean")) {
       wrapType = "Boolean";
-    } else if (type === import_Namespace24.default.globals.get("Object")) {
+    } else if (type === import_Namespace23.default.globals.get("Object")) {
       wrapType = "Object";
     }
   }
   if (!type || !type.isModule || wrapType) {
-    let Reflect2 = import_Namespace24.default.globals.get("Reflect");
-    ctx2.addDepend(Reflect2, stack2.module);
-    let target = ctx2.createToken(stack2.callee);
-    if (!wrapType && !stack2.callee.isIdentifier) {
-      let refs = ctx2.getLocalRefName(stack2, "ref");
-      ctx2.insertTokenToBlock(
-        stack2,
-        ctx2.createExpressionStatement(
-          ctx2.createAssignmentExpression(ctx2.createVarIdentifier(refs), target)
+    let Reflect2 = import_Namespace23.default.globals.get("Reflect");
+    ctx.addDepend(Reflect2, stack.module);
+    let target = ctx.createToken(stack.callee);
+    if (!wrapType && !stack.callee.isIdentifier) {
+      let refs = ctx.getLocalRefName(stack, "ref");
+      ctx.insertTokenToBlock(
+        stack,
+        ctx.createExpressionStatement(
+          ctx.createAssignmentExpression(ctx.createVarIdentifier(refs), target)
         )
       );
-      target = ctx2.createVarIdentifier(refs);
+      target = ctx.createVarIdentifier(refs);
     }
-    return ctx2.createCallExpression(
-      createStaticReferenceNode2(ctx2, stack2, "Reflect", "construct"),
+    return ctx.createCallExpression(
+      createStaticReferenceNode2(ctx, stack, "Reflect", "construct"),
       [
-        createScopeIdNode(ctx2, stack2.module),
+        createScopeIdNode(ctx, stack.module),
         target,
-        ctx2.createArrayExpression(
-          createArgumentNodes2(ctx2, stack2, stack2.arguments || [], desc2 && desc2.params),
-          stack2
+        ctx.createArrayExpression(
+          createArgumentNodes2(ctx, stack, stack.arguments || [], desc2 && desc2.params),
+          stack
         )
       ],
-      stack2
+      stack
     );
   }
-  let node = ctx2.createNode(stack2);
-  node.callee = ctx2.createToken(stack2.callee);
+  let node = ctx.createNode(stack);
+  node.callee = ctx.createToken(stack.callee);
   if (node.callee.type === "ParenthesizedExpression") {
-    let name = ctx2.getLocalRefName(stack2, "_refClass");
-    ctx2.insertTokenToBlock(
-      stack2,
-      ctx2.createAssignmentExpression(
-        ctx2.createVarIdentifier(name),
+    let name = ctx.getLocalRefName(stack, "_refClass");
+    ctx.insertTokenToBlock(
+      stack,
+      ctx.createAssignmentExpression(
+        ctx.createVarIdentifier(name),
         node.callee.expression
       )
     );
-    node.callee = ctx2.createVarIdentifier(name);
+    node.callee = ctx.createVarIdentifier(name);
   }
-  node.arguments = createArgumentNodes2(ctx2, stack2, stack2.arguments || [], desc2 && desc2.params);
+  node.arguments = createArgumentNodes2(ctx, stack, stack.arguments || [], desc2 && desc2.params);
   return node;
 }
 
 // lib/tokens/ObjectExpression.js
-function ObjectExpression_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
+function ObjectExpression_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
   let spreadIndex = [];
-  node.properties = stack2.properties.map((stack3, index) => {
-    let item = ctx2.createToken(stack3);
-    if (item && stack3.isSpreadElement) {
+  node.properties = stack.properties.map((stack2, index) => {
+    let item = ctx.createToken(stack2);
+    if (item && stack2.isSpreadElement) {
       spreadIndex.push(index);
     }
     return item;
@@ -16620,7 +17053,7 @@ function ObjectExpression_default2(ctx2, stack2) {
     let start = 0;
     let end = 0;
     while (end = spreadIndex.shift() && end > start) {
-      segs.push(ctx2.createObjectExpression(node.properties.slice(start, end)));
+      segs.push(ctx.createObjectExpression(node.properties.slice(start, end)));
       segs.push(node.properties[end]);
       start = end + 1;
     }
@@ -16628,116 +17061,116 @@ function ObjectExpression_default2(ctx2, stack2) {
       if (node.properties.length === 1) {
         segs.push(node.properties[0]);
       } else {
-        segs.push(ctx2.createObjectExpression(node.properties.slice(start, node.properties.length)));
+        segs.push(ctx.createObjectExpression(node.properties.slice(start, node.properties.length)));
       }
     }
-    return System_default.merge(stack2, ctx2, ctx2.createArrayExpression(), segs);
+    return System_default.merge(stack, ctx, ctx.createArrayExpression(), segs);
   }
   return node;
 }
 
 // lib/tokens/ObjectPattern.js
 init_Common2();
-function createRefs(ctx2, target, expression2) {
-  let name = ctx2.getLocalRefName(target, "S", target);
-  let refNode = ctx2.createVariableDeclaration("const", [
-    ctx2.createVariableDeclarator(
-      ctx2.createIdentifier(name),
-      createExpressionTransformTypeNode(ctx2, "object", expression2)
+function createRefs(ctx, target, expression2) {
+  let name = ctx.getLocalRefName(target, "S", target);
+  let refNode = ctx.createVariableDeclaration("const", [
+    ctx.createVariableDeclarator(
+      ctx.createIdentifier(name),
+      createExpressionTransformTypeNode(ctx, "object", expression2)
     )
   ]);
-  ctx2.insertTokenToBlock(target, refNode);
+  ctx.insertTokenToBlock(target, refNode);
 }
-function ObjectPattern_default2(ctx2, stack2) {
-  let node = ctx2.createNode(stack2);
-  let target = stack2.parentStack.init;
+function ObjectPattern_default2(ctx, stack) {
+  let node = ctx.createNode(stack);
+  let target = stack.parentStack.init;
   if (target) {
     if (!(target.isObjectExpression || target.isArrayExpression)) {
-      createRefs(ctx2, target, ctx2.createToken(target));
+      createRefs(ctx, target, ctx.createToken(target));
     }
   }
-  node.properties = stack2.properties.map((item) => ctx2.createToken(item));
+  node.properties = stack.properties.map((item) => ctx.createToken(item));
   return node;
 }
 
 // lib/tokens/PackageDeclaration.js
-function PackageDeclaration_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
+function PackageDeclaration_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
   node.body = [];
-  stack2.body.forEach((item) => {
+  stack.body.forEach((item) => {
     if (item.isClassDeclaration || item.isDeclaratorDeclaration || item.isEnumDeclaration || item.isInterfaceDeclaration || item.isStructTableDeclaration) {
-      node.body.push(ctx2.createToken(item));
+      node.body.push(ctx.createToken(item));
     }
   });
   return node;
 }
 
 // lib/tokens/ParenthesizedExpression.js
-function ParenthesizedExpression_default2(ctx2, stack2) {
-  if (stack2.parentStack.isExpressionStatement) {
-    return ctx2.createToken(stack2.expression);
+function ParenthesizedExpression_default2(ctx, stack) {
+  if (stack.parentStack.isExpressionStatement) {
+    return ctx.createToken(stack.expression);
   }
-  if (stack2.expression.isCallExpression && stack2.expression.callee.isFunctionExpression) {
-    return ctx2.createToken(stack2.expression);
+  if (stack.expression.isCallExpression && stack.expression.callee.isFunctionExpression) {
+    return ctx.createToken(stack.expression);
   }
-  const node = ctx2.createNode(stack2);
-  node.expression = ctx2.createToken(stack2.expression);
+  const node = ctx.createNode(stack);
+  node.expression = ctx.createToken(stack.expression);
   return node;
 }
 
 // lib/tokens/Property.js
 init_Common2();
-function getSpreadRefName(ctx2, target) {
-  let name = ctx2.getWasLocalRefsName(target, "S");
+function getSpreadRefName(ctx, target) {
+  let name = ctx.getWasLocalRefName(target, "S");
   if (!name) {
-    name = ctx2.getLocalRefName(target, "S", target);
-    let refNode = ctx2.createVariableDeclaration("const", [
-      ctx2.createVariableDeclarator(
-        ctx2.createIdentifier(name),
-        createExpressionTransformTypeNode(ctx2, "object", expression)
+    name = ctx.getLocalRefName(target, "S", target);
+    let refNode = ctx.createVariableDeclaration("const", [
+      ctx.createVariableDeclarator(
+        ctx.createIdentifier(name),
+        createExpressionTransformTypeNode(ctx, "object", expression)
       )
     ]);
-    ctx2.insertTokenToBlock(target, refNode);
+    ctx.insertTokenToBlock(target, refNode);
   }
-  return ctx2.createVarIdentifier(name);
+  return ctx.createVarIdentifier(name);
 }
-function Property_default2(ctx2, stack2) {
-  let node = ctx2.createNode(stack2);
-  node.computed = !!stack2.computed;
-  if (stack2.parentStack.isObjectPattern) {
-    let target = stack2.parentStack.parentStack.init;
-    let key = stack2.value();
+function Property_default2(ctx, stack) {
+  let node = ctx.createNode(stack);
+  node.computed = !!stack.computed;
+  if (stack.parentStack.isObjectPattern) {
+    let target = stack.parentStack.parentStack.init;
+    let key = stack.value();
     let name = null;
     let value = null;
-    if (stack2.hasAssignmentPattern) {
-      value = ctx2.createToken(stack2.init.right);
-      name = stack2.init.left.value();
+    if (stack.hasAssignmentPattern) {
+      value = ctx.createToken(stack.init.right);
+      name = stack.init.left.value();
     } else {
-      value = ctx2.createLiteral(null);
-      name = stack2.init.value();
+      value = ctx.createLiteral(null);
+      name = stack.init.value();
     }
     if (target.isObjectExpression || target.isArrayExpression) {
       let init = target.attribute(key);
-      return ctx2.createExpressionStatement(
-        ctx2.createAssignmentExpression(
-          ctx2.createVarIdentifier(name),
-          init ? ctx2.createBinaryExpression(
-            ctx2.createToken(init.init),
-            init.init.isLiteral ? ctx2.createLiteral(null) : value,
+      return ctx.createExpressionStatement(
+        ctx.createAssignmentExpression(
+          ctx.createVarIdentifier(name),
+          init ? ctx.createBinaryExpression(
+            ctx.createToken(init.init),
+            init.init.isLiteral ? ctx.createLiteral(null) : value,
             "??"
           ) : value
         )
       );
     } else {
-      let obj = getSpreadRefName(ctx2, target);
-      return ctx2.createExpressionStatement(
-        ctx2.createAssignmentExpression(
-          ctx2.createVarIdentifier(name),
-          ctx2.createBinaryExpression(
-            ctx2.createMemberExpression(
+      let obj = getSpreadRefName(ctx, target);
+      return ctx.createExpressionStatement(
+        ctx.createAssignmentExpression(
+          ctx.createVarIdentifier(name),
+          ctx.createBinaryExpression(
+            ctx.createMemberExpression(
               [
                 obj,
-                ctx2.createIdentifier(key)
+                ctx.createIdentifier(key)
               ]
             ),
             value,
@@ -16747,136 +17180,157 @@ function Property_default2(ctx2, stack2) {
       );
     }
   }
-  if (!node.computed && stack2.parentStack.isObjectExpression) {
-    node.key = ctx2.createLiteral(stack2.key.value());
+  if (!node.computed && stack.parentStack.isObjectExpression) {
+    node.key = ctx.createLiteral(stack.key.value());
   } else {
-    node.key = ctx2.createToken(stack2.key);
+    node.key = ctx.createToken(stack.key);
     if (node.computed && node.key.type === "Identifier") {
       node.key.isVariable = true;
     }
   }
-  node.init = ctx2.createToken(stack2.init);
-  if (stack2.hasInit && ctx2.isPassableReferenceExpress(stack2.init, stack2.type())) {
-    if (stack2.init.isCallExpression || stack2.init.isAwaitExpression) {
-      let name = ctx2.getLocalRefName(stack2.init, "R", stack2.init);
-      let refNode = ctx2.createVariableDeclaration("const", [
-        ctx2.createVariableDeclarator(
-          ctx2.createIdentifier(name),
+  node.init = ctx.createToken(stack.init);
+  if (stack.hasInit && ctx.isPassableReferenceExpress(stack.init, stack.type())) {
+    if (stack.init.isCallExpression || stack.init.isAwaitExpression) {
+      let name = ctx.getLocalRefName(stack.init, "R", stack.init);
+      let refNode = ctx.createVariableDeclaration("const", [
+        ctx.createVariableDeclarator(
+          ctx.createIdentifier(name),
           createAddressRefsNode(node.init)
         )
       ]);
-      ctx2.insertTokenToBlock(stack2, refNode);
-      node.init = createAddressRefsNode(ctx2, ctx2.createVarIdentifierNode(name));
+      ctx.insertTokenToBlock(stack, refNode);
+      node.init = createAddressRefsNode(ctx, ctx.createVarIdentifierNode(name));
     } else {
-      node.init = createAddressRefsNode(ctx2, node.init);
+      node.init = createAddressRefsNode(ctx, node.init);
     }
   }
   return node;
 }
 
 // lib/tokens/PropertyDefinition.js
-var import_Utils31 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils35 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
-function PropertyDefinition_default2(ctx2, stack2) {
-  let alias = getMethodOrPropertyAlias(ctx2, stack2);
-  let init = null;
-  if (stack2.annotations && stack2.annotations.length > 0) {
-    let items = [];
-    stack2.annotations.forEach((annot) => {
+function PropertyDefinition_default2(ctx, stack) {
+  let alias = getMethodOrPropertyAlias(ctx, stack);
+  let isStatic = !!(stack.module.static || stack.static);
+  const node = ctx.createNode(stack);
+  node.declarations = (stack.declarations || []).map((item) => ctx.createToken(item));
+  node.modifier = ctx.createIdentifier(import_Utils35.default.getModifierValue(stack));
+  if (stack.annotations && stack.annotations.length > 0) {
+    stack.annotations.forEach((annot) => {
       const name = annot.getLowerCaseName();
+      let value = null;
       if (name === "readfile") {
-        items.push(
-          createReadfileAnnotationNode(ctx2, annot) || ctx2.createLiteral(null)
-        );
+        value = createReadfileAnnotationNode2(ctx, annot, stack) || ctx.createLiteral(null);
       } else if (name === "embed") {
-        items.push(
-          createEmbedAnnotationNode(ctx2, annot)
-        );
+        value = createEmbedAnnotationNode2(ctx, annot, stack);
       } else if (name === "env") {
-        items.push(
-          createEnvAnnotationNode(ctx2, annot)
-        );
+        value = createEnvAnnotationNode(ctx, annot, stack);
       } else if (name === "url") {
-        items.push(
-          createUrlAnnotationNode(ctx2, annot)
-        );
+        value = createUrlAnnotationNode2(ctx, annot, stack);
+      }
+      if (value) {
+        let prop = null;
+        if (stack.isReadonly) {
+          prop = alias ? ctx.createIdentifier(alias) : node.declarations[0].id;
+        } else {
+          prop = alias ? ctx.createIdentifier(alias) : ctx.createIdentifier(node.declarations[0].id.value);
+        }
+        if (isStatic) {
+          ctx.addNodeToAfterBody(ctx.createExpressionStatement(
+            ctx.createAssignmentExpression(
+              ctx.createStaticMemberExpression([
+                ctx.createIdentifier(stack.module.id),
+                prop
+              ]),
+              value
+            )
+          ));
+        } else {
+          let builder = ctx.getClassBuilder(stack);
+          builder.initBeforeProperties.push(
+            ctx.createExpressionStatement(
+              ctx.createAssignmentExpression(
+                ctx.createMemberExpression([
+                  ctx.createThisExpression(),
+                  prop
+                ]),
+                value
+              )
+            )
+          );
+        }
       }
     });
-    if (items.length > 0) {
-      init = items.length > 1 ? ctx2.createArrayExpression(items) : items[0];
-    }
   }
-  const node = ctx2.createNode(stack2);
-  node.declarations = (stack2.declarations || []).map((item) => ctx2.createToken(item));
-  node.modifier = ctx2.createIdentifier(import_Utils31.default.getModifierValue(stack2));
-  if (stack2.static && stack2.kind === "const" && !hasEmbed) {
-    node.kind = stack2.kind;
-  } else if (stack2.static) {
-    node.static = ctx2.createIdentifier("static");
+  if (isStatic && stack.kind === "const" && !hasEmbed) {
+    node.kind = stack.kind;
+  } else if (isStatic) {
+    node.static = ctx.createIdentifier("static");
   }
-  node.key = alias ? ctx2.createIdentifierNode(alias) : node.declarations[0].id;
-  node.init = init || node.declarations[0].init || ctx2.createLiteral(null);
-  node.comments = createCommentsNode(ctx2, stack2, node);
+  node.key = alias ? ctx.createIdentifier(alias) : node.declarations[0].id;
+  node.init = node.declarations[0].init || ctx.createLiteral(null);
+  node.comments = createCommentsNode(ctx, stack, node);
   return node;
 }
 
 // lib/tokens/RestElement.js
-function RestElement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.value = stack2.value();
+function RestElement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.value = stack.value();
   node.raw = node.value;
   return node;
 }
 
 // lib/tokens/ReturnStatement.js
-function ReturnStatement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.argument = ctx2.createToken(stack2.argument);
+function ReturnStatement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.argument = ctx.createToken(stack.argument);
   return node;
 }
 
 // lib/tokens/SequenceExpression.js
-function SequenceExpression_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.expressions = stack2.expressions.map((item) => ctx2.createToken(item));
+function SequenceExpression_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.expressions = stack.expressions.map((item) => ctx.createToken(item));
   return node;
 }
 
 // lib/tokens/SpreadElement.js
-var import_Namespace25 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Namespace24 = __toESM(require("easescript/lib/core/Namespace"));
 init_Common2();
-function SpreadElement_default2(ctx2, stack2) {
-  if (stack2.parentStack.isArrayExpression) {
-    const type = stack2.argument.type();
-    const _Array = import_Namespace25.default.globals.get("Array");
-    const _array = import_Namespace25.default.globals.get("array");
+function SpreadElement_default2(ctx, stack) {
+  if (stack.parentStack.isArrayExpression) {
+    const type = stack.argument.type();
+    const _Array = import_Namespace24.default.globals.get("Array");
+    const _array = import_Namespace24.default.globals.get("array");
     if (type && (type.isLiteralArrayType || type === _Array || type === _array)) {
-      return ctx2.createToken(stack2.argument);
+      return ctx.createToken(stack.argument);
     }
-    const node2 = ctx2.createCallExpression(
-      createStaticReferenceNode2(ctx2, stack2, "System", "toArray"),
+    const node2 = ctx.createCallExpression(
+      createStaticReferenceNode2(ctx, stack, "System", "toArray"),
       [
-        ctx2.createToken(stack2.argument)
+        ctx.createToken(stack.argument)
       ]
     );
     return node2;
-  } else if (stack2.parentStack.isObjectExpression) {
-    return ctx2.createToken(stack2.argument);
+  } else if (stack.parentStack.isObjectExpression) {
+    return ctx.createToken(stack.argument);
   }
-  const node = ctx2.createNode(stack2);
-  node.argument = ctx2.createToken(stack2.argument);
+  const node = ctx.createNode(stack);
+  node.argument = ctx.createToken(stack.argument);
   return node;
 }
 
 // lib/tokens/StructTableColumnDefinition.js
 init_Common2();
-function StructTableColumnDefinition_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.key = ctx2.createIdentifier("`" + stack2.key.value() + "`", stack2.key);
+function StructTableColumnDefinition_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.key = ctx.createIdentifier("`" + stack.key.value() + "`", stack.key);
   node.properties = [];
-  const type = stack2.typename ? ctx2.createToken(stack2.typename) : ctx2.createIdentifier("varchar(255)");
-  const unsigned = stack2.unsigned ? ctx2.createIdentifier("unsigned") : null;
-  const notnull = !stack2.question ? ctx2.createIdentifier("not null") : null;
+  const type = stack.typename ? ctx.createToken(stack.typename) : ctx.createIdentifier("varchar(255)");
+  const unsigned = stack.unsigned ? ctx.createIdentifier("unsigned") : null;
+  const notnull = !stack.question ? ctx.createIdentifier("not null") : null;
   node.properties.push(type);
   if (unsigned) {
     node.properties.push(unsigned);
@@ -16885,45 +17339,45 @@ function StructTableColumnDefinition_default2(ctx2, stack2) {
     node.properties.push(notnull);
   }
   {
-    (stack2.properties || []).forEach((item) => {
-      node.properties.push(createIdentNode(ctx2, item));
+    (stack.properties || []).forEach((item) => {
+      node.properties.push(createIdentNode(ctx, item));
     });
   }
   return node;
 }
 
 // lib/tokens/StructTableDeclaration.js
-function StructTableDeclaration_default2(ctx2, stack2) {
-  getBuilder("mysql").createTable(ctx2, stack2);
+function StructTableDeclaration_default2(ctx, stack) {
+  getBuilder("mysql").createTable(ctx, stack);
 }
 
 // lib/tokens/StructTableKeyDefinition.js
 init_Common2();
-function StructTableKeyDefinition_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.key = createIdentNode(ctx2, stack2.key);
-  const key = stack2.key.value().toLowerCase();
-  node.prefix = key === "primary" || key === "key" ? null : ctx2.createIdentifier("key");
-  node.local = ctx2.createToken(stack2.local);
-  node.properties = (stack2.properties || []).map((item) => createIdentNode(ctx2, item));
+function StructTableKeyDefinition_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.key = createIdentNode(ctx, stack.key);
+  const key = stack.key.value().toLowerCase();
+  node.prefix = key === "primary" || key === "key" ? null : ctx.createIdentifier("key");
+  node.local = ctx.createToken(stack.local);
+  node.properties = (stack.properties || []).map((item) => createIdentNode(ctx, item));
   return node;
 }
 
 // lib/tokens/StructTableMethodDefinition.js
-var import_Namespace26 = __toESM(require("easescript/lib/core/Namespace"));
-function createNode4(ctx2, item, isKey = false, toLower = false, type = null) {
+var import_Namespace25 = __toESM(require("easescript/lib/core/Namespace"));
+function createNode4(ctx, item, isKey = false, toLower = false, type = null) {
   if (!item)
     return null;
   if (type === "enum") {
     if (item.isIdentifier || item.isMemberExpression) {
-      const type2 = import_Namespace26.default.globals.get(item.value());
+      const type2 = import_Namespace25.default.globals.get(item.value());
       const list = [];
       if (type2 && type2.isModule && type2.isEnum) {
         Array.from(type2.descriptors.keys()).forEach((key) => {
           const items = type2.descriptors.get(key);
           const item2 = items.find((item3) => item3.isEnumProperty);
           if (item2) {
-            list.push(ctx2.createLiteral(item2.init.value()));
+            list.push(ctx.createLiteral(item2.init.value()));
           }
         });
       }
@@ -16934,217 +17388,217 @@ function createNode4(ctx2, item, isKey = false, toLower = false, type = null) {
     let value = item.value();
     if (toLower)
       value = value.toLowerCase();
-    return ctx2.createIdentifier(isKey ? "`" + value + "`" : value, item);
+    return ctx.createIdentifier(isKey ? "`" + value + "`" : value, item);
   }
-  return item.isLiteral ? ctx2.createLiteral(item.value()) : ctx2.createToken(item);
+  return item.isLiteral ? ctx.createLiteral(item.value()) : ctx.createToken(item);
 }
-function StructTableMethodDefinition_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  const name = stack2.key.value().toLowerCase();
+function StructTableMethodDefinition_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  const name = stack.key.value().toLowerCase();
   if (name === "text" || name === "longtext" || name === "tinytext" || name === "mediumtext") {
-    return ctx2.createIdentifier(stack2.key.value(), stack2.key);
+    return ctx.createIdentifier(stack.key.value(), stack.key);
   }
-  const key = stack2.key.isMemberExpression ? stack2.key.property : stack2.key;
-  node.key = createNode4(ctx2, key, false);
-  const isKey = stack2.parentStack.isStructTableKeyDefinition;
-  node.params = (stack2.params || []).map((item) => createNode4(ctx2, item, isKey, false, name)).flat().filter(Boolean);
+  const key = stack.key.isMemberExpression ? stack.key.property : stack.key;
+  node.key = createNode4(ctx, key, false);
+  const isKey = stack.parentStack.isStructTableKeyDefinition;
+  node.params = (stack.params || []).map((item) => createNode4(ctx, item, isKey, false, name)).flat().filter(Boolean);
   return node;
 }
 
 // lib/tokens/StructTablePropertyDefinition.js
 init_Common2();
-function StructTablePropertyDefinition_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.assignment = !!stack2.assignment;
-  node.key = createIdentNode(ctx2, stack2.key);
-  node.init = createIdentNode(ctx2, stack2.init);
+function StructTablePropertyDefinition_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.assignment = !!stack.assignment;
+  node.key = createIdentNode(ctx, stack.key);
+  node.init = createIdentNode(ctx, stack.init);
   return node;
 }
 
 // lib/tokens/SuperExpression.js
-function SuperExpression_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
+function SuperExpression_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
   node.value = "parent";
   node.raw = "parent";
   return node;
 }
 
 // lib/tokens/SwitchCase.js
-function SwitchCase_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.condition = ctx2.createToken(stack2.condition);
+function SwitchCase_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.condition = ctx.createToken(stack.condition);
   if (node.condition && node.condition.type === "ConditionalExpression") {
-    node.condition = ctx2.createParenthesizedExpression(node.condition);
+    node.condition = ctx.createParenthesizedExpression(node.condition);
   }
-  node.consequent = stack2.consequent.map((item) => ctx2.createToken(item));
+  node.consequent = stack.consequent.map((item) => ctx.createToken(item));
   return node;
 }
 
 // lib/tokens/SwitchStatement.js
-function SwitchStatement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.condition = ctx2.createToken(stack2.condition);
-  node.cases = stack2.cases.map((item) => ctx2.createToken(item));
+function SwitchStatement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.condition = ctx.createToken(stack.condition);
+  node.cases = stack.cases.map((item) => ctx.createToken(item));
   return node;
 }
 
 // lib/tokens/TemplateElement.js
-function TemplateElement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.raw = stack2.raw();
+function TemplateElement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.raw = stack.raw();
   node.value = node.raw;
-  node.tail = stack2.tail;
+  node.tail = stack.tail;
   return node;
 }
 
 // lib/tokens/TemplateLiteral.js
-function TemplateLiteral_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.quasis = stack2.quasis.map((item) => ctx2.createToken(item));
-  node.expressions = stack2.expressions.map((item) => ctx2.createToken(item));
+function TemplateLiteral_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.quasis = stack.quasis.map((item) => ctx.createToken(item));
+  node.expressions = stack.expressions.map((item) => ctx.createToken(item));
   return node;
 }
 
 // lib/tokens/ThisExpression.js
-function ThisExpression_default2(ctx2, stack2) {
-  const node = ctx2.createVarIdentifier("this", stack2);
+function ThisExpression_default2(ctx, stack) {
+  const node = ctx.createVarIdentifier("this", stack);
   return node;
 }
 
 // lib/tokens/ThrowStatement.js
-function ThrowStatement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.argument = ctx2.createToken(stack2.argument);
+function ThrowStatement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.argument = ctx.createToken(stack.argument);
   return node;
 }
 
 // lib/tokens/TryStatement.js
-var import_Namespace27 = __toESM(require("easescript/lib/core/Namespace"));
-function TryStatement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.block = ctx2.createToken(stack2.block);
-  node.param = ctx2.createNode("ParamDeclarator");
-  node.param.argument = ctx2.createToken(stack2.param);
+var import_Namespace26 = __toESM(require("easescript/lib/core/Namespace"));
+function TryStatement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.block = ctx.createToken(stack.block);
+  node.param = ctx.createNode("ParamDeclarator");
+  node.param.argument = ctx.createToken(stack.param);
   node.param.argument.isVariable = true;
   node.param.type = "ParamDeclarator";
   node.param.prefix = "\\Exception";
-  const acceptType = stack2.param.acceptType ? stack2.param.acceptType.type() : null;
+  const acceptType = stack.param.acceptType ? stack.param.acceptType.type() : null;
   if (acceptType && acceptType.isModule) {
-    const Throwable = import_Namespace27.default.globals.get("Throwable");
+    const Throwable = import_Namespace26.default.globals.get("Throwable");
     if (Throwable && Throwable.type().is(acceptType)) {
-      node.param.prefix = ctx2.getModuleReferenceName(acceptType);
+      node.param.prefix = ctx.getModuleReferenceName(acceptType);
     }
   }
-  node.handler = ctx2.createToken(stack2.handler);
-  node.finalizer = ctx2.createToken(stack2.finalizer);
+  node.handler = ctx.createToken(stack.handler);
+  node.finalizer = ctx.createToken(stack.finalizer);
   return node;
 }
 
 // lib/tokens/TypeAssertExpression.js
-function TypeAssertExpression_default2(ctx2, stack2) {
-  if (stack2.left.isParenthesizedExpression) {
-    return ctx2.createToken(stack2.left.expression);
+function TypeAssertExpression_default2(ctx, stack) {
+  if (stack.left.isParenthesizedExpression) {
+    return ctx.createToken(stack.left.expression);
   }
-  return ctx2.createToken(stack2.left);
+  return ctx.createToken(stack.left);
 }
 
 // lib/tokens/TypeTransformExpression.js
-var import_Namespace28 = __toESM(require("easescript/lib/core/Namespace"));
-function createTransformNode(ctx2, method, expression2) {
-  return ctx2.createCallExpression(
-    ctx2.createIdentifier(method),
+var import_Namespace27 = __toESM(require("easescript/lib/core/Namespace"));
+function createTransformNode(ctx, method, expression2) {
+  return ctx.createCallExpression(
+    ctx.createIdentifier(method),
     [
-      ctx2.createToken(expression2)
+      ctx.createToken(expression2)
     ]
   );
 }
-function TypeTransformExpression_default2(ctx2, stack2) {
-  const type = stack2.argument.type();
+function TypeTransformExpression_default2(ctx, stack) {
+  const type = stack.argument.type();
   var name = null;
   if (type) {
-    const value = ctx2.getAvailableOriginType(type);
+    const value = ctx.getAvailableOriginType(type);
     name = type.toString();
     if (value === "Number") {
       const method = name === "float" || name === "double" ? "floatval" : "intval";
-      return createTransformNode(ctx2, method, stack2.expression);
+      return createTransformNode(ctx, method, stack.expression);
     } else if (value === "String") {
-      return createTransformNode(ctx2, "strval", stack2.expression);
+      return createTransformNode(ctx, "strval", stack.expression);
     } else if (value === "Boolean") {
-      return createTransformNode(ctx2, "boolval", stack2.expression);
+      return createTransformNode(ctx, "boolval", stack.expression);
     } else if (value === "RegExp") {
-      const regexp = import_Namespace28.default.globals.get("RegExp");
-      const refs = ctx2.getModuleReferenceName(regexp);
-      ctx2.addDepend(regexp);
-      const test = ctx2.createBinaryExression(
-        ctx2.createToken(stack2.expression),
-        ctx2.createIdentifier(refs),
+      const regexp = import_Namespace27.default.globals.get("RegExp");
+      const refs = ctx.getModuleReferenceName(regexp);
+      ctx.addDepend(regexp);
+      const test = ctx.createBinaryExression(
+        ctx.createToken(stack.expression),
+        ctx.createIdentifier(refs),
         "instanceof"
       );
-      const consequent = ctx2.createIdentifier(refs);
-      const alternate = ctx2.createNewExpression(
-        ctx2.createIdentifier(refs),
+      const consequent = ctx.createIdentifier(refs);
+      const alternate = ctx.createNewExpression(
+        ctx.createIdentifier(refs),
         [
-          ctx2.createCallExpression(
-            ctx2.createIdentifier("strval"),
+          ctx.createCallExpression(
+            ctx.createIdentifier("strval"),
             [
-              ctx2.createToken(stack2.expression)
+              ctx.createToken(stack.expression)
             ]
           )
         ]
       );
-      return ctx2.createParenthesizedExpression(
-        ctx2.createConditionalExpression(test, consequent, alternate)
+      return ctx.createParenthesizedExpression(
+        ctx.createConditionalExpression(test, consequent, alternate)
       );
     } else if (value === "Function") {
-      return ctx2.createToken(stack2.expression);
+      return ctx.createToken(stack.expression);
     } else if (value === "Array") {
       name = "array";
     } else if (value === "Object") {
       name = "object";
     }
   }
-  const node = ctx2.createNode(stack2);
+  const node = ctx.createNode(stack);
   node.typeName = name;
-  node.expression = ctx2.createToken(stack2.expression);
+  node.expression = ctx.createToken(stack.expression);
   return node;
 }
 
 // lib/tokens/UnaryExpression.js
 init_Common2();
-function UnaryExpression_default2(ctx2, stack2) {
-  const operator = stack2.node.operator;
-  const prefix = stack2.node.prefix;
+function UnaryExpression_default2(ctx, stack) {
+  const operator = stack.node.operator;
+  const prefix = stack.node.prefix;
   if (operator === "delete" || operator === "typeof") {
     if (operator === "typeof") {
-      return ctx2.createCallExpression(
-        createStaticReferenceNode2(ctx2, stack2, "System", "typeof"),
+      return ctx.createCallExpression(
+        createStaticReferenceNode2(ctx, stack, "System", "typeof"),
         [
-          ctx2.createToken(stack2.argument)
+          ctx.createToken(stack.argument)
         ]
       );
     }
-    return ctx2.createCallExpression(
-      ctx2.createIdentifier("unset", stack2),
+    return ctx.createCallExpression(
+      ctx.createIdentifier("unset", stack),
       [
-        ctx2.createToken(stack2.argument)
+        ctx.createToken(stack.argument)
       ]
     );
   } else if (operator === "void") {
-    if (stack2.argument.isIdentifier || stack2.argument.isLiteral) {
-      return ctx2.createLiteral(null);
+    if (stack.argument.isIdentifier || stack.argument.isLiteral) {
+      return ctx.createLiteral(null);
     }
-    return ctx2.createParenthesNode(
-      ctx2.createSequenceExpression([
-        ctx2.createToken(stack2.argument),
-        ctx2.createLiteral(null)
+    return ctx.createParenthesNode(
+      ctx.createSequenceExpression([
+        ctx.createToken(stack.argument),
+        ctx.createLiteral(null)
       ])
     );
   }
-  const node = ctx2.createNode(stack2);
+  const node = ctx.createNode(stack);
   if (operator.charCodeAt(0) === 33) {
-    node.argument = createExpressionTransformBooleanValueNode(ctx2, stack2.argument);
+    node.argument = createExpressionTransformBooleanValueNode(ctx, stack.argument);
   } else {
-    node.argument = ctx2.createToken(stack2.argument);
+    node.argument = ctx.createToken(stack.argument);
   }
   node.operator = operator;
   node.prefix = prefix;
@@ -17152,32 +17606,32 @@ function UnaryExpression_default2(ctx2, stack2) {
 }
 
 // lib/tokens/UpdateExpression.js
-var import_Utils32 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils36 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
-function trans2(ctx2, stack2, description, alias, objectType) {
+function trans2(ctx, stack, description, alias, objectType) {
   const type = objectType;
-  let name = ctx2.getAvailableOriginType(type) || type.toString();
+  let name = ctx.getAvailableOriginType(type) || type.toString();
   if (objectType && (objectType.isUnionType || objectType.isIntersectionType) && description && description.isMethodDefinition && description.module && description.module.isModule) {
     name = desc.module.id;
   }
   if (transforms_default.has(name)) {
     const object = transforms_default.get(name);
-    const key = stack2.computed ? "$computed" : stack2.property.value();
+    const key = stack.computed ? "$computed" : stack.property.value();
     if (Object.prototype.hasOwnProperty.call(object, key)) {
-      if (stack2.computed) {
+      if (stack.computed) {
         return object[key](
-          stack2,
-          ctx2,
-          ctx2.createToken(stack2.object),
-          [ctx2.createToken(stack2.property)],
+          stack,
+          ctx,
+          ctx.createToken(stack.object),
+          [ctx.createToken(stack.property)],
           false,
           false
         );
       }
       if (description.static) {
         return object[key](
-          stack2,
-          ctx2,
+          stack,
+          ctx,
           null,
           [],
           false,
@@ -17185,9 +17639,9 @@ function trans2(ctx2, stack2, description, alias, objectType) {
         );
       } else {
         return object[key](
-          stack2,
-          ctx2,
-          ctx2.createToken(stack2.object),
+          stack,
+          ctx,
+          ctx.createToken(stack.object),
           [],
           false,
           false
@@ -17197,263 +17651,263 @@ function trans2(ctx2, stack2, description, alias, objectType) {
   }
   return null;
 }
-function UpdateExpression_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  const operator = stack2.node.operator;
-  const prefix = stack2.node.prefix;
-  const isMember = stack2.argument.isMemberExpression;
+function UpdateExpression_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  const operator = stack.node.operator;
+  const prefix = stack.node.prefix;
+  const isMember = stack.argument.isMemberExpression;
   if (isMember) {
-    const desc2 = stack2.argument.description();
-    const module2 = stack2.module;
+    const desc2 = stack.argument.description();
+    const module2 = stack.module;
     let isReflect = false;
-    if (stack2.argument.computed) {
+    if (stack.argument.computed) {
       const hasDynamic = desc2 && desc2.isComputeType && desc2.isPropertyExists();
-      if (!hasDynamic && !import_Utils32.default.isLiteralObjectType(stack2.argument.object.type())) {
+      if (!hasDynamic && !import_Utils36.default.isLiteralObjectType(stack.argument.object.type())) {
         isReflect = true;
       }
     } else if (desc2 && desc2.isAnyType) {
-      isReflect = !import_Utils32.default.isLiteralObjectType(stack2.argument.object.type());
+      isReflect = !import_Utils36.default.isLiteralObjectType(stack.argument.object.type());
     }
     if (isReflect) {
       let method = operator === "++" ? "incre" : "decre";
-      let object = ctx2.createToken(stack2.argument.object);
-      if (!stack2.argument.object.isIdentifier) {
-        let refs = ctx2.getLocalRefName(stack2, "ref");
-        ctx2.insertTokenToBlock(
-          stack2,
-          ctx2.createAssignmentExpression(
-            ctx2.createVarIdentifier(refs),
+      let object = ctx.createToken(stack.argument.object);
+      if (!stack.argument.object.isIdentifier) {
+        let refs = ctx.getLocalRefName(stack, "ref");
+        ctx.insertTokenToBlock(
+          stack,
+          ctx.createAssignmentExpression(
+            ctx.createVarIdentifier(refs),
             object
           )
         );
-        object = ctx2.createVarIdentifier(refs);
-        if (ctx2.isPassableReferenceExpress(stack2.argument.object, stack2.argument.object.type())) {
-          object = createAddressRefsNode(ctx2, object);
+        object = ctx.createVarIdentifier(refs);
+        if (ctx.isPassableReferenceExpress(stack.argument.object, stack.argument.object.type())) {
+          object = createAddressRefsNode(ctx, object);
         }
       }
-      return ctx2.createCallExpression(
-        createStaticReferenceNode2(ctx2, stack2, "Reflect", method),
+      return ctx.createCallExpression(
+        createStaticReferenceNode2(ctx, stack, "Reflect", method),
         [
-          createScopeIdNode(ctx2, module2),
+          createScopeIdNode(ctx, module2),
           object,
-          createComputedPropertyNode(ctx2, stack2.argument),
-          ctx2.createLiteral(!!prefix)
+          createComputedPropertyNode(ctx, stack.argument),
+          ctx.createLiteral(!!prefix)
         ],
-        stack2
+        stack
       );
     } else if (desc2 && desc2.isMethodDefinition && desc2.isAccessor) {
-      stack2 = stack2.argument;
-      let objectDescription = stack2.object.description();
-      let objectType = ctx2.inferType(stack2.object);
-      let isNewObject = !!stack2.object.isNewExpression;
-      let isStatic = stack2.object.isSuperExpression || objectType.isClassType || !isNewObject && import_Utils32.default.isClassType(objectDescription);
-      let alias = getMethodOrPropertyAlias(ctx2, stack2);
-      let result = trans2(ctx2, stack2, desc2, alias, objectType);
+      stack = stack.argument;
+      let objectDescription = stack.object.description();
+      let objectType = ctx.inferType(stack.object);
+      let isNewObject = !!stack.object.isNewExpression;
+      let isStatic = stack.object.isSuperExpression || objectType.isClassType || !isNewObject && import_Utils36.default.isClassType(objectDescription);
+      let alias = getMethodOrPropertyAlias(ctx, stack);
+      let result = trans2(ctx, stack, desc2, alias, objectType);
       if (result)
         return result;
       let getMember = [
-        ctx2.createToken(stack2.object),
-        ctx2.createIdentifier(ctx2.getAccessorName(alias || stack2.property.value(), desc2, "get"))
+        ctx.createToken(stack.object),
+        ctx.createIdentifier(ctx.getAccessorName(alias || stack.property.value(), desc2, "get"))
       ];
       let setMember = [
-        ctx2.createToken(stack2.object),
-        ctx2.createIdentifier(ctx2.getAccessorName(alias || stack2.property.value(), desc2, "set"))
+        ctx.createToken(stack.object),
+        ctx.createIdentifier(ctx.getAccessorName(alias || stack.property.value(), desc2, "set"))
       ];
-      let getCallee = isStatic ? ctx2.createStaticMemberExpression(getMember) : ctx2.createMemberExpression(getMember);
-      let setCallee = isStatic ? ctx2.createStaticMemberExpression(setMember) : ctx2.createMemberExpression(setMember);
-      if (stack2.parentStack.parentStack.isExpressionStatement) {
-        let value = ctx2.createBinaryExpression(
-          ctx2.createCallExpression(getCallee),
-          ctx2.createLiteral(1),
+      let getCallee = isStatic ? ctx.createStaticMemberExpression(getMember) : ctx.createMemberExpression(getMember);
+      let setCallee = isStatic ? ctx.createStaticMemberExpression(setMember) : ctx.createMemberExpression(setMember);
+      if (stack.parentStack.parentStack.isExpressionStatement) {
+        let value = ctx.createBinaryExpression(
+          ctx.createCallExpression(getCallee),
+          ctx.createLiteral(1),
           operator === "++" ? "+" : "-"
         );
-        return ctx2.createCallExpression(setCallee, [value]);
+        return ctx.createCallExpression(setCallee, [value]);
       } else {
-        let sequence = createStaticReferenceNode2(ctx2, stack2, "System", "sequences");
-        let refs = ctx2.getLocalRefName(stack2, "V");
-        let update = ctx2.createBinaryExpression(
-          ctx2.createVarIdentifier(refs),
-          ctx2.createLiteral(1),
+        let sequence = createStaticReferenceNode2(ctx, stack, "System", "sequences");
+        let refs = ctx.getLocalRefName(stack, "V");
+        let update = ctx.createBinaryExpression(
+          ctx.createVarIdentifier(refs),
+          ctx.createLiteral(1),
           operator === "++" ? "+" : "-"
         );
         if (prefix) {
-          update = ctx2.createAssignmentExpression(
-            ctx2.createVarIdentifier(refs),
+          update = ctx.createAssignmentExpression(
+            ctx.createVarIdentifier(refs),
             update
           );
         }
-        return ctx2.createCallExpression(sequence, [
-          ctx2.createAssignmentExpression(
-            ctx2.createVarIdentifier(refs),
-            ctx2.createCallExpression(getCallee)
+        return ctx.createCallExpression(sequence, [
+          ctx.createAssignmentExpression(
+            ctx.createVarIdentifier(refs),
+            ctx.createCallExpression(getCallee)
           ),
-          ctx2.createCallExpression(setCallee, [update]),
-          ctx2.createVarIdentifier(refs)
+          ctx.createCallExpression(setCallee, [update]),
+          ctx.createVarIdentifier(refs)
         ]);
       }
     }
   }
-  node.argument = ctx2.createToken(stack2.argument);
+  node.argument = ctx.createToken(stack.argument);
   node.operator = operator;
   node.prefix = prefix;
   return node;
 }
 
 // lib/tokens/VariableDeclaration.js
-function VariableDeclaration_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.inFor = stack2.flag;
-  node.kind = stack2.kind;
-  node.declarations = stack2.declarations.map((item) => {
-    return ctx2.createToken(item);
+function VariableDeclaration_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.inFor = stack.flag;
+  node.kind = stack.kind;
+  node.declarations = stack.declarations.map((item) => {
+    return ctx.createToken(item);
   });
   return node;
 }
 
 // lib/tokens/VariableDeclarator.js
 init_Common2();
-function VariableDeclarator_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.inFor = stack2.parentStack.flag;
-  if (stack2.id.isIdentifier) {
-    node.id = ctx2.createIdentifier(stack2.id.value(), stack2.id);
+function VariableDeclarator_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.inFor = stack.parentStack.flag;
+  if (stack.id.isIdentifier) {
+    node.id = ctx.createIdentifier(stack.id.value(), stack.id);
   } else {
-    node.id = ctx2.createToken(stack2.id);
+    node.id = ctx.createToken(stack.id);
   }
-  if (stack2.parentStack.isVariableDeclaration && stack2.id.isIdentifier) {
-    const type = ctx2.inferType(stack2, stack2.init && stack2.init.getContext());
-    if (ctx2.isAddressRefsType(type, stack2.init)) {
-      if (ctx2.hasCrossScopeAssignment(stack2.assignItems, !!node.inFor)) {
-        const address = ctx2.addAssignAddressRef(stack2, stack2.init);
-        const name = stack2.id.value();
-        address.setName(stack2.description(), name);
-        const left = address.createIndexName(stack2.description());
-        if (stack2.init) {
-          let init = ctx2.createToken(stack2.init);
-          if (ctx2.isPassableReferenceExpress(stack2.init)) {
+  if (stack.parentStack.isVariableDeclaration && stack.id.isIdentifier) {
+    const type = ctx.inferType(stack, stack.init && stack.init.getContext());
+    if (ctx.isAddressRefsType(type, stack.init)) {
+      if (ctx.hasCrossScopeAssignment(stack.assignItems, !!node.inFor)) {
+        const address = ctx.addAssignAddressRef(stack, stack.init);
+        const name = stack.id.value();
+        address.setName(stack, name);
+        const left = address.createIndexName(stack);
+        if (stack.init) {
+          let init = ctx.createToken(stack.init);
+          if (ctx.isPassableReferenceExpress(stack.init)) {
             if (init.type === "ParenthesizedExpression") {
               init = init.expression;
             }
             if (init.type === "AssignmentExpression") {
-              ctx2.insertTokenToBlock(stack2, init);
+              ctx.insertTokenToBlock(stack, init);
               init = init.left;
             }
-            init = createAddressRefsNode(ctx2, init);
+            init = createAddressRefsNode(ctx, init);
           }
-          const index = address.getIndex(stack2.init);
-          const key = ctx2.createAssignmentExpression(
-            ctx2.createVarIdentifier(left),
-            ctx2.createLiteral(index)
+          const index = address.getIndex(stack.init);
+          const key = ctx.createAssignmentExpression(
+            ctx.createVarIdentifier(left),
+            ctx.createLiteral(index)
           );
-          node.id = ctx2.createComputeMemberExpression([
+          node.id = ctx.createComputeMemberExpression([
             node.id,
             key
           ]);
           node.init = init;
           return node;
         }
-      } else if (stack2.init && ctx2.isPassableReferenceExpress(stack2.init)) {
-        let init = ctx2.createToken(stack2.init);
+      } else if (stack.init && ctx.isPassableReferenceExpress(stack.init)) {
+        let init = ctx.createToken(stack.init);
         if (init) {
           if (init.type === "ParenthesizedExpression") {
             init = init.expression;
           }
           if (init.type === "AssignmentExpression") {
-            ctx2.insertTokenToBlock(stack2, init);
+            ctx.insertTokenToBlock(stack, init);
             init = init.left;
           }
         }
-        if (stack2.parentStack.parentStack.isExportNamedDeclaration) {
-          let name = ctx2.getLocalRefName(stack2.init, "__REF", stack2.init);
-          let refNode = ctx2.createVariableDeclaration("const", [
-            ctx2.createVariableDeclarator(
-              ctx2.createIdentifier(name),
-              createAddressRefsNode(ctx2, node.init)
+        if (stack.parentStack.parentStack.isExportNamedDeclaration) {
+          let name = ctx.getLocalRefName(stack.init, AddressVariable_default.REFS_VALUE, stack.init);
+          let refNode = ctx.createVariableDeclaration("const", [
+            ctx.createVariableDeclarator(
+              ctx.createIdentifier(name),
+              createAddressRefsNode(ctx, node.init)
             )
           ]);
-          ctx2.insertTokenToBlock(stack2, refNode);
-          node.init = createAddressRefsNode(ctx2, ctx2.createVarIdentifier(name));
+          ctx.insertTokenToBlock(stack, refNode);
+          node.init = createAddressRefsNode(ctx, ctx.createVarIdentifier(name));
         } else {
-          node.init = createAddressRefsNode(ctx2, init);
+          node.init = createAddressRefsNode(ctx, init);
         }
         return node;
       }
       if (node.inFor) {
-        node.init = ctx2.createToken(stack2.init);
-        return createAddressRefsNode(ctx2, node);
+        node.init = ctx.createToken(stack.init);
+        return createAddressRefsNode(ctx, node);
       }
     }
   }
-  node.init = ctx2.createToken(stack2.init);
+  node.init = ctx.createToken(stack.init);
   return node;
 }
 
 // lib/tokens/WhenStatement.js
 init_Common2();
-function WhenStatement_default2(ctx2, stack2) {
-  const check2 = (stack3) => {
-    if (stack3.isLogicalExpression) {
-      if (stack3.isAndOperator) {
-        return check2(stack3.left) && check2(stack3.right);
+function WhenStatement_default2(ctx, stack) {
+  const check2 = (stack2) => {
+    if (stack2.isLogicalExpression) {
+      if (stack2.isAndOperator) {
+        return check2(stack2.left) && check2(stack2.right);
       } else {
-        return check2(stack3.left) || check2(stack3.right);
+        return check2(stack2.left) || check2(stack2.right);
       }
-    } else if (!stack3.isCallExpression) {
+    } else if (!stack2.isCallExpression) {
       throw new Error(`Macro condition must is an call expression`);
     }
-    const name = stack3.value();
+    const name = stack2.value();
     const lower = name.toLowerCase();
-    const argument = parseMacroMethodArguments(stack3.arguments, lower);
+    const argument = parseMacroMethodArguments(stack2.arguments, lower);
     if (!argument) {
-      ctx2.error(`The '${name}' macro is not supported`, stack3);
+      ctx.error(`The '${name}' macro is not supported`, stack2);
       return;
     }
     switch (lower) {
       case "runtime":
-        return isRuntime(argument.value, ctx2.options.metadata) === argument.expect;
+        return isRuntime(argument.value, ctx.options.metadata) === argument.expect;
       case "syntax":
-        return isSyntax(ctx2.plugin.name, argument.value) === argument.expect;
+        return isSyntax(ctx.plugin.name, argument.value) === argument.expect;
       case "env":
         {
           if (argument.name && argument.value) {
-            return isEnv(argument.name, argument.value, ctx2.options) === argument.expect;
+            return isEnv(argument.name, argument.value, ctx.options) === argument.expect;
           } else {
-            ctx2.error(`Missing name or value arguments. the '${name}' annotations.`, stack3);
+            ctx.error(`Missing name or value arguments. the '${name}' annotations.`, stack2);
           }
         }
         break;
       case "version":
         {
           if (argument.name && argument.version) {
-            let versions = ctx2.options.metadata.versions || {};
-            let left = argument.name === ctx2.plugin.name ? ctx2.plugin.version : versions[argument.name];
+            let versions = ctx.options.metadata.versions || {};
+            let left = argument.name === ctx.plugin.name ? ctx.plugin.version : versions[argument.name];
             let right = argument.version;
             return compareVersion(left, right, argument.operator) === argument.expect;
           } else {
-            ctx2.error(`Missing name or value arguments. the '${name}' annotations.`, stack3);
+            ctx.error(`Missing name or value arguments. the '${name}' annotations.`, stack2);
           }
         }
         break;
       default:
     }
   };
-  const node = ctx2.createToken(check2(stack2.condition) ? stack2.consequent : stack2.alternate);
+  const node = ctx.createToken(check2(stack.condition) ? stack.consequent : stack.alternate);
   node && (node.isWhenStatement = true);
   return node;
 }
 
 // lib/tokens/WhileStatement.js
 init_Common2();
-function WhileStatement_default2(ctx2, stack2) {
-  const node = ctx2.createNode(stack2);
-  node.condition = createExpressionTransformBooleanValueNode(ctx2, stack2.condition);
-  node.body = ctx2.createToken(stack2.body);
+function WhileStatement_default2(ctx, stack) {
+  const node = ctx.createNode(stack);
+  node.condition = createExpressionTransformBooleanValueNode(ctx, stack.condition);
+  node.body = ctx.createToken(stack.body);
   return node;
 }
 
 // lib/core/Builder.js
 var import_glob_path2 = __toESM(require("glob-path"));
-async function buildProgram2(ctx2, compilation, graph) {
+async function buildProgram2(ctx, compilation, graph) {
   let root = compilation.stack;
   if (!root) {
     throw new Error("Build program failed");
@@ -17462,11 +17916,11 @@ async function buildProgram2(ctx2, compilation, graph) {
   let externals = [];
   let imports = [];
   let exports = [];
-  let emitFile = ctx2.options.emitFile;
-  ctx2.setNode(root, body);
+  let emitFile = ctx.options.emitFile;
+  ctx.setNode(root, body);
   root.body.forEach((item) => {
     if (item.isClassDeclaration || item.isEnumDeclaration || item.isInterfaceDeclaration || item.isStructTableDeclaration || item.isPackageDeclaration) {
-      const child = ctx2.createToken(item);
+      const child = ctx.createToken(item);
       if (child) {
         body.push(child);
       }
@@ -17475,16 +17929,16 @@ async function buildProgram2(ctx2, compilation, graph) {
   if (root.imports && root.imports.length > 0) {
     root.imports.forEach((item) => {
       if (item.isImportDeclaration) {
-        ctx2.createToken(item);
+        ctx.createToken(item);
       }
     });
   }
   if (root.externals.length > 0) {
     root.externals.forEach((item) => {
       if (item.isImportDeclaration) {
-        ctx2.createToken(item);
+        ctx.createToken(item);
       } else {
-        const node = ctx2.createToken(item);
+        const node = ctx.createToken(item);
         if (node) {
           externals.push(node);
         }
@@ -17493,62 +17947,58 @@ async function buildProgram2(ctx2, compilation, graph) {
   }
   if (root.exports.length > 0) {
     root.exports.forEach((item) => {
-      ctx2.createToken(item);
+      ctx.createToken(item);
     });
   }
-  ctx2.removeNode(root);
+  ctx.removeNode(root);
   if (emitFile) {
-    await ctx2.buildDeps();
+    await ctx.buildDeps();
   }
-  ctx2.crateRootAssets();
-  ctx2.createAllDependencies();
+  ctx.crateRootAssets();
+  ctx.createAllDependencies();
   let exportNodes = null;
   let importNodes = null;
-  importNodes = createESMImports2(ctx2, ctx2.imports);
-  exportNodes = createESMExports2(ctx2, ctx2.exports, graph);
+  importNodes = createESMImports2(ctx, ctx.imports);
+  exportNodes = createESMExports2(ctx, ctx.exports, graph);
   imports.push(...importNodes, ...exportNodes.imports);
   body.push(...exportNodes.declares);
   exports.push(...exportNodes.exports);
-  let generator = new import_Generator5.default(ctx2);
+  let generator = new import_Generator5.default(ctx);
   let doc = compilation.mainModule || compilation;
   let mainModule = compilation.mainModule;
   let layout = [
     ...imports,
-    ...Array.from(ctx2.usings.values()),
-    ...ctx2.statments,
-    ...ctx2.beforeBody,
+    ...Array.from(ctx.usings.values()),
+    ...ctx.statments,
+    ...ctx.beforeBody,
     ...body,
-    ...ctx2.afterBody,
+    ...ctx.afterBody,
     ...externals,
     ...exports
   ];
   if (mainModule) {
     let ns = mainModule.namespace;
-    ns = ctx2.getModuleMappingNamespace(mainModule) || ns.getChain().join("\\");
+    ns = ctx.getModuleMappingNamespace(mainModule) || ns.getChain().join("\\");
     if (ns) {
-      layout.unshift(ctx2.createNamespaceStatement(ns));
+      layout.unshift(ctx.createNamespaceStatement(ns));
     }
   }
   if (layout.length > 0) {
     layout.forEach((item) => generator.make(item));
-    if (ctx2.options.strict) {
-      graph.code = "<?php\r\ndeclare (strict_types = 1);\r\n" + generator.code;
-    } else {
-      graph.code = "<?php\r\n" + generator.code;
-    }
+    graph.code = ctx.getFormatCode(generator.code);
     graph.sourcemap = generator.sourceMap;
     if (emitFile) {
-      graph.outfile = ctx2.getOutputAbsolutePath(doc);
+      graph.outfile = ctx.getOutputAbsolutePath(doc);
     }
   }
   return graph;
 }
-async function buildAssets2(ctx2, buildGraph) {
+async function buildAssets2(ctx, buildGraph) {
   let assets = buildGraph.assets;
   if (!assets)
     return;
   await Promise.all(
-    Array.from(assets.values()).map((asset) => asset.build(ctx2))
+    Array.from(assets.values()).map((asset) => asset.build(ctx))
   );
 }
 function getTokenManager2(options) {
@@ -17557,13 +18007,13 @@ function getTokenManager2(options) {
   let getToken = (type) => {
     return tokens_exports2[type];
   };
-  let createToken = (ctx2, stack2, type) => {
+  let createToken = (ctx, stack, type) => {
     const token = getToken(type);
     if (!token) {
       throw new Error(`Token '${type}' is not exists.`);
     }
     try {
-      return token(ctx2, stack2, type);
+      return token(ctx, stack, type);
     } catch (e) {
       console.error(e);
     }
@@ -17577,9 +18027,9 @@ function getTokenManager2(options) {
     };
   }
   if (_createToken && typeof _createToken === "function") {
-    createToken = (ctx2, stack2, type) => {
+    createToken = (ctx, stack, type) => {
       try {
-        return _createToken(ctx2, stack2, type);
+        return _createToken(ctx, stack, type);
       } catch (e) {
         console.error(e);
       }
@@ -17625,7 +18075,7 @@ function addResolveRule(glob, resolve) {
   }
 }
 function createBuildContext2(plugin2, records3 = /* @__PURE__ */ new Map()) {
-  let assets = getAssetsManager(Asset);
+  let assets = getAssetsManager(Asset2);
   let virtuals = getVirtualModuleManager(VirtualModule2);
   let variables = getVariableManager();
   let graphs = getBuildGraphManager();
@@ -17637,7 +18087,7 @@ function createBuildContext2(plugin2, records3 = /* @__PURE__ */ new Map()) {
     if (records3.has(compiOrVModule)) {
       return records3.get(compiOrVModule);
     }
-    let ctx2 = new Context_default2(
+    let ctx = new Context_default2(
       compiOrVModule,
       plugin2,
       variables,
@@ -17648,39 +18098,39 @@ function createBuildContext2(plugin2, records3 = /* @__PURE__ */ new Map()) {
       cache2,
       token
     );
-    let buildGraph = ctx2.getBuildGraph(compiOrVModule);
+    let buildGraph = ctx.getBuildGraph(compiOrVModule);
     records3.set(compiOrVModule, buildGraph);
     if (isVModule(compiOrVModule)) {
-      await compiOrVModule.build(ctx2, buildGraph);
+      await compiOrVModule.build(ctx, buildGraph);
     } else {
       if (!compiOrVModule.parserDoneFlag) {
         await compiOrVModule.ready();
       }
-      await buildProgram2(ctx2, compiOrVModule, buildGraph);
+      await buildProgram2(ctx, compiOrVModule, buildGraph);
     }
-    if (ctx2.options.emitFile) {
-      await ctx2.emit(buildGraph);
-      await buildAssets2(ctx2, buildGraph, true);
+    if (ctx.options.emitFile) {
+      await ctx.emit(buildGraph);
+      await buildAssets2(ctx, buildGraph, true);
     } else {
-      const deps = ctx2.getAllDependencies();
+      const deps = ctx.getAllDependencies();
       deps.forEach((dep) => {
-        if (import_Utils33.default.isModule(dep) && dep.isStructTable) {
-          dep.getStacks().forEach((stack2) => {
-            ctx2.createToken(stack2);
+        if (import_Utils37.default.isModule(dep) && dep.isStructTable) {
+          dep.getStacks().forEach((stack) => {
+            ctx.createToken(stack);
           });
         }
       });
-      await buildAssets2(ctx2, buildGraph);
+      await buildAssets2(ctx, buildGraph);
     }
     return buildGraph;
   }
-  async function buildDeps(ctx2) {
+  async function buildDeps(ctx) {
     const deps = /* @__PURE__ */ new Set();
-    ctx2.dependencies.forEach((dataset) => {
+    ctx.dependencies.forEach((dataset) => {
       dataset.forEach((dep) => {
-        if (import_Utils33.default.isModule(dep)) {
+        if (import_Utils37.default.isModule(dep)) {
           if (dep.isDeclaratorModule) {
-            dep = ctx2.getVModule(dep.getName());
+            dep = ctx.getVModule(dep.getName());
             if (dep) {
               deps.add(dep);
             }
@@ -17689,7 +18139,7 @@ function createBuildContext2(plugin2, records3 = /* @__PURE__ */ new Map()) {
           }
         } else if (isVModule(dep)) {
           deps.add(dep);
-        } else if (import_Utils33.default.isCompilation(dep)) {
+        } else if (import_Utils37.default.isCompilation(dep)) {
           deps.add(dep);
         }
       });
@@ -17711,52 +18161,263 @@ function createBuildContext2(plugin2, records3 = /* @__PURE__ */ new Map()) {
   };
 }
 
-// lib/core/vms/Annotations.js
-var Annotations = class extends VirtualModule2 {
-  async build(ctx2) {
-    const graph = ctx2.getBuildGraph(this.bindModule || this);
+// lib/core/vms/Annotation.js
+var Annotation = class extends VirtualModule2 {
+  #added = /* @__PURE__ */ new Map();
+  #builded = false;
+  append(ctx, hashId, path11) {
+    if (!this.#added.has(hashId)) {
+      this.#added.set(hashId, path11);
+      this.changed = true;
+      if (this.#builded) {
+        this.build(ctx);
+      }
+    }
+  }
+  makeManifestPropertyNode(ctx, outfile) {
+    let manifests = [];
+    this.#added.forEach((path11, hashId) => {
+      let relativePath = ctx.getRelativePath(path11, outfile);
+      let filepath2 = ctx.createBinaryExpression(
+        ctx.createIdentifier("__DIR__"),
+        ctx.createLiteral(relativePath),
+        "."
+      );
+      manifests.push(
+        ctx.createProperty(
+          ctx.createLiteral(hashId),
+          filepath2
+        )
+      );
+    });
+    let node = ctx.createPropertyDefinition(ctx.createIdentifier("manifests"), ctx.createObjectExpression(manifests));
+    node.kind = "const";
+    node.modifier = ctx.createIdentifier("private");
+    return node;
+  }
+  makeGetContentMethodNode(ctx) {
+    let node = ctx.createMethodDefinition("get", ctx.createBlockStatement([
+      ctx.createExpressionStatement(
+        ctx.createAssignmentExpression(
+          ctx.createVarIdentifier("path"),
+          ctx.createCallExpression(
+            ctx.createStaticMemberExpression([
+              ctx.createIdentifier("static"),
+              ctx.createIdentifier("path")
+            ]),
+            [
+              ctx.createVarIdentifier("id")
+            ]
+          )
+        )
+      ),
+      ctx.createReturnStatement(ctx.createConditionalExpression(
+        ctx.createVarIdentifier("path"),
+        ctx.createCallExpression(
+          ctx.createIdentifier("file_get_contents"),
+          [
+            ctx.createVarIdentifier("path")
+          ]
+        ),
+        ctx.createLiteral(null)
+      ))
+    ]), [
+      ctx.createVarIdentifier("id")
+    ]);
+    node.modifier = ctx.createIdentifier("public");
+    node.static = true;
+    return node;
+  }
+  makeGetPathMethodNode(ctx) {
+    let node = ctx.createMethodDefinition("path", ctx.createBlockStatement([
+      ctx.createReturnStatement(ctx.createBinaryExpression(ctx.createComputeMemberExpression([
+        ctx.createStaticMemberExpression([
+          ctx.createIdentifier("static"),
+          ctx.createIdentifier("manifests")
+        ]),
+        ctx.createVarIdentifier("id")
+      ]), ctx.createLiteral(null), "?:"))
+    ]), [
+      ctx.createVarIdentifier("id")
+    ]);
+    node.modifier = ctx.createIdentifier("public");
+    node.static = true;
+    return node;
+  }
+  makeGetAllMethodNode(ctx) {
+    let node = ctx.createMethodDefinition("all", ctx.createBlockStatement([
+      ctx.createReturnStatement(
+        ctx.createCallExpression(
+          ctx.createIdentifier("array_values"),
+          [
+            ctx.createStaticMemberExpression([
+              ctx.createIdentifier("static"),
+              ctx.createIdentifier("manifests")
+            ])
+          ]
+        )
+      )
+    ]));
+    node.modifier = ctx.createIdentifier("public");
+    node.static = true;
+    return node;
+  }
+  async build(ctx) {
+    const graph = ctx.getBuildGraph(this.bindModule || this);
     if (!this.changed && graph.code)
       return graph;
     this.changed = false;
-    this.createImports(ctx2);
-    this.createReferences(ctx2, graph);
-    let body = [];
-    ctx2.createAllDependencies();
-    graph.code = this.gen(ctx2, body).code;
-    graph.sourcemap = this.getSourcemap();
-    if (ctx2.options.emitFile) {
-      graph.outfile = ctx2.getOutputAbsolutePath(this);
-    }
+    this.createImports(ctx);
+    this.createReferences(ctx, graph);
+    let outfile = graph.outfile || ctx.getOutputAbsolutePath(this);
+    let node = ctx.createClassDeclaration();
+    node.id = ctx.createIdentifier("Annotation");
+    node.body.body.push(...[
+      this.makeManifestPropertyNode(ctx, outfile),
+      this.makeGetContentMethodNode(ctx),
+      this.makeGetPathMethodNode(ctx),
+      this.makeGetAllMethodNode(ctx)
+    ]);
+    let body = [node];
+    ctx.createAllDependencies();
+    graph.code = ctx.getFormatCode(this.gen(ctx, graph, body).code);
+    graph.outfile = outfile;
     return graph;
   }
 };
-var Annotations_default = Annotations;
+var Annotation_default = Annotation;
 
-// lib/core/vms/Files.js
-var Files = class extends VirtualModule2 {
-  async build(ctx2) {
-    const graph = ctx2.getBuildGraph(this.bindModule || this);
-    if (!this.changed && graph.code)
+// lib/core/vms/Manifest.js
+var Manifest2 = class extends VirtualModule2 {
+  #added = /* @__PURE__ */ new Map();
+  #builded = false;
+  append(ctx, hashId, path11) {
+    if (!this.#added.has(hashId)) {
+      this.#added.set(hashId, path11);
+      this.changed = true;
+      if (this.#builded) {
+        this.build(ctx);
+      }
+    }
+  }
+  makeManifestPropertyNode(ctx, outfile) {
+    let manifests = [];
+    this.#added.forEach((path11, hashId) => {
+      let relativePath = ctx.getRelativePath(path11, outfile);
+      let filepath2 = ctx.createBinaryExpression(
+        ctx.createIdentifier("__DIR__"),
+        ctx.createLiteral(relativePath),
+        "."
+      );
+      manifests.push(
+        ctx.createProperty(
+          ctx.createLiteral(hashId),
+          filepath2
+        )
+      );
+    });
+    let node = ctx.createPropertyDefinition(ctx.createIdentifier("manifests"), ctx.createObjectExpression(manifests));
+    node.kind = "const";
+    node.modifier = ctx.createIdentifier("private");
+    return node;
+  }
+  makeGetContentMethodNode(ctx) {
+    let node = ctx.createMethodDefinition("get", ctx.createBlockStatement([
+      ctx.createExpressionStatement(
+        ctx.createAssignmentExpression(
+          ctx.createVarIdentifier("path"),
+          ctx.createCallExpression(
+            ctx.createStaticMemberExpression([
+              ctx.createIdentifier("static"),
+              ctx.createIdentifier("path")
+            ]),
+            [
+              ctx.createVarIdentifier("id")
+            ]
+          )
+        )
+      ),
+      ctx.createReturnStatement(ctx.createConditionalExpression(
+        ctx.createVarIdentifier("path"),
+        ctx.createCallExpression(
+          ctx.createIdentifier("file_get_contents"),
+          [
+            ctx.createVarIdentifier("path")
+          ]
+        ),
+        ctx.createLiteral(null)
+      ))
+    ]), [
+      ctx.createVarIdentifier("id")
+    ]);
+    node.modifier = ctx.createIdentifier("public");
+    node.static = true;
+    return node;
+  }
+  makeGetPathMethodNode(ctx) {
+    let node = ctx.createMethodDefinition("path", ctx.createBlockStatement([
+      ctx.createReturnStatement(ctx.createBinaryExpression(ctx.createComputeMemberExpression([
+        ctx.createStaticMemberExpression([
+          ctx.createIdentifier("static"),
+          ctx.createIdentifier("manifests")
+        ]),
+        ctx.createVarIdentifier("id")
+      ]), ctx.createLiteral(null), "?:"))
+    ]), [
+      ctx.createVarIdentifier("id")
+    ]);
+    node.modifier = ctx.createIdentifier("public");
+    node.static = true;
+    return node;
+  }
+  makeGetAllMethodNode(ctx) {
+    let node = ctx.createMethodDefinition("all", ctx.createBlockStatement([
+      ctx.createReturnStatement(
+        ctx.createCallExpression(
+          ctx.createIdentifier("array_values"),
+          [
+            ctx.createStaticMemberExpression([
+              ctx.createIdentifier("static"),
+              ctx.createIdentifier("manifests")
+            ])
+          ]
+        )
+      )
+    ]));
+    node.modifier = ctx.createIdentifier("public");
+    node.static = true;
+    return node;
+  }
+  async build(ctx) {
+    const graph = ctx.getBuildGraph(this.bindModule || this);
+    if (!this.changed)
       return graph;
     this.changed = false;
-    this.createImports(ctx2);
-    this.createReferences(ctx2, graph);
-    let body = [];
-    ctx2.createAllDependencies();
-    graph.code = this.gen(ctx2, body).code;
-    graph.sourcemap = this.getSourcemap();
-    if (ctx2.options.emitFile) {
-      graph.outfile = ctx2.getOutputAbsolutePath(this);
-    }
+    this.createImports(ctx);
+    this.createReferences(ctx, graph);
+    let outfile = graph.outfile || ctx.getOutputAbsolutePath(this);
+    let node = ctx.createClassDeclaration();
+    node.id = ctx.createIdentifier("Manifest");
+    node.body.body.push(...[
+      this.makeManifestPropertyNode(ctx, outfile),
+      this.makeGetContentMethodNode(ctx),
+      this.makeGetPathMethodNode(ctx),
+      this.makeGetAllMethodNode(ctx)
+    ]);
+    let body = [node];
+    ctx.createAllDependencies();
+    graph.code = ctx.getFormatCode(this.gen(ctx, graph, body).code);
+    graph.outfile = outfile;
+    this.#builded = true;
     return graph;
   }
 };
-var Files_default = Files;
+var Manifest_default2 = Manifest2;
 
 // lib/core/vms/index.js
 var vms_default = {
-  "asset.Files": Files_default,
-  "asset.Annotations": Annotations_default
+  "asset.Manifest": Manifest_default2,
+  "asset.Annotation": Annotation_default
 };
 
 // lib/core/Plugin.js
@@ -17810,7 +18471,7 @@ var Plugin2 = class extends Plugin_default {
       let context = createBuildContext2(this, this.#records);
       this.#context = context;
       createPolyfillModule(
-        import_path9.default.join(__dirname, "./polyfills"),
+        import_path10.default.join(__dirname, "./polyfills"),
         context.virtuals.createVModule
       );
       Object.keys(vms_default).forEach((key) => {
@@ -17909,7 +18570,9 @@ var defaultConfig = {
   emitFile: true,
   useAbsolutePathImport: false,
   import: true,
-  outext: ".php",
+  outDir: ".output",
+  outExt: ".php",
+  publicPath: "public",
   context: {
     include: null,
     exclude: null,
@@ -17958,12 +18621,11 @@ var defaultConfig = {
     usings: {},
     folders: {
       "*.global": "escore",
-      "*.virtual": "__virtual__"
+      "*.assets": "public"
     },
     namespaces: {}
   },
   folderAsNamespace: true,
-  publicPath: "public",
   externals: [],
   excludes: [],
   includes: [],
