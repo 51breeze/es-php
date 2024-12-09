@@ -493,6 +493,15 @@ final class System{
         return $target;
     }
 
+    public static function setImmediate($fn, ...$args){
+        call_user_func($fn, ...$args);
+        return 1;
+    }
+
+    public static function clearImmediate($id){
+        return true;
+    }
+
     public static function sequences(...$args){
         return func_get_arg( func_num_args()-1 );
     }

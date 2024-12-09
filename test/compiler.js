@@ -77,12 +77,8 @@ class Creator {
         return this.factor(file);
     }
 
-    expression( stack ){
-        return this.plugin.make( stack );
-    }
-
-    build(compilation){
-        this.plugin.build(compilation);
+    async build(compilation){
+        await this.plugin.run(compilation);
     }
 }
 

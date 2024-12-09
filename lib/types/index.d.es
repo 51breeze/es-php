@@ -22,16 +22,39 @@ declare type ArrayProtector<T> = T;
 //通用回调类型
 declare type GeneralCallback<T=any,R=any> = [string, string] | (...args:T[])=>R;
 
-package asset{
+package manifest{
 
-    declare class Annotation{
-        static all():Record<any>
-        static get(name:string):null | Record<Record<any>>
+    declare class Annotations{
+        static getMetadata():Record<any>
+        static getWrapper(classObject:class<any>):null | MetadataWrapper;
     }
 
-    declare class Manifest{
+    declare class Assets{
         static all():string[]
         static path(id):null | string
         static get(id:string):null | string
     }
+
+    declare class Comments{
+        static getMetadata():Record
+        static getWrapper(classObject:class<any>):null | MetadataWrapper;
+    }
+
+    declare class MetadataWrapper{
+
+        static const TOP:string;
+        static const CONSTRUCT:string;
+        static const METHOD:string;
+        static const GETTER:string;
+        static const SETTER:string;
+        static const PROPERTY:string;
+
+        constructor(data:Record);
+        getMetadata():Record<Record<any>,string>;
+        get(methodName:string, kind:string=MetadataWrapper.METHOD):null | Record;
+        values():{name:string,kind:string,comment:Record}[];
+        forEach(callback:(comment:Record, name?:string, kind?:string)=>void):void;
+        forMap<T>(callback:(comment:Record, name?:string, kind?:string)=>T):T[];
+    }
+
 }

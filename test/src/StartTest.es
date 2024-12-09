@@ -11,7 +11,7 @@ import table.Address;
 
 import Assets;
 
-import asset.Annotation as Anns;
+import manifest.Annotations as Anns;
 
 import Person;
 
@@ -36,11 +36,23 @@ public class StartTest extends Base implements Address
        const d = Person;
     }
 
+    @Post('main')
+    @Get('/get/amin')
+    main(){
+
+    }
+
     constructor(){
         super();
         let Annotation = null;
-        Anns.all()
+        //Anns.all()
+        console.log(manifest.Annotations.getWrapper(StartTest)?.get('main'))
     }
+
+    /**
+     * @group 列表2
+      * @access yes
+      */
 
     /**
       * @group 列表
@@ -188,6 +200,7 @@ public class StartTest extends Base implements Address
         this.assertEquals([3,6],s);
         this.assertEquals(6, [].pop.call(s) );
         this.assertEquals(3, s.pop() );
+        this.assertEquals([], s);
 
         var array2 = this.array2;
         this.array2.push(1);
