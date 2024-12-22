@@ -36,17 +36,8 @@ public class StartTest extends Base implements Address
        const d = Person;
     }
 
-    @Post('main')
-    @Get('/get/amin')
-    main(){
-
-    }
-
     constructor(){
         super();
-        let Annotation = null;
-        //Anns.all()
-        console.log(manifest.Annotations.getWrapper(StartTest)?.get('main'))
     }
 
     /**

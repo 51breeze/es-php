@@ -807,7 +807,7 @@ function createHttpAnnotationNode(ctx, stack) {
     options: createArgNode(config),
     method: method && allMethods.includes(method.value) ? ctx.createLiteral(method.value) : null
   };
-  const properties = Object.keys(props).map((name) => {
+  const properties2 = Object.keys(props).map((name) => {
     const value = props[name];
     if (value) {
       return ctx.createProperty(ctx.createIdentifier(name), value);
@@ -823,8 +823,8 @@ function createHttpAnnotationNode(ctx, stack) {
     ),
     routeConfigNode
   ];
-  if (properties.length > 0) {
-    calleeArgs.push(ctx.createObjectExpression(properties));
+  if (properties2.length > 0) {
+    calleeArgs.push(ctx.createObjectExpression(properties2));
   }
   return ctx.createCallExpression(
     ctx.createMemberExpression([
@@ -877,10 +877,10 @@ function createEmbedAnnotationNode(ctx, stack) {
 function createEnvAnnotationNode(ctx, stack) {
   let result = parseEnvAnnotation(ctx, stack);
   if (result.length > 0) {
-    let properties = result.map((item) => {
+    let properties2 = result.map((item) => {
       return ctx.createProperty(ctx.createIdentifier(item.key), ctx.createLiteral(item.value));
     });
-    return ctx.createObjectExpression(properties);
+    return ctx.createObjectExpression(properties2);
   }
   return ctx.createLiteral(null);
 }
@@ -1115,22 +1115,22 @@ function createReadfileAnnotationNode(ctx, stack) {
       if (only) {
         return object.content ? ctx.createChunkExpression(object.content) : ctx.createLiteral(null);
       }
-      const properties = [
+      const properties2 = [
         ctx.createProperty(
           ctx.createIdentifier("path"),
           ctx.createLiteral(object.path)
         )
       ];
       if (object.isFile) {
-        properties.push(ctx.createProperty(ctx.createIdentifier("isFile"), ctx.createLiteral(true)));
+        properties2.push(ctx.createProperty(ctx.createIdentifier("isFile"), ctx.createLiteral(true)));
       }
       if (object.content) {
-        properties.push(ctx.createProperty(ctx.createIdentifier("content"), ctx.createChunkExpression(object.content)));
+        properties2.push(ctx.createProperty(ctx.createIdentifier("content"), ctx.createChunkExpression(object.content)));
       }
       if (object.children) {
-        properties.push(ctx.createProperty(ctx.createIdentifier("children"), ctx.createArrayExpression(make(object.children))));
+        properties2.push(ctx.createProperty(ctx.createIdentifier("children"), ctx.createArrayExpression(make(object.children))));
       }
-      return ctx.createObjectExpression(properties);
+      return ctx.createObjectExpression(properties2);
     });
   };
   return ctx.createArrayExpression(make(dataset));
@@ -1155,7 +1155,7 @@ function createCJSImports(ctx, importManage) {
   importManage.getAllImportSource().forEach((importSource) => {
     if (importSource.isExportSource)
       return;
-    const properties = [];
+    const properties2 = [];
     importSource.specifiers.forEach((spec) => {
       if (spec.type === "default" || spec.type === "namespace") {
         let requireNode = ctx.createCallExpression(
@@ -1190,7 +1190,7 @@ function createCJSImports(ctx, importManage) {
           local = imported;
           imported = ctx.createIdentifier(spec.imported);
         }
-        properties.push(
+        properties2.push(
           ctx.createProperty(
             imported,
             local
@@ -1198,10 +1198,10 @@ function createCJSImports(ctx, importManage) {
         );
       }
     });
-    if (properties.length > 0) {
+    if (properties2.length > 0) {
       const node = ctx.createVariableDeclaration("const", [
         ctx.createVariableDeclarator(
-          ctx.createObjectPattern(properties),
+          ctx.createObjectPattern(properties2),
           ctx.createCallExpression(
             ctx.createIdentifier("require"),
             [
@@ -1267,7 +1267,7 @@ function createCJSExports(ctx, exportManage, graph) {
   let exports = [];
   let declares = [];
   let exportSets = new Set(exportManage.getAllExportSource());
-  let properties = [];
+  let properties2 = [];
   let exportAlls = [];
   exportSets.forEach((exportSource) => {
     let importSource = exportSource.importSource;
@@ -1290,7 +1290,7 @@ function createCJSExports(ctx, exportManage, graph) {
             )
           );
         } else {
-          properties.push(
+          properties2.push(
             ctx.createProperty(
               ctx.createIdentifier(spec.exported),
               ctx.createCallExpression(
@@ -1304,7 +1304,7 @@ function createCJSExports(ctx, exportManage, graph) {
           );
         }
       } else if (spec.type === "default") {
-        properties.push(
+        properties2.push(
           ctx.createProperty(
             ctx.createIdentifier("default"),
             spec.local,
@@ -1314,7 +1314,7 @@ function createCJSExports(ctx, exportManage, graph) {
       } else if (spec.type === "named") {
         if (spec.local.type === "VariableDeclaration") {
           spec.local.declarations.map((decl) => {
-            properties.push(
+            properties2.push(
               ctx.createProperty(
                 decl.id,
                 decl.init || ctx.createLiteral(null),
@@ -1324,7 +1324,7 @@ function createCJSExports(ctx, exportManage, graph) {
           });
         } else if (spec.local.type === "FunctionDeclaration") {
           declares.push(spec.local);
-          properties.push(
+          properties2.push(
             ctx.createProperty(
               spec.local.key,
               null,
@@ -1339,7 +1339,7 @@ function createCJSExports(ctx, exportManage, graph) {
             ctx.createIdentifier(spec.exported),
             spec.stack
           );
-          properties.push(
+          properties2.push(
             ctx.createProperty(
               ctx.createIdentifier(spec.exported),
               null,
@@ -1353,7 +1353,7 @@ function createCJSExports(ctx, exportManage, graph) {
             ctx.createIdentifier(spec.local),
             spec.stack
           );
-          properties.push(node);
+          properties2.push(node);
         }
       }
     });
@@ -1380,7 +1380,7 @@ function createCJSExports(ctx, exportManage, graph) {
       ])
     );
   });
-  if (exportAlls.length > 0 && !properties.length) {
+  if (exportAlls.length > 0 && !properties2.length) {
     if (exportAlls.length === 1) {
       exports.push(
         ctx.createExpressionStatement(
@@ -1411,12 +1411,12 @@ function createCJSExports(ctx, exportManage, graph) {
         )
       );
     }
-  } else if (!exportAlls.length && properties.length === 1 && properties[0].key.value === "default") {
+  } else if (!exportAlls.length && properties2.length === 1 && properties2[0].key.value === "default") {
     exports.push(
       ctx.createExpressionStatement(
         ctx.createAssignmentExpression(
           ctx.createChunkExpression("module.exports", false, false),
-          properties[0].init
+          properties2[0].init
         )
       )
     );
@@ -1434,7 +1434,7 @@ function createCJSExports(ctx, exportManage, graph) {
     });
     let items = [
       ...spreads,
-      ...properties
+      ...properties2
     ];
     exports.push(
       ctx.createExpressionStatement(
@@ -2285,7 +2285,7 @@ function createESMExports2(ctx, exportManage, graph) {
   let imports = [];
   let declares = [];
   let exportSets = new Set(exportManage.getAllExportSource());
-  let properties = [];
+  let properties2 = [];
   let spreads = [];
   exportSets.forEach((exportSource) => {
     let importSource = exportSource.importSource;
@@ -2327,7 +2327,7 @@ function createESMExports2(ctx, exportManage, graph) {
     exportSource.specifiers.forEach((spec) => {
       if (spec.type === "namespace") {
         if (spec.exported) {
-          properties.push(
+          properties2.push(
             ctx.createProperty(
               ctx.createLiteral(spec.exported),
               ctx.createVarIdentifier(refs)
@@ -2346,7 +2346,7 @@ function createESMExports2(ctx, exportManage, graph) {
           }
         }
       } else if (spec.type === "default") {
-        properties.push(
+        properties2.push(
           ctx.createProperty(
             ctx.createLiteral("default"),
             spec.local
@@ -2355,7 +2355,7 @@ function createESMExports2(ctx, exportManage, graph) {
       } else if (spec.type === "named" && !sourceId) {
         if (spec.local.type === "VariableDeclaration") {
           spec.local.declarations.map((decl) => {
-            properties.push(
+            properties2.push(
               ctx.createProperty(
                 ctx.createLiteral(decl.id.value),
                 decl.init || ctx.createLiteral(null)
@@ -2364,7 +2364,7 @@ function createESMExports2(ctx, exportManage, graph) {
           });
         } else if (spec.local.type === "FunctionDeclaration") {
           spec.local.type = "FunctionExpression";
-          properties.push(
+          properties2.push(
             ctx.createProperty(
               ctx.createLiteral(spec.local.key.value),
               spec.local
@@ -2378,7 +2378,7 @@ function createESMExports2(ctx, exportManage, graph) {
             spec.local,
             spec.exported
           ];
-          properties.push(
+          properties2.push(
             ctx.createProperty(
               ctx.createLiteral(spec.local),
               ctx.createVarIdentifier(spec.exported || spec.local)
@@ -2386,7 +2386,7 @@ function createESMExports2(ctx, exportManage, graph) {
           );
           specifiers.push(node);
         } else {
-          properties.push(ctx.createProperty(
+          properties2.push(ctx.createProperty(
             ctx.createLiteral(spec.exported),
             ctx.createVarIdentifier(spec.local),
             spec.stack
@@ -2418,13 +2418,13 @@ function createESMExports2(ctx, exportManage, graph) {
       )
     ));
   });
-  if (properties.length > 0) {
-    if (properties.length === 1 && properties[0].key.value === "default" && !spreads.length) {
+  if (properties2.length > 0) {
+    if (properties2.length === 1 && properties2[0].key.value === "default" && !spreads.length) {
       exports.push(
-        ctx.createReturnStatement(properties[0].init)
+        ctx.createReturnStatement(properties2[0].init)
       );
     } else {
-      let object = ctx.createObjectExpression(properties);
+      let object = ctx.createObjectExpression(properties2);
       if (spreads.length > 0) {
         let args = spreads.map((item) => ctx.createConditionalExpression(
           ctx.createCallExpression(
@@ -2554,22 +2554,22 @@ function createReadfileAnnotationNode2(ctx, annot, stack) {
       if (only) {
         return object.content ? ctx.createChunkExpression(object.content) : ctx.createLiteral(null);
       }
-      const properties = [
+      const properties2 = [
         ctx.createProperty(
           ctx.createIdentifier("path"),
           ctx.createLiteral(object.path)
         )
       ];
       if (object.isFile) {
-        properties.push(ctx.createProperty(ctx.createIdentifier("isFile"), ctx.createLiteral(true)));
+        properties2.push(ctx.createProperty(ctx.createIdentifier("isFile"), ctx.createLiteral(true)));
       }
       if (object.content) {
-        properties.push(ctx.createProperty(ctx.createIdentifier("content"), ctx.createChunkExpression(object.content)));
+        properties2.push(ctx.createProperty(ctx.createIdentifier("content"), ctx.createChunkExpression(object.content)));
       }
       if (object.children) {
-        properties.push(ctx.createProperty(ctx.createIdentifier("children"), ctx.createArrayExpression(make(object.children))));
+        properties2.push(ctx.createProperty(ctx.createIdentifier("children"), ctx.createArrayExpression(make(object.children))));
       }
-      return ctx.createObjectExpression(properties);
+      return ctx.createObjectExpression(properties2);
     });
   };
   return ctx.createArrayExpression(make(dataset));
@@ -3826,7 +3826,6 @@ __export(lib_exports, {
 module.exports = __toCommonJS(lib_exports);
 
 // lib/core/Plugin.js
-var import_path10 = __toESM(require("path"));
 var import_Compilation2 = __toESM(require("easescript/lib/core/Compilation"));
 
 // node_modules/@easescript/transform/lib/core/Plugin.js
@@ -3947,9 +3946,9 @@ var Token = class {
     node.key = this.createIdentifier(key);
     return node;
   }
-  createObjectExpression(properties, stack) {
+  createObjectExpression(properties2, stack) {
     const node = this.createNode(stack, "ObjectExpression");
-    node.properties = properties || [];
+    node.properties = properties2 || [];
     return node;
   }
   createArrayExpression(elements, stack) {
@@ -3957,9 +3956,9 @@ var Token = class {
     node.elements = elements || [];
     return node;
   }
-  createObjectPattern(properties) {
+  createObjectPattern(properties2) {
     const node = this.createNode("ObjectPattern");
-    node.properties = properties;
+    node.properties = properties2;
     return node;
   }
   createProperty(key, init, stack) {
@@ -5692,7 +5691,7 @@ var VirtualModule = class {
     let body = [];
     let exportName = this.createExports(ctx);
     if (this.id === "Class" && this.#ns.length === 0) {
-      let properties = Object.keys(Constant_exports).map((key) => {
+      let properties2 = Object.keys(Constant_exports).map((key) => {
         if (key === "PRIVATE_NAME")
           return;
         return ctx.createProperty(
@@ -5700,7 +5699,7 @@ var VirtualModule = class {
           ctx.createLiteral(Constant_exports[key])
         );
       }).filter(Boolean);
-      properties.sort((a, b) => {
+      properties2.sort((a, b) => {
         return a.init.value - b.init.value;
       });
       body.push(
@@ -5710,7 +5709,7 @@ var VirtualModule = class {
               ctx.createIdentifier("Class"),
               ctx.createIdentifier("constant")
             ]),
-            ctx.createObjectExpression(properties)
+            ctx.createObjectExpression(properties2)
           )
         )
       );
@@ -7738,7 +7737,7 @@ var ClassBuilder = class {
     let key = node.key;
     let kind = kindMaps[node.kind];
     let modifier = node.modifier || "public";
-    let properties = [];
+    let properties2 = [];
     let mode = modifierMaps[modifier] | kindMaps[node.kind];
     let _static = node.static;
     if (node.static) {
@@ -7758,14 +7757,14 @@ var ClassBuilder = class {
       }
     }
     node.disabledNewLine = true;
-    properties.push(
+    properties2.push(
       ctx.createProperty(
         ctx.createIdentifier("m"),
         ctx.createLiteral(mode)
       )
     );
     if (kind === KIND_VAR) {
-      properties.push(
+      properties2.push(
         ctx.createProperty(
           ctx.createIdentifier("writable"),
           ctx.createLiteral(true)
@@ -7773,7 +7772,7 @@ var ClassBuilder = class {
       );
     }
     if (!_static && (node.isAccessor || kind === KIND_VAR || kind === KIND_CONST) && modifier === "public") {
-      properties.push(
+      properties2.push(
         ctx.createProperty(
           ctx.createIdentifier("enumerable"),
           ctx.createLiteral(true)
@@ -7799,26 +7798,26 @@ var ClassBuilder = class {
           isConfigurable = true;
         node.get.disabledNewLine = true;
         delete node.get.static;
-        properties.push(createProperty("get", node.get));
+        properties2.push(createProperty("get", node.get));
       }
       if (node.set) {
         if (node.set.isConfigurable)
           isConfigurable = true;
         node.set.disabledNewLine = true;
         delete node.set.static;
-        properties.push(createProperty("set", node.set));
+        properties2.push(createProperty("set", node.set));
       }
     } else {
       if (node.type === "PropertyDefinition") {
         if (node.init) {
-          properties.push(createProperty("value", node.init, node));
+          properties2.push(createProperty("value", node.init, node));
         }
       } else {
-        properties.push(createProperty("value", node));
+        properties2.push(createProperty("value", node));
       }
     }
     if (isConfigurable) {
-      properties.push(
+      properties2.push(
         ctx.createProperty(
           ctx.createIdentifier("configurable"),
           ctx.createLiteral(true)
@@ -7827,11 +7826,11 @@ var ClassBuilder = class {
     }
     return ctx.createProperty(
       key,
-      ctx.createObjectExpression(properties)
+      ctx.createObjectExpression(properties2)
     );
   }
   createClassDescriptor(ctx, module2, methods7, members) {
-    const properties = [];
+    const properties2 = [];
     let kind = module2.isEnum ? KIND_CLASS : module2.isInterface ? KIND_INTERFACE : KIND_CLASS;
     kind |= MODIFIER_PUBLIC;
     if (module2.static) {
@@ -7843,7 +7842,7 @@ var ClassBuilder = class {
     if (module2.isFinal) {
       kind |= MODIFIER_FINAL;
     }
-    properties.push(
+    properties2.push(
       ctx.createProperty(
         ctx.createIdentifier("m"),
         ctx.createLiteral(kind)
@@ -7851,21 +7850,21 @@ var ClassBuilder = class {
     );
     const ns = module2.namespace && module2.namespace.toString();
     if (ns) {
-      properties.push(
+      properties2.push(
         ctx.createProperty(
           ctx.createIdentifier("ns"),
           ctx.createLiteral(ns)
         )
       );
     }
-    properties.push(
+    properties2.push(
       ctx.createProperty(
         ctx.createIdentifier("name"),
         ctx.createLiteral(module2.id)
       )
     );
     if (module2.dynamic) {
-      properties.push(
+      properties2.push(
         ctx.createProperty(
           ctx.createIdentifier("dynamic"),
           ctx.createLiteral(true)
@@ -7873,7 +7872,7 @@ var ClassBuilder = class {
       );
     }
     if (this.privateName) {
-      properties.push(
+      properties2.push(
         ctx.createProperty(
           ctx.createIdentifier("private"),
           ctx.createIdentifier(this.privateName)
@@ -7881,7 +7880,7 @@ var ClassBuilder = class {
       );
     }
     if (this.implements.length > 0) {
-      properties.push(
+      properties2.push(
         ctx.createProperty(
           ctx.createIdentifier("imps"),
           ctx.createArrayExpression(this.implements)
@@ -7889,7 +7888,7 @@ var ClassBuilder = class {
       );
     }
     if (this.inherit) {
-      properties.push(
+      properties2.push(
         ctx.createProperty(
           ctx.createIdentifier("inherit"),
           this.inherit
@@ -7897,7 +7896,7 @@ var ClassBuilder = class {
       );
     }
     if (methods7) {
-      properties.push(
+      properties2.push(
         ctx.createProperty(
           ctx.createIdentifier("methods"),
           methods7
@@ -7905,14 +7904,14 @@ var ClassBuilder = class {
       );
     }
     if (members) {
-      properties.push(
+      properties2.push(
         ctx.createProperty(
           ctx.createIdentifier("members"),
           members
         )
       );
     }
-    return ctx.createObjectExpression(properties);
+    return ctx.createObjectExpression(properties2);
   }
   createCreator(ctx, module2, className, description) {
     const args = [
@@ -8023,7 +8022,7 @@ var EnumBuilder = class extends ClassBuilder_default {
       ctx.createIdentifier(name, stack),
       ctx.createObjectExpression()
     );
-    const properties = stack.properties.map((item) => {
+    const properties2 = stack.properties.map((item) => {
       const initNode = ctx.createMemberExpression([
         ctx.createIdentifier(name, item.key),
         ctx.createLiteral(
@@ -8055,12 +8054,12 @@ var EnumBuilder = class extends ClassBuilder_default {
         )
       );
     });
-    properties.push(ctx.createIdentifier(name));
+    properties2.push(ctx.createIdentifier(name));
     return ctx.createVariableDeclaration("var", [
       ctx.createVariableDeclarator(
         ctx.createIdentifier(name, stack),
         ctx.createParenthesizedExpression(
-          ctx.createSequenceExpression([init, ...properties])
+          ctx.createSequenceExpression([init, ...properties2])
         )
       )
     ]);
@@ -8461,7 +8460,7 @@ var InterfaceBuilder = class extends ClassBuilder_default {
     }
     let key = node.key;
     let modifier = node.modifier || "public";
-    let properties = [];
+    let properties2 = [];
     let mode = modifierMaps2[modifier] | kindMaps2[node.kind];
     if (node.static) {
       mode |= MODIFIER_STATIC;
@@ -8472,7 +8471,7 @@ var InterfaceBuilder = class extends ClassBuilder_default {
     if (node.isFinal) {
       mode |= MODIFIER_FINAL;
     }
-    properties.push(
+    properties2.push(
       ctx.createProperty(
         ctx.createIdentifier("m"),
         ctx.createLiteral(mode)
@@ -8480,7 +8479,7 @@ var InterfaceBuilder = class extends ClassBuilder_default {
     );
     if (node.isAccessor) {
       if (node.get) {
-        properties.push(
+        properties2.push(
           ctx.createProperty(
             ctx.createIdentifier("get"),
             ctx.createLiteral(true)
@@ -8488,7 +8487,7 @@ var InterfaceBuilder = class extends ClassBuilder_default {
         );
       }
       if (node.set) {
-        properties.push(
+        properties2.push(
           ctx.createProperty(
             ctx.createIdentifier("set"),
             ctx.createLiteral(true)
@@ -8498,7 +8497,7 @@ var InterfaceBuilder = class extends ClassBuilder_default {
     }
     return ctx.createProperty(
       key,
-      ctx.createObjectExpression(properties)
+      ctx.createObjectExpression(properties2)
     );
   }
 };
@@ -9430,7 +9429,7 @@ function createAttributes(ctx, stack, data) {
           ctx.createCallExpression(
             ctx.createMemberExpression([
               ctx.createThisExpression(),
-              ctx.createIdentifierExpression("setRefNode")
+              ctx.createIdentifier("setRefNode")
             ]),
             [
               value.value,
@@ -9621,13 +9620,13 @@ function createSlotElementNode(ctx, stack, children) {
   if (stack.isSlotDeclared) {
     args.push(ctx.createLiteral(stack.openingElement.name.value()));
     if (openingElement.attributes.length > 0) {
-      const properties = openingElement.attributes.map((attr) => {
+      const properties2 = openingElement.attributes.map((attr) => {
         return ctx.createProperty(
           attr.name,
           attr.value
         );
       });
-      props = ctx.createObjectExpression(properties);
+      props = ctx.createObjectExpression(properties2);
     } else {
       props = ctx.createObjectExpression();
     }
@@ -9797,9 +9796,9 @@ function createElement(ctx, stack) {
   }
   const isWebComponent = stack.isWebComponent && !(stack.compilation.JSX && stack.parentStack.isProgram);
   if (isWebComponent) {
-    const properties = [];
+    const properties2 = [];
     if (childNodes) {
-      properties.push(ctx.createProperty(
+      properties2.push(ctx.createProperty(
         ctx.createIdentifier("default"),
         createWithCtxNode(
           ctx.createArrowFunctionExpression(childNodes)
@@ -9809,7 +9808,7 @@ function createElement(ctx, stack) {
     }
     if (data.slots) {
       for (let key in data.slots) {
-        properties.push(
+        properties2.push(
           ctx.createProperty(
             ctx.createIdentifier(key),
             data.slots[key]
@@ -9817,8 +9816,8 @@ function createElement(ctx, stack) {
         );
       }
     }
-    if (properties.length > 0) {
-      childNodes = ctx.createObjectExpression(properties);
+    if (properties2.length > 0) {
+      childNodes = ctx.createObjectExpression(properties2);
     }
   }
   if (stack.isSlot) {
@@ -11166,12 +11165,12 @@ var Plugin = class {
     return value ? value instanceof Plugin : false;
   }
   #name = null;
-  #version = "0.0.0";
-  #records = null;
   #options = null;
   #initialized = false;
   #context = null;
   #complier = null;
+  #version = "0.0.0";
+  #records = /* @__PURE__ */ new Map();
   constructor(name, version, options = {}) {
     plugins.add(this);
     this.#name = name;
@@ -11180,6 +11179,9 @@ var Plugin = class {
     if (options.mode) {
       options.metadata.env.NODE_ENV = options.mode;
     }
+  }
+  get initialized() {
+    return this.#initialized;
   }
   //插件名
   get name() {
@@ -11193,6 +11195,10 @@ var Plugin = class {
   get version() {
     return this.#version;
   }
+  //构建缓存，存在缓存中的不会构建
+  get records() {
+    return this.#records;
+  }
   //编译器对象
   get complier() {
     return this.#complier;
@@ -11201,68 +11207,73 @@ var Plugin = class {
   get context() {
     return this.#context;
   }
-  //构建前调用
-  async init(complier) {
+  //开发模式下调用，用来监听文件变化时删除缓存
+  watch() {
+    let tableBuilders = null;
+    this.complier.on("onChanged", (compilation) => {
+      this.records.delete(compilation);
+      let mainModule = compilation.mainModule;
+      if (mainModule.isStructTable) {
+        tableBuilders = tableBuilders || getAllBuilder();
+        compilation.modules.forEach((module2) => {
+          if (module2.isStructTable) {
+            tableBuilders.forEach((builder) => {
+              builder.removeTable(module2.id);
+            });
+          }
+        });
+      }
+    });
+  }
+  async init() {
+    this.#context = createBuildContext(this, this.records);
+    createPolyfillModule(
+      import_path6.default.join(__dirname, "./polyfills"),
+      this.#context.virtuals.createVModule
+    );
+  }
+  //构建前调用。
+  async beforeStart(complier) {
     if (this.#initialized)
       return;
     this.#initialized = true;
     this.#complier = complier;
-    this.#records = /* @__PURE__ */ new Map();
     defineError(complier);
+    await this.init();
     if (this.options.mode === "development") {
-      let tableBuilders = null;
-      complier.on("onChanged", (compilation) => {
-        this.#records.delete(compilation);
-        let mainModule = compilation.mainModule;
-        if (mainModule.isStructTable) {
-          tableBuilders = tableBuilders || getAllBuilder();
-          compilation.modules.forEach((module2) => {
-            if (module2.isStructTable) {
-              tableBuilders.forEach((builder) => {
-                builder.removeTable(module2.id);
-              });
-            }
-          });
-        }
-      });
+      this.watch();
     }
-    let context = createBuildContext(this, this.#records);
-    this.#context = context;
-    createPolyfillModule(
-      import_path6.default.join(__dirname, "./polyfills"),
-      context.virtuals.createVModule
-    );
   }
-  //当任务处理完成后调用
-  async done() {
+  //当任务处理完成后调用。在加载插件或者打包插件时会调用这个方法，用来释放一些资源
+  async afterDone() {
   }
   //构建所有依赖文件
   async run(compilation) {
     if (!import_Compilation.default.is(compilation)) {
       throw new Error("compilation is invalid");
     }
-    if (!this.#initialized) {
-      this.init(compilation.complier);
+    if (!this.initialized) {
+      await this.beforeStart(compilation.compiler);
     }
-    return await this.#context.buildDeps(compilation);
+    return await this.context.buildDeps(compilation);
   }
   //构建单个文件
   async build(compilation, vmId = null) {
     if (!import_Compilation.default.is(compilation)) {
       throw new Error("compilation is invalid");
     }
-    if (!this.#initialized) {
-      this.init(compilation.complier);
+    if (!this.initialized) {
+      await this.beforeStart(compilation.compiler);
     }
     if (vmId) {
-      let vm = this.#context.virtuals.getVModule(vmId);
+      let vm = this.context.virtuals.getVModule(vmId);
       if (vm) {
-        return await this.#context.builder(vm);
+        return await this.context.builder(vm);
       } else {
         throw new Error(`The '${vmId}' virtual module does not exists.`);
       }
     }
-    return await this.#context.build(compilation);
+    return await this.context.build(compilation);
   }
 };
 var Plugin_default = Plugin;
@@ -15293,7 +15304,7 @@ function JSXClosingFragment_default2(ctx, stack) {
 
 // lib/core/ESX.js
 var import_Namespace22 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils31 = require("easescript/lib/core/Utils");
+var import_Utils31 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
 function createFragmentVNode2(ctx, children, props = null) {
   const items = [
@@ -15426,7 +15437,7 @@ function createForEachNode2(ctx, refs, element, item, key) {
   return node;
 }
 function getComponentDirectiveAnnotation2(module2) {
-  if (!(0, import_Utils31.isModule)(module2))
+  if (!import_Utils31.default.isModule(module2))
     return null;
   const annots = getModuleAnnotations(module2, ["define"]);
   for (let annot of annots) {
@@ -15443,7 +15454,7 @@ function getComponentDirectiveAnnotation2(module2) {
 }
 var directiveInterface2 = null;
 function isDirectiveInterface2(module2) {
-  if (!(0, import_Utils31.isModule)(module2))
+  if (!import_Utils31.default.isModule(module2))
     return false;
   directiveInterface2 = directiveInterface2 || import_Namespace22.default.globals.get("web.components.Directive");
   if (directiveInterface2 && directiveInterface2.isInterface) {
@@ -15452,7 +15463,7 @@ function isDirectiveInterface2(module2) {
   return false;
 }
 function getComponentEmitAnnotation2(module2) {
-  if (!(0, import_Utils31.isModule)(module2))
+  if (!import_Utils31.default.isModule(module2))
     return null;
   const dataset = /* @__PURE__ */ Object.create(null);
   const annots = getModuleAnnotations(desc, ["define"]);
@@ -15811,72 +15822,25 @@ function getBinddingEventName2(stack) {
   }
   return null;
 }
-function mergeElementPropsNode2(ctx, data, stack) {
+function createElementPropsNode(ctx, data, stack) {
   const items = [];
-  const ssr = !!ctx.options.ssr;
   Object.entries(data).map((item) => {
     const [key, value] = item;
     if (key === "slots" || key === "directives" || key === "keyProps") {
       return;
     }
     if (value) {
-      if (Array.isArray(value)) {
-        if (value.length > 0) {
-          const type = value[0].type;
-          const isObject = type === "Property" || type === "SpreadElement";
-          if (isObject) {
-            if (key === "props" || key === "attrs") {
-              items.push(...value);
-              return;
-            } else if (key === "on") {
-              if (ssr)
-                return;
-              value.forEach((item2) => {
-                if (item2.type === "Property") {
-                  if (item2.computed) {
-                    item2.key = ctx.createTemplateLiteral([
-                      ctx.createTemplateElement("on")
-                    ], [
-                      ctx.createCallExpression(
-                        createStaticReferenceNode2(ctx, stack, "System", "firstUpperCase"),
-                        [
-                          item2.key
-                        ]
-                      )
-                    ]);
-                  } else {
-                    item2.key.value = "on" + toFirstUpperCase(item2.key.value);
-                  }
-                  items.push(item2);
-                }
-              });
-              return;
-            }
-            items.push(
-              ctx.createProperty(
-                ctx.createIdentifier(key),
-                ctx.createObjectExpression(value)
-              )
-            );
-          } else {
-            items.push(
-              ctx.createProperty(
-                ctx.createIdentifier(key),
-                ctx.createArrayExpression(value)
-              )
-            );
-          }
+      if (key === "props" || key === "attrs" || key === "on") {
+        if (Array.isArray(value)) {
+          items.push(...value);
+        } else {
+          throw new Error(`Invalid ${key}`);
         }
       } else {
         if (value.type === "Property") {
           items.push(value);
         } else {
-          items.push(
-            ctx.createProperty(
-              ctx.createIdentifier(key),
-              value
-            )
-          );
+          throw new Error(`Invalid ${key}`);
         }
       }
     }
@@ -15884,7 +15848,7 @@ function mergeElementPropsNode2(ctx, data, stack) {
   const props = items.length > 0 ? ctx.createObjectExpression(items) : null;
   if (props && stack && stack.isComponent) {
     const desc2 = stack.description();
-    if (desc2 && (0, import_Utils31.isModule)(desc2)) {
+    if (desc2 && import_Utils31.default.isModule(desc2)) {
       let has = getModuleAnnotations(desc2, ["hook"]).some((annot) => {
         let result = parseHookAnnotation(annot, ctx.plugin.version, ctx.options.metadata.versions);
         return result && result.type === "polyfills:props";
@@ -15910,7 +15874,10 @@ function createComponentPropsHookNode2(ctx, props, className) {
   );
 }
 function createAttributes2(ctx, stack, data) {
+  const ssr = !!ctx.options.ssr;
   const pushEvent = (name, node, category) => {
+    if (ssr && category === "on")
+      return;
     let events = data[category] || (data[category] = []);
     if (!Node_default.is(name)) {
       name = String(name);
@@ -15921,7 +15888,32 @@ function createAttributes2(ctx, stack, data) {
       property.computed = true;
       property.key.computed = false;
     }
+    if (category === "on") {
+      if (property.computed) {
+        property.key = ctx.createTemplateLiteral([
+          ctx.createTemplateElement("on")
+        ], [
+          ctx.createCallExpression(
+            createStaticReferenceNode2(ctx, stack, "System", "firstUpperCase"),
+            [
+              property.key
+            ]
+          )
+        ]);
+      } else {
+        property.key.value = "on" + toFirstUpperCase(property.key.value);
+        if (property.key.type === "Literal") {
+          property.key.raw = `"${property.key.value}"`;
+        }
+      }
+    }
     events.push(property);
+  };
+  const createPropertyNode = (propName, propValue) => {
+    return ctx.createProperty(
+      propName.includes("-") ? ctx.createLiteral(propName) : ctx.createIdentifier(propName),
+      propValue
+    );
   };
   let isComponent = stack.isComponent || stack.isWebComponent;
   let nodeType = !isComponent ? stack.openingElement.name.value().toLowerCase() : null;
@@ -16037,11 +16029,8 @@ function createAttributes2(ctx, stack, data) {
     if (item.isMemberProperty) {
       if (ns === "@binding" && attrLowerName === "value") {
         data.props.push(
-          ctx.createProperty(
-            ctx.createIdentifier(
-              propName,
-              item.name
-            ),
+          createPropertyNode(
+            propName,
             propValue
           )
         );
@@ -16049,11 +16038,8 @@ function createAttributes2(ctx, stack, data) {
       }
       if (!isDOMAttribute) {
         data.props.push(
-          ctx.createProperty(
-            ctx.createIdentifier(
-              propName,
-              item.name
-            ),
+          createPropertyNode(
+            propName,
             propValue
           )
         );
@@ -16164,11 +16150,8 @@ function createAttributes2(ctx, stack, data) {
     } else if (attrLowerName === "key" || attrLowerName === "tag") {
       name = attrLowerName;
     }
-    const property = ctx.createProperty(
-      ctx.createIdentifier(
-        propName,
-        item.name
-      ),
+    const property = createPropertyNode(
+      propName,
       propValue
     );
     switch (name) {
@@ -16249,7 +16232,9 @@ function createComponentDirectiveProperties2(ctx, stack, data, callback = null) 
       parentIsComponentDirective = isDirectiveInterface2(desc2);
     }
     if (parentIsComponentDirective) {
-      let node = createResolveComponentDirective2(ctx, stack, data, callback);
+      ctx.addDepend(desc2);
+      let [direModule, direName] = parentIsComponentDirective;
+      let node = createResolveComponentDirective2(ctx, stack, data, direModule, direName, false, callback);
       if (node) {
         data.directives.push(node);
       }
@@ -16262,7 +16247,7 @@ function createComponentDirectiveProperties2(ctx, stack, data, callback = null) 
   return false;
 }
 function createCustomDirectiveProperties2(ctx, stack, data, callback = null) {
-  const node = createResolveComponentDirective2(ctx, stack, data, callback);
+  const node = createResolveComponentDirective2(ctx, stack, data, null, null, true, callback);
   if (node) {
     data.directives.push(node);
   }
@@ -16273,32 +16258,101 @@ function createCustomDirectiveProperties2(ctx, stack, data, callback = null) {
     }
   }
 }
-function createResolveComponentDirective2(ctx, stack, data, callback = null) {
+function createResolveComponentDirective2(ctx, stack, data, direModule = null, direName = null, isCustom = false, callback = null) {
   const props = [];
   const has = (items, name) => items && items.some((prop) => prop.key.value === name);
+  let expression2 = null;
+  let modifier = null;
+  let directive = direModule ? createClassRefsNode(ctx, direModule, stack) : null;
   stack.openingElement.attributes.forEach((attr) => {
     if (attr.isAttributeXmlns || attr.isAttributeDirective)
       return;
     const name = attr.name.value();
-    const property = ctx.createProperty(
-      ctx.createIdentifier(name),
-      attr.value ? ctx.createToken(attr.value) : ctx.createLiteral(true)
-    );
-    if (attr.isMemberProperty) {
-      if (!has(data.props, name)) {
-        property.isInheritDirectiveProp = true;
-        data.props.push(property);
+    const lower = name.toLowerCase();
+    if (lower === "name" && isCustom) {
+      let value = attr.value;
+      if (value && value.isJSXExpressionContainer) {
+        value = value.expression;
       }
-    } else {
+      if (value) {
+        if (value.isLiteral) {
+          directive = ctx.createToken(value);
+        } else {
+          let desc2 = value.description();
+          let result = null;
+          let isMember = desc2 && (desc2.isMethodDefinition || desc2.isPropertyDefinition);
+          if (isMember) {
+            result = getComponentDirectiveAnnotation2(desc2.module);
+          } else {
+            result = getComponentDirectiveAnnotation2(desc2);
+          }
+          if (result) {
+            [direModule, direName] = result;
+            if (isMember) {
+              directive = ctx.createToken(value);
+            } else {
+              directive = createClassRefsNode(ctx, direModule, stack);
+            }
+          }
+        }
+        if (!directive) {
+          direName = attr.value.value();
+        }
+      } else {
+        const range = stack.compilation.getRangeByNode(attr.name.node);
+        console.warn(`No named value directive was specified.\r
+ at ${stack.file}(${range.end.line}:${range.end.column})`);
+      }
+      return;
+    }
+    if (lower === "value") {
+      expression2 = attr.value ? ctx.createToken(attr.value) : ctx.createLiteral(false);
+      return;
+    }
+    if (lower === "modifier") {
+      modifier = attr.value ? ctx.createToken(attr.value) : ctx.createObjectExpression();
+      return;
+    }
+    const attrNode = ctx.createToken(attr);
+    if (attrNode) {
+      const property = ctx.createProperty(
+        attrNode.name,
+        attrNode.value
+      );
+      property.loc = attrNode.loc;
       if (!has(data.attrs, name)) {
-        property.isInheritDirectiveAttr = true;
+        property.isInheritDirectiveProp = true;
         data.attrs.push(property);
       }
-    }
-    if (callback) {
-      callback(property);
+      if (callback) {
+        callback(property);
+      }
     }
   });
+  if (direName) {
+    props.push(ctx.createProperty(
+      ctx.createIdentifier("name"),
+      ctx.createLiteral(direName)
+    ));
+  }
+  if (directive) {
+    props.push(ctx.createProperty(
+      ctx.createIdentifier("directiveClass"),
+      directive
+    ));
+  }
+  props.push(ctx.createProperty(
+    ctx.createIdentifier("value"),
+    expression2 || this.createLiteralNode(false)
+  ));
+  if (modifier) {
+    props.push(properties.push(
+      ctx.createProperty(
+        ctx.createIdentifier("modifiers"),
+        modifier
+      )
+    ));
+  }
   const object = ctx.createObjectExpression(props);
   const node = ctx.createCallExpression(
     createStaticReferenceNode2(ctx, stack, "web.components.Component", "resolveDirective"),
@@ -16318,13 +16372,13 @@ function createSlotElementNode2(ctx, stack, children) {
   if (stack.isSlotDeclared) {
     args.push(ctx.createLiteral(stack.openingElement.name.value()));
     if (openingElement.attributes.length > 0) {
-      const properties = openingElement.attributes.map((attr) => {
+      const properties2 = openingElement.attributes.map((attr) => {
         return ctx.createProperty(
           attr.name,
           attr.value
         );
       });
-      props = ctx.createObjectExpression(properties);
+      props = ctx.createObjectExpression(properties2);
     } else {
       props = ctx.createObjectExpression();
     }
@@ -16390,15 +16444,6 @@ function createDirectiveElementNode2(ctx, stack, children) {
   }
   return null;
 }
-function createHandleNode2(ctx, stack, ...args) {
-  let handle = ctx.createIdentifier(
-    ctx.getLocalRefName(
-      stack,
-      ctx.options.esx.handle || "createVNode"
-    )
-  );
-  return ctx.createCallExpression(handle, args);
-}
 function createElementNode2(ctx, stack, data, children) {
   let name = null;
   if (stack.isComponent) {
@@ -16406,7 +16451,7 @@ function createElementNode2(ctx, stack, data, children) {
       name = ctx.createLiteral("div");
     } else {
       const desc2 = stack.description();
-      if ((0, import_Utils31.isModule)(desc2)) {
+      if (import_Utils31.default.isModule(desc2)) {
         ctx.addDepend(desc2, stack.module);
         name = ctx.createIdentifier(
           ctx.getModuleReferenceName(desc2, stack.module)
@@ -16421,13 +16466,13 @@ function createElementNode2(ctx, stack, data, children) {
   } else {
     name = ctx.createLiteral(stack.openingElement.name.value());
   }
-  data = mergeElementPropsNode2(ctx, data, stack);
+  data = createElementPropsNode(ctx, data, stack);
   if (children) {
-    return createHandleNode2(ctx, stack, name, data || ctx.createLiteral(null), children);
+    return ctx.createVNodeHandleNode(stack, name, data || ctx.createLiteral(null), children);
   } else if (data) {
-    return createHandleNode2(ctx, stack, name, data);
+    return ctx.createVNodeHandleNode(stack, name, data);
   } else {
-    return createHandleNode2(ctx, stack, name);
+    return ctx.createVNodeHandleNode(stack, name);
   }
 }
 function getDepth2(stack) {
@@ -16494,9 +16539,9 @@ function createElement2(ctx, stack) {
   }
   const isWebComponent = stack.isWebComponent && !(stack.compilation.JSX && stack.parentStack.isProgram);
   if (isWebComponent) {
-    const properties = [];
+    const properties2 = [];
     if (childNodes) {
-      properties.push(ctx.createProperty(
+      properties2.push(ctx.createProperty(
         ctx.createIdentifier("default"),
         createWithCtxNode2(
           ctx.createArrowFunctionExpression(childNodes)
@@ -16506,7 +16551,7 @@ function createElement2(ctx, stack) {
     }
     if (data.slots) {
       for (let key in data.slots) {
-        properties.push(
+        properties2.push(
           ctx.createProperty(
             ctx.createIdentifier(key),
             data.slots[key]
@@ -16514,8 +16559,8 @@ function createElement2(ctx, stack) {
         );
       }
     }
-    if (properties.length > 0) {
-      childNodes = ctx.createObjectExpression(properties);
+    if (properties2.length > 0) {
+      childNodes = ctx.createObjectExpression(properties2);
     }
   }
   if (stack.isSlot) {
@@ -18795,6 +18840,7 @@ var vms_default = {
 };
 
 // lib/core/Plugin.js
+var import_path10 = __toESM(require("path"));
 function defineError2(complier) {
   if (defineError2.loaded || !complier || !complier.diagnostic)
     return;
@@ -18806,53 +18852,21 @@ function defineError2(complier) {
   ]);
 }
 var Plugin2 = class extends Plugin_default {
-  #records = null;
-  #initialized = false;
   #context = null;
-  #complier = null;
-  constructor(name, version, options = {}) {
-    super(name, version, options);
-  }
-  get complier() {
-    return this.#complier;
-  }
   get context() {
     return this.#context;
   }
-  init(complier) {
-    if (!this.#initialized) {
-      this.#initialized = true;
-      this.#complier = complier;
-      this.#records = /* @__PURE__ */ new Map();
-      defineError2(complier);
-      if (this.options.mode === "development") {
-        let tableBuilders = null;
-        complier.on("onChanged", (compilation) => {
-          this.#records.delete(compilation);
-          let mainModule = compilation.mainModule;
-          if (mainModule.isStructTable) {
-            tableBuilders = tableBuilders || getAllBuilder();
-            compilation.modules.forEach((module2) => {
-              if (module2.isStructTable) {
-                tableBuilders.forEach((builder) => {
-                  builder.removeTable(module2.id);
-                });
-              }
-            });
-          }
-        });
-      }
-      let context = createBuildContext2(this, this.#records);
-      this.#context = context;
-      createPolyfillModule(
-        import_path10.default.join(__dirname, "./polyfills"),
-        context.virtuals.createVModule
-      );
-      Object.keys(vms_default).forEach((key) => {
-        let vm = context.virtuals.createVModule(key, vms_default[key]);
-        context.addBuildAfterDep(vm);
-      });
-    }
+  async init() {
+    defineError2(this.complier);
+    this.#context = createBuildContext2(this, this.records);
+    createPolyfillModule(
+      import_path10.default.join(__dirname, "./polyfills"),
+      this.#context.virtuals.createVModule
+    );
+    Object.keys(vms_default).forEach((key) => {
+      let vm = this.#context.virtuals.createVModule(key, vms_default[key]);
+      this.#context.addBuildAfterDep(vm);
+    });
   }
   async buildIncludes() {
     const includes = this.options.includes || [];
@@ -18866,25 +18880,21 @@ var Plugin2 = class extends Plugin_default {
       }
     }));
   }
-  async done() {
-  }
   async run(compilation) {
     if (!import_Compilation2.default.is(compilation)) {
       throw new Error("compilation is invalid");
     }
-    if (!this.#initialized) {
-      this.init(compilation.complier);
+    if (!this.initialized) {
+      await this.beforeStart(compilation.complier);
     }
-    let result = await this.#context.buildDeps(compilation);
-    await this.done();
-    return result;
+    return await this.#context.buildDeps(compilation);
   }
   async build(compilation, vmId) {
     if (!import_Compilation2.default.is(compilation)) {
       throw new Error("compilation is invalid");
     }
-    if (!this.#initialized) {
-      this.init(compilation.complier);
+    if (!this.initialized) {
+      await this.beforeStart(compilation.complier);
     }
     if (vmId) {
       let vm = this.#context.virtuals.getVModule(vmId);
@@ -18894,9 +18904,7 @@ var Plugin2 = class extends Plugin_default {
         throw new Error(`The '${vmId}' virtual module does not exists.`);
       }
     }
-    let result = await this.#context.build(compilation);
-    await this.done();
-    return result;
+    return await this.#context.build(compilation);
   }
 };
 var Plugin_default2 = Plugin2;

@@ -39,7 +39,7 @@ class Creator {
                 }
             }
         });
-        this.plugin.init(compiler);
+        this.plugin.beforeStart(compiler);
     }
 
     get compiler(){
