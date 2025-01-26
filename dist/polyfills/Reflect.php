@@ -441,6 +441,7 @@ final class Reflect{
      * 获取指定对象中的属性值
      */
     final static public function get( $scope, $target, $name, $thisArg=null, $isStatic=false){
+        if(is_null($target))return null;
         $type_name = gettype($target);
         if($isStatic===true){
             if( $target ==='Array' ){
@@ -479,8 +480,7 @@ final class Reflect{
         }
 
         if( !is_object($target) ){
-            //throw new \Error( 'target is non-object');
-            return null;
+            throw new \Error( 'target is non-object');
         }
 
         $desc = self::getReflectionMethodOrProperty($target, $name,'get', $scope);

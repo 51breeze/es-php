@@ -530,9 +530,13 @@ public class StartTest extends Base implements Address
         
         assertEquals( void 0 , obj.child2?.name )
         assertEquals( void 0 , obj.test2?.() )
+        assertEquals( true , obj.test?.() )
+        assertEquals( true , !!obj?.child )
 
         obj.index2 ??= 'index two';
         assertEquals('index two', obj.index2 ?? null );
+        obj.index2 ??= '9999';
+        assertEquals('index two', obj.index2 );
 
         assertEquals(null, obj.index3 ?? null );
 
@@ -562,13 +566,18 @@ public class StartTest extends Base implements Address
         obj2.child = {
             test:123,
             child:{
-                age:30
+                age:30,
+                call(a){
+                    return a;
+                }
             }
         }
         
         assertEquals(123, obj2.child.test )
         assertEquals(30, obj2.child?.child?.age )
         assertEquals(undefined, obj2.chil?.child?.age )
+        assertEquals(1, obj2.child?.child?.call(1) )
+        assertEquals(undefined, obj2.chi?.child?.call(1) )
 
         if(obj2 is stdClass){
             assertEquals(123, obj2.name )
