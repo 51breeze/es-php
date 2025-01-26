@@ -2503,6 +2503,8 @@ function createScopeIdNode(ctx, module2, stack = null) {
   return ctx.createLiteral(null);
 }
 function createComputedPropertyNode(ctx, stack) {
+  if (!stack.isMemberExpression)
+    return null;
   return stack.computed ? ctx.createToken(stack.property) : ctx.createLiteral(stack.property.value());
 }
 function createAddressRefsNode(ctx, argument) {
@@ -14795,7 +14797,7 @@ function CallExpression(ctx, stack) {
         const property = ctx.createLiteral(propValue, void 0, stack.callee.property);
         let target = ctx.createToken(stack.callee.object);
         if (!stack.callee.object.isIdentifier && target.type !== "Literal") {
-          const refs = ctx.genLocalRefName(stack, "ref");
+          const refs = ctx.getLocalRefName(stack, "ref", stack.callee.object);
           ctx.insertTokenToBlock(
             stack,
             ctx.createAssignmentExpression(
@@ -14877,8 +14879,6 @@ function CallExpression(ctx, stack) {
       }
     } else if (desc2) {
       if (desc2.isType && desc2.isAnyType) {
-        const Reflect2 = stack.getGlobalTypeById("Reflect");
-        ctx.addDepend(Reflect2, stack.module);
         let target = ctx.createToken(stack.callee);
         if (!stack.callee.isIdentifier) {
           const refs = ctx.genLocalRefName(stack, "ref");
@@ -14963,7 +14963,34 @@ function toRefs(ctx, node, stack) {
 function ChainExpression_default2(ctx, stack) {
   const node = ctx.createNode(stack);
   if (stack.expression.isCallExpression || stack.expression.isNewExpression) {
-    let chain = toRefs(ctx, ctx.createToken(stack.expression.callee), stack);
+    let exp = ctx.createToken(stack.expression);
+    let was = ctx.getWasLocalRefName(stack.expression.callee.object, "ref");
+    let chain = null;
+    if (was) {
+      chain = ctx.createCallExpression(
+        createStaticReferenceNode2(ctx, stack, "Reflect", "get"),
+        [
+          createScopeIdNode(ctx, stack.module, stack),
+          ctx.createVarIdentifier(was),
+          ctx.createLiteral(stack.expression.callee.property.value())
+        ],
+        stack
+      );
+      const refs = ctx.createVarIdentifier(ctx.genLocalRefName(stack, "ref"));
+      ctx.insertTokenToBlock(
+        stack,
+        ctx.createAssignmentExpression(
+          refs,
+          chain
+        )
+      );
+      chain = refs;
+    } else {
+      chain = toRefs(ctx, ctx.createToken(stack.expression.callee), stack);
+      if (!(chain.type === "Identifier" || chain.type === "MemberExpression")) {
+        chain = toRefs(ctx, ctx.createToken(stack.expression.callee.object), stack);
+      }
+    }
     const test = ctx.createCallExpression(
       ctx.createIdentifier("isset"),
       [
@@ -14971,7 +14998,7 @@ function ChainExpression_default2(ctx, stack) {
       ],
       stack
     );
-    node.expression = ctx.createConditionalExpression(test, ctx.createToken(stack.expression), ctx.createLiteral(null));
+    node.expression = ctx.createConditionalExpression(test, exp, ctx.createLiteral(null));
   } else {
     if (stack.expression.computed) {
       let chain = toRefs(ctx, ctx.createToken(stack.expression.object), stack);
@@ -17719,9 +17746,6 @@ function MemberExpression2(ctx, stack) {
     }
     return ctx.createIdentifier("\\" + stack.value().replace(/\./g, "\\"));
   }
-  if (stack.optional) {
-    console.log("----------", stack.value());
-  }
   if (!description || description.isType && description.isAnyType) {
     let isCall = stack.parentStack.parentStack.isCallExpression;
     if (!description && isCall) {
@@ -17739,15 +17763,17 @@ function MemberExpression2(ctx, stack) {
       isReflect = true;
     }
     if (isReflect) {
-      return ctx.createCallExpression(
+      let object = ctx.createToken(stack.object);
+      let node2 = ctx.createCallExpression(
         createStaticReferenceNode2(ctx, stack, "Reflect", "get"),
         [
           createScopeIdNode(ctx, module2, stack),
-          ctx.createToken(stack.object),
+          object,
           createComputedPropertyNode(ctx, stack)
         ],
         stack
       );
+      return node2;
     }
     computed = true;
   }

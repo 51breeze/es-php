@@ -548,6 +548,11 @@ public class StartTest extends Base implements Address
         assertEquals( 'null' , obj.child?.chil?.name ?? 'null' );
         assertEquals( void 0 , obj.chil?.child?.name );
         assertEquals( false , obj.chil?.child?.name ?? false );
+        assertEquals( this , getObject()?.call?.() );
+        assertEquals( null , getObject()?.calls?.() );
+
+        let arrObj:any = [1,2,3];
+        assertEquals( [2,3] , arrObj?.slice?.(1) );
 
         let x = 0;
         assertEquals( void 0 , obj.chil?.[++x] )

@@ -245,7 +245,7 @@ final class Reflect{
      * 获取对象中的方法或者属性
      */
     final static private function getReflectionMethodOrProperty( $target, $name, $accessor='',$scope=null, $isCall=false){
-        if( $target==null ){
+        if(is_null($target)){
             return null;
         }
 
@@ -387,7 +387,7 @@ final class Reflect{
         switch ($type_name) {
             case 'string' :
             case 'array' :
-            case 'math' :
+            case 'math' :   
             case 'number' :
                 $object = self::method( $type_name );
                 if( $object ){
@@ -457,6 +457,7 @@ final class Reflect{
             case 'string' :
             case 'array' :
             case 'math' :
+            case 'number' :
                 if( isset( $target[$name] ) ){
                     return $target[$name];
                 }else{
@@ -518,6 +519,9 @@ final class Reflect{
      * 设置指定对象中的属性值
      */
     final static public function set($scope, &$target, $name, $value, $thisArg=null, $isStatic=false){
+        if(is_null($target)){
+            throw new \Error( 'target is null object');
+        }
         $type_name = gettype($target);
         switch ($type_name) {
             case 'array' :
