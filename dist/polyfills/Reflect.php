@@ -326,7 +326,7 @@ final class Reflect{
      * @param argumentsList
      * @returns {*}
      */
-    final static public function construct($scope, $target, $args=null ){
+    final static public function construct($target, $args=null ){
         if($target ==='String' || $target==='Boolean' || $target==='Object' || $target==='Number'){
             return System::newObjectWraper($args[0] ?? null, strtolower($target));
         }else if($target==='Array'){
@@ -389,6 +389,9 @@ final class Reflect{
             case 'array' :
             case 'math' :   
             case 'number' :
+                if( $type_name==='array' && isset($target[$name])){
+                    return call_user_func_array($target[$name], $args);
+                }
                 $object = self::method( $type_name );
                 if( $object ){
                     $method_array = $object($target, $name, $args);
@@ -406,15 +409,15 @@ final class Reflect{
                 throw new \Error( $name." method is not exists.");
         }
 
-        if( is_callable($target) && $name===null ){
+        if($name===null){
             return Reflect::apply($target, $thisArg, $args);
         }
 
-        if( !is_object($target) ){
+        if(!$target || !is_object($target) ){
             throw new \Error( 'target is non-object');
         }
 
-        $desc =  self::getReflectionMethodOrProperty($target, $name,'',$scope, true);
+        $desc = self::getReflectionMethodOrProperty($target, $name,'',$scope, true);
         if( $desc ){
             list($type, $method, $accessible) = $desc;
             if( !$accessible ){
@@ -433,8 +436,16 @@ final class Reflect{
         if(method_exists($target, '__call')){
             return $target->__call($name, $args);
         }
-        
         throw new \Error( $name." method is not exists.");
+    }
+
+    final static public function tryCall( $scope, &$target, $name=null, array $args=[], $thisArg=null, $isStatic=false){
+        try{
+            if(!$target)return null;
+            return self::call( $scope, $target, $name, $args, $thisArg, $isStatic);
+        }catch(\Error $e){
+            return null;
+        }
     }
 
     /**
@@ -568,10 +579,19 @@ final class Reflect{
     }
 
     /**
-     * 指定对象中的属性值是否存在
+     * 指定对象中的属性(或者方法)成员是否存在
      */
-    final static public function has($scope, $target, $name){
-        return !!static::getReflectionMethodOrProperty($target, $name,'get', $scope);
+    final static public function has($target, $name){
+        if(gettype($target)==='array') {
+            if(array_key_exists($name, $target))return true;
+            $fn = self::method('array');
+            return !!$fn($target, $name, []);
+        }
+        if(is_object($target)){
+            if(!$target)return false;
+            if(property_exists($target,$name))return true;
+        }
+        return !!static::getReflectionMethodOrProperty($target, $name,'get', null);
     }
 
     /**

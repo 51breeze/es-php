@@ -552,12 +552,12 @@ function parseMacroArguments(args, name, indexes = null) {
     case "version": {
       const name2 = getAnnotationArgument("name", args, indexes);
       const version = getAnnotationArgument("version", args, indexes);
-      const operator = getAnnotationArgument("operator", args, indexes);
+      const operator2 = getAnnotationArgument("operator", args, indexes);
       if (name2 && version) {
         return {
           name: getAnnotationArgumentValue(name2),
           version: getAnnotationArgumentValue(version),
-          operator: getAnnotationArgumentValue(operator) || "elt",
+          operator: getAnnotationArgumentValue(operator2) || "elt",
           expect
         };
       } else {
@@ -756,6 +756,7 @@ function parseRouterAnnotation(ctx, stack) {
         ctx.error(`Method '${moduleClass.value}::${actionArg && actionArg.value}' is not exists.`, actionArg ? actionArg.stack : stack);
       } else {
         return {
+          isWebComponent: false,
           args: {
             module: moduleClass,
             action: actionArg,
@@ -969,11 +970,11 @@ function toVersion(value) {
   const [a = "0", b = "0", c = "0"] = Array.from(String(value).matchAll(/\d+/g)).map((item) => item ? item[0].substring(0, 2) : "0");
   return [a, b, c].join(".");
 }
-function compareVersion(left, right, operator = "elt") {
-  operator = operator.toLowerCase();
-  if (operator === "eq" && left == right)
+function compareVersion(left, right, operator2 = "elt") {
+  operator2 = operator2.toLowerCase();
+  if (operator2 === "eq" && left == right)
     return true;
-  if (operator === "neq" && left != right)
+  if (operator2 === "neq" && left != right)
     return true;
   const toInt = (val) => {
     val = parseInt(val);
@@ -984,28 +985,28 @@ function compareVersion(left, right, operator = "elt") {
   for (let i = 0; i < left.length; i++) {
     let l = left[i] || 0;
     let r = right[i] || 0;
-    if (operator === "eq") {
+    if (operator2 === "eq") {
       if (l != r) {
         return false;
       }
     } else {
       if (l != r) {
-        if (operator === "gt" && !(l > r)) {
+        if (operator2 === "gt" && !(l > r)) {
           return false;
-        } else if (operator === "egt" && !(l >= r)) {
+        } else if (operator2 === "egt" && !(l >= r)) {
           return false;
-        } else if (operator === "lt" && !(l < r)) {
+        } else if (operator2 === "lt" && !(l < r)) {
           return false;
-        } else if (operator === "elt" && !(l <= r)) {
+        } else if (operator2 === "elt" && !(l <= r)) {
           return false;
-        } else if (operator === "neq") {
+        } else if (operator2 === "neq") {
           return true;
         }
         return true;
       }
     }
   }
-  return operator === "eq" || operator === "egt" || operator === "elt";
+  return operator2 === "eq" || operator2 === "egt" || operator2 === "elt";
 }
 function createRoutePath(route, params = {}) {
   if (!route || !route.path || !route.isRoute) {
@@ -1336,7 +1337,12 @@ function createRouterAnnotationNode(ctx, stack) {
     if (route && Array.isArray(route))
       route = route[0];
     if (!route) {
-      return ctx.createLiteral(result.module.getName("/"));
+      let routePathNode = ctx.createDefaultRoutePathNode(result.module);
+      if (routePathNode) {
+        return routePathNode;
+      } else {
+        return null;
+      }
     }
     const paramArg = result.args.param;
     if (!paramArg) {
@@ -3106,11 +3112,13 @@ function merge(target, source, result = {}) {
 function canUseNullCoalescingOperator(stack) {
   let parentStack = stack.getParentStack((p) => !p.isMemberExpression);
   if (parentStack.isLogicalExpression) {
-    let operator = parentStack.operator;
-    if (operator.length == 2 && operator.charCodeAt(0) === 63 && operator.charCodeAt(1) === 63) {
+    let operator2 = parentStack.operator;
+    if (operator2.length == 2 && operator2.charCodeAt(0) === 63 && operator2.charCodeAt(1) === 63) {
       return false;
     }
   }
+  if (parentStack.isUpdateExpression)
+    return false;
   let optional = !!(parentStack.isAssignmentExpression || parentStack.isChainExpression);
   if (parentStack.isCallExpression || parentStack.isNewExpression) {
     optional = !parentStack.arguments.includes(stack);
@@ -4409,11 +4417,11 @@ var Token = class {
     }
     return node;
   }
-  createBinaryExpression(left, right, operator) {
+  createBinaryExpression(left, right, operator2) {
     const node = this.createNode("BinaryExpression");
     node.left = left;
     node.right = right;
-    node.operator = operator;
+    node.operator = operator2;
     return node;
   }
   createAssignmentPattern(left, right) {
@@ -4422,11 +4430,11 @@ var Token = class {
     node.right = right;
     return node;
   }
-  createLogicalExpression(left, right, operator = "&&") {
+  createLogicalExpression(left, right, operator2 = "&&") {
     const node = this.createNode("LogicalExpression");
     node.left = left;
     node.right = right;
-    node.operator = operator;
+    node.operator = operator2;
     return node;
   }
   createTemplateLiteral(quasis, expressions) {
@@ -4440,10 +4448,10 @@ var Token = class {
     node.value = text;
     return node;
   }
-  createUpdateExpression(argument, operator, prefix = false) {
+  createUpdateExpression(argument, operator2, prefix = false) {
     const node = this.createNode("UpdateExpression");
     node.argument = argument;
-    node.operator = operator;
+    node.operator = operator2;
     node.prefix = prefix;
   }
   createFunctionExpression(block, params = []) {
@@ -4574,10 +4582,10 @@ var Token = class {
     node.expression = expression;
     return node;
   }
-  createUnaryExpression(argument, operator, prefix = false) {
+  createUnaryExpression(argument, operator2, prefix = false) {
     const node = this.createNode("UnaryExpression");
     node.argument = argument;
-    node.operator = operator;
+    node.operator = operator2;
     node.prefix = prefix;
     return node;
   }
@@ -6163,11 +6171,10 @@ var VirtualModule = class {
     this.#content = content;
     this.#changed = true;
   }
-  createImports(ctx) {
+  createImports(ctx, graph) {
     this.#imports.forEach((args) => {
       let [source, local, imported] = args;
-      source = ctx.getModuleImportSource(source, this.bindModule);
-      ctx.addImport(source, local, imported);
+      ctx.createRequire(ctx.target, graph, source, local, imported);
     });
   }
   createExports(ctx) {
@@ -6227,7 +6234,7 @@ var VirtualModule = class {
     if (!this.#changed && graph.code)
       return graph;
     this.#changed = false;
-    this.createImports(ctx);
+    this.createImports(ctx, graph);
     this.createReferences(ctx);
     let module2 = this.bindModule;
     let emitFile = ctx.options.emitFile;
@@ -6299,14 +6306,23 @@ function isVModule(value) {
 function getVirtualModuleManager(VirtualModuleFactory) {
   const virtualization = /* @__PURE__ */ new Map();
   function createVModule(sourceId, factory = VirtualModuleFactory) {
-    sourceId = Array.isArray(sourceId) ? sourceId.join(".") : String(sourceId);
+    let isSymbol = typeof sourceId === "symbol";
+    if (!isSymbol) {
+      sourceId = Array.isArray(sourceId) ? sourceId.join(".") : String(sourceId);
+    }
     let old = virtualization.get(sourceId);
     if (old)
       return old;
-    let segs = sourceId.split(".");
-    let vm = new factory(segs.pop(), segs);
-    virtualization.set(sourceId, vm);
-    return vm;
+    if (isSymbol) {
+      let vm = new factory(sourceId, []);
+      virtualization.set(sourceId, vm);
+      return vm;
+    } else {
+      let segs = sourceId.split(".");
+      let vm = new factory(segs.pop(), segs);
+      virtualization.set(sourceId, vm);
+      return vm;
+    }
   }
   function getVModule(sourceId) {
     return virtualization.get(sourceId);
@@ -6920,7 +6936,7 @@ var Context = class extends Token_default {
       }
     }
   }
-  getGlobalRefName(stack, name, group = null) {
+  getGlobalRefName(stack, name, objectKey = null) {
     if (!stack) {
       if (import_Utils4.default.isModule(this.target)) {
         stack = this.target.compilation.stack;
@@ -6930,19 +6946,19 @@ var Context = class extends Token_default {
       stack = stack || this;
     }
     let variables = this.variables;
-    if (group) {
+    if (objectKey) {
       let key = "getGlobalRefName:" + name;
-      if (this.cache.has(group, key)) {
-        return this.cache.get(group, key);
+      if (this.cache.has(objectKey, key)) {
+        return this.cache.get(objectKey, key);
       } else {
         let value = variables.hasRefs(stack, name, true) ? variables.genGlobalRefs(stack, name) : variables.getGlobalRefs(stack, name);
-        this.cache.set(group, key, value);
+        this.cache.set(objectKey, key, value);
         return value;
       }
     }
     return variables.getGlobalRefs(stack, name);
   }
-  getLocalRefName(stack, name, group = null) {
+  getLocalRefName(stack, name, objectKey = null) {
     if (!stack) {
       if (import_Utils4.default.isModule(this.target)) {
         stack = this.target.compilation.stack;
@@ -6952,19 +6968,80 @@ var Context = class extends Token_default {
       stack = stack || this;
     }
     let variables = this.variables;
-    if (group) {
+    if (objectKey) {
       let key = "getLocalRefName:" + name;
-      if (this.cache.has(group, key)) {
-        return this.cache.get(group, key);
+      if (this.cache.has(objectKey, key)) {
+        return this.cache.get(objectKey, key);
       } else {
         let value = variables.hasRefs(stack, name) ? variables.genLocalRefs(stack, name) : variables.getLocalRefs(stack, name);
-        this.cache.set(group, key, value);
+        this.cache.set(objectKey, key, value);
         return value;
       }
     }
     return variables.getLocalRefs(stack, name);
   }
+  genLocalRefName(stack, name, objectKey = null) {
+    if (!stack) {
+      if (import_Utils4.default.isModule(this.target)) {
+        stack = this.target.compilation.stack;
+      } else {
+        stack = this.target.stack;
+      }
+      stack = stack || this;
+    }
+    let variables = this.variables;
+    if (objectKey) {
+      let key = "genLocalRefName:" + name;
+      if (this.cache.has(objectKey, key)) {
+        return this.cache.get(objectKey, key);
+      } else {
+        let value = variables.genLocalRefs(stack, name);
+        this.cache.set(objectKey, key, value);
+        return value;
+      }
+    }
+    return variables.genLocalRefs(stack, name);
+  }
+  genGlobalRefName(stack, name, objectKey = null) {
+    if (!stack) {
+      if (import_Utils4.default.isModule(this.target)) {
+        stack = this.target.compilation.stack;
+      } else {
+        stack = this.target.stack;
+      }
+      stack = stack || this;
+    }
+    let variables = this.variables;
+    if (objectKey) {
+      let key = "genGlobalRefName:" + name;
+      if (this.cache.has(objectKey, key)) {
+        return this.cache.get(objectKey, key);
+      } else {
+        let value = variables.genGlobalRefs(stack, name);
+        this.cache.set(objectKey, key, value);
+        return value;
+      }
+    }
+    return variables.genGlobalRefs(stack, name);
+  }
+  getWasLocalRefName(target, name, genFlag = false) {
+    let key = genFlag ? "genLocalRefName:" + name : "getLocalRefName:" + name;
+    if (this.cache.has(target, key)) {
+      return this.cache.get(target, key);
+    }
+    return null;
+  }
+  getWasGlobalRefName(target, name, genFlag = false) {
+    let key = genFlag ? "genGlobalRefName:" + name : "getGlobalRefName:" + name;
+    if (this.cache.has(target, key)) {
+      return this.cache.get(target, key);
+    }
+    return null;
+  }
   getImportAssetsMapping(file, options = {}) {
+    if (isExcludeDependency(this.options.dependency.excludes, file, this.target)) {
+      return null;
+    }
     if (!options.group) {
       options.group = "imports";
     }
@@ -6998,7 +7075,7 @@ var Context = class extends Token_default {
   getModuleImportSource(source, context, sourceId = null) {
     const config = this.options;
     const isString = typeof source === "string";
-    if (isString && isExternalDependency(this.options.dependences.externals, source, context)) {
+    if (isString && isExternalDependency(this.options.dependency.externals, source, context)) {
       return source;
     }
     if (isString && source.includes("${__filename}")) {
@@ -7149,6 +7226,12 @@ var Context = class extends Token_default {
     let local = this.getGlobalRefName(null, name);
     this.addImport("vue", local, name);
     return local;
+  }
+  createDefaultRoutePathNode(module2) {
+    if (import_Utils4.default.isModule(module2)) {
+      return this.createLiteral("/" + module2.getName("/"));
+    }
+    return null;
   }
   createVNodeHandleNode(stack, ...args) {
     let handle = this.#vnodeHandleNode;
@@ -7326,24 +7409,11 @@ function getVariableManager() {
     return manage.has(name);
   }
   function getRefs(context, name, isTop = false, flags = REFS_All) {
-    let manage = null;
-    let ctxScope = context;
-    let scope = null;
-    if (import_Utils5.default.isStack(context)) {
-      scope = context.scope;
-      if (!import_Scope.default.is(scope)) {
-        throw new Error("Variable.getRefs scope invalid");
-      }
-      manage = _getVariableManage(
-        isTop ? scope.getScopeByType("top") : scope.getScopeByType("function") || scope.getScopeByType("top")
-      );
-    } else {
-      manage = _getVariableManage(ctxScope);
-    }
+    let manage = getVariableManage(context, isTop);
     if (manage.has(name)) {
       return manage.get(name);
     }
-    return manage.getRefs(name, scope, flags);
+    return manage.getRefs(name, import_Utils5.default.isStack(context) ? context.scope : null, flags);
   }
   function getVariableManage(context, isTop = false) {
     if (import_Utils5.default.isStack(context)) {
@@ -7828,7 +7898,7 @@ function AssignmentExpression_default(ctx, stack) {
   const module2 = stack.module;
   const isMember = stack.left.isMemberExpression;
   let isReflect = false;
-  let operator = stack.operator;
+  let operator2 = stack.operator;
   if (isMember) {
     if (stack.left.computed) {
       let hasDynamic = desc2 && desc2.isComputeType && desc2.isPropertyExists();
@@ -7850,15 +7920,15 @@ function AssignmentExpression_default(ctx, stack) {
       void 0,
       stack.left.property
     );
-    if (operator && operator.charCodeAt(0) !== 61 && operator.charCodeAt(operator.length - 1) === 61) {
-      operator = operator.slice(0, -1);
+    if (operator2 && operator2.charCodeAt(0) !== 61 && operator2.charCodeAt(operator2.length - 1) === 61) {
+      operator2 = operator2.slice(0, -1);
       const callee2 = createStaticReferenceNode(ctx, stack, "Reflect", "get");
       const left2 = ctx.createCallExpression(callee2, [
         scopeId,
         ctx.createToken(stack.left.object),
         propertyNode
       ], stack);
-      value = ctx.createBinaryExpression(left2, value, operator);
+      value = ctx.createBinaryExpression(left2, value, operator2);
     }
     const callee = createStaticReferenceNode(ctx, stack, "Reflect", "set");
     return ctx.createCallExpression(callee, [
@@ -7880,7 +7950,7 @@ function AssignmentExpression_default(ctx, stack) {
   const node = ctx.createNode(stack);
   node.left = left;
   node.right = ctx.createToken(stack.right);
-  node.operator = operator;
+  node.operator = operator2;
   return node;
 }
 
@@ -7904,10 +7974,10 @@ var import_Utils8 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
 var globals = ["Array", "Object", "RegExp", "Number", "String", "Function"];
 function BinaryExpression_default(ctx, stack) {
-  let operator = stack.operator;
+  let operator2 = stack.operator;
   let node = ctx.createNode(stack);
   let right = ctx.createToken(stack.right);
-  if (operator === "is" || operator === "instanceof") {
+  if (operator2 === "is" || operator2 === "instanceof") {
     let type = stack.right.type();
     let origin = !import_Utils8.default.isModule(type) ? import_Utils8.default.getOriginType(type) : type;
     if (!stack.right.hasLocalDefined()) {
@@ -7919,7 +7989,7 @@ function BinaryExpression_default(ctx, stack) {
         )
       );
     }
-    if (operator === "is" && !(origin && globals.includes(origin.id))) {
+    if (operator2 === "is" && !(origin && globals.includes(origin.id))) {
       return ctx.createCallExpression(
         createStaticReferenceNode(ctx, stack, "System", "is"),
         [
@@ -7929,11 +7999,11 @@ function BinaryExpression_default(ctx, stack) {
         stack
       );
     }
-    operator = "instanceof";
+    operator2 = "instanceof";
   }
   node.left = ctx.createToken(stack.left);
   node.right = right;
-  node.operator = operator;
+  node.operator = operator2;
   return node;
 }
 
@@ -11278,9 +11348,9 @@ function TypeTransformExpression_default(ctx, stack) {
 var import_Utils18 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
 function UnaryExpression_default(ctx, stack) {
-  const operator = stack.operator;
+  const operator2 = stack.operator;
   const prefix = stack.prefix;
-  if (operator === "delete" && stack.argument.isMemberExpression) {
+  if (operator2 === "delete" && stack.argument.isMemberExpression) {
     const desc2 = stack.argument.description();
     if (desc2 && desc2.isAnyType) {
       const hasDynamic = desc2 && desc2.isComputeType && desc2.isPropertyExists();
@@ -11302,7 +11372,7 @@ function UnaryExpression_default(ctx, stack) {
   }
   const node = ctx.createNode(stack);
   node.argument = ctx.createToken(stack.argument);
-  node.operator = operator;
+  node.operator = operator2;
   node.prefix = prefix;
   return node;
 }
@@ -11312,7 +11382,7 @@ var import_Utils19 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
 function UpdateExpression_default(ctx, stack) {
   const node = ctx.createNode(stack);
-  const operator = stack.operator;
+  const operator2 = stack.operator;
   const prefix = stack.prefix;
   const isMember = stack.argument.isMemberExpression;
   if (isMember) {
@@ -11329,7 +11399,7 @@ function UpdateExpression_default(ctx, stack) {
       isReflect = !import_Utils19.default.isLiteralObjectType(stack.argument.object.type());
     }
     if (isReflect) {
-      const method = operator === "++" ? "incre" : "decre";
+      const method = operator2 === "++" ? "incre" : "decre";
       const callee = createStaticReferenceNode(ctx, stack, "Reflect", method);
       return ctx.createCallExpression(callee, [
         ctx.createIdentifier(scopeId),
@@ -11340,7 +11410,7 @@ function UpdateExpression_default(ctx, stack) {
     }
   }
   node.argument = ctx.createToken(stack.argument);
-  node.operator = operator;
+  node.operator = operator2;
   node.prefix = prefix;
   return node;
 }
@@ -12080,14 +12150,20 @@ var _AddressVariable = class {
   }
 };
 var AddressVariable = _AddressVariable;
-//引用数组的变量名
+//操作数组的变量名
 __publicField(AddressVariable, "REFS_NAME", "__RAN");
-//引用数组的索引
+//操作数组的索引名
 __publicField(AddressVariable, "REFS_INDEX", "__RAI");
-//引用数组的内存地址
-__publicField(AddressVariable, "REFS_MEMORY", "__RMA");
-//对一个变量的引用名
-__publicField(AddressVariable, "REFS_VALUE", "__RVN");
+//引用值的内存地址
+__publicField(AddressVariable, "REFS_MEMORY", "__RVM");
+//实现逻辑时的临时变量
+__publicField(AddressVariable, "REFS_VALUE", "__RTA");
+//函数调用时的参数可能需要指定一个标识符
+__publicField(AddressVariable, "REFS_FUN_ARG", "__RFA");
+//函数定义时的参数可能需要用到转换的变量名
+__publicField(AddressVariable, "REFS_FUN_PARAM", "__RFB");
+//引用一个分配的变量
+__publicField(AddressVariable, "REFS_ASSIGN", "__RAV");
 var AddressVariable_default = AddressVariable;
 
 // lib/core/Context.js
@@ -12324,57 +12400,6 @@ var Context2 = class extends Context_default {
     const node = this.createNode("AddressReferenceExpression");
     node.argument = argument;
     return node;
-  }
-  genLocalRefName(stack, name, group = null) {
-    if (!stack) {
-      if (import_Utils24.default.isModule(this.target)) {
-        stack = this.target.compilation.stack;
-      } else {
-        stack = this.target.stack;
-      }
-      stack = stack || this;
-    }
-    let variables = this.variables;
-    if (group) {
-      let key = "genLocalRefs:" + name;
-      if (this.cache.has(group, key)) {
-        return this.cache.get(group, key);
-      } else {
-        let value = variables.genLocalRefs(stack, name);
-        this.cache.set(group, key, value);
-        return value;
-      }
-    }
-    return variables.genLocalRefs(stack, name);
-  }
-  genGlobalRefName(stack, name, group = null) {
-    if (!stack) {
-      if (import_Utils24.default.isModule(this.target)) {
-        stack = this.target.compilation.stack;
-      } else {
-        stack = this.target.stack;
-      }
-      stack = stack || this;
-    }
-    let variables = this.variables;
-    if (group) {
-      let key = "genGlobalRefName:" + name;
-      if (this.cache.has(group, key)) {
-        return this.cache.get(group, key);
-      } else {
-        let value = variables.genGlobalRefs(stack, name);
-        this.cache.set(group, key, value);
-        return value;
-      }
-    }
-    return variables.genGlobalRefs(stack, name);
-  }
-  getWasLocalRefName(target, name) {
-    let key = "getLocalRefName:" + name;
-    if (this.cache.has(target, key)) {
-      return this.cache.get(target, key);
-    }
-    return null;
   }
   getAvailableOriginType(type) {
     if (type) {
@@ -13237,12 +13262,12 @@ function createCommonCalledNode2(name, stack, ctx, object, args, called = true, 
   if (!called)
     return createMethodFunctionNode2(ctx, name);
   if (checkRefs && object && object.type === "ArrayExpression") {
-    const refs = ctx.genLocalRefName(stack, "ref");
-    ctx.insertTokenToBlock(
-      stack,
-      ctx.createAssignmentExpression(ctx.createVarIdentifier(refs), object)
+    object = ctx.createAssignmentExpression(
+      ctx.createVarIdentifier(
+        ctx.genLocalRefName(stack, AddressVariable_default.REFS_FUN_ARG)
+      ),
+      object
     );
-    object = ctx.createVarIdentifier(refs);
   }
   const obj = createObjectNodeRefs(ctx, object, name);
   return ctx.createCallExpression(
@@ -13498,8 +13523,8 @@ function ArrayPattern_default2(ctx, stack) {
 var import_Namespace13 = __toESM(require("easescript/lib/core/Namespace"));
 var import_Utils25 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
-function createInitNode(ctx, name, initValue, defaultValue, operator, forceType = null) {
-  let init = defaultValue ? ctx.createBinaryExpression(initValue, defaultValue, operator) : initValue;
+function createInitNode(ctx, name, initValue, defaultValue, operator2, forceType = null) {
+  let init = defaultValue ? ctx.createBinaryExpression(initValue, defaultValue, operator2) : initValue;
   if (forceType) {
     let node = ctx.createNode("TypeTransformExpression");
     node.typeName = forceType;
@@ -13532,7 +13557,7 @@ function createParamNodes(ctx, stack, params) {
   const before = [];
   const items = params.map((item, index) => {
     if (item.isObjectPattern) {
-      let sName = ctx.getLocalRefName(stack, "_s", item);
+      let sName = ctx.genLocalRefName(stack, AddressVariable_default.REFS_FUN_PARAM);
       before.push(
         createInitNode(
           ctx,
@@ -13566,7 +13591,7 @@ function createParamNodes(ctx, stack, params) {
       });
       return createParamNode(ctx, sName);
     } else if (item.isArrayPattern) {
-      const sName = ctx.getLocalRefName(stack, "_s", item);
+      const sName = ctx.genLocalRefName(stack, AddressVariable_default.REFS_FUN_PARAM);
       before.push(createInitNode(
         ctx,
         sName,
@@ -14341,12 +14366,12 @@ var methods6 = {
   merge(stack, ctx, object, args) {
     let target = object;
     if (object.type !== "Identifier") {
-      const refs = ctx.genLocalRefName(stack, "ref");
-      ctx.insertTokenToBlock(
-        stack,
-        ctx.createAssignmentExpression(ctx.createVarIdentifier(refs), object)
+      target = ctx.createAssignmentExpression(
+        ctx.createVarIdentifier(
+          ctx.genLocalRefName(stack, AddressVariable_default.REFS_FUN_ARG)
+        ),
+        object
       );
-      target = ctx.createVarIdentifier(refs);
     }
     return ctx.createCallExpression(
       createStaticReferenceNode2(ctx, stack, "System", "merge"),
@@ -14413,8 +14438,8 @@ function createNode2(ctx, stack) {
   let desc2 = stack.left.description();
   let module2 = stack.module;
   let isMember = stack.left.isMemberExpression;
-  let operator = stack.operator;
-  node.operator = operator;
+  let operator2 = stack.operator;
+  node.operator = operator2;
   let refsNode = ctx.createToken(stack.right);
   let leftNode = null;
   let isReflect = false;
@@ -14506,8 +14531,8 @@ function createNode2(ctx, stack) {
     }
   }
   if (isReflect) {
-    if (operator && operator.charCodeAt(0) !== 61 && operator.charCodeAt(operator.length - 1) === 61) {
-      operator = operator.slice(0, -1);
+    if (operator2 && operator2.charCodeAt(0) !== 61 && operator2.charCodeAt(operator2.length - 1) === 61) {
+      operator2 = operator2.slice(0, -1);
       const value = ctx.createCallExpression(
         createStaticReferenceNode2(ctx, stack, "Reflect", "get"),
         [
@@ -14517,7 +14542,7 @@ function createNode2(ctx, stack) {
         ],
         stack
       );
-      refsNode = ctx.createBinaryExpression(value, refsNode, operator);
+      refsNode = ctx.createBinaryExpression(value, refsNode, operator2);
     }
     let target = ctx.createToken(stack.left.object);
     if (!stack.left.object.isIdentifier) {
@@ -14557,8 +14582,8 @@ function createNode2(ctx, stack) {
 }
 function AssignmentExpression_default2(ctx, stack) {
   const node = createNode2(ctx, stack);
-  let operator = stack.operator;
-  if (operator === "??=") {
+  let operator2 = stack.operator;
+  if (operator2 === "??=") {
     const test = ctx.createCallExpression(
       ctx.createIdentifier("!isset"),
       [
@@ -14633,8 +14658,8 @@ function createNode3(ctx, stack) {
   return ctx.createToken(stack);
 }
 function BinaryExpression_default2(ctx, stack) {
-  let operator = stack.node.operator;
-  if (operator === "is" || operator === "instanceof") {
+  let operator2 = stack.node.operator;
+  if (operator2 === "is" || operator2 === "instanceof") {
     let type = stack.right.type();
     let name = ctx.getAvailableOriginType(type);
     if (mapset[name]) {
@@ -14645,7 +14670,7 @@ function BinaryExpression_default2(ctx, stack) {
         ],
         stack
       );
-    } else if (operator === "is") {
+    } else if (operator2 === "is") {
       ctx.addDepend(type);
       return ctx.createCallExpression(
         ctx.createIdentifier("is_a"),
@@ -14657,7 +14682,7 @@ function BinaryExpression_default2(ctx, stack) {
       );
     }
   }
-  if (operator.charCodeAt(0) === 43) {
+  if (operator2.charCodeAt(0) === 43) {
     let leftType = stack.left.type();
     let rightType = stack.right.type();
     let oLeftType = leftType;
@@ -14670,7 +14695,7 @@ function BinaryExpression_default2(ctx, stack) {
     }
     if (!isNumber) {
       if (oLeftType.toString() === "string" || oRightType.toString() === "string") {
-        operator = operator.length > 1 ? "." + operator.substr(1) : ".";
+        operator2 = operator2.length > 1 ? "." + operator2.substr(1) : ".";
       } else {
         return ctx.createCallExpression(
           createStaticReferenceNode2(ctx, stack, "System", "addition"),
@@ -14686,7 +14711,7 @@ function BinaryExpression_default2(ctx, stack) {
   const node = ctx.createNode(stack);
   node.left = createNode3(ctx, stack.left);
   node.right = createNode3(ctx, stack.right);
-  node.operator = operator;
+  node.operator = operator2;
   if (stack.left && stack.left.isMemberExpression && node.left && node.left.type === "BinaryExpression") {
     node.left = ctx.createParenthesizedExpression(node.left);
   }
@@ -14758,15 +14783,11 @@ function createArgumentNodes(ctx, stack, args, declareParams) {
       const declareParam = declareParams[index];
       if (!(declareParam.isRestElement || declareParam.isObjectPattern || declareParam.isArrayPattern)) {
         if (ctx.isAddressRefsType(declareParam.type())) {
-          const name = ctx.genLocalRefName(stack, "arg");
-          ctx.insertTokenToBlock(
-            stack,
-            ctx.createAssignmentExpression(
-              ctx.createVarIdentifier(name),
-              node
-            )
+          const name = ctx.genLocalRefName(item, AddressVariable_default.REFS_FUN_ARG);
+          return ctx.createAssignmentExpression(
+            ctx.createVarIdentifier(name),
+            node
           );
-          return ctx.createVarIdentifier(name);
         }
       }
     }
@@ -14774,6 +14795,10 @@ function createArgumentNodes(ctx, stack, args, declareParams) {
   });
 }
 function CallExpression(ctx, stack) {
+  let refs = ctx.getWasLocalRefName(stack, AddressVariable_default.REFS_ASSIGN);
+  if (refs) {
+    return ctx.createVarIdentifier(refs);
+  }
   const isMember = stack.callee.isMemberExpression;
   const desc2 = stack.descriptor();
   const module2 = stack.module;
@@ -14794,18 +14819,14 @@ function CallExpression(ctx, stack) {
     if (isMember && desc2 && !objectType.isNamespace) {
       if (desc2.isType && desc2.isAnyType) {
         const propValue = stack.callee.property.value();
-        const property = ctx.createLiteral(propValue, void 0, stack.callee.property);
+        const property = ctx.createLiteral(propValue);
         let target = ctx.createToken(stack.callee.object);
-        if (!stack.callee.object.isIdentifier && target.type !== "Literal") {
-          const refs = ctx.getLocalRefName(stack, "ref", stack.callee.object);
-          ctx.insertTokenToBlock(
-            stack,
-            ctx.createAssignmentExpression(
-              ctx.createVarIdentifier(refs),
-              target
-            )
+        if (target.type !== "Identifier") {
+          refs = ctx.genLocalRefName(stack.callee.object, AddressVariable_default.REFS_FUN_ARG);
+          target = ctx.createAssignmentExpression(
+            ctx.createVarIdentifier(refs),
+            target
           );
-          target = ctx.createVarIdentifier(refs);
         }
         let _args = [
           createScopeIdNode(ctx, module2, stack),
@@ -14880,16 +14901,13 @@ function CallExpression(ctx, stack) {
     } else if (desc2) {
       if (desc2.isType && desc2.isAnyType) {
         let target = ctx.createToken(stack.callee);
-        if (!stack.callee.isIdentifier) {
-          const refs = ctx.genLocalRefName(stack, "ref");
-          ctx.insertTokenToBlock(
-            stack,
-            ctx.createAssignmentExpression(
-              ctx.createVarIdentifier(refs),
-              target
-            )
+        if (target.type != "Identifier") {
+          target = ctx.createAssignmentExpression(
+            ctx.createVarIdentifier(
+              ctx.genLocalRefName(stack, AddressVariable_default.REFS_FUN_ARG)
+            ),
+            target
           );
-          target = ctx.createVarIdentifier(refs);
         }
         return ctx.createCallExpression(
           createStaticReferenceNode2(ctx, stack, "Reflect", "apply"),
@@ -14945,76 +14963,119 @@ var CallExpression_default2 = CallExpression;
 
 // lib/tokens/ChainExpression.js
 init_Common2();
-function toRefs(ctx, node, stack) {
-  if (node.type === "CallExpression") {
-    const name = ctx.genLocalRefName(stack, "ref");
-    const refs = ctx.createVarIdentifier(name);
-    ctx.insertTokenToBlock(
-      stack,
-      ctx.createAssignmentExpression(
-        refs,
-        node
-      )
-    );
-    return refs;
-  }
-  return node;
-}
 function ChainExpression_default2(ctx, stack) {
   const node = ctx.createNode(stack);
-  if (stack.expression.isCallExpression || stack.expression.isNewExpression) {
-    let exp = ctx.createToken(stack.expression);
-    let was = ctx.getWasLocalRefName(stack.expression.callee.object, "ref");
-    let chain = null;
-    if (was) {
-      chain = ctx.createCallExpression(
-        createStaticReferenceNode2(ctx, stack, "Reflect", "get"),
-        [
-          createScopeIdNode(ctx, stack.module, stack),
-          ctx.createVarIdentifier(was),
-          ctx.createLiteral(stack.expression.callee.property.value())
-        ],
-        stack
-      );
-      const refs = ctx.createVarIdentifier(ctx.genLocalRefName(stack, "ref"));
-      ctx.insertTokenToBlock(
-        stack,
-        ctx.createAssignmentExpression(
-          refs,
-          chain
-        )
-      );
-      chain = refs;
-    } else {
-      chain = toRefs(ctx, ctx.createToken(stack.expression.callee), stack);
-      if (!(chain.type === "Identifier" || chain.type === "MemberExpression")) {
-        chain = toRefs(ctx, ctx.createToken(stack.expression.callee.object), stack);
+  let chain = stack.expression;
+  if (chain.isCallExpression || chain.isNewExpression) {
+    chain = stack.expression.callee;
+  }
+  let chainNodes = [];
+  while (chain.isMemberExpression) {
+    if (chain.optional) {
+      let node2 = ctx.createToken(chain.object);
+      if (node2.type === "CallExpression") {
+        let refs = ctx.getLocalRefName(chain.object, AddressVariable_default.REFS_ASSIGN, chain.object);
+        node2 = ctx.createCallExpression(
+          createStaticReferenceNode2(ctx, stack, "System", "toBoolean"),
+          [
+            ctx.createAssignmentExpression(
+              ctx.createVarIdentifier(refs),
+              node2
+            )
+          ],
+          stack
+        );
+      }
+      chainNodes.unshift(node2);
+    }
+    chain = chain.object;
+  }
+  node.expression = ctx.createToken(stack.expression);
+  let defaultValueNode = ctx.createLiteral(null);
+  if (stack.parentStack.isLogicalExpression) {
+    operator = stack.parentStack.operator;
+    if (operator.length === 2 && operator.charCodeAt(0) === 63) {
+      let code = operator.charCodeAt(1);
+      if (code === 63) {
+        if (stack === stack.parentStack.left) {
+          defaultValueNode = ctx.createToken(stack.parentStack.right);
+        } else {
+          defaultValueNode = ctx.createToken(stack.parentStack.left);
+        }
       }
     }
-    const test = ctx.createCallExpression(
-      ctx.createIdentifier("isset"),
-      [
-        chain
-      ],
-      stack
-    );
-    node.expression = ctx.createConditionalExpression(test, exp, ctx.createLiteral(null));
-  } else {
-    if (stack.expression.computed) {
-      let chain = toRefs(ctx, ctx.createToken(stack.expression.object), stack);
-      const test = ctx.createCallExpression(
-        ctx.createIdentifier("isset"),
-        [
-          chain
-        ],
-        stack
-      );
-      node.expression = ctx.createConditionalExpression(test, ctx.createToken(stack.expression), ctx.createLiteral(null));
-    } else {
-      node.expression = ctx.createToken(stack.expression);
-      if (node.expression.type !== "CallExpression" && canUseNullCoalescingOperator(stack)) {
-        node.expression = ctx.createBinaryExpression(node.expression, ctx.createLiteral(null), "??");
+  }
+  if (stack.expression.isCallExpression) {
+    if (stack.expression.optional) {
+      let objectNode = node.expression.callee;
+      let propertyNode = null;
+      if (node.expression.callee.type === "MemberExpression") {
+        objectNode = node.expression.callee.object;
+        propertyNode = node.expression.callee.property;
+        propertyNode = propertyNode.type === "Identifier" && !propertyNode.isVariable ? ctx.createLiteral(propertyNode.value) : propertyNode;
       }
+      let isReflect = objectNode.value === "Reflect";
+      let reflectName = isReflect && propertyNode && propertyNode.value;
+      if (isReflect && (reflectName === "call" || reflectName === "tryCall")) {
+        node.expression.callee.property.value = "tryCall";
+        node.expression.callee.property.raw = "tryCall";
+      } else if (!(isReflect && reflectName === "get")) {
+        let arg = objectNode;
+        if (propertyNode) {
+          let _args = [
+            createScopeIdNode(ctx, stack.module, stack),
+            objectNode,
+            propertyNode
+          ];
+          if (node.expression.arguments.length > 0) {
+            _args.push(ctx.createArrayExpression(node.expression.arguments));
+          }
+          node.expression = ctx.createCallExpression(
+            createStaticReferenceNode2(ctx, stack, "Reflect", "tryCall"),
+            _args,
+            stack
+          );
+        } else {
+          node.expression = ctx.createConditionalExpression(
+            ctx.createCallExpression(
+              ctx.createIdentifier("is_callable"),
+              [
+                arg
+              ]
+            ),
+            node.expression,
+            defaultValueNode
+          );
+        }
+      }
+    }
+  }
+  if (chainNodes.length > 0) {
+    if (chainNodes.every((node2) => node2.type === "Identifier" || node2.type === "MemberExpression")) {
+      node.expression = ctx.createConditionalExpression(
+        ctx.createCallExpression(
+          ctx.createIdentifier("isset"),
+          chainNodes
+        ),
+        node.expression,
+        defaultValueNode
+      );
+    } else {
+      chainNodes = chainNodes.map((node2) => {
+        if (node2.type === "Identifier" || node2.type === "MemberExpression") {
+          return ctx.createCallExpression(
+            ctx.createIdentifier("isset"),
+            [node2]
+          );
+        } else {
+          return node2;
+        }
+      });
+      let logical = chainNodes.shift();
+      while (chainNodes.length > 0) {
+        logical = ctx.createLogicalExpression(logical, chainNodes.shift());
+      }
+      node.expression = ctx.createConditionalExpression(logical, node.expression, defaultValueNode);
     }
   }
   return node;
@@ -15574,8 +15635,8 @@ function ForOfStatement_default2(ctx, stack) {
     let isIterableIteratorType = import_Utils31.default.isIterableIteratorType(type, import_Namespace21.default.globals.get("Iterator"));
     let declDesc = stack.left.isVariableDeclaration ? stack.left.declarations[0] : null;
     let init = ctx.createToken(stack.left);
-    let obj = ctx.genLocalRefName(stack, "_o");
-    let res = ctx.genLocalRefName(stack, "_v");
+    let obj = ctx.genLocalRefName(stack, AddressVariable_default.REFS_VALUE);
+    let res = ctx.genLocalRefName(stack, AddressVariable_default.REFS_VALUE);
     let object = ctx.createAssignmentExpression(
       ctx.createVarIdentifier(obj),
       isIterableIteratorType ? ctx.createToken(stack.right) : ctx.createCallExpression(
@@ -17523,11 +17584,16 @@ function isBooleanExpression(stack) {
 }
 function LogicalExpression_default2(ctx, stack) {
   const node = ctx.createNode(stack);
-  const operator = stack.operator;
-  const isAnd = operator.charCodeAt(0) === 38;
+  const operator2 = stack.operator;
+  const isAnd = operator2.charCodeAt(0) === 38;
   const isBoolean = isBooleanExpression(stack);
   if (!isBoolean) {
-    if (operator.length == 2 && operator.charCodeAt(0) === 63 && operator.charCodeAt(1) === 63) {
+    if (operator2.length == 2 && operator2.charCodeAt(0) === 63 && operator2.charCodeAt(1) === 63) {
+      if (stack.left.isChainExpression) {
+        return ctx.createToken(stack.left);
+      } else if (stack.right.isChainExpression) {
+        return ctx.createToken(stack.right);
+      }
       return ctx.createBinaryExpression(ctx.createToken(stack.left), ctx.createToken(stack.right), "??");
     }
     const needRefs = !stack.parentStack.isSwitchCase;
@@ -17716,6 +17782,10 @@ function getAliasAnnotation(desc2) {
   return desc2.getAnnotationAlias();
 }
 function MemberExpression2(ctx, stack) {
+  let refs = ctx.getWasLocalRefName(stack, AddressVariable_default.REFS_ASSIGN);
+  if (refs) {
+    return ctx.createVarIdentifier(refs);
+  }
   let module2 = stack.module;
   let description = stack.descriptor();
   let computed = false;
@@ -17932,12 +18002,11 @@ function createArgumentNodes2(ctx, stack, args, declareParams) {
       const declareParam = declareParams[index];
       if (!(declareParam.isRestElement || declareParam.isObjectPattern || declareParam.isArrayPattern)) {
         if (ctx.isAddressRefsType(declareParam.type())) {
-          const name = ctx.genLocalRefName(stack, "arg");
-          ctx.insertTokenToBlock(
-            stack,
-            ctx.createAssignmentExpression(ctx.createVarIdentifier(name), node)
+          const name = ctx.genLocalRefName(item, AddressVariable_default.REFS_ARG);
+          return ctx.createAssignmentExpression(
+            ctx.createVarIdentifier(name),
+            node
           );
-          return ctx.createVarIdentifier(name);
         }
       }
     }
@@ -17976,47 +18045,25 @@ function NewExpression_default2(ctx, stack) {
       wrapType = "Object";
     }
   }
-  if (!type || !type.isModule || wrapType) {
-    let Reflect2 = import_Namespace24.default.globals.get("Reflect");
-    ctx.addDepend(Reflect2, stack.module);
-    let target = ctx.createToken(stack.callee);
-    if (!wrapType && !stack.callee.isIdentifier) {
-      let refs = ctx.genLocalRefName(stack, "ref");
-      ctx.insertTokenToBlock(
-        stack,
-        ctx.createExpressionStatement(
-          ctx.createAssignmentExpression(ctx.createVarIdentifier(refs), target)
-        )
-      );
-      target = ctx.createVarIdentifier(refs);
-    }
+  let node = ctx.createNode(stack);
+  node.callee = ctx.createToken(stack.callee);
+  node.arguments = createArgumentNodes2(ctx, stack, stack.arguments || [], desc2 && desc2.params);
+  while (node.callee.type === "ParenthesizedExpression") {
+    node.callee = node.callee.expression;
+  }
+  if (!type || !type.isModule || wrapType || !(node.callee.type == "Identifier" || node.callee.type == "MemberExpression")) {
     return ctx.createCallExpression(
       createStaticReferenceNode2(ctx, stack, "Reflect", "construct"),
       [
-        createScopeIdNode(ctx, stack.module, stack),
-        target,
+        node.callee,
         ctx.createArrayExpression(
-          createArgumentNodes2(ctx, stack, stack.arguments || [], desc2 && desc2.params),
+          node.arguments,
           stack
         )
       ],
       stack
     );
   }
-  let node = ctx.createNode(stack);
-  node.callee = ctx.createToken(stack.callee);
-  if (node.callee.type === "ParenthesizedExpression") {
-    let name = ctx.genLocalRefName(stack, "_refClass");
-    ctx.insertTokenToBlock(
-      stack,
-      ctx.createAssignmentExpression(
-        ctx.createVarIdentifier(name),
-        node.callee.expression
-      )
-    );
-    node.callee = ctx.createVarIdentifier(name);
-  }
-  node.arguments = createArgumentNodes2(ctx, stack, stack.arguments || [], desc2 && desc2.params);
   return node;
 }
 
@@ -18055,7 +18102,7 @@ function ObjectExpression_default2(ctx, stack) {
 // lib/tokens/ObjectPattern.js
 init_Common2();
 function createRefs(ctx, target, expression) {
-  let name = ctx.getLocalRefName(target, "S", target);
+  let name = ctx.getLocalRefName(target, AddressVariable_default.REFS_VALUE, target);
   let refNode = ctx.createVariableDeclaration("const", [
     ctx.createVariableDeclarator(
       ctx.createIdentifier(name),
@@ -18104,9 +18151,9 @@ function ParenthesizedExpression_default2(ctx, stack) {
 // lib/tokens/Property.js
 init_Common2();
 function getSpreadRefName(ctx, target) {
-  let name = ctx.getWasLocalRefName(target, "S");
+  let name = ctx.getWasLocalRefName(target, AddressVariable_default.REFS_VALUE);
   if (!name) {
-    name = ctx.getLocalRefName(target, "S", target);
+    name = ctx.getLocalRefName(target, AddressVariable_default.REFS_VALUE, target);
     let refNode = ctx.createVariableDeclaration("const", [
       ctx.createVariableDeclarator(
         ctx.createIdentifier(name),
@@ -18174,7 +18221,7 @@ function Property_default2(ctx, stack) {
   node.init = ctx.createToken(stack.init);
   if (stack.hasInit && ctx.isPassableReferenceExpress(stack.init, stack.type())) {
     if (stack.init.isCallExpression || stack.init.isAwaitExpression) {
-      let name = ctx.getLocalRefName(stack.init, "R", stack.init);
+      let name = ctx.getLocalRefName(stack.init, AddressVariable_default.REFS_MEMORY, stack.init);
       let refNode = ctx.createVariableDeclaration("const", [
         ctx.createVariableDeclarator(
           ctx.createIdentifier(name),
@@ -18552,10 +18599,10 @@ function TypeTransformExpression_default2(ctx, stack) {
 // lib/tokens/UnaryExpression.js
 init_Common2();
 function UnaryExpression_default2(ctx, stack) {
-  const operator = stack.node.operator;
+  const operator2 = stack.node.operator;
   const prefix = stack.node.prefix;
-  if (operator === "delete" || operator === "typeof") {
-    if (operator === "typeof") {
+  if (operator2 === "delete" || operator2 === "typeof") {
+    if (operator2 === "typeof") {
       return ctx.createCallExpression(
         createStaticReferenceNode2(ctx, stack, "System", "typeof"),
         [
@@ -18569,7 +18616,7 @@ function UnaryExpression_default2(ctx, stack) {
         ctx.createToken(stack.argument)
       ]
     );
-  } else if (operator === "void") {
+  } else if (operator2 === "void") {
     if (stack.argument.isIdentifier || stack.argument.isLiteral) {
       return ctx.createLiteral(null);
     }
@@ -18581,12 +18628,12 @@ function UnaryExpression_default2(ctx, stack) {
     );
   }
   const node = ctx.createNode(stack);
-  if (operator.charCodeAt(0) === 33) {
+  if (operator2.charCodeAt(0) === 33) {
     node.argument = createExpressionTransformBooleanValueNode(ctx, stack.argument);
   } else {
     node.argument = ctx.createToken(stack.argument);
   }
-  node.operator = operator;
+  node.operator = operator2;
   node.prefix = prefix;
   return node;
 }
@@ -18639,7 +18686,7 @@ function trans2(ctx, stack, description, alias, objectType) {
 }
 function UpdateExpression_default2(ctx, stack) {
   const node = ctx.createNode(stack);
-  const operator = stack.node.operator;
+  const operator2 = stack.node.operator;
   const prefix = stack.node.prefix;
   const isMember = stack.argument.isMemberExpression;
   if (isMember) {
@@ -18655,22 +18702,8 @@ function UpdateExpression_default2(ctx, stack) {
       isReflect = !import_Utils38.default.isLiteralObjectType(stack.argument.object.type());
     }
     if (isReflect) {
-      let method = operator === "++" ? "incre" : "decre";
+      let method = operator2 === "++" ? "incre" : "decre";
       let object = ctx.createToken(stack.argument.object);
-      if (!stack.argument.object.isIdentifier) {
-        let refs = ctx.genLocalRefName(stack, "ref");
-        ctx.insertTokenToBlock(
-          stack,
-          ctx.createAssignmentExpression(
-            ctx.createVarIdentifier(refs),
-            object
-          )
-        );
-        object = ctx.createVarIdentifier(refs);
-        if (ctx.isPassableReferenceExpress(stack.argument.object, stack.argument.object.type())) {
-          object = createAddressRefsNode(ctx, object);
-        }
-      }
       return ctx.createCallExpression(
         createStaticReferenceNode2(ctx, stack, "Reflect", method),
         [
@@ -18705,16 +18738,16 @@ function UpdateExpression_default2(ctx, stack) {
         let value = ctx.createBinaryExpression(
           ctx.createCallExpression(getCallee),
           ctx.createLiteral(1),
-          operator === "++" ? "+" : "-"
+          operator2 === "++" ? "+" : "-"
         );
         return ctx.createCallExpression(setCallee, [value]);
       } else {
         let sequence = createStaticReferenceNode2(ctx, stack, "System", "sequences");
-        let refs = ctx.genLocalRefName(stack, "V");
+        let refs = ctx.genLocalRefName(stack, AddressVariable_default.REFS_ARG);
         let update = ctx.createBinaryExpression(
           ctx.createVarIdentifier(refs),
           ctx.createLiteral(1),
-          operator === "++" ? "+" : "-"
+          operator2 === "++" ? "+" : "-"
         );
         if (prefix) {
           update = ctx.createAssignmentExpression(
@@ -18734,7 +18767,7 @@ function UpdateExpression_default2(ctx, stack) {
     }
   }
   node.argument = ctx.createToken(stack.argument);
-  node.operator = operator;
+  node.operator = operator2;
   node.prefix = prefix;
   return node;
 }

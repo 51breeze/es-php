@@ -335,6 +335,15 @@ public class StartTest extends Base implements Address
 
         assertEquals( 4 ,  ++tar.increValue );
 
+        assertEquals(0, Reflect.incre(StartTest as class<any>, this.getIncreObject(), 'init') );
+
+        assertEquals(2, ++this.getIncreObject().init)
+
+    }
+
+    private var increObject:RMD<any> = {init:0};
+    getIncreObject(){
+        return increObject;
     }
 
     private var _increValue:number = 0;
@@ -606,7 +615,6 @@ public class StartTest extends Base implements Address
         const arr2:ArrayProtector<Category1> = {};
         arr2.title = '789'
         assertEquals('789', arr2.title )
-
     }
 
     call(){
