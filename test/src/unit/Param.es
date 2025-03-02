@@ -20,7 +20,7 @@ public class Param extends TestCase{
         this.assertEquals( 'A', t.name );
 
         var b:en = en.age;
-        this.assertEquals(6,this.getList(en ,  [9,5]));
+        this.assertEquals(6,this.getList(en ,  [en.age,5]));
         this.ave(2.3660);
 
     

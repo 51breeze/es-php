@@ -11,7 +11,7 @@ import table.Address;
 
 import Assets;
 
-import manifest.Annotations as Anns;
+//import manifest.Annotations as Anns;
 
 import Person;
 

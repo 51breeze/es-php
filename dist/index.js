@@ -12922,17 +12922,16 @@ var Context2 = class extends Context_default {
     }
     return suffix ? "\\" + suffix : "";
   }
-  inferType(stack, context) {
+  inferType(stack, context = null) {
     if (!stack)
       return stack;
-    if (import_Utils24.default.isStack(stack)) {
-      if (!context)
-        context = stack.getContext();
+    if (!context && import_Utils24.default.isStack(stack)) {
+      context = stack.getContext();
     }
     if (context) {
-      return context.apply(stack.type());
+      return context.infer(stack.type());
     }
-    return stack;
+    return stack.type();
   }
   createThisExpression(stack = null) {
     return this.createNode(stack, "ThisExpression");
