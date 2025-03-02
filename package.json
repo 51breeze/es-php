@@ -10,7 +10,7 @@
     "run": "node ./test/phptest.js",
     "test": "npm run dev & npm run run",
     "build": "npm run manifest & node ./scripts/build.js",
-    "manifest": "esc -o types -f types/php.d.es --manifest --scope es-php"
+    "manifest": "esc -o lib/types -f lib/types/php.d.es --manifest --scope es-php"
   },
   "repository": {
     "type": "git",
