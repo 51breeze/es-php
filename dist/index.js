@@ -19695,8 +19695,8 @@ var Plugin_default2 = Plugin2;
 // package.json
 var package_default = {
   name: "@easescript/es-php",
-  version: "0.0.1",
-  description: "Code Transform To PHP For EaseScript Plugin",
+  version: "0.0.2",
+  description: "EaseScript Code Transformation Plugin For PHP",
   main: "dist/index.js",
   typings: "dist/types/typings.json",
   scripts: {
