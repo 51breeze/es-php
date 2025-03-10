@@ -14,6 +14,7 @@ import Assets;
 //import manifest.Annotations as Anns;
 
 import Person;
+import JsxTest;
 
 //import asset.Manifest;
 
@@ -615,6 +616,10 @@ public class StartTest extends Base implements Address
         const arr2:ArrayProtector<Category1> = {};
         arr2.title = '789'
         assertEquals('789', arr2.title )
+    }
+
+    testJSX(){
+        new JsxTest()
     }
 
     call(){
