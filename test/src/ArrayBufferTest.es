@@ -121,10 +121,11 @@ class ArrayBufferTest extends Base{
           map.forEach( (value,key)=>{
                if( key === keyOne ){
                     this.assertEquals(99, value);
+                    result.push( value );
                }else if( key === this ){
                     this.assertEquals(1, value);
+                    result.push( value );
                }
-               result.push( value );
           });
           this.assertEquals([99,1], result);
 

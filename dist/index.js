@@ -2521,6 +2521,9 @@ function createAddressRefsNode(ctx, argument) {
 function createArrayAddressRefsNode(ctx, stack, desc2, name, nameNode) {
   if (!desc2)
     return;
+  if (desc2.isDeclarator || desc2.isProperty && (desc2.parentStack.isObjectPattern || desc2.parentStack.isObjectExpression)) {
+    ctx.addVariableRefs(stack, desc2);
+  }
   let assignAddress = import_Utils24.default.isStack(desc2) && desc2.assignItems && ctx.getAssignAddressRef(desc2);
   if (assignAddress) {
     let name2 = assignAddress.getName(desc2);
@@ -2549,6 +2552,17 @@ function createExpressionTransformBooleanValueNode(ctx, stack, assignName = null
         tokenValue
       )
     );
+  } else if (stack.isMemberExpression) {
+    let desc2 = stack.descriptor();
+    if (desc2 && desc2.isMethodDefinition && !(desc2.isMethodGetterDefinition || desc2.isMethodSetterDefinition)) {
+      let value = ctx.createToken(stack);
+      if (value && value.type === "ArrayExpression" && value.elements.length === 2) {
+        return ctx.createCallExpression(
+          ctx.createIdentifier("method_exists"),
+          value.elements
+        );
+      }
+    }
   }
   type = type || stack.type();
   originType = originType || ctx.getAvailableOriginType(type);
@@ -18332,6 +18346,22 @@ function RestElement_default2(ctx, stack) {
 function ReturnStatement_default2(ctx, stack) {
   const node = ctx.createNode(stack);
   node.argument = ctx.createToken(stack.argument);
+  if (node.argument && node.argument.type !== "Identifier") {
+    let pp = stack.getParentStack((parent) => parent.isFunctionExpression);
+    if (pp && pp.isFunctionExpression) {
+      const returnType = pp.getReturnedType();
+      if (ctx.isAddressRefsType(returnType, pp)) {
+        let refs = ctx.getLocalRefName(stack, AddressVariable_default.REFS_ASSIGN);
+        ctx.insertTokenToBlock(stack, ctx.createExpressionStatement(
+          ctx.createAssignmentExpression(
+            ctx.createVarIdentifier(refs),
+            node.argument
+          )
+        ));
+        node.argument = ctx.createVarIdentifier(refs);
+      }
+    }
+  }
   return node;
 }
 
@@ -19739,7 +19769,7 @@ var package_default = {
     inherits: []
   },
   devDependencies: {
-    easescript: "latest",
+    easescript: "^0.9.1",
     "easescript-cli": "latest",
     esbuild: "^0.17.11",
     "esbuild-plugin-copy": "^2.1.0",

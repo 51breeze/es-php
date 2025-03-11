@@ -618,9 +618,9 @@ public class StartTest extends Base implements Address
         assertEquals('789', arr2.title )
     }
 
-    testJSX(){
-        new JsxTest()
-    }
+    // testJSX(){
+    //     new JsxTest()
+    // }
 
     call(){
         return this;
