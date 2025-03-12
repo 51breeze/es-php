@@ -472,6 +472,20 @@ final class System{
         return is_bool($target);
     }
 
+    public static function combine(...$args){
+        $len = count($args);
+        $target = [];
+        for ($index = 0; $index < $len; $index++) {
+            $source = $args[ $index ];
+            if(System::isObject($source)) {
+                foreach ($source as $key => $value) {
+                    $target[$key] = $value;
+                }
+            }
+        }
+        return $target;
+    }
+
     public static function merge(&$target,...$args){
         $isObj = is_object($target);
         if( !($isObj || is_array($target)) ) {
@@ -479,11 +493,11 @@ final class System{
         }
         $len = count($args);
         for ($index = 0; $index < $len; $index++) {
-            $nextSource = $args[ $index ];
-            if( System::isObject($nextSource) ) {
-                foreach ($nextSource as $key => $value) {
+            $source = $args[ $index ];
+            if( System::isObject($source) ) {
+                foreach ($source as $key => $value) {
                     if( $isObj ){
-                        $target->{$key} = $value; 
+                        $target->{$key} = $value;
                     }else{
                         $target[$key] = $value;
                     }

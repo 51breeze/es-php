@@ -3337,7 +3337,7 @@ var require_Generator = __commonJS({
             this.withBracketR();
             break;
           case "ArrayPattern":
-            this.withString("list");
+            this.withString("@list");
             this.withParenthesL();
             if (token.elements.length > 0) {
               this.withSequence(token.elements, !!token.newLine);
@@ -14395,16 +14395,28 @@ var methods6 = {
   merge(stack, ctx, object, args) {
     let target = object;
     if (object.type !== "Identifier") {
+      let refs = ctx.genLocalRefName(stack, AddressVariable_default.REFS_FUN_ARG);
       target = ctx.createAssignmentExpression(
-        ctx.createVarIdentifier(
-          ctx.genLocalRefName(stack, AddressVariable_default.REFS_FUN_ARG)
-        ),
+        ctx.createVarIdentifier(refs),
         object
       );
+      ctx.insertTokenToBlock(
+        stack,
+        ctx.createExpressionStatement(
+          target
+        )
+      );
+      target = ctx.createVarIdentifier(refs);
     }
     return ctx.createCallExpression(
       createStaticReferenceNode2(ctx, stack, "System", "merge"),
       [target].concat(args)
+    );
+  },
+  combine(stack, ctx, object, args) {
+    return ctx.createCallExpression(
+      createStaticReferenceNode2(ctx, stack, "System", "combine"),
+      args
     );
   }
 };
@@ -14813,10 +14825,16 @@ function createArgumentNodes(ctx, stack, args, declareParams) {
       if (!(declareParam.isRestElement || declareParam.isObjectPattern || declareParam.isArrayPattern)) {
         if (ctx.isAddressRefsType(declareParam.type())) {
           const name = ctx.genLocalRefName(item, AddressVariable_default.REFS_FUN_ARG);
-          return ctx.createAssignmentExpression(
-            ctx.createVarIdentifier(name),
-            node
+          ctx.insertTokenToBlock(
+            stack,
+            ctx.createExpressionStatement(
+              ctx.createAssignmentExpression(
+                ctx.createVarIdentifier(name),
+                node
+              )
+            )
           );
+          return ctx.createVarIdentifier(name);
         }
       }
     }
@@ -18101,29 +18119,27 @@ function ObjectExpression_default2(ctx, stack) {
   const node = ctx.createNode(stack);
   let spreadIndex = [];
   node.properties = stack.properties.map((stack2, index) => {
-    let item = ctx.createToken(stack2);
-    if (item && stack2.isSpreadElement) {
+    if (stack2.isSpreadElement) {
       spreadIndex.push(index);
+      return ctx.createToken(stack2);
     }
-    return item;
+    return ctx.createToken(stack2);
   });
   if (spreadIndex.length > 0) {
     const segs = [];
     let start = 0;
-    let end = 0;
-    while (end = spreadIndex.shift() && end > start) {
-      segs.push(ctx.createObjectExpression(node.properties.slice(start, end)));
-      segs.push(node.properties[end]);
-      start = end + 1;
+    while (spreadIndex.length > 0) {
+      let index = spreadIndex.shift();
+      if (start > 0 && start < index) {
+        segs.push(ctx.createObjectExpression(node.properties.slice(start, index)));
+      }
+      start = index + 1;
+      segs.push(node.properties[index]);
     }
     if (start < node.properties.length) {
-      if (node.properties.length === 1) {
-        segs.push(node.properties[0]);
-      } else {
-        segs.push(ctx.createObjectExpression(node.properties.slice(start, node.properties.length)));
-      }
+      segs.push(ctx.createObjectExpression(node.properties.slice(start, node.properties.length)));
     }
-    return System_default.merge(stack, ctx, ctx.createArrayExpression(), segs);
+    return System_default.combine(stack, ctx, null, segs);
   }
   return node;
 }
@@ -18346,7 +18362,7 @@ function RestElement_default2(ctx, stack) {
 function ReturnStatement_default2(ctx, stack) {
   const node = ctx.createNode(stack);
   node.argument = ctx.createToken(stack.argument);
-  if (node.argument && node.argument.type !== "Identifier") {
+  if (node.argument && node.argument.type === "ArrayExpression") {
     let pp = stack.getParentStack((parent) => parent.isFunctionExpression);
     if (pp && pp.isFunctionExpression) {
       const returnType = pp.getReturnedType();
@@ -18389,9 +18405,12 @@ function SpreadElement_default2(ctx, stack) {
         ctx.createToken(stack.argument)
       ]
     );
+    node2.isSpreadElement = true;
     return node2;
   } else if (stack.parentStack.isObjectExpression) {
-    return ctx.createToken(stack.argument);
+    let node2 = ctx.createToken(stack.argument);
+    node2.isSpreadElement = true;
+    return node2;
   }
   const node = ctx.createNode(stack);
   node.argument = ctx.createToken(stack.argument);
@@ -19769,7 +19788,7 @@ var package_default = {
     inherits: []
   },
   devDependencies: {
-    easescript: "^0.9.1",
+    easescript: "latest",
     "easescript-cli": "latest",
     esbuild: "^0.17.11",
     "esbuild-plugin-copy": "^2.1.0",
