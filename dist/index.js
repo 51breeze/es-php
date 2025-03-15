@@ -583,26 +583,40 @@ function parseMacroMethodArguments(args, name) {
   });
   return parseMacroArguments(args, name);
 }
+function parseAnnotationArguments(args, indexes, defaults = {}) {
+  let annotArgs = getAnnotationArguments(args, indexes);
+  let results = {};
+  annotArgs.forEach((arg, index) => {
+    let key = indexes[index];
+    let value = arg ? arg.value : defaults[key];
+    results[key] = value;
+  });
+  return [annotArgs, results];
+}
 function parseReadfileAnnotation(ctx, stack) {
   let args = stack.getArguments();
   let indexes = annotationIndexers.readfile;
-  let stackArgs = {};
-  let annotArgs = indexes.map((key) => {
-    return stackArgs[key] = getAnnotationArgument(key, args, indexes);
+  let [annotArgs, values] = parseAnnotationArguments(args, indexes, {
+    load: true,
+    extractDir: true,
+    relative: true
   });
-  let dirStack = annotArgs[0] && annotArgs[0].stack;
-  let [_path, _load, _suffix, _relative, _lazy, _only, _source] = annotArgs.map((item) => {
-    return item ? item.value : null;
-  });
-  if (!_path) {
+  let {
+    path: dir,
+    load,
+    suffix: _suffix,
+    relative,
+    lazy,
+    only,
+    source,
+    extractDir
+  } = values;
+  let suffixPattern = null;
+  if (!dir) {
+    ctx.error(`Readfile annotation arguments is not defined. the 'path' arguments.`, annotArgs[0] && annotArgs[0].stack || stack);
     return null;
   }
-  let dir = String(_path).trim();
-  let [load, relative, lazy, only, source] = [_load, _relative, _lazy, _only, _source].map((value) => {
-    value = String(value).trim();
-    return value == "true" || value === "TRUE";
-  });
-  let suffixPattern = null;
+  dir = String(dir).trim();
   if (dir.charCodeAt(0) === 64) {
     dir = dir.slice(1);
     let segs = dir.split(".");
@@ -621,7 +635,7 @@ function parseReadfileAnnotation(ctx, stack) {
   let rawDir = dir;
   dir = stack.compiler.resolveManager.resolveSource(dir, stack.compilation.file);
   if (!dir) {
-    ctx.error(`Readfile not found the '${rawDir}' folders`, dirStack || stack);
+    ctx.error(`Readfile not found the '${rawDir}' folders`, annotArgs[0] && annotArgs[0].stack || stack);
     return null;
   }
   if (_suffix) {
@@ -651,16 +665,28 @@ function parseReadfileAnnotation(ctx, stack) {
       return true;
     return suffix.some((item) => file.endsWith(item));
   };
-  let files = stack.compiler.resolveFiles(dir).filter(checkSuffix).map(import_Utils.default.normalizePath);
-  if (!files.length)
-    return null;
+  const getFileDirs = (file) => {
+    let index = file.lastIndexOf("/");
+    let dirname = file.slice(0, index);
+    if (dirname !== dir && dirname.startsWith(dir)) {
+      return [dirname, ...getFileDirs(dirname)];
+    }
+    return [];
+  };
+  let files = stack.compiler.resolveFiles(dir).filter(checkSuffix).map((file) => {
+    file = import_Utils.default.normalizePath(file);
+    if (extractDir) {
+      return [...getFileDirs(file), file];
+    }
+    return [file];
+  }).flat();
   files.sort((a, b) => {
     a = a.replaceAll(".", "/").split("/").length;
     b = b.replaceAll(".", "/").split("/").length;
     return a - b;
   });
   return {
-    args: stackArgs,
+    args: annotArgs,
     dir,
     only,
     suffix,
@@ -1275,7 +1301,7 @@ function createHttpAnnotationNode(ctx, stack) {
       ctx.createIdentifier(
         ctx.getGlobalRefName(
           stack,
-          ctx.builder.getModuleReferenceName(System, stack.module)
+          ctx.getModuleReferenceName(System, stack.module)
         )
       ),
       ctx.createIdentifier("createHttpRequest")
@@ -1468,7 +1494,7 @@ function createRouteConfigNode(ctx, module2, method, paramArg) {
   if (formatRoute) {
     url = formatRoute(url, {
       action: actionName,
-      pathArg: value,
+      path: value,
       method: allowMethodNames,
       params: declareParams,
       className: module2.getName()
@@ -1494,7 +1520,7 @@ function createRouteConfigNode(ctx, module2, method, paramArg) {
     Object.keys(props).map((name) => {
       const value2 = props[name];
       if (value2) {
-        return ctx.createProperty(name, value2);
+        return ctx.createProperty(ctx.createIdentifier(name), value2);
       }
       return null;
     }).filter((item) => !!item)
@@ -1574,7 +1600,7 @@ function createReadfileAnnotationNode(ctx, stack) {
         properties2.push(ctx.createProperty(ctx.createIdentifier("isFile"), ctx.createLiteral(true)));
       }
       if (object.content) {
-        properties2.push(ctx.createProperty(ctx.createIdentifier("content"), ctx.createChunkExpression(object.content)));
+        properties2.push(ctx.createProperty(ctx.createIdentifier("content"), ctx.createChunkExpression(object.content, false)));
       }
       if (object.children) {
         properties2.push(ctx.createProperty(ctx.createIdentifier("children"), ctx.createArrayExpression(make(object.children))));
@@ -1753,10 +1779,14 @@ function createCJSExports(ctx, exportManage, graph) {
           );
         }
       } else if (spec.type === "default") {
+        let local = spec.local;
+        if (spec.local.type === "ExpressionStatement") {
+          local = spec.local.expression;
+        }
         properties2.push(
           ctx.createProperty(
             ctx.createIdentifier("default"),
-            spec.local,
+            local,
             spec.stack
           )
         );
@@ -2163,7 +2193,7 @@ var init_Common = __esm({
       syntax: ["plugin", "expect"],
       plugin: ["name", "expect"],
       version: ["name", "version", "operator", "expect"],
-      readfile: ["dir", "load", "suffix", "relative", "lazy", "only", "source"],
+      readfile: ["path", "load", "suffix", "relative", "lazy", "only", "source", "extractDir"],
       http: ["classname", "action", "param", "data", "method", "config"],
       router: ["classname", "action", "param"],
       alias: ["name", "version"],
@@ -4341,14 +4371,13 @@ var init_Number = __esm({
 // lib/index.js
 var lib_exports = {};
 __export(lib_exports, {
-  Plugin: () => Plugin_default2,
+  Plugin: () => Plugin_default,
   default: () => lib_default,
   getOptions: () => getOptions2
 });
 module.exports = __toCommonJS(lib_exports);
 
 // lib/core/Plugin.js
-var import_Compilation2 = __toESM(require("easescript/lib/core/Compilation"));
 var import_Diagnostic2 = __toESM(require("easescript/lib/core/Diagnostic"));
 
 // node_modules/@easescript/transform/lib/index.js
@@ -12094,7 +12123,6 @@ var Plugin = class extends import_events.default {
     return await execute(compilation, this.context.build);
   }
 };
-var Plugin_default = Plugin;
 
 // lib/core/Builder.js
 var import_Utils40 = __toESM(require("easescript/lib/core/Utils"));
@@ -18291,6 +18319,7 @@ function PropertyDefinition_default2(ctx, stack) {
   const node = ctx.createNode(stack);
   node.declarations = (stack.declarations || []).map((item) => ctx.createToken(item));
   node.modifier = ctx.createIdentifier(import_Utils38.default.getModifierValue(stack));
+  let hasEmbed = false;
   if (stack.annotations && stack.annotations.length > 0) {
     stack.annotations.forEach((annot) => {
       const name = annot.getLowerCaseName();
@@ -18298,6 +18327,7 @@ function PropertyDefinition_default2(ctx, stack) {
       if (name === "readfile") {
         value = createReadfileAnnotationNode2(ctx, annot, stack) || ctx.createLiteral(null);
       } else if (name === "embed") {
+        hasEmbed = true;
         value = createEmbedAnnotationNode2(ctx, annot, stack);
       } else if (name === "env") {
         value = createEnvAnnotationNode(ctx, annot, stack);
@@ -19693,7 +19723,7 @@ import_Diagnostic2.default.register("php", (definer) => {
     "The '%s' class namespace must be consistent with the file path"
   );
 });
-var Plugin2 = class extends Plugin_default {
+var Plugin2 = class extends Plugin {
   #context = null;
   get context() {
     return this.#context;
@@ -19708,6 +19738,7 @@ var Plugin2 = class extends Plugin_default {
       let vm = this.#context.virtuals.createVModule(key, vms_default[key]);
       this.#context.addBuildAfterDep(vm);
     });
+    console.log("------");
   }
   async buildIncludes() {
     const includes = this.options.includes || [];
@@ -19721,34 +19752,8 @@ var Plugin2 = class extends Plugin_default {
       }
     }));
   }
-  async run(compilation) {
-    if (!import_Compilation2.default.is(compilation)) {
-      throw new Error("compilation is invalid");
-    }
-    if (!this.initialized) {
-      await this.beforeStart(compilation.compiler);
-    }
-    return await this.#context.buildDeps(compilation);
-  }
-  async build(compilation, vmId) {
-    if (!import_Compilation2.default.is(compilation)) {
-      throw new Error("compilation is invalid");
-    }
-    if (!this.initialized) {
-      await this.beforeStart(compilation.compiler);
-    }
-    if (vmId) {
-      let vm = this.#context.virtuals.getVModule(vmId);
-      if (vm) {
-        compilation = vm;
-      } else {
-        throw new Error(`The '${vmId}' virtual module does not exists.`);
-      }
-    }
-    return await this.#context.build(compilation);
-  }
 };
-var Plugin_default2 = Plugin2;
+var Plugin_default = Plugin2;
 
 // package.json
 var package_default = {
@@ -19904,7 +19909,7 @@ function getOptions2(...options) {
   return merge3({}, defaultConfig, ...options);
 }
 function plugin(options = {}) {
-  return new Plugin_default2(
+  return new Plugin_default(
     package_default.esconfig.scope,
     package_default.version,
     getOptions2(options)
