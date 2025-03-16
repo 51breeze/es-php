@@ -14,7 +14,7 @@ import Assets;
 //import manifest.Annotations as Anns;
 
 import Person;
-import JsxTest;
+//import JsxTest;
 
 //import asset.Manifest;
 

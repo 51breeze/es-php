@@ -11981,7 +11981,7 @@ import_Diagnostic.default.register("transform", (definer) => {
 });
 var plugins = /* @__PURE__ */ new Set();
 var processing = /* @__PURE__ */ new Map();
-async function execute(compilation, asyncBuildHook) {
+async function execute(compilation, asyncHook) {
   if (processing.has(compilation)) {
     return await new Promise((resolve) => {
       processing.get(compilation).push(resolve);
@@ -11989,7 +11989,7 @@ async function execute(compilation, asyncBuildHook) {
   } else {
     let queues = [];
     processing.set(compilation, queues);
-    let result = await asyncBuildHook(compilation);
+    let result = await asyncHook(compilation);
     while (queues.length > 0) {
       let resolve = queues.shift();
       resolve(result);
@@ -12005,6 +12005,7 @@ var Plugin = class extends import_events.default {
   #name = null;
   #options = null;
   #initialized = false;
+  #watched = false;
   #context = null;
   #complier = null;
   #version = "0.0.0";
@@ -12048,6 +12049,9 @@ var Plugin = class extends import_events.default {
   }
   //开发模式下调用，用来监听文件变化时删除缓存
   watch() {
+    if (this.#watched)
+      return;
+    this.#watched = true;
     this.complier.on("onChanged", (compilation) => {
       this.records.delete(compilation);
       let cache2 = this.context.cache;
@@ -12059,6 +12063,8 @@ var Plugin = class extends import_events.default {
     });
   }
   async init() {
+    if (this.#context)
+      return;
     this.#context = createBuildContext(this, this.records);
     createPolyfillModule(
       import_path6.default.join(__dirname, "./polyfills"),
@@ -12069,12 +12075,12 @@ var Plugin = class extends import_events.default {
   async beforeStart(complier) {
     if (this.#initialized)
       return;
-    this.#initialized = true;
     this.#complier = complier;
     await this.init();
     if (this.options.mode === "development") {
       this.watch();
     }
+    this.#initialized = true;
   }
   //当任务处理完成后调用。在加载插件或者打包插件时会调用这个方法，用来释放一些资源
   async afterDone() {
@@ -16320,7 +16326,7 @@ function createForEachNode2(ctx, refs, element, item, key) {
         ctx.createArrowFunctionExpression([
           ctx.createIdentifier("acc"),
           ctx.createIdentifier("item")
-        ], ctx.createCallee(
+        ], ctx.createCallExpression(
           ctx.createMemberExpression([
             ctx.createIdentifier("acc"),
             ctx.createIdentifier("concat")
@@ -19098,7 +19104,7 @@ async function buildProgram2(ctx, compilation, graph) {
     graph.code = ctx.getFormatCode(generator.code);
     graph.sourcemap = generator.sourceMap;
     if (emitFile) {
-      graph.outfile = ctx.getOutputAbsolutePath(doc);
+      graph.outfile = ctx.getOutputAbsolutePath(mainModule ? mainModule : doc.file);
     }
   }
   return graph;
@@ -19738,7 +19744,9 @@ var Plugin2 = class extends Plugin {
       let vm = this.#context.virtuals.createVModule(key, vms_default[key]);
       this.#context.addBuildAfterDep(vm);
     });
-    console.log("------");
+    process.nextTick(() => {
+      this.buildIncludes();
+    });
   }
   async buildIncludes() {
     const includes = this.options.includes || [];
@@ -19749,6 +19757,7 @@ var Plugin2 = class extends Plugin {
       const compilation = await this.complier.createCompilation(file, null, true);
       if (compilation) {
         await compilation.ready();
+        await this.build(compilation);
       }
     }));
   }

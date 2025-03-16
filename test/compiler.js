@@ -18,7 +18,7 @@ class Creator {
         
         this._compiler = compiler;
         this.plugin = plugin({
-            includes:['JsxTest.es'],
+            includes:['lang/*'],
             folderAsNamespace:true,
             outDir:path.join(__dirname,"./build"),
             metadata:{
@@ -36,10 +36,10 @@ class Creator {
                 ],
                 folders:{
                     "*.global":"escore",
+                    "lang/*.es":"locals/{...}"
                 }
             }
         });
-        this.plugin.beforeStart(compiler);
     }
 
     get compiler(){
