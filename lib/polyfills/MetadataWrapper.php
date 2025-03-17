@@ -1,7 +1,7 @@
 <?php
 ///<namespaces name="manifest"/>
 
-class CommentWrapper{
+class MetadataWrapper{
 
     const TOP       = 'top';
     const CONSTRUCT = 'constructor';
@@ -21,8 +21,13 @@ class CommentWrapper{
         return $this->data;
     }
 
-    public function get(string $name, string $kind = CommentWrapper::METHOD){
+    public function get(string $name, string $kind = MetadataWrapper::METHOD){
         $key = $name.':'.$kind;
+        return $this->data[$key] ?? null;
+    }
+
+    public function getStatic(string $name, string $kind = MetadataWrapper::METHOD){
+        $key = $name.':'.$kind.':static';
         return $this->data[$key] ?? null;
     }
 

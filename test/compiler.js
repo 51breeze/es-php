@@ -27,7 +27,7 @@ class Creator {
             comments:true,
             manifests:{
                 comments:true,
-                annotations:false,
+                annotations:true,
             },
             resolve:{
                 usings:[

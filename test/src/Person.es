@@ -34,7 +34,7 @@ public class Person<T> extends TestCase implements IT
     }
 
 
-    @Post('/method')
+    @Post('/method',  auth=true)
     public method( name:string, age:int):any
     {
         var str:string[] = ["a","1"];
