@@ -2608,7 +2608,7 @@ var init_Asset2 = __esm({
 // lib/core/Generator.js
 var require_Generator = __commonJS({
   "lib/core/Generator.js"(exports, module2) {
-    var Generator6 = class {
+    var Generator7 = class {
       #file = null;
       #context = null;
       #sourceMap = null;
@@ -3605,7 +3605,7 @@ var require_Generator = __commonJS({
         return this.code;
       }
     };
-    module2.exports = Generator6;
+    module2.exports = Generator7;
   }
 });
 
@@ -6542,7 +6542,7 @@ var Context = class extends Token_default {
   #token = null;
   #table = null;
   #vnodeHandleNode = null;
-  constructor(compiOrVModule, plugin2, variables, graphs, assets, virtuals, glob, cache2, token, table) {
+  constructor(compiOrVModule, plugin2, variables, graphs, assets, virtuals, glob2, cache2, token, table) {
     super();
     this.#plugin = plugin2;
     this.#target = compiOrVModule;
@@ -6550,7 +6550,7 @@ var Context = class extends Token_default {
     this.#graphs = graphs;
     this.#assets = assets;
     this.#virtuals = virtuals;
-    this.#glob = glob;
+    this.#glob = glob2;
     this.#cache = cache2;
     this.#token = token;
     this.#table = table;
@@ -7290,21 +7290,21 @@ var Context = class extends Token_default {
     return this.resolveSourceId(file, group, delimiter);
   }
   resolveSourceId(id, group, delimiter = "/") {
-    let glob = this.#glob;
-    if (!glob)
+    let glob2 = this.#glob;
+    if (!glob2)
       return null;
     let data = { group, delimiter, failValue: null };
     if (typeof group === "object") {
       data = group;
     }
-    return glob.dest(id, data);
+    return glob2.dest(id, data);
   }
   resolveImportSource(id, ctx = {}) {
-    let glob = this.#glob;
-    if (!glob)
+    let glob2 = this.#glob;
+    if (!glob2)
       return id;
-    const scheme = glob.scheme(id, ctx);
-    let source = glob.parse(scheme, ctx);
+    const scheme = glob2.scheme(id, ctx);
+    let source = glob2.parse(scheme, ctx);
     let rule = scheme.rule;
     if (!rule) {
       source = id;
@@ -11711,7 +11711,7 @@ function WhileStatement_default(ctx, stack2) {
 
 // node_modules/@easescript/transform/lib/core/Builder.js
 var import_glob_path = __toESM(require("glob-path"));
-async function buildProgram(ctx, compilation, graph) {
+async function buildProgram(ctx, compilation, graph, generatorClass = Generator_default) {
   let root = compilation.stack;
   if (!root) {
     throw new Error("Build program failed");
@@ -11778,20 +11778,20 @@ async function buildProgram(ctx, compilation, graph) {
     ...exports
   ];
   if (layout.length > 0) {
-    let generator = new Generator_default(ctx);
+    let generator = new generatorClass(ctx);
     layout.forEach((item) => generator.make(item));
     graph.code = generator.code;
     graph.sourcemap = generator.sourceMap ? generator.sourceMap.toJSON() : null;
     if (emitFile) {
-      graph.outfile = ctx.getOutputAbsolutePath(compilation.mainModule || compilation);
+      graph.outfile = ctx.getOutputAbsolutePath(compilation.mainModule || compilation.file);
     }
   }
 }
-function getTokenManager(options) {
+function getTokenManager(options, tokens = {}) {
   let _createToken = options.transform.createToken;
   let _tokens = options.transform.tokens;
   let getToken = (type) => {
-    return tokens_exports[type];
+    return tokens[type];
   };
   let createToken = (ctx, stack2, type) => {
     const token = getToken(type);
@@ -11809,7 +11809,7 @@ function getTokenManager(options) {
       if (Object.prototype.hasOwnProperty.call(_tokens, type)) {
         return _tokens[type];
       }
-      return tokens_exports[type];
+      return tokens[type];
     };
   }
   if (_createToken && typeof _createToken === "function") {
@@ -11827,36 +11827,29 @@ function getTokenManager(options) {
   };
 }
 function createBuildContext(plugin2, records2 = /* @__PURE__ */ new Map()) {
-  let assets = getAssetsManager(Asset);
-  let virtuals = getVirtualModuleManager(VirtualModule);
-  let variables = getVariableManager();
-  let graphs = getBuildGraphManager();
-  let token = getTokenManager(plugin2.options);
-  let cache2 = getCacheManager();
-  let table = getTableManager();
+  let assets = plugin2.getWidget("assets") || getAssetsManager(Asset);
+  let virtuals = plugin2.getWidget("virtual") || getVirtualModuleManager(VirtualModule);
+  let variables = plugin2.getWidget("variable") || getVariableManager();
+  let graphs = plugin2.getWidget("graph") || getBuildGraphManager();
+  let token = plugin2.getWidget("token") || getTokenManager(plugin2.options, tokens_exports);
+  let cache2 = plugin2.getWidget("cache") || getCacheManager();
+  let table = plugin2.getWidget("table") || getTableManager();
+  let contextClass = plugin2.getWidget("context") || Context_default;
+  let globClass = plugin2.getWidget("glob") || import_glob_path.default;
+  let generatorClass = plugin2.getWidget("generator") || Generator_default;
+  let program = plugin2.getWidget("program") || buildProgram;
   let buildAfterDeps = /* @__PURE__ */ new Set();
-  let glob = null;
-  let resolve = plugin2.options.resolve || {};
-  let imports = resolve?.imports || {};
+  let glob2 = new globClass();
   table.addBuilder(new MySql(plugin2));
-  Object.keys(imports).forEach((key) => {
-    glob = glob || (glob = new import_glob_path.default());
-    glob.addRuleGroup(key, imports[key], "imports");
-  });
-  let folders = resolve?.folders || {};
-  Object.keys(folders).forEach((key) => {
-    glob = glob || (glob = new import_glob_path.default());
-    glob.addRuleGroup(key, folders[key], "folders");
-  });
   function makeContext(compiOrVModule) {
-    return new Context_default(
+    return new contextClass(
       compiOrVModule,
       plugin2,
       variables,
       graphs,
       assets,
       virtuals,
-      glob,
+      glob2,
       cache2,
       token,
       table
@@ -11875,7 +11868,7 @@ function createBuildContext(plugin2, records2 = /* @__PURE__ */ new Map()) {
       if (!compiOrVModule.parserDoneFlag) {
         await compiOrVModule.ready();
       }
-      await buildProgram(ctx, compiOrVModule, buildGraph);
+      await program(ctx, compiOrVModule, buildGraph, generatorClass);
     }
     if (ctx.options.emitFile) {
       await buildAssets(ctx, buildGraph);
@@ -11897,7 +11890,7 @@ function createBuildContext(plugin2, records2 = /* @__PURE__ */ new Map()) {
       if (!compiOrVModule.parserDoneFlag) {
         await compiOrVModule.ready();
       }
-      await buildProgram(ctx, compiOrVModule, buildGraph);
+      await program(ctx, compiOrVModule, buildGraph, generatorClass);
     }
     if (ctx.options.emitFile) {
       await buildAssets(ctx, buildGraph);
@@ -11986,7 +11979,7 @@ function createBuildContext(plugin2, records2 = /* @__PURE__ */ new Map()) {
     virtuals,
     variables,
     graphs,
-    glob,
+    glob: glob2,
     cache: cache2,
     table,
     token,
@@ -12198,6 +12191,9 @@ var Plugin = class extends import_events.default {
       options.metadata.env.NODE_ENV = options.mode;
     }
   }
+  //在子插件中实现
+  getWidget(name) {
+  }
   get initialized() {
     return this.#initialized;
   }
@@ -12248,6 +12244,15 @@ var Plugin = class extends import_events.default {
       import_path6.default.join(__dirname, "./polyfills"),
       this.#context.virtuals.createVModule
     );
+    let resolve = this.options.resolve || {};
+    let imports = resolve?.imports || {};
+    Object.keys(imports).forEach((key) => {
+      glob.addRuleGroup(key, imports[key], "imports");
+    });
+    let folders = resolve?.folders || {};
+    Object.keys(folders).forEach((key) => {
+      glob.addRuleGroup(key, folders[key], "folders");
+    });
   }
   //构建前调用。
   async beforeStart(complier) {
@@ -19206,7 +19211,7 @@ function WhileStatement_default2(ctx, stack2) {
 
 // lib/core/Builder.js
 var import_glob_path2 = __toESM(require("glob-path"));
-async function buildProgram2(ctx, compilation, graph) {
+async function buildProgram2(ctx, compilation, graph, generatorClass = import_Generator6.default) {
   let root = compilation.stack;
   if (!root) {
     throw new Error("Build program failed");
@@ -19259,7 +19264,7 @@ async function buildProgram2(ctx, compilation, graph) {
   imports.push(...importNodes, ...exportNodes.imports);
   body.push(...exportNodes.declares);
   exports.push(...exportNodes.exports);
-  let generator = new import_Generator6.default(ctx);
+  let generator = new generatorClass(ctx);
   let doc = compilation.mainModule || compilation;
   let mainModule = compilation.mainModule;
   let layout = [
@@ -19289,51 +19294,12 @@ async function buildProgram2(ctx, compilation, graph) {
   }
   return graph;
 }
-function getTokenManager2(options) {
-  let _createToken = options.transform.createToken;
-  let _tokens = options.transform.tokens;
-  let getToken = (type) => {
-    return tokens_exports2[type];
-  };
-  let createToken = (ctx, stack2, type) => {
-    const token = getToken(type);
-    if (!token) {
-      throw new Error(`Token '${type}' is not exists.`);
-    }
-    try {
-      return token(ctx, stack2, type);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-  if (_tokens && typeof _tokens === "object" && Object.keys(_tokens).length > 0) {
-    getToken = (type) => {
-      if (Object.prototype.hasOwnProperty.call(_tokens, type)) {
-        return _tokens[type];
-      }
-      return tokens_exports2[type];
-    };
-  }
-  if (_createToken && typeof _createToken === "function") {
-    createToken = (ctx, stack2, type) => {
-      try {
-        return _createToken(ctx, stack2, type);
-      } catch (e) {
-        console.error(e);
-      }
-    };
-  }
-  return {
-    get: getToken,
-    create: createToken
-  };
-}
-function addResolveRule(glob, resolve) {
+function addResolveRule(glob2, resolve) {
   Object.keys(resolve.namespaces).forEach((key) => {
-    glob.addRuleGroup(key, resolve.namespaces[key], "namespaces");
+    glob2.addRuleGroup(key, resolve.namespaces[key], "namespaces");
   });
   Object.keys(resolve.folders).forEach((key) => {
-    glob.addRuleGroup(key, resolve.folders[key], "folders");
+    glob2.addRuleGroup(key, resolve.folders[key], "folders");
   });
   const trueCallback = () => true;
   if (Array.isArray(resolve.usings)) {
@@ -19343,171 +19309,29 @@ function addResolveRule(glob, resolve) {
           throw new TypeError(`options.resolve.usings the each rule item should is {test:'rule', value:true} object`);
         } else {
           if (typeof key.value === "function") {
-            glob.addRuleGroup(key.test, key.value, "usings");
+            glob2.addRuleGroup(key.test, key.value, "usings");
           } else {
-            glob.addRuleGroup(key.test, () => key.value, "usings");
+            glob2.addRuleGroup(key.test, () => key.value, "usings");
           }
         }
       } else {
-        glob.addRuleGroup(key, trueCallback, "usings");
+        glob2.addRuleGroup(key, trueCallback, "usings");
       }
     });
   } else {
     Object.keys(resolve.usings).forEach((key) => {
       if (typeof resolve.usings[key] === "function") {
-        glob.addRuleGroup(key, resolve.usings[key], "usings");
+        glob2.addRuleGroup(key, resolve.usings[key], "usings");
       } else {
         throw new TypeError(`options.resolve.usings the '${key}' rule, should assignmented a function`);
       }
     });
   }
 }
-function createBuildContext2(plugin2, records2 = /* @__PURE__ */ new Map()) {
-  let assets = getAssetsManager(Asset2);
-  let virtuals = getVirtualModuleManager(VirtualModule2);
-  let variables = getVariableManager();
-  let graphs = getBuildGraphManager();
-  let token = getTokenManager2(plugin2.options);
-  let cache2 = getCacheManager();
-  let table = getTableManager();
-  let glob = new import_glob_path2.default();
-  let buildAfterDeps = /* @__PURE__ */ new Set();
-  addResolveRule(glob, plugin2.options.resolve || {});
-  table.addBuilder(new MySql(plugin2));
-  function makeContext(compiOrVModule) {
-    return new Context_default2(
-      compiOrVModule,
-      plugin2,
-      variables,
-      graphs,
-      assets,
-      virtuals,
-      glob,
-      cache2,
-      token,
-      table
-    );
-  }
-  async function build(compiOrVModule) {
-    if (records2.has(compiOrVModule)) {
-      return records2.get(compiOrVModule);
-    }
-    let ctx = makeContext(compiOrVModule);
-    let buildGraph = ctx.getBuildGraph(compiOrVModule);
-    records2.set(compiOrVModule, buildGraph);
-    if (isVModule(compiOrVModule)) {
-      await compiOrVModule.build(ctx, buildGraph);
-    } else {
-      if (!compiOrVModule.parserDoneFlag) {
-        await compiOrVModule.ready();
-      }
-      await buildProgram2(ctx, compiOrVModule, buildGraph);
-    }
-    if (ctx.options.emitFile) {
-      await buildAssets(ctx, buildGraph);
-      await ctx.emit(buildGraph);
-    }
-    invokeAfterTask();
-    return buildGraph;
-  }
-  async function buildDeps(compiOrVModule) {
-    if (records2.has(compiOrVModule)) {
-      return records2.get(compiOrVModule);
-    }
-    let ctx = makeContext(compiOrVModule);
-    let buildGraph = ctx.getBuildGraph(compiOrVModule);
-    records2.set(compiOrVModule, buildGraph);
-    if (isVModule(compiOrVModule)) {
-      await compiOrVModule.build(ctx, buildGraph);
-    } else {
-      if (!compiOrVModule.parserDoneFlag) {
-        await compiOrVModule.ready();
-      }
-      await buildProgram2(ctx, compiOrVModule, buildGraph);
-    }
-    if (ctx.options.emitFile) {
-      await ctx.emit(buildGraph);
-      await buildAssets(ctx, buildGraph, true);
-    }
-    await callAsyncSequence(getBuildDeps(ctx), async (dep) => {
-      if (isVModule(dep) && dep.after) {
-        addBuildAfterDep(dep);
-      } else {
-        await buildDeps(dep);
-      }
-    });
-    invokeAfterTask();
-    return buildGraph;
-  }
-  function getBuildDeps(ctx) {
-    const deps = /* @__PURE__ */ new Set();
-    ctx.dependencies.forEach((dataset) => {
-      dataset.forEach((dep) => {
-        if (import_Utils40.default.isModule(dep)) {
-          if (!dep.isStructTable && dep.isDeclaratorModule) {
-            dep = ctx.getVModule(dep.getName());
-            if (dep) {
-              deps.add(dep);
-            }
-          } else if (dep.compilation) {
-            deps.add(dep.compilation);
-          }
-        } else if (isVModule(dep)) {
-          deps.add(dep);
-        } else if (import_Utils40.default.isCompilation(dep)) {
-          deps.add(dep);
-        }
-      });
-    });
-    return Array.from(deps.values());
-  }
-  async function buildAssets(ctx, buildGraph) {
-    let assets2 = buildGraph.assets;
-    if (!assets2)
-      return;
-    await Promise.all(
-      Array.from(assets2.values()).map((asset) => asset.build(ctx))
-    );
-  }
-  function addBuildAfterDep(dep) {
-    buildAfterDeps.add(dep);
-  }
-  let waitingBuildAfterDeps = /* @__PURE__ */ new Set();
-  function invokeAfterTask() {
-    if (buildAfterDeps.size < 1)
-      return;
-    buildAfterDeps.forEach((dep) => waitingBuildAfterDeps.add(dep));
-    buildAfterDeps.clear();
-    setImmediate(async () => {
-      if (waitingBuildAfterDeps.size < 1)
-        return;
-      let deps = Array.from(waitingBuildAfterDeps.values());
-      waitingBuildAfterDeps.clear();
-      await callAsyncSequence(deps, async (dep) => {
-        if (isAsset(dep)) {
-          await dep.build(makeContext(dep));
-        } else {
-          records2.delete(dep);
-          await buildDeps(dep);
-        }
-      });
-    });
-  }
-  return {
-    build,
-    buildDeps,
-    buildAssets,
-    getBuildDeps,
-    addBuildAfterDep,
-    assets,
-    virtuals,
-    variables,
-    graphs,
-    glob,
-    table,
-    token
-  };
-}
+
+// lib/core/Plugin.js
+init_Asset2();
+var import_Generator7 = __toESM(require_Generator());
 
 // lib/core/vms/Annotations.js
 init_Common2();
@@ -19932,8 +19756,24 @@ var Plugin2 = class extends Plugin {
   get context() {
     return this.#context;
   }
+  getWidget(name) {
+    if (name === "context")
+      return Context_default2;
+    if (name === "assets")
+      return getAssetsManager(Asset2);
+    if (name === "virtual")
+      return getVirtualModuleManager(VirtualModule2);
+    if (name === "token")
+      return getTokenManager(this.options, tokens_exports2);
+    if (name === "generator")
+      return import_Generator7.default;
+    if (name === "program")
+      return buildProgram2;
+  }
   async init() {
-    this.#context = createBuildContext2(this, this.records);
+    if (this.#context)
+      return;
+    this.#context = createBuildContext(this, this.records);
     createPolyfillModule(
       import_path10.default.join(__dirname, "./polyfills"),
       this.#context.virtuals.createVModule
@@ -19942,6 +19782,7 @@ var Plugin2 = class extends Plugin {
       let vm = this.#context.virtuals.createVModule(key, vms_default[key]);
       this.#context.addBuildAfterDep(vm);
     });
+    addResolveRule(this.#context.glob, this.options.resolve || {});
     process.nextTick(() => {
       this.buildIncludes();
     });
