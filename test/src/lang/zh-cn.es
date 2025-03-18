@@ -2,7 +2,7 @@
 import config, {connections, top} from '../config.es'
 import * as config2 from '../config.es'
 
-let data = @Readfile('com', load=false)
+let data = @Readfile('com')
 
 export * as ddd from '../g.config.es'
 

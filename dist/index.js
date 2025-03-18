@@ -909,6 +909,9 @@ function parseRouteAnnotation(annotation, options = {}) {
 function createRouteInstance(options, module2, owner, path11, method, meta = null, params = [], defaultValue = {}, isRouterModule = false, isWebComponent = false) {
   let action = null;
   if (!isWebComponent && owner && owner.isMethodDefinition) {
+    if (!import_Utils.default.isModifierPublic(owner)) {
+      owner.error(10112);
+    }
     action = owner.value();
     owner.params.forEach((item) => {
       if (item.isObjectPattern || item.isArrayPattern) {
@@ -4164,14 +4167,69 @@ function createUrlAnnotationNode2(ctx, stack2) {
   }
   return ctx.createLiteral("");
 }
-function createReadfileAnnotationNode2(ctx, annot, stack2) {
+function createGetAssetsContentNode(ctx, stack2, resolveFile, local = null, graph = null, context = null) {
+  context = context || ctx.target;
+  let specifiers = local ? [{ local }] : [];
+  let source = resolveFile;
+  source = ctx.getImportAssetsMapping(source, {
+    group: "imports",
+    source,
+    specifiers,
+    ctx,
+    context
+  });
+  if (source) {
+    let asset = ctx.createAsset(source);
+    if (asset) {
+      if (!graph)
+        graph = ctx.getBuildGraph();
+      graph.addAsset(asset);
+      return ctx.createCallExpression(
+        createStaticReferenceNode2(ctx, stack2, "manifest.Assets", "get"),
+        [
+          ctx.createLiteral(createUniqueHashId(resolveFile))
+        ]
+      );
+    }
+  }
+  return null;
+}
+function createReadfileAnnotationNode2(ctx, annot) {
   const result = parseReadfileAnnotation(ctx, annot);
   if (!result)
     return null;
-  const addDeps = (source, local) => {
-    source = ctx.getSourceFileMappingFolder(source) || source;
-    let importSource = ctx.addImport(source, local);
-    importSource.setSourceTarget();
+  const addDeps = (source, local, lazy) => {
+    let graph = ctx.getBuildGraph();
+    if (ctx.compiler.checkFileExt(source)) {
+      ctx.addHook(async () => {
+        const compilation = await ctx.compiler.createCompilation(source, null, true);
+        if (compilation) {
+          await compilation.ready();
+          if (compilation.mainModule) {
+            ctx.addDepend(compilation.mainModule);
+            ctx.beforeBody.push(
+              ctx.createExpressionStatement(
+                ctx.createAssignmentExpression(
+                  ctx.createVarIdentifier(local),
+                  createClassRefsNode(ctx, compilation.mainModule)
+                )
+              )
+            );
+          } else {
+            ctx.addDepend(compilation);
+            await ctx.plugin.context.buildDeps(compilation);
+            let source2 = ctx.getModuleImportSource(compilation.file, annot.file);
+            let importSource = ctx.addImport(source2, local);
+            importSource.setSourceTarget(compilation);
+            if (graph) {
+              graph.addImport(importSource);
+            }
+          }
+        }
+      });
+    } else {
+      return createGetAssetsContentNode(ctx, annot, source, local, graph);
+    }
   };
   const fileMap = {};
   const localeCxt = result.dir.toLowerCase();
@@ -4196,24 +4254,23 @@ function createReadfileAnnotationNode2(ctx, annot, stack2) {
       path: filepath2,
       isFile: import_fs6.default.statSync(file).isFile()
     };
-    if (item.isFile && result.load) {
+    if (result.source) {
+      item.content = JSON.stringify(import_fs6.default.readFileSync(file));
+    } else if (item.isFile && result.load) {
       let data = "";
       if (file.endsWith(".env")) {
         const content = dotenv.parse(import_fs6.default.readFileSync(file));
         dotenvExpand.expand({ parsed: content });
         data = JSON.stringify(content);
       } else {
-        if (result.lazy) {
-          data = `include('${file}')`;
-        } else {
-          namedMap.add(file);
-          data = ctx.getGlobalRefName(annot, "_" + named.replace(/[\.\-]+/g, "_") + namedMap.size);
-          addDeps(file, data);
+        namedMap.add(file);
+        data = ctx.getGlobalRefName(annot, "_" + named.replace(/[\.\-]+/g, "_") + namedMap.size);
+        let value = addDeps(file, data, result.lazy);
+        if (value) {
+          data = value;
         }
       }
       item.content = data;
-    } else if (result.source) {
-      item.content = JSON.stringify(import_fs6.default.readFileSync(file));
     }
     const parent = getParentFile(pid);
     if (parent) {
@@ -4239,10 +4296,14 @@ function createReadfileAnnotationNode2(ctx, annot, stack2) {
         properties2.push(ctx.createProperty(ctx.createIdentifier("isFile"), ctx.createLiteral(true)));
       }
       if (object.content) {
-        properties2.push(ctx.createProperty(ctx.createIdentifier("content"), ctx.createChunkExpression(object.content)));
+        let contentNode = object.content;
+        if (typeof contentNode === "string") {
+          contentNode = ctx.createChunkExpression(object.content, false);
+        }
+        properties2.push(ctx.createProperty(ctx.createIdentifier("content"), contentNode));
       }
       if (object.children) {
-        properties2.push(ctx.createProperty(ctx.createIdentifier("children"), ctx.createArrayExpression(make(object.children))));
+        properties2.push(ctx.createProperty(ctx.createIdentifier("children"), ctx.createArrayExpression(make(object.children, false))));
       }
       return ctx.createObjectExpression(properties2);
     });
@@ -4324,6 +4385,7 @@ var init_Common2 = __esm({
     init_Common();
     init_Asset2();
     import_Generator4 = __toESM(require_Generator());
+    init_Node();
     init_Common();
   }
 });
@@ -6605,6 +6667,13 @@ var Context = class extends Token_default {
   }
   get dependencies() {
     return this.#dependencies;
+  }
+  #hooks = [];
+  addHook(hook) {
+    this.#hooks.push(hook);
+  }
+  getHooks() {
+    return this.#hooks;
   }
   addBuildAfterDep(dep) {
     const ctx = this.plugin.context;
@@ -11755,6 +11824,8 @@ async function buildProgram(ctx, compilation, graph, generatorClass = Generator_
       ctx.createToken(item);
     });
   }
+  let hooks = ctx.getHooks();
+  await Promise.allSettled(hooks.map((hook) => hook()));
   ctx.crateRootAssets();
   ctx.createAllDependencies();
   let exportNodes = null;
@@ -12148,6 +12219,11 @@ import_Diagnostic.default.register("transform", (definer) => {
     10111,
     `[es-transform] "@Router"\u6CE8\u89E3\u7B26\u4E2D\u6307\u5B9A\u7684\u8DEF\u7531\u63D0\u4F9B\u8005(%s)\u6CA1\u6709\u89E3\u6790\u5230\u8DEF\u7531`,
     `[es-transform] Resolve route not found the '%s' in the @Router`
+  );
+  definer(
+    10112,
+    `[es-transform] \u6307\u5B9A\u8DEF\u7531\u65B9\u6CD5\u7684\u8BBF\u95EE\u6743\u9650\u53EA\u80FD\u4E3A'public'\u4FEE\u9970\u7B26`,
+    `[es-transform] Access permission of route method can only with the 'public' modifier`
   );
 });
 var plugins = /* @__PURE__ */ new Set();
@@ -19255,6 +19331,8 @@ async function buildProgram2(ctx, compilation, graph, generatorClass = import_Ge
     });
   }
   ctx.removeNode(root);
+  let hooks = ctx.getHooks();
+  await Promise.allSettled(hooks.map((hook) => hook()));
   ctx.crateRootAssets();
   ctx.createAllDependencies();
   let exportNodes = null;
