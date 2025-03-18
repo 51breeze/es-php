@@ -858,17 +858,17 @@ function parseRouteAnnotation(annotation, options = {}) {
     if (isWebComponent) {
       params = args.filter((arg) => !(arg === methodArg || arg === metaArg || arg === pathArg)).map((item) => {
         let name = item.assigned ? item.key : item.value;
-        let annotParamStack2 = item.stack;
-        let optional = !!(annotParamStack2.question || annotParamStack2.node.question);
-        if (annotParamStack2.isAssignmentPattern) {
+        let annotParamStack = item.stack;
+        let optional = !!(annotParamStack.question || annotParamStack.node.question);
+        if (annotParamStack.isAssignmentPattern) {
           if (!optional) {
-            optional = !!(annotParamStack2.left.question || annotParamStack2.left.node.question);
+            optional = !!(annotParamStack.left.question || annotParamStack.left.node.question);
           }
-          if (annotParamStack2.right.isIdentifier || annotParamStack2.right.isLiteral) {
-            defaultValue[name] = annotParamStack2.right.value();
+          if (annotParamStack.right.isIdentifier || annotParamStack.right.isLiteral) {
+            defaultValue[name] = annotParamStack.right.value();
           } else {
             const gen = new Generator();
-            gen.make(this.createToken(annotParamStack2.right));
+            gen.make(this.createToken(annotParamStack.right));
             defaultValue[name] = gen.toString();
           }
         }
@@ -922,10 +922,10 @@ function createRouteInstance(options, module2, owner, path11, method, meta = nul
       let optional = !!(item.question || item.isAssignmentPattern);
       if (item.isAssignmentPattern) {
         if (item.right.isIdentifier || item.right.isLiteral) {
-          defaultValue[name] = annotParamStack.right.value();
+          defaultValue[name] = item.right.value();
         } else {
           const gen = new Generator();
-          gen.make(this.createToken(annotParamStack.right));
+          gen.make(this.createToken(item.right));
           defaultValue[name] = gen.toString();
         }
       }
@@ -6675,6 +6675,16 @@ var Context = class extends Token_default {
   getHooks() {
     return this.#hooks;
   }
+  getLayouts(imports, body, externals, exports) {
+    return [
+      ...imports,
+      ...this.beforeBody,
+      ...body,
+      ...this.afterBody,
+      ...externals,
+      ...exports
+    ];
+  }
   addBuildAfterDep(dep) {
     const ctx = this.plugin.context;
     ctx.addBuildAfterDep(dep);
@@ -11840,17 +11850,10 @@ async function buildProgram(ctx, compilation, graph, generatorClass = Generator_
   imports.push(...importNodes, ...exportNodes.imports);
   body.push(...exportNodes.declares);
   exports.push(...exportNodes.exports);
-  let layout = [
-    ...imports,
-    ...ctx.beforeBody,
-    ...body,
-    ...ctx.afterBody,
-    ...externals,
-    ...exports
-  ];
-  if (layout.length > 0) {
+  let layouts = ctx.getLayouts(imports, body, externals, exports);
+  if (layouts.length > 0) {
     let generator = new generatorClass(ctx);
-    layout.forEach((item) => generator.make(item));
+    layouts.forEach((item) => generator.make(item));
     graph.code = generator.code;
     graph.sourcemap = generator.sourceMap ? generator.sourceMap.toJSON() : null;
     if (emitFile) {
@@ -12567,6 +12570,18 @@ var Context2 = class extends Context_default {
   }
   get statments() {
     return this.#statments;
+  }
+  getLayouts(imports, body, externals, exports) {
+    return [
+      ...imports,
+      ...Array.from(this.usings.values()),
+      ...this.statments,
+      ...this.beforeBody,
+      ...body,
+      ...this.afterBody,
+      ...externals,
+      ...exports
+    ];
   }
   getFormatCode(code) {
     if (this.options.strict) {
@@ -19345,16 +19360,7 @@ async function buildProgram2(ctx, compilation, graph, generatorClass = import_Ge
   let generator = new generatorClass(ctx);
   let doc = compilation.mainModule || compilation;
   let mainModule = compilation.mainModule;
-  let layout = [
-    ...imports,
-    ...Array.from(ctx.usings.values()),
-    ...ctx.statments,
-    ...ctx.beforeBody,
-    ...body,
-    ...ctx.afterBody,
-    ...externals,
-    ...exports
-  ];
+  let layout = ctx.getLayouts(imports, body, externals, exports);
   if (mainModule) {
     let ns = mainModule.namespace;
     ns = ctx.getModuleMappingNamespace(mainModule) || ns.getChain().join("\\");
@@ -19874,7 +19880,7 @@ var Plugin2 = class extends Plugin {
       const compilation = await this.complier.createCompilation(file, null, true);
       if (compilation) {
         await compilation.ready();
-        await this.build(compilation);
+        await this.run(compilation);
       }
     }));
   }
