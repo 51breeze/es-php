@@ -11,6 +11,7 @@ class From extends Component{
     render():VNode|Component{
         return <div>
             <Input />
+            <s:default />
         </div>
     }
 

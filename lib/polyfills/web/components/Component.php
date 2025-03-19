@@ -11,6 +11,10 @@ class Component{
         $this->slots = $props['slots'] ?? [];
     }
 
+    public function renderSlot(string $name){
+
+    }
+
     public function onInitialized(){
 
     }
@@ -32,6 +36,6 @@ class Component{
     }
 
     public function onErrorCaptured(\Exception $e){
-        echo $e->getMessage();
+       throw $e;
     }
 }
