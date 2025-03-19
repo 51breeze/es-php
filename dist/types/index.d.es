@@ -69,7 +69,7 @@ package web.components{
         @Noop
         protected onErrorCaptured():void;
         @Noop
-        protected render():VNode | Component;
+        render():VNode | Component;
         get parent():Component
         get children():Component[];
         hasSlot(name?:string):boolean;
@@ -82,5 +82,5 @@ package web.components{
     }
 }
 
-declare function renderToString(vnode:VNode):string;
+declare function renderToString(vnode:VNode | web.components.Component):string;
 declare function createVNode(component:string | web.components.Component, attrs?:Record<any>, children?:string | web.components.Component[]):VNode;

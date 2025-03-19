@@ -11,6 +11,8 @@ import table.Address;
 
 import Assets;
 
+import WebUI;
+
 //import manifest.Annotations as Anns;
 
 import Person;
@@ -618,9 +620,9 @@ public class StartTest extends Base implements Address
         assertEquals('789', arr2.title )
     }
 
-    // testJSX(){
-    //     new JsxTest()
-    // }
+    testJSX(){
+      console.log( renderToString( new WebUI({}) ) );
+    }
 
     call(){
         return this;

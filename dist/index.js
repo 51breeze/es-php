@@ -16625,14 +16625,6 @@ function createSlotNode2(ctx, stack2, ...args) {
     return node;
   }
 }
-function createWithCtxNode2(ctx, node) {
-  return ctx.createCallExpression(
-    ctx.createIdentifier(ctx.getVNodeApi("withCtx")),
-    [
-      node
-    ]
-  );
-}
 function createForMapNode2(ctx, object, element, item, key, index, stack2) {
   const params = [item];
   if (key) {
@@ -17712,9 +17704,7 @@ function createElementNode2(ctx, stack2, data, children) {
       const desc2 = stack2.description();
       if (import_Utils34.default.isModule(desc2)) {
         ctx.addDepend(desc2, stack2.module);
-        name = ctx.createIdentifier(
-          ctx.getModuleReferenceName(desc2, stack2.module)
-        );
+        name = createClassRefsNode(ctx, desc2, stack2);
       } else {
         name = ctx.createIdentifier(
           stack2.openingElement.name.value(),
@@ -17802,9 +17792,7 @@ function createElement2(ctx, stack2) {
     if (childNodes) {
       properties2.push(ctx.createProperty(
         ctx.createIdentifier("default"),
-        createWithCtxNode2(
-          ctx.createArrowFunctionExpression(childNodes)
-        )
+        childNodes
       ));
       childNodes = null;
     }

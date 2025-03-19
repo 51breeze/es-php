@@ -1,4 +1,5 @@
 <?php
+///<namespaces name="web.components" />
 
 class Component{
 
@@ -28,5 +29,9 @@ class Component{
 
     protected function inject(string $name, string $from, $defaultValue){
 
+    }
+
+    public function onErrorCaptured(\Exception $e){
+        echo $e->getMessage();
     }
 }

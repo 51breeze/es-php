@@ -1,9 +1,7 @@
 <?php
-
 ///<references from='web.components.Component' />
 
 interface VNode {}
-
 class Node implements VNode{
     public $type;
     public $attrs;
@@ -15,12 +13,13 @@ class Node implements VNode{
     }
 }
 
-function renderToString(VNode $vnode){
-    $type = $vnode->type;
-    if(is_a($type, Component::class)){
+function renderToString($vnode){
+    if(is_string($vnode)){
+        return $vnode;
+    }else if(is_a($vnode, Component::class)){
         try{
-            $type->onInitialized();
-            $node = $type->render();
+            $vnode->onInitialized();
+            $node = $vnode->render();
             if($node){
                 if(is_array($node)){
                    return implode('', array_map(renderToString, $node));
@@ -30,10 +29,15 @@ function renderToString(VNode $vnode){
                 return renderToString($node);
             }
         }catch(\Exception $e){
-            $type->onErrorCaptured($e);
+            $vnode->onErrorCaptured($e);
         }
         return '';
     }
+    if(!is_a($vnode, VNode::class)){
+        var_dump($vnode);
+        return '';
+    }
+    $type = $vnode->type;
     $attrs = $vnode->attrs;
     $children = $vnode->children;
     $props = [];
@@ -59,6 +63,10 @@ function renderToString(VNode $vnode){
         if($type === 'number' || $type === 'string'){
             return $child;
         }else{
+            if(is_array($child)){
+               
+                return implode('', array_map('renderToString', $child));
+            }
             return renderToString($child);
         }
     },$children);
@@ -68,10 +76,10 @@ function renderToString(VNode $vnode){
     return '<' . ($type) . '>' . (implode('',$children)) . '</' . ($type) . '>';
 }
 
-function createVNode($type, array $attrs, array $children){
+function createVNode($type, $attrs=null, $children=null){
     if(is_string($type)){
-        return new Node($type,$attrs,$children);
+        return new Node($type,$attrs ?: [], $children ?: []);
     }else{
-        return new $type($attrs);
+        return new $type($attrs?:[]);
     }
 }
