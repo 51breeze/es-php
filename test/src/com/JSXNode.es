@@ -10,5 +10,9 @@ public class JSXNode implements VNode{
         this.type = type;
         this.attr = attr;
         this.children = children instanceof Array ?  children : [];
+
+        renderToString(this)
+
+        createVNode('div');
     }
 }

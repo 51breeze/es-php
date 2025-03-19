@@ -51,7 +51,7 @@ public class JSXComponent extends TestCase {
             return null;
       }
 
-      render( c:Function ){
+      render(){
             return <div>root</div>;
       }
 

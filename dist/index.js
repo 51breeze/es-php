@@ -4268,6 +4268,8 @@ function createReadfileAnnotationNode2(ctx, annot) {
         let value = addDeps(file, data, result.lazy);
         if (value) {
           data = value;
+        } else {
+          data = ctx.createVarIdentifier(data);
         }
       }
       item.content = data;
@@ -12593,6 +12595,25 @@ var Context2 = class extends Context_default {
   getPublicDir() {
     return this.options.publicPath || "public";
   }
+  #vnodeHandleNode = null;
+  createVNodeHandleNode(stack2, ...args) {
+    let handle = this.#vnodeHandleNode;
+    if (!handle) {
+      let name = "createVNode";
+      let local = this.getGlobalRefName(stack2, name);
+      let VNode = import_Namespace10.default.globals.get("VNode");
+      let ns = this.getModuleNamespace(VNode, name);
+      if (local !== name) {
+        this.addUsing(ns, local);
+      } else {
+        local = ns;
+      }
+      this.addDepend(VNode);
+      handle = this.createIdentifier(local);
+      this.#vnodeHandleNode = handle;
+    }
+    return this.createCallExpression(handle, args);
+  }
   createModuleUsing(depModule, context) {
     if (!globalModules.includes(depModule.id)) {
       let source = this.getModuleNamespace(depModule);
@@ -14336,6 +14357,44 @@ var global_default = {
     ctx.callee = ctx.createIdentifier("is_finite");
     ctx.arguments = args.slice(0, 1);
     return ctx;
+  },
+  renderToString(stack2, ctx, object, args, called = false, isStatic = false) {
+    let VNode = import_Namespace16.default.globals.get("VNode");
+    ctx.addDepend(VNode);
+    let name = "renderToString";
+    let local = ctx.getGlobalRefName(stack2, name);
+    let ns = ctx.getModuleNamespace(VNode, name);
+    if (local !== name) {
+      ctx.addUsing(ns, local);
+    } else {
+      local = ns;
+    }
+    if (!called) {
+      return ctx.createLiteral(local);
+    }
+    return ctx.createCallExpression(
+      ctx.createIdentifier(local),
+      args
+    );
+  },
+  createVNode(stack2, ctx, object, args, called = false, isStatic = false) {
+    let VNode = import_Namespace16.default.globals.get("VNode");
+    ctx.addDepend(VNode);
+    let name = "createVNode";
+    let local = ctx.getGlobalRefName(stack2, name);
+    let ns = ctx.getModuleNamespace(VNode, name);
+    if (local !== name) {
+      ctx.addUsing(ns, local);
+    } else {
+      local = ns;
+    }
+    if (!called) {
+      return ctx.createLiteral(local);
+    }
+    return ctx.createCallExpression(
+      ctx.createIdentifier(local),
+      args
+    );
   }
 };
 
@@ -15828,7 +15887,23 @@ function EnumProperty_default2(ctx, stack2) {
 
 // lib/tokens/ExportAllDeclaration.js
 function ExportAllDeclaration_default2(ctx, stack2) {
-  if (stack2.getResolveJSModule() || !stack2.source) {
+  if (stack2.getResolveJSModule()) {
+    return null;
+  }
+  if (!stack2.source) {
+    let program = stack2.parentStack;
+    if (program && program.isProgram && program.externals) {
+      let externals = program.externals;
+      externals.forEach((child) => {
+        if (child.isVariableDeclaration) {
+          child.declarations.forEach((declaration) => {
+            ctx.addExport(declaration.id.value(), declaration.id.value(), null, declaration.id);
+          });
+        } else if (child.isFunctionDeclaration) {
+          ctx.addExport(child.key.value(), child.key.value(), null, child.key);
+        }
+      });
+    }
     return null;
   }
   let source = stack2.source.value();
@@ -16387,7 +16462,10 @@ var InterfaceBuilder2 = class {
     });
   }
   createMemeber(ctx, stack2, staticFlag = false) {
-    return ctx.createToken(stack2);
+    if (stack2.isMethodDefinition) {
+      return ctx.createToken(stack2);
+    }
+    return null;
   }
 };
 var InterfaceBuilder_default2 = InterfaceBuilder2;

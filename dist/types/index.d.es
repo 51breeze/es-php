@@ -58,3 +58,29 @@ package manifest{
     }
 
 }
+
+package web.components{
+
+    @WebComponent
+    declare class Component{
+        constructor(props?:Record<any>);
+        @Noop
+        protected onInitialized():void;
+        @Noop
+        protected onErrorCaptured():void;
+        @Noop
+        protected render():VNode | Component;
+        get parent():Component
+        get children():Component[];
+        hasSlot(name?:string):boolean;
+        renderSlot(name?:string,props?:Record,fallback?:(...args)=>(VNode | Component)[]):VNode;
+        forceUpdate();
+        provide(name:string, provider:()=>any):void;
+        inject<T=any>(name:string, from?:string, defaultValue?:T):T;
+        toValue<T>(value:T): T;
+        getAttribute<T=any>(name:string):T;
+    }
+}
+
+declare function renderToString(vnode:VNode):string;
+declare function createVNode(component:string | web.components.Component, attrs?:Record<any>, children?:string | web.components.Component[]):VNode;
