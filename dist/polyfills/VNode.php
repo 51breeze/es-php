@@ -79,7 +79,11 @@ function renderToString($vnode){
 
 function createVNode($type, $attrs=null, $children=null){
     if(class_exists($type, false)){
-        return new $type($attrs?:[]);
+        $com = new $type($attrs ?? []);
+        if($children){
+            $com->setSlots($children);
+        }
+        return $com;
     }
     return new Node($type, $attrs ?: [], $children ?: []);
 }

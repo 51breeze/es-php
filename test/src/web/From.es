@@ -11,6 +11,9 @@ class From extends Component{
     render():VNode|Component{
         return <div>
             <Input />
+            <d:each name={[1]} item="item" >
+                <div>{item}</div>
+            </d:each>
             <s:default />
         </div>
     }

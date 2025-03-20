@@ -12614,6 +12614,24 @@ var Context2 = class extends Context_default {
     }
     return this.createCallExpression(handle, args);
   }
+  getVNodeApi(name) {
+    console.log(name);
+    let esxVM = this.getVModule("web.ESX");
+    let local = this.getGlobalRefName(null, name);
+    let ns = this.getModuleNamespace(esxVM, name);
+    if (local !== name) {
+      this.addUsing(ns, local);
+    } else {
+      local = ns;
+    }
+    this.addDepend(esxVM);
+    const source = this.getModuleImportSource(esxVM, this.target);
+    const importSource = this.addImport(source);
+    importSource.setSourceTarget(esxVM);
+    let graph = this.getBuildGraph();
+    graph.addImport(importSource);
+    return local;
+  }
   createModuleUsing(depModule, context) {
     if (!globalModules.includes(depModule.id)) {
       let source = this.getModuleNamespace(depModule);
@@ -16602,11 +16620,8 @@ function createSlotNode2(ctx, stack2, ...args) {
     const slots = ctx.createCallExpression(
       ctx.createMemberExpression([
         ctx.createThisExpression(),
-        ctx.createIdentifier("getAttribute")
-      ]),
-      [
-        ctx.createLiteral("slots")
-      ]
+        ctx.createIdentifier("getSlots")
+      ])
     );
     const node = ctx.createCallExpression(
       ctx.createIdentifier(
@@ -16617,11 +16632,10 @@ function createSlotNode2(ctx, stack2, ...args) {
     node.isSlotNode = true;
     return node;
   } else {
-    const node = ctx.createCallExpression(
-      ctx.createIdentifier(ctx.getVNodeApi("withCtx")),
-      args
-    );
-    node.isSlotNode = true;
+    let node = args[0];
+    if (node) {
+      node.isSlotNode = true;
+    }
     return node;
   }
 }
@@ -16653,39 +16667,7 @@ function createForEachNode2(ctx, refs, element, item, key) {
   if (element.type === "ArrayExpression" && element.elements.length === 1) {
     element = element.elements[0];
   }
-  const node = ctx.createCallExpression(
-    ctx.createMemberExpression([
-      refs,
-      ctx.createIdentifier("map")
-    ]),
-    [
-      ctx.createArrowFunctionExpression(element, args)
-    ]
-  );
-  if (element.type === "ArrayExpression") {
-    return ctx.createCallExpression(
-      ctx.createMemberExpression([
-        node,
-        ctx.createIdentifier("reduce")
-      ]),
-      [
-        ctx.createArrowFunctionExpression([
-          ctx.createIdentifier("acc"),
-          ctx.createIdentifier("item")
-        ], ctx.createCallExpression(
-          ctx.createMemberExpression([
-            ctx.createIdentifier("acc"),
-            ctx.createIdentifier("concat")
-          ]),
-          [
-            ctx.createIdentifier("item")
-          ]
-        )),
-        ctx.createArrayExpression()
-      ]
-    );
-  }
-  return node;
+  return Array_default.map(null, ctx, refs, [ctx.createArrowFunctionExpression(element, args)], true);
 }
 function getComponentDirectiveAnnotation2(module2) {
   if (!import_Utils34.default.isModule(module2))
@@ -16782,8 +16764,8 @@ function createChildNode2(ctx, stack2, childNode, prev = null) {
     const valueArgument = directive.valueArgument;
     if (name === "each" || name === "for") {
       let refs = ctx.createToken(valueArgument.expression);
-      let item = ctx.createIdentifier(valueArgument.declare.item);
-      let key = ctx.createIdentifier(valueArgument.declare.key || "key");
+      let item = ctx.createVarIdentifier(valueArgument.declare.item);
+      let key = ctx.createVarIdentifier(valueArgument.declare.key || "key");
       let index = valueArgument.declare.index;
       if (index) {
         index = ctx.createIdentifier(index);
@@ -16978,17 +16960,19 @@ function createChildren2(ctx, children, data) {
       base.newLine = true;
     }
     const node2 = ctx.createCallExpression(
-      ctx.createMemberExpression([
+      ctx.createIdentifier("array_merge"),
+      [
         base,
-        ctx.createIdentifier("concat")
-      ]),
-      content.reduce(function(acc, val) {
-        if (val.type === "ArrayExpression") {
-          return acc.concat(...val.elements);
-        } else {
-          return acc.concat(val);
-        }
-      }, [])
+        ctx.createArrayExpression(
+          content.reduce(function(acc, val) {
+            if (val.type === "ArrayExpression") {
+              return acc.concat(...val.elements);
+            } else {
+              return acc.concat(val);
+            }
+          }, [])
+        )
+      ]
     );
     node2.newLine = true;
     node2.indentation = true;
@@ -17683,11 +17667,11 @@ function createDirectiveElementNode2(ctx, stack2, children) {
         if (attr.name.value() === "name") {
           argument["refs"] = ctx.createToken(attr.parserAttributeValueStack());
         } else {
-          argument[attr.name.value()] = ctx.createIdentifier(attr.value.value());
+          argument[attr.name.value()] = ctx.createVarIdentifier(attr.value.value());
         }
       });
-      let item = argument.item || ctx.createIdentifier("item");
-      let key = argument.key || ctx.createIdentifier("key");
+      let item = argument.item || ctx.createVarIdentifier("item");
+      let key = argument.key || ctx.createVarIdentifier("key");
       let node = name === "for" ? createForMapNode2(ctx, argument.refs, children, item, key, argument.index, stack2) : createForEachNode2(ctx, argument.refs, children, item, key);
       node.isForNode = true;
       return node;

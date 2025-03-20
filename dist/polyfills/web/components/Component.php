@@ -4,11 +4,18 @@
 class Component{
 
     private $props;
-    private $slots;
+    private $slots = [];
 
     public function __construct(array $props = []){
         $this->props = $props;
-        $this->slots = $props['slots'] ?? [];
+    }
+
+    public function setSlots(array $slots){
+        $this->slots = $slots;
+    }
+
+    public function getSlots(){
+        return $this->slots;
     }
 
     public function renderSlot(string $name){
@@ -37,5 +44,12 @@ class Component{
 
     public function onErrorCaptured(\Exception $e){
        throw $e;
+    }
+
+    public function getAttribute(string $name){
+        if($name==="slots"){
+            return $this->slots;
+        }
+        return $this->props[$name] ?? null;
     }
 }
