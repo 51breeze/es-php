@@ -621,7 +621,7 @@ public class StartTest extends Base implements Address
     }
 
     testJSX(){
-        assertEquals('div', renderToString( new WebUI({}) ) )
+        assertEquals('div==', renderToString( new WebUI({}) ) )
     }
 
     call(){
