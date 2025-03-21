@@ -621,7 +621,10 @@ public class StartTest extends Base implements Address
     }
 
     testJSX(){
-        assertEquals('div', renderToString( new WebUI({}) ) )
+        assertEquals(
+            '<div><div class="input"><input></input><span>icon</span></div><div>1</div><div>the is from slot</div><div>the is else condition</div><div><span>the is for val:</span>1</div><div><span>the is for val:</span>2</div></div>',
+            renderToString( new WebUI() ) 
+        )
     }
 
     call(){

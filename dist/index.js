@@ -6434,6 +6434,9 @@ var VirtualModule = class {
     let context = this.bindModule || this;
     this.getReferences().forEach((local, classname) => {
       let module2 = import_Namespace2.default.globals.get(classname);
+      if (!module2) {
+        module2 = ctx.getVModule(classname);
+      }
       if (module2) {
         ctx.addDepend(module2, context);
       } else {
@@ -10227,7 +10230,7 @@ function createAttributes(ctx, stack2, data) {
   let nodeType = !isComponent ? stack2.openingElement.name.value().toLowerCase() : null;
   let binddingModelValue = null;
   let afterDirective = null;
-  let custom = null;
+  let custom2 = null;
   if (nodeType === "input") {
     afterDirective = "vModelText";
   } else if (nodeType === "select") {
@@ -10300,7 +10303,7 @@ function createAttributes(ctx, stack2, data) {
       ns = seg;
       name = createStaticReferenceNode(ctx, item, className, name);
       name.computed = true;
-      custom = name;
+      custom2 = name;
     }
     let isDOMAttribute = false;
     if (item.isMemberProperty) {
@@ -10375,8 +10378,8 @@ function createAttributes(ctx, stack2, data) {
           ]
         ];
       };
-      if (custom && binddingModelValue) {
-        pushEvent(custom, ctx.createArrowFunctionExpression(
+      if (custom2 && binddingModelValue) {
+        pushEvent(custom2, ctx.createArrowFunctionExpression(
           ...createBinddingParams(!stack2.isWebComponent)
         ), "on");
       } else if ((stack2.isWebComponent || afterDirective) && binddingModelValue) {
@@ -12503,8 +12506,15 @@ init_Common2();
 init_Common2();
 var import_Generator5 = __toESM(require_Generator());
 var VirtualModule2 = class extends VirtualModule {
+  #disableUse = false;
   constructor(id, ns, file) {
     super(id, ns, file);
+    if (id === "ESX" && ns && ns[0] === "web") {
+      this.#disableUse = true;
+    }
+  }
+  get disableUse() {
+    return this.#disableUse;
   }
   gen(ctx, graph, body = []) {
     let imports = [];
@@ -12595,27 +12605,15 @@ var Context2 = class extends Context_default {
   getPublicDir() {
     return this.options.publicPath || "public";
   }
-  #vnodeHandleNode = null;
   createVNodeHandleNode(stack2, ...args) {
-    let handle = this.#vnodeHandleNode;
-    if (!handle) {
-      let name = "createVNode";
-      let local = this.getGlobalRefName(stack2, name);
-      let VNode = import_Namespace10.default.globals.get("VNode");
-      let ns = this.getModuleNamespace(VNode, name);
-      if (local !== name) {
-        this.addUsing(ns, local);
-      } else {
-        local = ns;
-      }
-      this.addDepend(VNode);
-      handle = this.createIdentifier(local);
-      this.#vnodeHandleNode = handle;
-    }
-    return this.createCallExpression(handle, args);
+    return this.createCallExpression(
+      this.createIdentifier(
+        this.getVNodeApi(stack2.isComponent ? "createComponent" : "createVNode")
+      ),
+      args
+    );
   }
   getVNodeApi(name) {
-    console.log(name);
     let esxVM = this.getVModule("web.ESX");
     let local = this.getGlobalRefName(null, name);
     let ns = this.getModuleNamespace(esxVM, name);
@@ -12625,11 +12623,6 @@ var Context2 = class extends Context_default {
       local = ns;
     }
     this.addDepend(esxVM);
-    const source = this.getModuleImportSource(esxVM, this.target);
-    const importSource = this.addImport(source);
-    importSource.setSourceTarget(esxVM);
-    let graph = this.getBuildGraph();
-    graph.addImport(importSource);
     return local;
   }
   createModuleUsing(depModule, context) {
@@ -12712,6 +12705,9 @@ var Context2 = class extends Context_default {
           importSource.setSourceTarget(depModule);
           graph.addImport(importSource);
         }
+      }
+      if (isVM && (depModule.disableUse || !this.isModuleNeedUsing(depModule))) {
+        return;
       }
       this.createModuleUsing(depModule, context);
     }
@@ -14377,30 +14373,11 @@ var global_default = {
     return ctx;
   },
   renderToString(stack2, ctx, object, args, called = false, isStatic = false) {
-    let VNode = import_Namespace16.default.globals.get("VNode");
-    ctx.addDepend(VNode);
+    let vm = ctx.getVModule("web.ESX");
+    ctx.addDepend(vm);
     let name = "renderToString";
     let local = ctx.getGlobalRefName(stack2, name);
-    let ns = ctx.getModuleNamespace(VNode, name);
-    if (local !== name) {
-      ctx.addUsing(ns, local);
-    } else {
-      local = ns;
-    }
-    if (!called) {
-      return ctx.createLiteral(local);
-    }
-    return ctx.createCallExpression(
-      ctx.createIdentifier(local),
-      args
-    );
-  },
-  createVNode(stack2, ctx, object, args, called = false, isStatic = false) {
-    let VNode = import_Namespace16.default.globals.get("VNode");
-    ctx.addDepend(VNode);
-    let name = "createVNode";
-    let local = ctx.getGlobalRefName(stack2, name);
-    let ns = ctx.getModuleNamespace(VNode, name);
+    let ns = ctx.getModuleNamespace(vm, name);
     if (local !== name) {
       ctx.addUsing(ns, local);
     } else {
@@ -16582,31 +16559,6 @@ function JSXClosingFragment_default2(ctx, stack2) {
 var import_Namespace23 = __toESM(require("easescript/lib/core/Namespace"));
 var import_Utils34 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
-init_Node();
-function createFragmentVNode2(ctx, children, props = null) {
-  const items = [
-    ctx.getVNodeApi("Fragment"),
-    props ? props : ctx.createLiteral(null),
-    children
-  ];
-  return ctx.createCallExpression(
-    ctx.getVNodeApi("createVNode"),
-    items
-  );
-}
-function createWithDirectives2(ctx, node, directives) {
-  const array = ctx.createArrayExpression(directives);
-  array.newLine = true;
-  return ctx.createCallExpression(
-    ctx.createIdentifier(
-      ctx.getVNodeApi("withDirectives")
-    ),
-    [
-      node,
-      array
-    ]
-  );
-}
 function createCommentVNode2(ctx, text) {
   return ctx.createCallExpression(
     ctx.createIdentifier(ctx.getVNodeApi("createCommentVNode")),
@@ -16694,50 +16646,6 @@ function isDirectiveInterface2(module2) {
     return directiveInterface2.type().isof(module2);
   }
   return false;
-}
-function getComponentEmitAnnotation2(module2) {
-  if (!import_Utils34.default.isModule(module2))
-    return null;
-  const dataset = /* @__PURE__ */ Object.create(null);
-  const annots = getModuleAnnotations(module2, ["define"]);
-  annots.forEach((annot) => {
-    const args = annot.getArguments();
-    if (args.length > 1) {
-      let value = getAnnotationArgumentValue(args[0]);
-      let _args = args;
-      let _key = null;
-      let isEmits = compare(value, "emits");
-      let isOptions = compare(value, "options");
-      if (isEmits) {
-        _args = args.slice(1);
-        _key = "emits";
-      } else if (isOptions) {
-        _args = args.slice(2);
-        _key = getAnnotationArgumentValue(args[1]);
-      }
-      _key = String(_key).toLowerCase();
-      if (_key === "emits") {
-        let skip = _args.length > 1 ? _args[_args.length - 1] : null;
-        if (skip && skip.assigned && String(skip.key).toLowerCase() === "type") {
-          if (skip.value !== "--literal") {
-            skip = null;
-          }
-        } else {
-          skip = null;
-        }
-        _args.forEach((arg) => {
-          if (arg === skip || !arg)
-            return;
-          if (arg.assigned) {
-            dataset[arg.key] = arg.value;
-          } else {
-            dataset[arg.value] = arg.value;
-          }
-        });
-      }
-    }
-  });
-  return dataset;
 }
 function createChildNode2(ctx, stack2, childNode, prev = null) {
   if (!childNode)
@@ -16984,79 +16892,6 @@ function createChildren2(ctx, children, data) {
   }
   return node;
 }
-function createGetEventValueNode2(ctx, name = "e") {
-  return ctx.createCallExpression(
-    ctx.createMemberExpression([
-      ctx.createThisExpression(),
-      ctx.createIdentifier("getBindEventValue")
-    ]),
-    [
-      ctx.createIdentifier(name)
-    ]
-  );
-}
-function createDirectiveArrayNode2(ctx, name, expression, ...args) {
-  const elems = [
-    ctx.createIdentifier(ctx.getVNodeApi(name)),
-    expression,
-    ...args
-  ];
-  return ctx.createArrayExpression(elems);
-}
-function createResolveAttriubeDirective2(ctx, attrDirective) {
-  if (!attrDirective.value)
-    return;
-  return ctx.createCallExpression(
-    createStaticReferenceNode2(ctx, attrDirective, "web.components.Component", "resolveDirective"),
-    [
-      ctx.createToken(attrDirective.parserAttributeValueStack()),
-      attrDirective.module ? ctx.createThisExpression() : ctx.createLiteral(null)
-    ]
-  );
-}
-function createAttributeBindingEventNode2(ctx, attribute, valueTokenNode) {
-  if (attribute.value.isJSXExpressionContainer) {
-    const expr = attribute.value.expression;
-    if (expr.isAssignmentExpression || expr.isSequenceExpression) {
-      return ctx.createArrowFunctionExpression(valueTokenNode);
-    } else if (!expr.isFunctionExpression) {
-      if (expr.isCallExpression) {
-        const isBind = expr.callee.isMemberExpression && expr.callee.property.value() === "bind" && expr.arguments.length > 0 && expr.arguments[0].isThisExpression;
-        if (!isBind && valueTokenNode && valueTokenNode.type === "CallExpression") {
-          valueTokenNode.arguments.push(ctx.createIdentifier("...args"));
-          return ctx.createArrowFunctionExpression(
-            valueTokenNode,
-            [
-              ctx.createIdentifier("...args")
-            ]
-          );
-        }
-      } else if (expr.isMemberExpression || expr.isIdentifier) {
-        const desc2 = expr.description();
-        const isMethod = desc2 && (desc2.isMethodDefinition && !desc2.isAccessor);
-        if (isMethod) {
-          return ctx.createCallExpression(
-            ctx.createMemberExpression([
-              valueTokenNode,
-              ctx.createIdentifier("bind")
-            ]),
-            [ctx.createThisExpression()]
-          );
-        }
-      }
-    }
-  }
-  return valueTokenNode;
-}
-function getBinddingEventName2(stack2) {
-  const bindding = getMethodAnnotations(stack2, ["bindding"]);
-  if (bindding.length > 0) {
-    const [annot] = bindding;
-    const args = annot.getArguments();
-    return getAnnotationArgumentValue(args[0]);
-  }
-  return null;
-}
 function createElementPropsNode2(ctx, data, stack2) {
   const items = [];
   Object.entries(data).map((item) => {
@@ -17081,122 +16916,23 @@ function createElementPropsNode2(ctx, data, stack2) {
     }
   });
   const props = items.length > 0 ? ctx.createObjectExpression(items) : null;
-  if (props && stack2 && stack2.isComponent) {
-    const desc2 = stack2.description();
-    if (desc2 && import_Utils34.default.isModule(desc2)) {
-      let has = getModuleAnnotations(desc2, ["hook"]).some((annot) => {
-        let result = parseHookAnnotation(annot, ctx.plugin.version, ctx.options.metadata.versions);
-        return result && result.type === "polyfills:props";
-      });
-      if (has) {
-        return createComponentPropsHookNode2(ctx, props, ctx.createLiteral(desc2.getName()));
-      }
-    }
-  }
   return props;
 }
-function createComponentPropsHookNode2(ctx, props, className) {
-  return ctx.createCallExpression(
-    ctx.createMemberExpression([
-      ctx.createThisExpression(),
-      ctx.createIdentifier("invokeHook")
-    ]),
-    [
-      ctx.createLiteral("polyfills:props"),
-      props,
-      className
-    ]
-  );
-}
 function createAttributes2(ctx, stack2, data) {
-  const ssr = !!ctx.options.ssr;
-  const pushEvent = (name, node, category) => {
-    if (ssr && category === "on")
-      return;
-    let events = data[category] || (data[category] = []);
-    if (!Node_default.is(name)) {
-      name = String(name);
-      name = name.includes(":") ? ctx.createLiteral(name) : ctx.createIdentifier(name);
-    }
-    let property = ctx.createProperty(name, node);
-    if (property.key.computed) {
-      property.computed = true;
-      property.key.computed = false;
-    }
-    if (category === "on") {
-      if (property.computed) {
-        property.key = ctx.createTemplateLiteral([
-          ctx.createTemplateElement("on")
-        ], [
-          ctx.createCallExpression(
-            createStaticReferenceNode2(ctx, stack2, "System", "firstUpperCase"),
-            [
-              property.key
-            ]
-          )
-        ]);
-      } else {
-        property.key.value = "on" + toFirstUpperCase(property.key.value);
-        if (property.key.type === "Literal") {
-          property.key.raw = `"${property.key.value}"`;
-        }
-      }
-    }
-    events.push(property);
-  };
   const createPropertyNode = (propName, propValue) => {
     return ctx.createProperty(
       propName.includes("-") ? ctx.createLiteral(propName) : ctx.createIdentifier(propName),
       propValue
     );
   };
-  let isComponent = stack2.isComponent || stack2.isWebComponent;
-  let nodeType = !isComponent ? stack2.openingElement.name.value().toLowerCase() : null;
-  let binddingModelValue = null;
-  let afterDirective = null;
-  let custom = null;
-  if (nodeType === "input") {
-    afterDirective = "vModelText";
-  } else if (nodeType === "select") {
-    afterDirective = "vModelSelect";
-  } else if (nodeType === "textarea") {
-    afterDirective = "vModelText";
-  }
   const forStack = stack2.getParentStack((stack3) => {
     return stack3.scope.isForContext || !(stack3.isJSXElement || stack3.isJSXExpressionContainer);
   }, true);
   const inFor = forStack && forStack.scope && forStack.scope.isForContext ? true : false;
-  const descModule2 = stack2.isWebComponent ? stack2.description() : null;
-  const definedEmits = getComponentEmitAnnotation2(descModule2);
-  const getDefinedEmitName = (name) => {
-    if (definedEmits && Object.prototype.hasOwnProperty.call(definedEmits, name)) {
-      name = toCamelCase(definedEmits[name]);
-    }
-    return name;
-  };
   stack2.openingElement.attributes.forEach((item) => {
     if (item.isAttributeXmlns)
       return;
     if (item.isAttributeDirective) {
-      if (item.isAttributeDirective) {
-        const name2 = item.name.value();
-        if (compare(name2, "show")) {
-          data.directives.push(
-            createDirectiveArrayNode2(
-              ctx,
-              "vShow",
-              ctx.createToken(item.valueArgument.expression)
-            )
-          );
-        } else if (compare(name2, "custom")) {
-          data.directives.push(
-            createResolveAttriubeDirective2(
-              ctx,
-              item
-            )
-          );
-        }
-      }
       return;
     } else if (item.isJSXSpreadAttribute) {
       if (item.argument) {
@@ -17219,8 +16955,8 @@ function createAttributes2(ctx, stack2, data) {
     let propName = name;
     let propValue = value.value;
     let attrLowerName = name.toLowerCase();
-    if (ns === "@events" || ns === "@natives") {
-      name = getDefinedEmitName(name);
+    if (ns === "@events" || ns === "@natives" || ns === "@binding") {
+      return;
     }
     if (ns && ns.includes("::")) {
       let [seg, className] = ns.split("::", 2);
@@ -17236,41 +16972,7 @@ function createAttributes2(ctx, stack2, data) {
         isDOMAttribute = getMethodAnnotations(attrDesc, ["domattribute"]).length > 0;
       }
     }
-    if (ns === "@events" || ns === "@natives") {
-      pushEvent(name, createAttributeBindingEventNode2(item, propValue), "on");
-      return;
-    } else if (ns === "@binding") {
-      binddingModelValue = propValue;
-      if (!binddingModelValue || !(binddingModelValue.type === "MemberExpression" || binddingModelValue.type === "Identifier")) {
-        binddingModelValue = null;
-        if (item.value && item.value.isJSXExpressionContainer) {
-          const stack3 = item.value.expression;
-          if (stack3 && stack3.isMemberExpression && !stack3.optional) {
-            binddingModelValue = ctx.createCallExpression(
-              createStaticReferenceNode2(ctx, stack3, "Reflect", "set"),
-              [
-                stack3.module ? ctx.createIdentifier(stack3.module.id) : ctx.createLiteral(null),
-                ctx.createToken(stack3.object),
-                stack3.computed ? ctx.createToken(stack3.property) : ctx.createLiteral(stack3.property.value()),
-                ctx.createIdentifier("value")
-              ],
-              stack3
-            );
-            binddingModelValue.isReflectSetter = true;
-          }
-        }
-      }
-    }
     if (item.isMemberProperty) {
-      if (ns === "@binding" && attrLowerName === "value") {
-        data.props.push(
-          createPropertyNode(
-            propName,
-            propValue
-          )
-        );
-        propName = "modelValue";
-      }
       if (!isDOMAttribute) {
         data.props.push(
           createPropertyNode(
@@ -17278,88 +16980,17 @@ function createAttributes2(ctx, stack2, data) {
             propValue
           )
         );
-        if (ns !== "@binding")
-          return;
+        return;
       }
-    }
-    if (attrLowerName === "type" && nodeType === "input" && propValue && propValue.type === "Literal") {
-      const value2 = propValue.value.toLowerCase();
-      if (value2 === "checkbox") {
-        afterDirective = "vModelCheckbox";
-      } else if (value2 === "radio") {
-        afterDirective = "vModelRadio";
-      }
-    }
-    if (ns === "@binding") {
-      const createBinddingParams = (getEvent = false) => {
-        return [
-          binddingModelValue.isReflectSetter ? binddingModelValue : ctx.createAssignmentExpression(
-            binddingModelValue,
-            getEvent ? createGetEventValueNode2(ctx) : ctx.createIdentifier("e")
-          ),
-          [
-            ctx.createIdentifier("e")
-          ]
-        ];
-      };
-      if (custom && binddingModelValue) {
-        pushEvent(custom, ctx.createArrowFunctionExpression(
-          ...createBinddingParams(!stack2.isWebComponent)
-        ), "on");
-      } else if ((stack2.isWebComponent || afterDirective) && binddingModelValue) {
-        let eventName = propName;
-        if (propName === "modelValue") {
-          eventName = "update:modelValue";
-        }
-        if (item.isMemberProperty) {
-          let _name = getBinddingEventName2(item.description());
-          if (_name) {
-            eventName = toCamelCase(_name);
-          }
-        }
-        pushEvent(
-          getDefinedEmitName(eventName),
-          ctx.createArrowFunctionExpression(
-            ...createBinddingParams()
-          ),
-          "on"
-        );
-      } else if (binddingModelValue) {
-        pushEvent(
-          ctx.createIdentifier("input"),
-          ctx.createArrowFunctionExpression(
-            ...createBinddingParams(true)
-          ),
-          "on"
-        );
-      }
-      if (afterDirective && binddingModelValue) {
-        data.directives.push(
-          createDirectiveArrayNode2(ctx, afterDirective, binddingModelValue)
-        );
-      }
-      return;
     }
     if (!ns && (attrLowerName === "ref" || attrLowerName === "refs")) {
       name = propName = "ref";
       let useArray = inFor || attrLowerName === "refs";
       if (useArray) {
-        propValue = ctx.createArrowFunctionExpression(
-          ctx.createCallExpression(
-            ctx.createMemberExpression([
-              ctx.createThisExpression(),
-              ctx.createIdentifierExpression("setRefNode")
-            ]),
-            [
-              value.value,
-              ctx.createIdentifier("node"),
-              ctx.createLiteral(true)
-            ]
-          ),
-          [
-            ctx.createIdentifier("node")
-          ]
-        );
+        propValue = ctx.createArrayExpression([
+          value.value,
+          ctx.createLiteral(true)
+        ]);
       }
     }
     if (name === "class" || name === "staticClass") {
@@ -17401,203 +17032,6 @@ function createAttributes2(ctx, stack2, data) {
         data.attrs.push(property);
     }
   });
-  if (!data.key) {
-    data.key = createElementKeyPropertyNode2(ctx, stack2);
-  }
-}
-function createElementKeyPropertyNode2(ctx, stack2) {
-  const keys2 = ctx.options.esx.complete.keys;
-  const fills = Array.isArray(keys2) && keys2.length > 0 ? keys2 : null;
-  const all = keys2 === true;
-  if (fills || all) {
-    let key = null;
-    let direName = null;
-    let isForContext = false;
-    if (all || fills.includes("for") || fills.includes("each")) {
-      if (!stack2.isDirective && stack2.directives && Array.isArray(stack2.directives)) {
-        let directive = stack2.directives.find((directive2) => ["for", "each"].includes(directive2.name.value().toLowerCase()));
-        if (directive) {
-          isForContext = true;
-          direName = directive.name.value().toLowerCase();
-          let valueArgument = directive.valueArgument;
-          if (valueArgument) {
-            key = valueArgument.declare.index || valueArgument.declare.key;
-          }
-        }
-      }
-      if (!direName && stack2.parentStack.isDirective && ["for", "each"].includes(stack2.parentStack.openingElement.name.value())) {
-        const attrs = stack2.parentStack.openingElement.attributes;
-        const argument = {};
-        isForContext = true;
-        direName = stack2.parentStack.openingElement.name.value().toLowerCase();
-        attrs.forEach((attr) => {
-          argument[attr.name.value()] = attr.value.value();
-        });
-        key = argument["index"] || argument["key"];
-      }
-    }
-    if (fills && fills.includes("condition")) {
-      if (!stack2.isDirective && stack2.directives && Array.isArray(stack2.directives)) {
-        let directive = stack2.directives.find((directive2) => ["if", "elseif", "else"].includes(directive2.name.value().toLowerCase()));
-        if (directive) {
-          direName = directive.name.value().toLowerCase();
-        }
-      }
-      if (!isForContext && stack2.parentStack.isDirective && ["if", "elseif", "else"].includes(stack2.parentStack.openingElement.name.value())) {
-        direName = stack2.parentStack.openingElement.name.value().toLowerCase();
-      }
-    }
-    if (all || fills.includes(direName)) {
-      return ctx.createProperty(
-        ctx.createIdentifier("key"),
-        isForContext ? ctx.createBinaryExpression(
-          ctx.createLiteral(getDepth2(stack2) + "."),
-          ctx.createIdentifier(key || "key"),
-          "+"
-        ) : ctx.createLiteral(getDepth2(stack2))
-      );
-    }
-  }
-}
-function createComponentDirectiveProperties2(ctx, stack2, data, callback = null) {
-  if (stack2) {
-    let desc2 = stack2.description();
-    let parentIsComponentDirective = getComponentDirectiveAnnotation2(desc2);
-    if (!parentIsComponentDirective) {
-      parentIsComponentDirective = isDirectiveInterface2(desc2);
-    }
-    if (parentIsComponentDirective) {
-      ctx.addDepend(desc2);
-      let [direModule, direName] = parentIsComponentDirective;
-      let node = createResolveComponentDirective2(ctx, stack2, data, direModule, direName, false, callback);
-      if (node) {
-        data.directives.push(node);
-      }
-      if (stack2.jsxRootElement !== stack2) {
-        createComponentDirectiveProperties2(ctx, stack2.parentStack, data, callback);
-      }
-      return true;
-    }
-  }
-  return false;
-}
-function createCustomDirectiveProperties2(ctx, stack2, data, callback = null) {
-  const node = createResolveComponentDirective2(ctx, stack2, data, null, null, true, callback);
-  if (node) {
-    data.directives.push(node);
-  }
-  if (stack2.parentStack && stack2.parentStack.isDirective && stack2.jsxRootElement !== stack2.parentStack) {
-    let dName = stack2.parentStack.openingElement.name.value().toLowerCase();
-    if (dName === "custom") {
-      createCustomDirectiveProperties2(ctx, stack2.parentStack, data, callback);
-    }
-  }
-}
-function createResolveComponentDirective2(ctx, stack2, data, direModule = null, direName = null, isCustom = false, callback = null) {
-  const props = [];
-  const has = (items, name) => items && items.some((prop) => prop.key.value === name);
-  let expression = null;
-  let modifier = null;
-  let directive = direModule ? createClassRefsNode(ctx, direModule, stack2) : null;
-  stack2.openingElement.attributes.forEach((attr) => {
-    if (attr.isAttributeXmlns || attr.isAttributeDirective)
-      return;
-    const name = attr.name.value();
-    const lower = name.toLowerCase();
-    if (lower === "name" && isCustom) {
-      let value = attr.value;
-      if (value && value.isJSXExpressionContainer) {
-        value = value.expression;
-      }
-      if (value) {
-        if (value.isLiteral) {
-          directive = ctx.createToken(value);
-        } else {
-          let desc2 = value.description();
-          let result = null;
-          let isMember = desc2 && (desc2.isMethodDefinition || desc2.isPropertyDefinition);
-          if (isMember) {
-            result = getComponentDirectiveAnnotation2(desc2.module);
-          } else {
-            result = getComponentDirectiveAnnotation2(desc2);
-          }
-          if (result) {
-            [direModule, direName] = result;
-            if (isMember) {
-              directive = ctx.createToken(value);
-            } else {
-              directive = createClassRefsNode(ctx, direModule, stack2);
-            }
-          }
-        }
-        if (!directive) {
-          direName = attr.value.value();
-        }
-      } else {
-        const range = stack2.compilation.getRangeByNode(attr.name.node);
-        console.warn(`No named value directive was specified.\r
- at ${stack2.file}(${range.end.line}:${range.end.column})`);
-      }
-      return;
-    }
-    if (lower === "value") {
-      expression = attr.value ? ctx.createToken(attr.value) : ctx.createLiteral(false);
-      return;
-    }
-    if (lower === "modifier") {
-      modifier = attr.value ? ctx.createToken(attr.value) : ctx.createObjectExpression();
-      return;
-    }
-    const attrNode = ctx.createToken(attr);
-    if (attrNode) {
-      const property = ctx.createProperty(
-        attrNode.name,
-        attrNode.value
-      );
-      property.loc = attrNode.loc;
-      if (!has(data.attrs, name)) {
-        property.isInheritDirectiveProp = true;
-        data.attrs.push(property);
-      }
-      if (callback) {
-        callback(property);
-      }
-    }
-  });
-  if (direName) {
-    props.push(ctx.createProperty(
-      ctx.createIdentifier("name"),
-      ctx.createLiteral(direName)
-    ));
-  }
-  if (directive) {
-    props.push(ctx.createProperty(
-      ctx.createIdentifier("directiveClass"),
-      directive
-    ));
-  }
-  props.push(ctx.createProperty(
-    ctx.createIdentifier("value"),
-    expression || this.createLiteralNode(false)
-  ));
-  if (modifier) {
-    props.push(properties.push(
-      ctx.createProperty(
-        ctx.createIdentifier("modifiers"),
-        modifier
-      )
-    ));
-  }
-  const object = ctx.createObjectExpression(props);
-  const node = ctx.createCallExpression(
-    createStaticReferenceNode2(ctx, stack2, "web.components.Component", "resolveDirective"),
-    [
-      object,
-      ctx.createThisExpression()
-    ]
-  );
-  node.isInheritComponentDirective = true;
-  return node;
 }
 function createSlotElementNode2(ctx, stack2, children) {
   const openingElement = ctx.createToken(stack2.openingElement);
@@ -17708,20 +17142,6 @@ function createElementNode2(ctx, stack2, data, children) {
     return ctx.createVNodeHandleNode(stack2, name);
   }
 }
-function getDepth2(stack2) {
-  let parentStack = stack2.parentStack;
-  while (parentStack) {
-    if (parentStack.isJSXElement || parentStack.isJSXExpressionContainer || parentStack.isMethodDefinition || parentStack.isProgram)
-      break;
-    parentStack = parentStack.parentStack;
-  }
-  if (parentStack && (parentStack.isDirective || parentStack.isSlot || parentStack.isJSXExpressionContainer)) {
-    const index = stack2.childIndexAt;
-    const prefix = getDepth2(parentStack);
-    return prefix ? prefix + "." + index : index;
-  }
-  return stack2.childIndexAt;
-}
 function getChildren2(stack2) {
   return stack2.children.filter((child) => {
     return !(child.isJSXScript && child.isScriptProgram || child.isJSXStyle);
@@ -17747,23 +17167,6 @@ function createElement2(ctx, stack2) {
   }
   if (componentDirective) {
     return childNodes;
-  }
-  if (stack2.parentStack && stack2.parentStack.isDirective) {
-    let dName = stack2.parentStack.openingElement.name.value().toLowerCase();
-    if (dName === "show") {
-      const condition = stack2.parentStack.openingElement.attributes[0];
-      data.directives.push(
-        createDirectiveArrayNode2(
-          ctx,
-          "vShow",
-          ctx.createToken(condition.parserAttributeValueStack())
-        )
-      );
-    } else if (dName === "custom") {
-      createCustomDirectiveProperties2(ctx, stack2.parentStack, data);
-    }
-  } else {
-    createComponentDirectiveProperties2(ctx, stack2.parentStack, data);
   }
   if (!stack2.isJSXFragment) {
     if (!(isRoot && stack2.openingElement.name.value() === "root")) {
@@ -17803,14 +17206,11 @@ function createElement2(ctx, stack2) {
       if (Array.isArray(childNodes) && childNodes.length === 1) {
         nodeElement = childNodes[0];
       } else {
-        nodeElement = createFragmentVNode2(ctx, childNodes);
+        nodeElement = createElementNode2(ctx, stack2, data, childNodes);
       }
     } else {
       nodeElement = createElementNode2(ctx, stack2, data, childNodes);
     }
-  }
-  if (nodeElement && data.directives && data.directives.length > 0) {
-    nodeElement = createWithDirectives2(ctx, nodeElement, data.directives);
   }
   return nodeElement;
 }
@@ -20042,7 +19442,7 @@ var defaultConfig = {
     annotations: false
   },
   resolve: {
-    usings: {},
+    usings: [],
     folders: {
       "*.global": "escore",
       "*.assets": "public"

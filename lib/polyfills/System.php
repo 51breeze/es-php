@@ -550,6 +550,9 @@ final class System{
     }
 
     public static function getQualifiedObjectName( $object ){
+        if(is_null($object)){
+            return null;
+        }
         return get_class($object);
     }
 }

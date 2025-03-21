@@ -72,6 +72,7 @@ package web.components{
         render():VNode | Component;
         get parent():Component
         get children():Component[];
+        getRef(name:string);
         hasSlot(name?:string):boolean;
         renderSlot(name?:string,props?:Record,fallback?:(...args)=>(VNode | Component)[]):VNode;
         forceUpdate();
