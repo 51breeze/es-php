@@ -8,6 +8,7 @@ import com.TestInterface as IT;
 * Person class
 */
 
+@Router('test')
 public class Person<T> extends TestCase implements IT
 {
 
@@ -28,13 +29,15 @@ public class Person<T> extends TestCase implements IT
         return this;
     }
 
+     @Post()
     public setType(a:T):T{
         this._type = a;
         return a;
     }
+    
 
 
-    @Post('/method',  auth=true)
+    @Post('@/method',  auth=true)
     public method( name:string, age:int):any
     {
         var str:string[] = ["a","1"];

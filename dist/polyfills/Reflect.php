@@ -369,6 +369,17 @@ final class Reflect{
         return call_user_func_array( $target, !is_array($argumentsList) ? array() :  $argumentsList );
     }
 
+    final static public function invoke($target){
+        if( !is_callable($target) ){
+            throw new \TypeError('target is not callable');
+        }
+        $len = func_num_args();
+        if($len>1){
+            return call_user_func_array($target, array_slice(func_get_args(),1));
+        }
+        return call_user_func($target);
+    }
+
     /**
      * 调用指定对象中的方法
      */
@@ -419,12 +430,24 @@ final class Reflect{
 
         $desc = self::getReflectionMethodOrProperty($target, $name,'',$scope, true);
         if( $desc ){
+            $thisArg = $thisArg==null && !is_string($target) ? $target : $thisArg;
             list($type, $method, $accessible) = $desc;
             if( !$accessible ){
                 throw new \Error( $name." method is not accessible");
             }
-            if( $type===3 ){
-                $thisArg = $thisArg==null && !is_string($target) ? $target : $thisArg;
+            if($type===1){
+                $value = $method->getValue($target);
+                if(is_callable($value)){
+                    $fn = $value;
+                    if( $thisArg != null && $thisArg !== $target ){
+                        $ref = new \ReflectionFunction($value);
+                        $fn = \Closure::bind($ref->getClosure(), $thisArg); 
+                    }
+                    return call_user_func_array($fn, $args);
+                }else{
+                    throw new \Error( $name." property is not callable");
+                }
+            }else if( $type===3 ){
                 if( $thisArg != null && $thisArg !== $target ){
                     $fn = \Closure::bind( $method->getClosure($thisArg), $thisArg );
                     return call_user_func_array($fn, $args);

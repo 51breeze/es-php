@@ -68,6 +68,8 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator<an
     *  property const age
     */
     private const age:int=40;
+
+    private var fn = null;
     
     /**
     * a constructor method
@@ -77,9 +79,15 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator<an
         // super.setType('1');
         // this.target;
         // new Start();
+        this.fn = (val?)=> val ?? 1;
     }
 
     testBase(){
+
+         let test:any = (val)=>2*val;
+         this.assertEquals(1, this.fn() );
+         this.assertEquals(this.bbss, this.fn(this.bbss) );
+         this.assertEquals(4, test(2) );
 
         this.assertEquals("uuName",IndexTest.getClassObject().uuName );
         this.assertEquals(40,this.age );
