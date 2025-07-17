@@ -38,9 +38,10 @@ var __publicField = (obj, key, value) => {
 };
 
 // node_modules/@easescript/transform/lib/core/Node.js
-var Node, Node_default;
+var import_Utils, Node, Node_default;
 var init_Node = __esm({
   "node_modules/@easescript/transform/lib/core/Node.js"() {
+    import_Utils = __toESM(require("easescript/lib/core/Utils"));
     Node = class {
       static is(value) {
         return value ? value instanceof Node : false;
@@ -50,8 +51,8 @@ var init_Node = __esm({
       }
       constructor(type, stack = null) {
         this.type = type;
-        if (stack && stack.node && stack.node.loc) {
-          this.loc = stack.node.loc;
+        if (import_Utils.default.isStack(stack)) {
+          this.loc = stack.getLocation();
         }
       }
     };
@@ -63,33 +64,44 @@ var init_Node = __esm({
 function createCache() {
   const records2 = /* @__PURE__ */ new Map();
   function set(key, name, value) {
-    let dataset = records2.get(key);
-    if (!dataset) {
-      records2.set(key, dataset = /* @__PURE__ */ new Map());
+    let dataset2 = records2.get(key);
+    if (!dataset2) {
+      records2.set(key, dataset2 = /* @__PURE__ */ new Map());
     }
-    dataset.set(name, value);
+    dataset2.set(name, value);
     return value;
   }
   function get(key, name) {
-    let dataset = records2.get(key);
-    return dataset ? dataset.get(name) : null;
+    let dataset2 = records2.get(key);
+    return dataset2 ? dataset2.get(name) : null;
   }
   function has(key, name) {
-    let dataset = records2.get(key);
-    return dataset ? dataset.has(name) : false;
+    let dataset2 = records2.get(key);
+    return dataset2 ? dataset2.has(name) : false;
   }
   function del(key, name) {
-    let dataset = records2.get(key);
-    if (dataset) {
-      dataset.delete(name);
+    let dataset2 = records2.get(key);
+    if (dataset2) {
+      dataset2.delete(name);
       return true;
     }
     return false;
   }
   function clear(key) {
-    let dataset = records2.get(key);
-    if (dataset) {
-      dataset.clear(key);
+    if (import_Utils2.default.isCompilation(key)) {
+      key.modules.forEach((module2) => {
+        records2.delete(module2);
+      });
+      records2.forEach((v, stack) => {
+        if (stack && stack.compilation === key) {
+          records2.delete(stack);
+        }
+      });
+    }
+    let dataset2 = records2.get(key);
+    records2.delete(key);
+    if (dataset2) {
+      dataset2.clear(key);
       return true;
     }
     return false;
@@ -103,7 +115,8 @@ function createCache() {
     has,
     del,
     clear,
-    clearAll
+    clearAll,
+    records: records2
   };
 }
 function getCacheManager(scope = null) {
@@ -116,9 +129,10 @@ function getCacheManager(scope = null) {
   }
   return createCache();
 }
-var records;
+var import_Utils2, records;
 var init_Cache = __esm({
   "node_modules/@easescript/transform/lib/core/Cache.js"() {
+    import_Utils2 = __toESM(require("easescript/lib/core/Utils"));
     records = /* @__PURE__ */ new Map();
   }
 });
@@ -299,9 +313,9 @@ var require_main = __commonJS({
       let possibleVaultPath = null;
       if (options && options.path && options.path.length > 0) {
         if (Array.isArray(options.path)) {
-          for (const filepath2 of options.path) {
-            if (fs7.existsSync(filepath2)) {
-              possibleVaultPath = filepath2.endsWith(".vault") ? filepath2 : `${filepath2}.vault`;
+          for (const filepath of options.path) {
+            if (fs7.existsSync(filepath)) {
+              possibleVaultPath = filepath.endsWith(".vault") ? filepath : `${filepath}.vault`;
             }
           }
         } else {
@@ -345,8 +359,8 @@ var require_main = __commonJS({
           optionPaths = [_resolveHome(options.path)];
         } else {
           optionPaths = [];
-          for (const filepath2 of options.path) {
-            optionPaths.push(_resolveHome(filepath2));
+          for (const filepath of options.path) {
+            optionPaths.push(_resolveHome(filepath));
           }
         }
       }
@@ -529,12 +543,64 @@ var require_main2 = __commonJS({
   }
 });
 
+// node_modules/@easescript/transform/lib/core/DependFile.js
+var import_Utils3, dataset, DependFile, DependFile_default;
+var init_DependFile = __esm({
+  "node_modules/@easescript/transform/lib/core/DependFile.js"() {
+    import_Utils3 = __toESM(require("easescript/lib/core/Utils"));
+    dataset = /* @__PURE__ */ new Map();
+    DependFile = class {
+      static create(dir, files = []) {
+        dir = import_Utils3.default.normalizePath(dir);
+        let key = String(dir).toLowerCase();
+        let instance = dataset.get(key);
+        if (!instance) {
+          instance = new DependFile(dir);
+          dataset.set(key, instance);
+        }
+        instance.addFiles(files);
+        return instance;
+      }
+      #dir = null;
+      #files = null;
+      #disabled = false;
+      constructor(dir) {
+        this.#dir = dir;
+      }
+      get dir() {
+        return this.#dir;
+      }
+      get files() {
+        return [...this.#files || []];
+      }
+      get disabled() {
+        return this.#disabled;
+      }
+      setDisabled() {
+        this.#disabled = true;
+      }
+      addFiles(files) {
+        if (files) {
+          if (!Array.isArray(files)) {
+            files = [files];
+          }
+          const dataset2 = this.#files || (this.#files = /* @__PURE__ */ new Set());
+          files.forEach((file) => {
+            dataset2.add(import_Utils3.default.normalizePath(file));
+          });
+        }
+      }
+    };
+    DependFile_default = DependFile;
+  }
+});
+
 // node_modules/@easescript/transform/lib/core/Common.js
 function beginNumericLiteral(value) {
   return beginNumericRE.test(value);
 }
 function isRouteAnnotation(annotation) {
-  if (import_Utils.default.isStack(annotation) && annotation.isAnnotationDeclaration) {
+  if (import_Utils4.default.isStack(annotation) && annotation.isAnnotationDeclaration) {
     return allRouteMethods.includes(annotation.getLowerCaseName());
   }
   return false;
@@ -687,7 +753,7 @@ function parseReadfileAnnotation(ctx, stack) {
   let suffix = _suffix || [...extensions, ".json", ".env", ".js", ".css", ".scss", ".less"];
   const checkSuffix = (file) => {
     if (suffixPattern) {
-      return suffixPattern.test(filepath);
+      return suffixPattern.test(file);
     }
     if (suffix === "*")
       return true;
@@ -702,7 +768,7 @@ function parseReadfileAnnotation(ctx, stack) {
     return [];
   };
   let files = stack.compiler.resolveFiles(dir).filter(checkSuffix).map((file) => {
-    file = import_Utils.default.normalizePath(file);
+    file = import_Utils4.default.normalizePath(file);
     if (extractDir) {
       return [...getFileDirs(file), file];
     }
@@ -766,7 +832,7 @@ function parseHttpAnnotation(ctx, stack) {
   if (moduleClass) {
     if (moduleClass.stack && moduleClass.stack.isIdentifier) {
       let desc2 = moduleClass.stack.descriptor();
-      if (import_Utils.default.isModule(desc2)) {
+      if (import_Utils4.default.isModule(desc2)) {
         providerModule = desc2;
       }
     }
@@ -778,7 +844,7 @@ function parseHttpAnnotation(ctx, stack) {
     stack.error(10105, moduleClass.value);
   } else {
     const member = actionArg ? providerModule.getMember(actionArg.value) : null;
-    if (!member || !import_Utils.default.isModifierPublic(member) || !(member.isMethodDefinition && !(member.isMethodGetterDefinition || member.isMethodSetterDefinition))) {
+    if (!member || !import_Utils4.default.isModifierPublic(member) || !(member.isMethodDefinition && !(member.isMethodGetterDefinition || member.isMethodSetterDefinition))) {
       (actionArg ? actionArg.stack : stack).error(10106, `${moduleClass.value}::${actionArg && actionArg.value}`);
     } else {
       return {
@@ -805,7 +871,7 @@ function parseRouterAnnotation(ctx, stack) {
   if (moduleClass) {
     if (moduleClass.stack && moduleClass.stack.isIdentifier) {
       let desc2 = moduleClass.stack.descriptor();
-      if (import_Utils.default.isModule(desc2)) {
+      if (import_Utils4.default.isModule(desc2)) {
         module2 = desc2;
       }
     }
@@ -816,7 +882,7 @@ function parseRouterAnnotation(ctx, stack) {
   if (!module2) {
     stack.warn(10105, moduleClass.value);
   } else {
-    if (import_Utils.default.isModule(module2) && module2.isClass && stack.isModuleForWebComponent(module2)) {
+    if (import_Utils4.default.isModule(module2) && module2.isClass && stack.isModuleForWebComponent(module2)) {
       return {
         isWebComponent: true,
         args: {
@@ -828,7 +894,7 @@ function parseRouterAnnotation(ctx, stack) {
       };
     } else {
       let method = actionArg ? module2.getMember(actionArg.value) : null;
-      if (!method || !import_Utils.default.isModifierPublic(method) || !(method.isMethodDefinition && !(method.isMethodGetterDefinition || method.isMethodSetterDefinition))) {
+      if (!method || !import_Utils4.default.isModifierPublic(method) || !(method.isMethodDefinition && !(method.isMethodGetterDefinition || method.isMethodSetterDefinition))) {
         (actionArg ? actionArg.stack : stack).error(10106, `${moduleClass.value}::${actionArg && actionArg.value}`);
       } else {
         return {
@@ -924,7 +990,7 @@ function createRouteInstance(ctx, module2, owner, path11, method, meta = null, p
   let action = null;
   let options = ctx.options || emptyObject;
   if (!isWebComponent && owner && owner.isMethodDefinition) {
-    if (!import_Utils.default.isModifierPublic(owner)) {
+    if (!import_Utils4.default.isModifierPublic(owner)) {
       owner.error(10112);
     }
     action = owner.value();
@@ -1077,7 +1143,7 @@ function parseAliasAnnotation(annotation, pluginVersion, optionVersions = {}) {
   return null;
 }
 function getModuleAnnotations(module2, allows = [], inheritFlag = true) {
-  if (!import_Utils.default.isModule(module2) || !allows.length)
+  if (!import_Utils4.default.isModule(module2) || !allows.length)
     return emptyArray;
   let key = `getModuleAnnotations:${String(inheritFlag)}:${allows.join("-")}`;
   let old = Cache.get(module2, key);
@@ -1093,7 +1159,7 @@ function getModuleAnnotations(module2, allows = [], inheritFlag = true) {
   return result;
 }
 function getMethodAnnotations(methodStack, allows = [], inheritFlag = true) {
-  if (!import_Utils.default.isStack(methodStack) || !(methodStack.isMethodDefinition || methodStack.isPropertyDefinition))
+  if (!import_Utils4.default.isStack(methodStack) || !(methodStack.isMethodDefinition || methodStack.isPropertyDefinition))
     return emptyArray;
   let result = [];
   let key = `getMethodAnnotations:${String(inheritFlag)}:${allows.join("-")}`;
@@ -1109,7 +1175,7 @@ function getMethodAnnotations(methodStack, allows = [], inheritFlag = true) {
   return result;
 }
 function getSourceAnnotations(stack) {
-  if (!import_Utils.default.isStack(stack))
+  if (!import_Utils4.default.isStack(stack))
     return emptyArray;
   if (!stack.module)
     return emptyArray;
@@ -1301,7 +1367,7 @@ function compareVersion(left, right, operator2 = "elt") {
   return operator2 === "eq" || operator2 === "egt" || operator2 === "elt";
 }
 function getModuleRoutes(ctx, module2, allows = ["router"]) {
-  if (!import_Utils.default.isModule(module2) || !module2.isClass)
+  if (!import_Utils4.default.isModule(module2) || !module2.isClass)
     return [];
   const annotations = getModuleAnnotations(module2, allows);
   if (annotations && annotations.length) {
@@ -1463,7 +1529,7 @@ function parseImportDeclaration(ctx, stack, context = null, graph = null) {
     const classModule = stack.description();
     if (classModule && classModule.isModule && ctx.isActiveModule(classModule) && ctx.isNeedBuild(classModule)) {
       let local = stack.alias ? stack.alias.value() : classModule.id;
-      let source = ctx.getModuleImportSource(classModule, import_Utils.default.isModule(context) ? context : stack.compilation);
+      let source = ctx.getModuleImportSource(classModule, import_Utils4.default.isModule(context) ? context : stack.compilation);
       importSource = ctx.addImport(source, local, null, stack.source);
       importSource.setSourceTarget(classModule);
     }
@@ -1629,7 +1695,7 @@ function parseRouteCompletePath(ctx, route, paramArg = null) {
   }
   let argumentNode = null;
   if (paramArg) {
-    if (import_Utils.default.isStack(paramArg.stack)) {
+    if (import_Utils4.default.isStack(paramArg.stack)) {
       argumentNode = ctx.createToken(paramArg.assigned ? paramArg.stack.right : paramArg.stack);
     } else if (Node_default.is(paramArg)) {
       argumentNode = paramArg;
@@ -1729,6 +1795,9 @@ function createReadfileAnnotationNode(ctx, stack) {
     source = ctx.getSourceFileMappingFolder(source) || source;
     ctx.addImport(source, local);
   };
+  if (result.dir) {
+    ctx.addDependOnFile(DependFile_default.create(result.dir, result.files));
+  }
   const fileMap = {};
   const localeCxt = result.dir.toLowerCase();
   const getParentFile = (pid) => {
@@ -1740,16 +1809,16 @@ function createReadfileAnnotationNode(ctx, stack) {
     }
     return null;
   };
-  const dataset = [];
+  const dataset2 = [];
   const namedMap = /* @__PURE__ */ new Set();
   const only = result.only;
   result.files.forEach((file) => {
     const pid = import_path.default.dirname(file).toLowerCase();
     const named = import_path.default.basename(file, import_path.default.extname(file));
     const id = (pid + "/" + named).toLowerCase();
-    const filepath2 = result.relative ? ctx.compiler.getRelativeWorkspacePath(file) : file;
+    const filepath = result.relative ? ctx.compiler.getRelativeWorkspacePath(file) : file;
     let item = {
-      path: filepath2,
+      path: filepath,
       isFile: import_fs.default.statSync(file).isFile()
     };
     if (item.isFile && result.load) {
@@ -1769,7 +1838,7 @@ function createReadfileAnnotationNode(ctx, stack) {
       }
       item.content = data;
     } else if (result.source) {
-      item.content = JSON.stringify(import_fs.default.readFileSync(file));
+      item.content = JSON.stringify(import_fs.default.readFileSync(file).toString("utf-8"));
     }
     const parent = getParentFile(pid);
     if (parent) {
@@ -1777,7 +1846,7 @@ function createReadfileAnnotationNode(ctx, stack) {
       children.push(item);
     } else {
       fileMap[id + import_path.default.extname(file)] = item;
-      dataset.push(item);
+      dataset2.push(item);
     }
   });
   const make = (list) => {
@@ -1803,7 +1872,7 @@ function createReadfileAnnotationNode(ctx, stack) {
       return ctx.createObjectExpression(properties2);
     });
   };
-  return ctx.createArrayExpression(make(dataset));
+  return ctx.createArrayExpression(make(dataset2));
 }
 function createIdentNode(ctx, stack) {
   if (!stack)
@@ -1820,9 +1889,14 @@ function toCamelCase(name) {
 function toFirstUpperCase(str) {
   return str.substring(0, 1).toUpperCase() + str.substring(1);
 }
-function createCJSImports(ctx, importManage) {
+function createCJSImports(ctx, importManage, cache2 = null) {
   let imports = [];
   importManage.getAllImportSource().forEach((importSource) => {
+    if (cache2) {
+      if (cache2.has(importSource))
+        return;
+      cache2.add(importSource);
+    }
     if (importSource.isExportSource)
       return;
     const properties2 = [];
@@ -1835,8 +1909,12 @@ function createCJSImports(ctx, importManage) {
           ]
         );
         if (spec.type === "default") {
-          const module2 = importSource.getSourceTarget();
-          if (import_Utils.default.isCompilation(module2)) {
+          const owner = importSource.getSourceTarget();
+          let need = false;
+          if (import_Utils4.default.isModule(owner) && owner.compilation?.modules?.size > 1 && !owner.compilation.isDescriptorDocument()) {
+            need = true;
+          }
+          if (need || import_Utils4.default.isCompilation(owner)) {
             requireNode = ctx.createCallExpression(
               createStaticReferenceNode(ctx, null, "Class", "getExportDefault"),
               [
@@ -1912,6 +1990,22 @@ function createESMImports(ctx, importManage) {
       }
     });
     if (importSource.specifiers.length > 0) {
+      let defaultSpecifiers = null;
+      if (importSource.specifiers.length > 1) {
+        defaultSpecifiers = specifiers.filter((node) => node.type === "ImportDefaultSpecifier");
+        while (defaultSpecifiers.length > 1) {
+          const node = defaultSpecifiers.shift();
+          const index = specifiers.indexOf(node);
+          specifiers.splice(index, 1);
+          imports.push(
+            ctx.createImportDeclaration(
+              importSource.sourceId,
+              [node],
+              importSource.stack
+            )
+          );
+        }
+      }
       imports.push(
         ctx.createImportDeclaration(
           importSource.sourceId,
@@ -2005,6 +2099,13 @@ function createCJSExports(ctx, exportManage, graph) {
               spec.stack
             )
           );
+        } else {
+          properties2.push(
+            ctx.createProperty(
+              ctx.createIdentifier(spec.exported),
+              spec.local
+            )
+          );
         }
       } else if (spec.type === "specifier") {
         if (sourceId) {
@@ -2032,11 +2133,11 @@ function createCJSExports(ctx, exportManage, graph) {
       }
     });
     if (specifiers.length > 0) {
-      let dataset = importSpecifiers.get(sourceId);
-      if (!dataset) {
-        importSpecifiers.set(sourceId, dataset = []);
+      let dataset2 = importSpecifiers.get(sourceId);
+      if (!dataset2) {
+        importSpecifiers.set(sourceId, dataset2 = []);
       }
-      dataset.push(...specifiers);
+      dataset2.push(...specifiers);
     }
   });
   importSpecifiers.forEach((specifiers, sourceId) => {
@@ -2127,6 +2228,7 @@ function createESMExports(ctx, exportManage, graph) {
   let imports = [];
   let declares = [];
   let exportSets = new Set(exportManage.getAllExportSource());
+  let nameds = [];
   exportSets.forEach((exportSource) => {
     let importSource = exportSource.importSource;
     let sourceId = importSource ? importSource.sourceId : null;
@@ -2142,9 +2244,7 @@ function createESMExports(ctx, exportManage, graph) {
           ctx.createExportDefaultDeclaration(spec.local, spec.stack)
         );
       } else if (spec.type === "named" && !sourceId) {
-        exports.push(
-          ctx.createExportNamedDeclaration(spec.local, null, [], spec.stack)
-        );
+        nameds.push(spec);
       } else if (spec.type === "specifier") {
         specifiers.push(
           ctx.createExportSpecifier(spec.local, spec.exported, spec.stack)
@@ -2152,16 +2252,36 @@ function createESMExports(ctx, exportManage, graph) {
       }
     });
     if (specifiers.length > 0) {
-      let dataset = importSpecifiers.get(sourceId);
-      if (!dataset) {
-        importSpecifiers.set(sourceId, dataset = []);
+      let dataset2 = importSpecifiers.get(sourceId);
+      if (!dataset2) {
+        importSpecifiers.set(sourceId, dataset2 = []);
       }
-      dataset.push(...specifiers);
+      dataset2.push(...specifiers);
     }
   });
   importSpecifiers.forEach((specifiers, sourceId) => {
     exports.push(ctx.createExportNamedDeclaration(null, sourceId, specifiers));
   });
+  if (nameds.length > 0) {
+    exports.push(
+      ctx.createExportNamedDeclaration(
+        null,
+        null,
+        nameds.map((spec) => {
+          if (spec.local.type === "VariableDeclaration") {
+            declares.push(spec.local);
+            return spec.local.declarations.map((decl) => {
+              return ctx.createExportSpecifier(decl.id, decl.id, decl.stack);
+            });
+          } else if (spec.local.type === "FunctionDeclaration" && spec.local.key) {
+            declares.push(spec.local);
+            return [ctx.createExportSpecifier(spec.local.key, spec.local.key, spec.stack)];
+          }
+          return [ctx.createExportSpecifier(spec.local, spec.exported, spec.stack)];
+        }).flat()
+      )
+    );
+  }
   return { imports, exports, declares };
 }
 function checkMatchStringOfRule(rule, source, ...args) {
@@ -2230,7 +2350,7 @@ function getMethodOrPropertyHook(ctx, stack) {
 function createJSXAttrHookNode(ctx, stack, desc2) {
   if (!(stack && stack.isMemberProperty && stack.value && desc2))
     return null;
-  const hookAnnot = getMethodOrPropertyHook(desc2);
+  const hookAnnot = getMethodOrPropertyHook(ctx, desc2);
   if (hookAnnot) {
     let [type, annotation] = hookAnnot;
     let lower = type && String(type).toLowerCase();
@@ -2247,6 +2367,24 @@ function createJSXAttrHookNode(ctx, stack, desc2) {
             let route = getModuleRoutes(ctx, value, ["router"])[0];
             if (route) {
               return createRouteCompletePathNode(ctx, route, null, stack);
+            }
+          }
+        }
+        return null;
+      } else if (lower === "compiling:resolve-import-assets") {
+        if (stack.value && stack.value.isLiteral) {
+          const value = String(stack.value.value()).trim();
+          if (value) {
+            if (value.charCodeAt(0) === 64) {
+              return ctx.createIdentifier(value.substring(1));
+            } else if (/\.(\w+)($|\?)/.test(value)) {
+              const file = stack.compiler.resolveManager.resolveFile(value, stack.compilation.file);
+              if (file) {
+                const local = "_" + import_path.default.basename(file, import_path.default.extname(file)) + createUniqueHashId(file, 12);
+                const source = ctx.getSourceFileMappingFolder(file) || file;
+                ctx.addImport(source, local);
+                return ctx.createIdentifier(local);
+              }
             }
           }
         }
@@ -2269,6 +2407,8 @@ function createJSXAttrHookNode(ctx, stack, desc2) {
         node.hookAnnotation = annotation;
         return node;
       }
+    } else if (Node_default.is(createdNode)) {
+      return createdNode;
     }
   }
   return null;
@@ -2297,29 +2437,6 @@ function createCommentsNode(ctx, stack) {
   if (stack.module && (enable || manifests.comments)) {
     const result = stack.parseComments("Block");
     if (result) {
-      if (manifests.comments && result.meta) {
-        let kind = "class";
-        if (stack.isMethodSetterDefinition) {
-          kind = "setter";
-        } else if (stack.isMethodGetterDefinition) {
-          kind = "getter";
-        } else if (stack.isMethodDefinition) {
-          kind = "method";
-        } else if (stack.isPropertyDefinition) {
-          kind = "property";
-        }
-        const vm = ctx.getVModule("manifest.Comments");
-        if (vm) {
-          let id = stack.module.getName();
-          ctx.addDepend(vm);
-          let key = stack.value() + ":" + kind;
-          if (kind === "class")
-            key = "top";
-          vm.append(ctx, {
-            [id]: { [key]: result.meta }
-          });
-        }
-      }
       if (enable && result.comments.length > 0) {
         return ctx.createChunkExpression(["/**", ...result.comments, "**/"].join("\n"), true);
       }
@@ -2361,18 +2478,19 @@ async function callAsyncSequence(items, asyncMethod) {
   };
   await callAsync();
 }
-var import_fs, import_path, import_Utils, import_Namespace, import_crypto, import_dotenv, import_dotenv_expand, Cache, emptyObject, emptyArray, allRouteMethods, annotationIndexers, compareOperatorMaps, compareOperators, beginNumericRE, pluralArgumentNames, uniqueHashCache, uniqueHashResult;
+var import_fs, import_path, import_Utils4, import_Namespace, import_crypto, import_dotenv, import_dotenv_expand, Cache, emptyObject, emptyArray, allRouteMethods, annotationIndexers, compareOperatorMaps, compareOperators, beginNumericRE, pluralArgumentNames, uniqueHashCache, uniqueHashResult;
 var init_Common = __esm({
   "node_modules/@easescript/transform/lib/core/Common.js"() {
     import_fs = __toESM(require("fs"));
     import_path = __toESM(require("path"));
-    import_Utils = __toESM(require("easescript/lib/core/Utils"));
+    import_Utils4 = __toESM(require("easescript/lib/core/Utils"));
     init_Cache();
     import_Namespace = __toESM(require("easescript/lib/core/Namespace"));
     import_crypto = require("crypto");
     import_dotenv = __toESM(require_main());
     import_dotenv_expand = __toESM(require_main2());
     init_Node();
+    init_DependFile();
     Cache = getCacheManager("common");
     emptyObject = {};
     emptyArray = [];
@@ -2389,7 +2507,8 @@ var init_Common = __esm({
       alias: ["name", "version"],
       hook: ["type", "version"],
       url: ["source"],
-      embed: ["path"]
+      embed: ["path"],
+      bindding: ["event", "alias"]
     };
     compareOperatorMaps = {
       ">=": "egt",
@@ -2474,12 +2593,12 @@ function getAssetsManager(AssetFactory) {
     getAssets
   };
 }
-var import_path3, import_fs3, import_Utils6, Asset;
+var import_path3, import_fs3, import_Utils9, Asset;
 var init_Asset = __esm({
   "node_modules/@easescript/transform/lib/core/Asset.js"() {
     import_path3 = __toESM(require("path"));
     import_fs3 = __toESM(require("fs"));
-    import_Utils6 = __toESM(require("easescript/lib/core/Utils"));
+    import_Utils9 = __toESM(require("easescript/lib/core/Utils"));
     Asset = class {
       #code = "";
       #type = "";
@@ -2602,17 +2721,17 @@ var init_Asset = __esm({
           filename = import_path3.default.basename(filename, import_path3.default.extname(filename)) + ext;
         }
         if (folder) {
-          this.#outfile = import_Utils6.default.normalizePath(import_path3.default.join(outDir, folder, filename));
+          this.#outfile = import_Utils9.default.normalizePath(import_path3.default.join(outDir, folder, filename));
         } else {
           let relativeDir = ctx.plugin.complier.getRelativeWorkspace(sourceFile);
           if (relativeDir) {
             relativeDir = import_path3.default.dirname(relativeDir);
           }
           if (relativeDir) {
-            this.#outfile = import_Utils6.default.normalizePath(import_path3.default.join(outDir, folder || publicDir, relativeDir, filename));
+            this.#outfile = import_Utils9.default.normalizePath(import_path3.default.join(outDir, folder || publicDir, relativeDir, filename));
           } else {
             let _filename = ctx.genUniFileName(file) || filename;
-            this.#outfile = import_Utils6.default.normalizePath(import_path3.default.join(outDir, folder || publicDir, _filename));
+            this.#outfile = import_Utils9.default.normalizePath(import_path3.default.join(outDir, folder || publicDir, _filename));
           }
         }
       }
@@ -2636,10 +2755,10 @@ var init_Asset = __esm({
 });
 
 // lib/core/AddressVariable.js
-var import_Utils22, _AddressVariable, AddressVariable, AddressVariable_default;
+var import_Utils29, _AddressVariable, AddressVariable, AddressVariable_default;
 var init_AddressVariable = __esm({
   "lib/core/AddressVariable.js"() {
-    import_Utils22 = __toESM(require("easescript/lib/core/Utils"));
+    import_Utils29 = __toESM(require("easescript/lib/core/Utils"));
     _AddressVariable = class {
       constructor(target, ctx) {
         this.dataset = /* @__PURE__ */ new Map();
@@ -2671,7 +2790,7 @@ var init_AddressVariable = __esm({
       createName(stack, description) {
         if (!description)
           description = stack;
-        if (!import_Utils22.default.isStack(description))
+        if (!import_Utils29.default.isStack(description))
           return null;
         if (!this.refs.has(description)) {
           const name = this.ctx.getLocalRefName(stack, _AddressVariable.REFS_NAME, description);
@@ -2683,7 +2802,7 @@ var init_AddressVariable = __esm({
       createIndexName(stack, description = null) {
         if (!description)
           description = stack;
-        if (!import_Utils22.default.isStack(description))
+        if (!import_Utils29.default.isStack(description))
           return null;
         if (this.indexName === null) {
           const name = this.ctx.getLocalRefName(stack, _AddressVariable.REFS_INDEX, description);
@@ -2734,11 +2853,11 @@ var init_AddressVariable = __esm({
 });
 
 // lib/core/Asset.js
-var import_Utils23, import_path7, Asset2;
+var import_Utils30, import_path7, Asset2;
 var init_Asset2 = __esm({
   "lib/core/Asset.js"() {
     init_Asset();
-    import_Utils23 = __toESM(require("easescript/lib/core/Utils"));
+    import_Utils30 = __toESM(require("easescript/lib/core/Utils"));
     import_path7 = __toESM(require("path"));
     init_Common2();
     Asset2 = class extends Asset {
@@ -2760,16 +2879,16 @@ var init_Asset2 = __esm({
         }
         if (folder) {
           if (import_path7.default.isAbsolute(folder)) {
-            this.outfile = import_Utils23.default.normalizePath(import_path7.default.join(folder, filename));
+            this.outfile = import_Utils30.default.normalizePath(import_path7.default.join(folder, filename));
           } else {
-            this.outfile = import_Utils23.default.normalizePath(import_path7.default.join(outDir, folder, filename));
+            this.outfile = import_Utils30.default.normalizePath(import_path7.default.join(outDir, folder, filename));
           }
         } else {
           let relativeDir = ctx.plugin.complier.getRelativeWorkspace(sourceFile);
           if (relativeDir) {
             relativeDir = import_path7.default.dirname(relativeDir);
           }
-          this.outfile = import_Utils23.default.normalizePath(import_path7.default.join(outDir, publicDir, relativeDir, filename));
+          this.outfile = import_Utils30.default.normalizePath(import_path7.default.join(outDir, publicDir, relativeDir, filename));
         }
         const vm = ctx.getVModule("manifest.Assets");
         vm.append(ctx, createUniqueHashId(file), this.outfile);
@@ -2794,7 +2913,7 @@ function createStaticReferenceNode2(ctx, stack, className, method) {
   ]);
 }
 function createModuleReferenceNode2(ctx, stack, className) {
-  let gloablModule = import_Namespace9.default.globals.get(className);
+  let gloablModule = import_Namespace10.default.globals.get(className);
   if (gloablModule) {
     let context = stack ? stack.module || stack.compilation : null;
     ctx.addDepend(gloablModule, context);
@@ -2806,10 +2925,10 @@ function createModuleReferenceNode2(ctx, stack, className) {
   }
 }
 function createClassRefsNode(ctx, module2, stack = null) {
-  if (!import_Utils24.default.isModule(module2))
+  if (!import_Utils31.default.isModule(module2))
     return null;
   let name = null;
-  if (import_Utils24.default.isStack(stack)) {
+  if (import_Utils31.default.isStack(stack)) {
     if (stack.module === module2) {
       name = module2.id;
     } else {
@@ -2845,7 +2964,7 @@ function createArrayAddressRefsNode(ctx, stack, desc2, name, nameNode) {
   if (desc2.isDeclarator || desc2.isProperty && (desc2.parentStack.isObjectPattern || desc2.parentStack.isObjectExpression)) {
     ctx.addVariableRefs(stack, desc2);
   }
-  let assignAddress = import_Utils24.default.isStack(desc2) && desc2.assignItems && ctx.getAssignAddressRef(desc2);
+  let assignAddress = import_Utils31.default.isStack(desc2) && desc2.assignItems && ctx.getAssignAddressRef(desc2);
   if (assignAddress) {
     let name2 = assignAddress.getName(desc2);
     let rd = assignAddress.createIndexName(stack, desc2);
@@ -2942,7 +3061,7 @@ function createCommentsNode2(ctx, stack, node) {
           kind = "getter";
         } else if (stack.isMethodDefinition) {
           kind = "method";
-        } else if (stack.isPropertyDefinition) {
+        } else if (stack.isPropertyDefinition || stack.isStructTableColumnDefinition) {
           kind = "property";
         }
         const vm = ctx.getVModule("manifest.Comments");
@@ -2950,7 +3069,7 @@ function createCommentsNode2(ctx, stack, node) {
         if (id.charCodeAt(0) === 92) {
           id = id.substring(1);
         }
-        if (stack.isMethodDefinition || stack.isPropertyDefinition) {
+        if (stack.isMethodDefinition || stack.isPropertyDefinition || stack.isStructTableColumnDefinition) {
           let key = node ? node.key.value : stack.value();
           if (stack.static) {
             kind += ":static";
@@ -3034,7 +3153,7 @@ function addAnnotationManifest(ctx, stack, node) {
           if (valueStack.isIdentifier || valueStack.isMemberExpression) {
             let desc2 = valueStack.description();
             if (desc2) {
-              if (import_Utils24.default.isTypeModule(desc2)) {
+              if (import_Utils31.default.isTypeModule(desc2)) {
                 value = ctx.getModuleReferenceName(desc2, stack.module);
               } else {
                 ctx.error(`[ES-PHP] Parse annotation param error. on "${keyStack.value()}"`);
@@ -3104,7 +3223,7 @@ function createESMImports2(ctx, importManage) {
     if (isAsset(target)) {
       return;
     }
-    let isExpre = import_Utils24.default.isCompilation(target);
+    let isExpre = import_Utils31.default.isCompilation(target);
     let isDefault = false;
     if (isExpre) {
       let targetGraph = ctx.graphs.getBuildGraph(target);
@@ -3161,7 +3280,7 @@ function createESMExports2(ctx, exportManage, graph) {
     graph.addExport(exportSource);
     if (sourceId) {
       let target = importSource.getSourceTarget();
-      let isExpre = import_Utils24.default.isCompilation(target);
+      let isExpre = import_Utils31.default.isCompilation(target);
       refs = import_path8.default.basename(ctx.genUniFileName(sourceId)).replaceAll(".", "_");
       refs = ctx.getGlobalRefName(null, "_" + refs);
       let importNode = ctx.createImportDeclaration(
@@ -3260,11 +3379,11 @@ function createESMExports2(ctx, exportManage, graph) {
       }
     });
     if (specifiers.length > 0) {
-      let dataset = importSpecifiers.get(sourceId);
-      if (!dataset) {
-        importSpecifiers.set(sourceId, dataset = []);
+      let dataset2 = importSpecifiers.get(sourceId);
+      if (!dataset2) {
+        importSpecifiers.set(sourceId, dataset2 = []);
       }
-      dataset.push(...specifiers);
+      dataset2.push(...specifiers);
     }
   });
   importSpecifiers.forEach((specifiers) => {
@@ -3429,16 +3548,16 @@ function createReadfileAnnotationNode2(ctx, annot) {
     }
     return null;
   };
-  const dataset = [];
+  const dataset2 = [];
   const namedMap = /* @__PURE__ */ new Set();
   const only = result.only;
   result.files.forEach((file) => {
     const pid = import_path8.default.dirname(file).toLowerCase();
     const named = import_path8.default.basename(file, import_path8.default.extname(file));
     const id = (pid + "/" + named).toLowerCase();
-    const filepath2 = result.relative ? ctx.compiler.getRelativeWorkspacePath(file) : file;
+    const filepath = result.relative ? ctx.compiler.getRelativeWorkspacePath(file) : file;
     let item = {
-      path: filepath2,
+      path: filepath,
       isFile: import_fs6.default.statSync(file).isFile()
     };
     if (result.source) {
@@ -3467,7 +3586,7 @@ function createReadfileAnnotationNode2(ctx, annot) {
       children.push(item);
     } else {
       fileMap[id + import_path8.default.extname(file)] = item;
-      dataset.push(item);
+      dataset2.push(item);
     }
   });
   const make = (list) => {
@@ -3497,7 +3616,7 @@ function createReadfileAnnotationNode2(ctx, annot) {
       return ctx.createObjectExpression(properties2);
     });
   };
-  return ctx.createArrayExpression(make(dataset));
+  return ctx.createArrayExpression(make(dataset2));
 }
 function createMainAnnotationNode2(ctx, stack) {
   if (!stack || !stack.isMethodDefinition)
@@ -3553,7 +3672,7 @@ function canUseNullCoalescingOperator(stack) {
       return false;
     }
   }
-  if (parentStack.isUpdateExpression)
+  if (parentStack.isUpdateExpression || parentStack.isUnaryExpression)
     return false;
   let optional = !!(parentStack.isAssignmentExpression || parentStack.isChainExpression);
   if (parentStack.isCallExpression || parentStack.isNewExpression) {
@@ -3578,13 +3697,13 @@ function insertTokenToBlock(ctx, stack, token) {
   );
   return node;
 }
-var import_path8, import_fs6, import_Namespace9, import_Utils24;
+var import_path8, import_fs6, import_Namespace10, import_Utils31;
 var init_Common2 = __esm({
   "lib/core/Common.js"() {
     import_path8 = __toESM(require("path"));
     import_fs6 = __toESM(require("fs"));
-    import_Namespace9 = __toESM(require("easescript/lib/core/Namespace"));
-    import_Utils24 = __toESM(require("easescript/lib/core/Utils"));
+    import_Namespace10 = __toESM(require("easescript/lib/core/Namespace"));
+    import_Utils31 = __toESM(require("easescript/lib/core/Utils"));
     init_Common();
     init_Asset2();
     init_AddressVariable();
@@ -3595,7 +3714,8 @@ var init_Common2 = __esm({
 // lib/core/Generator.js
 var require_Generator = __commonJS({
   "lib/core/Generator.js"(exports, module2) {
-    var Generator6 = class {
+    var import_source_map2 = __toESM(require("source-map"));
+    var Generator7 = class {
       #file = null;
       #context = null;
       #sourceMap = null;
@@ -3629,7 +3749,7 @@ var require_Generator = __commonJS({
       }
       createSourceMapGenerator() {
         let compilation = this.context.compilation;
-        let generator = new SourceMap.SourceMapGenerator();
+        let generator = new import_source_map2.default.SourceMapGenerator();
         if (compilation.source) {
           generator.setSourceContent(compilation.file, compilation.source);
         }
@@ -4592,7 +4712,7 @@ var require_Generator = __commonJS({
         return this.code;
       }
     };
-    module2.exports = Generator6;
+    module2.exports = Generator7;
   }
 });
 
@@ -4608,13 +4728,13 @@ function createCommonCalledNode(name, stack, ctx, object, args, called) {
     object ? [object].concat(args) : args
   );
 }
-var import_Namespace11, Object_default;
+var import_Namespace12, Object_default;
 var init_Object = __esm({
   "lib/transforms/Object.js"() {
-    import_Namespace11 = __toESM(require("easescript/lib/core/Namespace"));
+    import_Namespace12 = __toESM(require("easescript/lib/core/Namespace"));
     Object_default = {
       assign(stack, ctx, object, args, called = false, isStatic = false) {
-        const module2 = import_Namespace11.default.globals.get("Object");
+        const module2 = import_Namespace12.default.globals.get("Object");
         ctx.addDepend(module2);
         const name = ctx.getModuleNamespace(module2, "es_object_assign");
         if (!called)
@@ -4625,7 +4745,7 @@ var init_Object = __esm({
         );
       },
       keys(stack, ctx, object, args, called = false, isStatic = false) {
-        const module2 = import_Namespace11.default.globals.get("Object");
+        const module2 = import_Namespace12.default.globals.get("Object");
         ctx.addDepend(module2);
         const name = ctx.getModuleNamespace(module2, "es_object_keys");
         if (!called)
@@ -4636,7 +4756,7 @@ var init_Object = __esm({
         );
       },
       values(stack, ctx, object, args, called = false, isStatic = false) {
-        const module2 = import_Namespace11.default.globals.get("Object");
+        const module2 = import_Namespace12.default.globals.get("Object");
         ctx.addDepend(module2);
         const name = ctx.getModuleNamespace(module2, "es_object_values");
         if (!called)
@@ -4647,31 +4767,31 @@ var init_Object = __esm({
         );
       },
       propertyIsEnumerable(stack, ctx, object, args, called = false, isStatic = false) {
-        const module2 = import_Namespace11.default.globals.get("Object");
+        const module2 = import_Namespace12.default.globals.get("Object");
         ctx.addDepend(module2);
         const name = ctx.getModuleNamespace(module2, "es_object_property_is_enumerable");
         return createCommonCalledNode(name, stack, ctx, object, args, called);
       },
       hasOwnProperty(stack, ctx, object, args, called = false, isStatic = false) {
-        const module2 = import_Namespace11.default.globals.get("Object");
+        const module2 = import_Namespace12.default.globals.get("Object");
         ctx.addDepend(module2);
         const name = ctx.getModuleNamespace(module2, "es_object_has_own_property");
         return createCommonCalledNode(name, stack, ctx, object, args, called);
       },
       valueOf(stack, ctx, object, args, called = false, isStatic = false) {
-        const module2 = import_Namespace11.default.globals.get("Object");
+        const module2 = import_Namespace12.default.globals.get("Object");
         ctx.addDepend(module2);
         const name = ctx.getModuleNamespace(module2, "es_object_value_of");
         return createCommonCalledNode(name, stack, ctx, object, args, called);
       },
       toLocaleString(stack, ctx, object, args, called = false, isStatic = false) {
-        const module2 = import_Namespace11.default.globals.get("Object");
+        const module2 = import_Namespace12.default.globals.get("Object");
         ctx.addDepend(module2);
         const name = ctx.getModuleNamespace(module2, "es_object_to_string");
         return createCommonCalledNode(name, stack, ctx, object, args, called);
       },
       toString(stack, ctx, object, args, called = false, isStatic = false) {
-        const module2 = import_Namespace11.default.globals.get("Object");
+        const module2 = import_Namespace12.default.globals.get("Object");
         ctx.addDepend(module2);
         const name = ctx.getModuleNamespace(module2, "es_object_to_string");
         return createCommonCalledNode(name, stack, ctx, object, args, called);
@@ -4694,12 +4814,12 @@ function createCommonCalledNode4(name, stack, ctx, object, args, called = true) 
     [object].concat(args)
   );
 }
-var import_Namespace17, methods4, Number_default;
+var import_Namespace18, methods4, Number_default;
 var init_Number = __esm({
   "lib/transforms/Number.js"() {
     init_Object();
     init_Common2();
-    import_Namespace17 = __toESM(require("easescript/lib/core/Namespace"));
+    import_Namespace18 = __toESM(require("easescript/lib/core/Namespace"));
     methods4 = {
       MAX_VALUE(stack, ctx) {
         return ctx.createLiteral(`1.79E+308`, `1.79E+308`);
@@ -4721,7 +4841,7 @@ var init_Number = __esm({
       },
       isNaN(stack, ctx, object, args, called = false, isStatic = false) {
         if (!called) {
-          ctx.addDepend(import_Namespace17.default.globals.get("System"));
+          ctx.addDepend(import_Namespace18.default.globals.get("System"));
           ctx.createChunkExpression(`function($target){return System::isNaN($target);}`);
         }
         return ctx.createCallExpression(
@@ -4742,25 +4862,25 @@ var init_Number = __esm({
         return createCommonCalledNode4("intval", stack, ctx, object, args, called);
       },
       toFixed(stack, ctx, object, args, called = false, isStatic = false) {
-        const module2 = import_Namespace17.default.globals.get("Number");
+        const module2 = import_Namespace18.default.globals.get("Number");
         ctx.addDepend(module2);
         const name = ctx.getModuleNamespace(module2, "es_number_to_fixed");
         return createCommonCalledNode4(name, stack, ctx, object, args, called);
       },
       toExponential(stack, ctx, object, args, called = false, isStatic = false) {
-        const module2 = import_Namespace17.default.globals.get("Number");
+        const module2 = import_Namespace18.default.globals.get("Number");
         ctx.addDepend(module2);
         const name = ctx.getModuleNamespace(module2, "es_number_to_exponential");
         return createCommonCalledNode4(name, stack, ctx, object, args, called);
       },
       toPrecision(stack, ctx, object, args, called = false, isStatic = false) {
-        const module2 = import_Namespace17.default.globals.get("Number");
+        const module2 = import_Namespace18.default.globals.get("Number");
         ctx.addDepend(module2);
         const name = ctx.getModuleNamespace(module2, "es_number_to_precision");
         return createCommonCalledNode4(name, stack, ctx, object, args, called);
       },
       valueOf(stack, ctx, object, args, called = false, isStatic = false) {
-        const module2 = import_Namespace17.default.globals.get("Number");
+        const module2 = import_Namespace18.default.globals.get("Number");
         ctx.addDepend(module2);
         const name = ctx.getModuleNamespace(module2, "es_number_value_of");
         return createCommonCalledNode4(name, stack, ctx, object, args, called);
@@ -4796,7 +4916,7 @@ var import_Diagnostic = __toESM(require("easescript/lib/core/Diagnostic"));
 var import_path6 = __toESM(require("path"));
 
 // node_modules/@easescript/transform/lib/core/Builder.js
-var import_Utils20 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils27 = __toESM(require("easescript/lib/core/Utils"));
 
 // node_modules/@easescript/transform/lib/core/Context.js
 var import_path2 = __toESM(require("path"));
@@ -4823,6 +4943,8 @@ var Token = class {
     if (type === "CallDefinition")
       return null;
     if (type === "TypeDefinition")
+      return null;
+    if (type === "TypeTupleDefinition")
       return null;
     if (type === "TypeGenericDefinition")
       return null;
@@ -4902,7 +5024,7 @@ var Token = class {
   createFunctionDeclaration(key, block, params = []) {
     const node = this.createFunctionExpression(block, params);
     node.type = "FunctionDeclaration";
-    node.key = this.createIdentifier(key);
+    node.key = Node_default.is(key) ? key : this.createIdentifier(key);
     return node;
   }
   createArrowFunctionExpression(block, params = []) {
@@ -4921,7 +5043,7 @@ var Token = class {
   createMethodDefinition(key, block, params = []) {
     const node = this.createFunctionExpression(block, params);
     node.type = "MethodDefinition";
-    node.key = this.createIdentifier(key);
+    node.key = Node_default.is(key) ? key : this.createIdentifier(key);
     return node;
   }
   createObjectExpression(properties2, stack) {
@@ -5054,11 +5176,6 @@ var Token = class {
     }
     return node;
   }
-  createClassDeclaration() {
-    const node = this.createNode("ClassDeclaration");
-    node.body = this.createBlockStatement();
-    return node;
-  }
   createPropertyDefinition(key, init, isStatic = false) {
     const node = this.createNode("PropertyDefinition");
     node.key = key;
@@ -5160,6 +5277,20 @@ var Token = class {
     }
     return node;
   }
+  createClassDeclaration(id, superClass, body, stack) {
+    const node = this.createNode(stack, "ClassDeclaration");
+    node.id = Node_default.is(id) ? id : this.createIdentifier(String(id));
+    if (superClass) {
+      node.superClass = Node_default.is(superClass) ? superClass : this.createIdentifier(String(superClass));
+    }
+    node.body = this.createBlockStatement(body);
+    return node;
+  }
+  createClassExpression(id, superClass, body, stack) {
+    const node = this.createClassDeclaration(id, superClass, body, stack);
+    node.type = "ClassExpression";
+    return node;
+  }
 };
 var Token_default = Token;
 
@@ -5167,7 +5298,7 @@ var Token_default = Token;
 init_Common();
 
 // node_modules/@easescript/transform/lib/core/ImportSource.js
-var import_Utils2 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils5 = __toESM(require("easescript/lib/core/Utils"));
 var ImportManage = class {
   #records = /* @__PURE__ */ new Map();
   #locals = /* @__PURE__ */ new Map();
@@ -5218,8 +5349,8 @@ var ImportManage = class {
     return Array.from(this.#records.values()).sort((a, b) => {
       let m1 = a.getSourceTarget();
       let m2 = b.getSourceTarget();
-      let a1 = import_Utils2.default.isModule(m1) && m1.getName() === "Class" ? 0 : 1;
-      let b1 = import_Utils2.default.isModule(m2) && m2.getName() === "Class" ? 0 : 1;
+      let a1 = import_Utils5.default.isModule(m1) && m1.getName() === "Class" ? 0 : 1;
+      let b1 = import_Utils5.default.isModule(m2) && m2.getName() === "Class" ? 0 : 1;
       return a1 - b1;
     });
   }
@@ -5412,7 +5543,7 @@ var import_Namespace2 = __toESM(require("easescript/lib/core/Namespace"));
 init_Common();
 
 // node_modules/@easescript/transform/lib/core/Generator.js
-var import_Utils3 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils6 = __toESM(require("easescript/lib/core/Utils"));
 var import_source_map = __toESM(require("source-map"));
 var disabledNewLine = false;
 var Generator2 = class {
@@ -5450,8 +5581,8 @@ var Generator2 = class {
   createSourceMapGenerator() {
     let target = this.context.target;
     let generator = new import_source_map.default.SourceMapGenerator();
-    let compi = import_Utils3.default.isModule(target) ? target.compilation : target;
-    if (import_Utils3.default.isCompilation(compi) && compi.source) {
+    let compi = import_Utils6.default.isModule(target) ? target.compilation : target;
+    if (import_Utils6.default.isCompilation(compi) && compi.source) {
       generator.setSourceContent(compi.file, compi.source);
     }
     return generator;
@@ -5566,10 +5697,12 @@ var Generator2 = class {
       return this;
     const len = items.length - 1;
     items.forEach((item, index) => {
+      if (item.newLineBefore)
+        this.newLine();
       this.make(item);
       if (index < len) {
         this.withString(",");
-        if (newLine || item.newLine)
+        if (newLine || item.newLine && !item.disableCommaNewLine)
           this.newLine();
       }
     });
@@ -5662,7 +5795,7 @@ var Generator2 = class {
             if (token.semicolon && index < lines.length) {
               this.withSemicolon();
             }
-            if (index < lines.length && token.newLine !== false) {
+            if (index < lines.length - 1) {
               this.newLine();
             }
           });
@@ -5704,6 +5837,27 @@ var Generator2 = class {
         }
         this.make(token.body);
         this.newLine();
+        break;
+      case "ClassDeclaration":
+      case "ClassExpression":
+        if (token.comments) {
+          this.newLine();
+          this.make(token.comments);
+          this.newLine();
+        }
+        if (token.type === "ClassDeclaration") {
+          this.newLine();
+        }
+        this.withString("class");
+        this.withSpace();
+        this.make(token.id);
+        if (token.superClass) {
+          this.withSpace();
+          this.withString("extends");
+          this.withSpace();
+          this.make(token.superClass);
+        }
+        this.make(token.body);
         break;
       case "ConditionalExpression":
         this.addMapping(token);
@@ -6060,10 +6214,14 @@ var Generator2 = class {
             if (property.type === "RestElement") {
               this.make(property);
             } else {
-              this.make(property.key);
-              if (property.init && (property.init.type === "AssignmentPattern" || property.key.value !== property.init.value)) {
-                this.withColon();
+              if (property.init && property.init.type === "AssignmentPattern") {
                 this.make(property.init);
+              } else {
+                this.make(property.key);
+                if (property.init && property.key.value !== property.init.value) {
+                  this.withColon();
+                  this.make(property.init);
+                }
               }
             }
             if (index < token.properties.length - 1) {
@@ -6276,25 +6434,6 @@ var Generator2 = class {
           this.withSemicolon();
         }
         break;
-      case "ClassDeclaration": {
-        if (token.comments) {
-          this.newLine();
-          this.make(token.comments);
-          this.newLine();
-        }
-        this.newLine();
-        this.addMapping(token);
-        this.withString("class");
-        this.withSpace();
-        this.make(token.id);
-        if (token.extends) {
-          this.withSpace();
-          this.withString("extends");
-          this.make(token.extends);
-        }
-        this.make(token.body);
-        break;
-      }
       case "InterfaceDeclaration":
       case "EnumDeclaration":
       case "DeclaratorDeclaration":
@@ -6365,6 +6504,7 @@ var Generator2 = class {
             }
           } else {
             if (token.parent && token.parent.type === "ObjectExpression") {
+              this.addMapping(token);
               this.make(token.name);
               this.withColon();
               this.make(token.value);
@@ -6488,9 +6628,12 @@ __export(Constant_exports, {
   KIND_ENUM_PROPERTY: () => KIND_ENUM_PROPERTY,
   KIND_INTERFACE: () => KIND_INTERFACE,
   KIND_METHOD: () => KIND_METHOD,
+  KIND_STRUCT: () => KIND_STRUCT,
+  KIND_STRUCT_COLUMN: () => KIND_STRUCT_COLUMN,
   KIND_VAR: () => KIND_VAR,
   MODIFIER_ABSTRACT: () => MODIFIER_ABSTRACT,
   MODIFIER_FINAL: () => MODIFIER_FINAL,
+  MODIFIER_OPTIONAL: () => MODIFIER_OPTIONAL,
   MODIFIER_PRIVATE: () => MODIFIER_PRIVATE,
   MODIFIER_PROTECTED: () => MODIFIER_PROTECTED,
   MODIFIER_PUBLIC: () => MODIFIER_PUBLIC,
@@ -6500,17 +6643,20 @@ __export(Constant_exports, {
 var KIND_CLASS = 1 << 0;
 var KIND_INTERFACE = 1 << 1;
 var KIND_ENUM = 1 << 2;
-var KIND_VAR = 1 << 3;
-var KIND_CONST = 1 << 4;
-var KIND_METHOD = 1 << 5;
-var KIND_ACCESSOR = 1 << 6;
-var KIND_ENUM_PROPERTY = 1 << 7;
-var MODIFIER_STATIC = 1 << 8;
-var MODIFIER_PUBLIC = 1 << 9;
-var MODIFIER_PROTECTED = 1 << 10;
-var MODIFIER_PRIVATE = 1 << 11;
-var MODIFIER_ABSTRACT = 1 << 12;
-var MODIFIER_FINAL = 1 << 13;
+var KIND_STRUCT = 1 << 3;
+var KIND_VAR = 1 << 4;
+var KIND_CONST = 1 << 5;
+var KIND_METHOD = 1 << 6;
+var KIND_ACCESSOR = 1 << 7;
+var KIND_ENUM_PROPERTY = 1 << 8;
+var KIND_STRUCT_COLUMN = 1 << 9;
+var MODIFIER_STATIC = 1 << 10;
+var MODIFIER_PUBLIC = 1 << 11;
+var MODIFIER_PROTECTED = 1 << 12;
+var MODIFIER_PRIVATE = 1 << 13;
+var MODIFIER_ABSTRACT = 1 << 14;
+var MODIFIER_FINAL = 1 << 15;
+var MODIFIER_OPTIONAL = 1 << 16;
 var PRIVATE_NAME = "_private";
 
 // node_modules/@easescript/transform/lib/core/VirtualModule.js
@@ -6790,7 +6936,7 @@ function getVirtualModuleManager(VirtualModuleFactory) {
 }
 
 // node_modules/@easescript/transform/lib/core/Context.js
-var import_Utils4 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils7 = __toESM(require("easescript/lib/core/Utils"));
 var import_Range = __toESM(require("easescript/lib/core/Range"));
 var Context = class extends Token_default {
   static is(value) {
@@ -6915,6 +7061,12 @@ var Context = class extends Token_default {
   getVModule(sourceId) {
     return this.virtuals.getVModule(sourceId);
   }
+  useClassConstructor(module2) {
+    if (this.options.useClassConstructor && import_Utils7.default.isModule(module2)) {
+      return !(module2.isDecorator() || module2.isCallable());
+    }
+    return false;
+  }
   hasVModule(sourceId) {
     return this.virtuals.hasVModule(sourceId);
   }
@@ -6965,14 +7117,18 @@ var Context = class extends Token_default {
     }
     deps.add(dep);
   }
+  addDependOnFile(dependFile, context = null) {
+    const graph = this.getBuildGraph(context);
+    graph.addDependOnFile(dependFile);
+  }
   getDependencies(context = null) {
     context = context || this.target;
     return this.#dependencies.get(context);
   }
   getAllDependencies() {
     const deps = /* @__PURE__ */ new Set();
-    this.#dependencies.forEach((dataset) => {
-      dataset.forEach((dep) => deps.add(dep));
+    this.#dependencies.forEach((dataset2) => {
+      dataset2.forEach((dep) => deps.add(dep));
     });
     return deps;
   }
@@ -6988,17 +7144,17 @@ var Context = class extends Token_default {
       return true;
     return module2.compilation === this.target;
   }
-  isActiveModule(depModule, context = null) {
+  isActiveModule(depModule, context = null, isExtend = false) {
     if (!depModule)
       return false;
     context = context || this.target;
-    if (!this.isUsed(depModule, context))
+    if (!isExtend && !this.isUsed(depModule, context))
       return false;
     if (depModule.isDeclaratorModule) {
       if (this.hasVModule(depModule.getName())) {
         return true;
       }
-      if (this.isDeclaratorModuleDependency(depModule)) {
+      if (this.isDeclaratorModuleDependency(depModule, isExtend)) {
         return true;
       }
       return false;
@@ -7006,7 +7162,7 @@ var Context = class extends Token_default {
       if (isVModule(depModule))
         return true;
       if (context) {
-        return !import_Utils4.default.checkDepend(context, depModule);
+        return !import_Utils7.default.checkDepend(context, depModule);
       }
       return true;
     }
@@ -7043,12 +7199,12 @@ var Context = class extends Token_default {
     return result;
   }
   hasDeclareModule(module2) {
-    if (import_Utils4.default.isCompilation(this.target)) {
+    if (import_Utils7.default.isCompilation(this.target)) {
       if (this.target.modules.has(module2.getName())) {
         return true;
       }
       return this.target.importModuleNameds.has(module2);
-    } else if (import_Utils4.default.isModule(this.target)) {
+    } else if (import_Utils7.default.isModule(this.target)) {
       const vm = this.getVModule(this.target.getName());
       if (vm) {
         return !!vm.getReferenceName(module2.getName());
@@ -7065,18 +7221,18 @@ var Context = class extends Token_default {
   removeNode(stack) {
     this.#nodes.delete(stack);
   }
-  getHashId(len = 8) {
-    let target = this.#target;
-    if (import_Utils4.default.isCompilation(target)) {
+  getHashId(len = 8, target = null) {
+    target = target || this.#target;
+    if (import_Utils7.default.isCompilation(target)) {
       let file = target.file || Array.from(target.modules.values()).map((m) => m.getName()).join(",");
       return createUniqueHashId(file, len);
-    } else if (isVModule(target) || import_Utils4.default.isModule(target)) {
+    } else if (isVModule(target) || import_Utils7.default.isModule(target)) {
       return createUniqueHashId(target.getName(), len);
     } else {
       throw new Error("Invalid target");
     }
   }
-  getModuleReferenceName(module2, context = null) {
+  getModuleReferenceName(module2, context = null, stack = null) {
     let name = null;
     if (isVModule(module2)) {
       let m = module2.bindModule;
@@ -7086,12 +7242,12 @@ var Context = class extends Token_default {
       } else {
         module2 = m;
       }
-    } else if (!import_Utils4.default.isModule(module2)) {
+    } else if (!import_Utils7.default.isModule(module2)) {
       return null;
     }
     if (!context)
       context = this.target;
-    if (import_Utils4.default.isModule(context)) {
+    if (import_Utils7.default.isModule(context)) {
       if (context.isDeclaratorModule) {
         const vm = this.getVModule(context.getName());
         if (vm) {
@@ -7099,22 +7255,29 @@ var Context = class extends Token_default {
         }
       }
       if (!name) {
-        name = context.getReferenceNameByModule(module2);
+        name = context.getReferenceNameByModule(module2, true);
+        if (name) {
+          return name;
+        }
       }
-    } else if (import_Utils4.default.isCompilation(context)) {
-      name = context.getReferenceName(module2);
+    } else if (import_Utils7.default.isCompilation(context)) {
+      name = context.getReferenceName(module2, null, true);
+      if (name)
+        return name;
     }
-    if (this.hasDeclareModule(module2)) {
+    if (name && this.hasDeclareModule(module2)) {
       return name;
     }
     if (!name) {
       name = module2.getName("_");
     }
-    return this.getGlobalRefName(null, name);
+    return this.getGlobalRefName(stack, name);
   }
-  isDeclaratorModuleDependency(module2) {
-    if (!import_Utils4.default.isClassType(module2))
+  isDeclaratorModuleDependency(module2, isExtend = false) {
+    if (!import_Utils7.default.isClassType(module2))
       return false;
+    if (isExtend)
+      return true;
     if (module2.required && module2.isAnnotationCreated) {
       return true;
     } else if (module2.isDeclaratorModule) {
@@ -7146,7 +7309,7 @@ var Context = class extends Token_default {
     return this.compiler.isExtensionFile(resolveFile);
   }
   createDeclaratorModuleImportReferences(module2, context, graph = null) {
-    if (!import_Utils4.default.isModule(module2))
+    if (!import_Utils7.default.isModule(module2))
       return;
     if (!graph && context) {
       graph = this.getBuildGraph(context);
@@ -7155,7 +7318,7 @@ var Context = class extends Token_default {
     this.createModuleImportReferences(module2, context, graph);
   }
   createModuleImportReferences(module2, context = null, graph = null) {
-    if (!import_Utils4.default.isModule(module2))
+    if (!import_Utils7.default.isModule(module2))
       return;
     if (!graph) {
       graph = this.getBuildGraph(module2);
@@ -7245,7 +7408,7 @@ var Context = class extends Token_default {
     if (requires && requires.size > 0) {
       requires.forEach((item) => {
         let local = item.name;
-        if (import_Utils4.default.isStack(item.stack) && item.stack.parentStack && item.stack.parentStack.isAnnotationDeclaration) {
+        if (import_Utils7.default.isStack(item.stack) && item.stack.parentStack && item.stack.parentStack.isAnnotationDeclaration) {
           let additional = item.stack.parentStack.additional;
           if (additional && additional.isDeclaratorDeclaration && additional.module.id === local) {
             local = this.getModuleReferenceName(additional.module, context);
@@ -7294,7 +7457,7 @@ var Context = class extends Token_default {
     }
   }
   crateModuleAssets(module2) {
-    if (!import_Utils4.default.isModule(module2))
+    if (!import_Utils7.default.isModule(module2))
       return;
     const graph = this.getBuildGraph(module2);
     this.createAssets(module2, graph);
@@ -7308,13 +7471,16 @@ var Context = class extends Token_default {
       this.createRequires(compilation, null, graph);
     }
   }
-  createAllDependencies() {
+  createAllDependencies(cache2 = null) {
     const target = this.target;
-    const compilation = import_Utils4.default.isCompilation(target) ? target : null;
+    const compilation = import_Utils7.default.isCompilation(target) ? target : null;
     this.#dependencies.forEach((deps, moduleOrCompi) => {
       const graph = this.getBuildGraph(moduleOrCompi);
       deps.forEach((depModule) => {
-        if (!(import_Utils4.default.isModule(depModule) || isVModule(depModule)))
+        if (cache2 && cache2.has(depModule))
+          return;
+        let isMod = import_Utils7.default.isModule(depModule);
+        if (!(isMod || isVModule(depModule)))
           return;
         if (depModule === target || compilation && compilation.modules.has(depModule.getName())) {
           return;
@@ -7324,7 +7490,11 @@ var Context = class extends Token_default {
           if (!depModule.isDeclaratorModule || this.isVModule(depModule)) {
             const name = this.getModuleReferenceName(depModule, moduleOrCompi);
             const source = this.getModuleImportSource(depModule, moduleOrCompi);
-            const importSource = this.addImport(source, name);
+            let imported = void 0;
+            if (isMod && !depModule.isDeclaratorModule && depModule.compilation.mainModule !== depModule) {
+              imported = depModule.id;
+            }
+            const importSource = this.addImport(source, name, imported);
             importSource.setSourceTarget(depModule);
             graph.addImport(importSource);
           } else if (depModule.isDeclaratorModule) {
@@ -7335,7 +7505,7 @@ var Context = class extends Token_default {
     });
   }
   createModuleDependencies(module2) {
-    if (!import_Utils4.default.isModule(module2))
+    if (!import_Utils7.default.isModule(module2))
       return;
     let deps = this.getDependencies(module2);
     if (!deps)
@@ -7343,7 +7513,7 @@ var Context = class extends Token_default {
     const graph = this.getBuildGraph(module2);
     const compilation = module2.compilation;
     deps.forEach((depModule) => {
-      if (!(import_Utils4.default.isModule(depModule) || isVModule(depModule)))
+      if (!(import_Utils7.default.isModule(depModule) || isVModule(depModule)))
         return;
       if (compilation && compilation.modules && compilation.modules.has(depModule.getName())) {
         return;
@@ -7371,7 +7541,7 @@ var Context = class extends Token_default {
     if (!module2 || compilation === module2) {
       return graphs.createBuildGraph(compilation);
     }
-    if (import_Utils4.default.isModule(module2)) {
+    if (import_Utils7.default.isModule(module2)) {
       if (module2.isDeclaratorModule) {
         const vm = this.getVModule(module2.getName());
         if (vm) {
@@ -7398,7 +7568,7 @@ var Context = class extends Token_default {
   }
   getGlobalRefName(stack, name, objectKey = null) {
     if (!stack) {
-      if (import_Utils4.default.isModule(this.target)) {
+      if (import_Utils7.default.isModule(this.target)) {
         stack = this.target.compilation.stack;
       } else {
         stack = this.target.stack;
@@ -7420,7 +7590,7 @@ var Context = class extends Token_default {
   }
   getLocalRefName(stack, name, objectKey = null) {
     if (!stack) {
-      if (import_Utils4.default.isModule(this.target)) {
+      if (import_Utils7.default.isModule(this.target)) {
         stack = this.target.compilation.stack;
       } else {
         stack = this.target.stack;
@@ -7442,7 +7612,7 @@ var Context = class extends Token_default {
   }
   genLocalRefName(stack, name, objectKey = null) {
     if (!stack) {
-      if (import_Utils4.default.isModule(this.target)) {
+      if (import_Utils7.default.isModule(this.target)) {
         stack = this.target.compilation.stack;
       } else {
         stack = this.target.stack;
@@ -7464,7 +7634,7 @@ var Context = class extends Token_default {
   }
   genGlobalRefName(stack, name, objectKey = null) {
     if (!stack) {
-      if (import_Utils4.default.isModule(this.target)) {
+      if (import_Utils7.default.isModule(this.target)) {
         stack = this.target.compilation.stack;
       } else {
         stack = this.target.stack;
@@ -7519,8 +7689,8 @@ var Context = class extends Token_default {
       if (isVModule(target)) {
         target = target.bindModule || target;
       }
-      let owner = import_Utils4.default.isModule(target) ? target.compilation : target;
-      source = source.replace("${__filename}", import_Utils4.default.normalizePath(owner.file));
+      let owner = import_Utils7.default.isModule(target) ? target.compilation : target;
+      source = source.replace("${__filename}", import_Utils7.default.normalizePath(owner.file));
     }
     return source;
   }
@@ -7529,7 +7699,7 @@ var Context = class extends Token_default {
     return flag && !result ? file : result;
   }
   getModuleMappingFolder(module2) {
-    if (import_Utils4.default.isModule(module2)) {
+    if (import_Utils7.default.isModule(module2)) {
       return this.resolveSourceFileMappingPath(module2.getName("/") + ".module", "folders");
     } else if (module2 && module2.file) {
       return this.resolveSourceFileMappingPath(module2.file, "folders");
@@ -7641,11 +7811,14 @@ var Context = class extends Token_default {
     if (isStr) {
       filename = folder ? import_path2.default.basename(source) : this.compiler.getRelativeWorkspacePath(source, true) || this.genUniFileName(source);
     } else {
-      if (import_Utils4.default.isModule(source)) {
+      if (import_Utils7.default.isModule(source)) {
         if (source.isDeclaratorModule) {
           const vm = this.getVModule(source.getName()) || source;
           filename = folder ? vm.id : vm.getName("/");
         } else {
+          if (source.compilation.mainModule !== source) {
+            source = source.compilation.mainModule;
+          }
           filename = folder ? source.id : source.getName("/");
         }
       } else if (isVModule(source)) {
@@ -7663,13 +7836,13 @@ var Context = class extends Token_default {
     }
     let result = null;
     if (folder) {
-      result = import_Utils4.default.normalizePath(
+      result = import_Utils7.default.normalizePath(
         import_path2.default.resolve(
           import_path2.default.isAbsolute(folder) ? import_path2.default.join(folder, filename) : import_path2.default.join(output, folder, filename)
         )
       );
     } else {
-      result = import_Utils4.default.normalizePath(
+      result = import_Utils7.default.normalizePath(
         import_path2.default.resolve(
           import_path2.default.join(output, filename)
         )
@@ -7688,7 +7861,7 @@ var Context = class extends Token_default {
     );
   }
   getRelativePath(source, context) {
-    return "./" + import_Utils4.default.normalizePath(
+    return "./" + import_Utils7.default.normalizePath(
       import_path2.default.relative(
         import_path2.default.dirname(context),
         source
@@ -7701,7 +7874,7 @@ var Context = class extends Token_default {
     return local;
   }
   createDefaultRoutePathNode(module2) {
-    if (import_Utils4.default.isModule(module2)) {
+    if (import_Utils7.default.isModule(module2)) {
       return this.createLiteral("/" + module2.getName("/"));
     }
     return null;
@@ -7742,7 +7915,7 @@ var Context = class extends Token_default {
   error(message, stack = null) {
     if (this.target) {
       let range = stack && stack instanceof import_Range.default ? stack : null;
-      if (!range && import_Utils4.default.isStack(stack)) {
+      if (!range && import_Utils7.default.isStack(stack)) {
         range = this.target.getRangeByNode(stack.node);
       }
       const file = this.target.file;
@@ -7752,12 +7925,12 @@ var Context = class extends Token_default {
         message += `(${file})`;
       }
     }
-    import_Utils4.default.error(message);
+    import_Utils7.default.error(message);
   }
   warn(message, stack = null) {
     if (this.target) {
       let range = stack && stack instanceof import_Range.default ? stack : null;
-      if (!range && import_Utils4.default.isStack(stack)) {
+      if (!range && import_Utils7.default.isStack(stack)) {
         range = this.target.getRangeByNode(stack.node);
       }
       const file = this.target.file;
@@ -7767,7 +7940,7 @@ var Context = class extends Token_default {
         message += `(${file})`;
       }
     }
-    import_Utils4.default.warn(message);
+    import_Utils7.default.warn(message);
   }
 };
 var Context_default = Context;
@@ -7776,7 +7949,7 @@ var Context_default = Context;
 init_Common();
 
 // node_modules/@easescript/transform/lib/core/Variable.js
-var import_Utils5 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils8 = __toESM(require("easescript/lib/core/Utils"));
 var import_Scope = __toESM(require("easescript/lib/core/Scope"));
 var REFS_All = 31;
 var REFS_TOP = 16;
@@ -7869,7 +8042,7 @@ function getVariableManager() {
   }
   function hasScopeDefined(context, name, isTop = false, flags = REFS_All) {
     let manage = getVariableManage(context, isTop);
-    if (import_Utils5.default.isStack(context)) {
+    if (import_Utils8.default.isStack(context)) {
       return manage.check(name, context.scope, flags);
     }
     return false;
@@ -7889,10 +8062,10 @@ function getVariableManager() {
     if (manage.has(name)) {
       return manage.get(name);
     }
-    return manage.getRefs(name, import_Utils5.default.isStack(context) ? context.scope : null, flags);
+    return manage.getRefs(name, import_Utils8.default.isStack(context) ? context.scope : null, flags);
   }
   function getVariableManage(context, isTop = false) {
-    if (import_Utils5.default.isStack(context)) {
+    if (import_Utils8.default.isStack(context)) {
       let scope = context.scope;
       if (!import_Scope.default.is(scope)) {
         throw new Error("Variable.getRefs scope invalid");
@@ -7912,7 +8085,7 @@ function getVariableManager() {
   }
   function genRefs(context, name, isTop = false, flags = REFS_DOWN | REFS_UP_FUN) {
     let manage = getVariableManage(context, isTop);
-    if (import_Utils5.default.isStack(context)) {
+    if (import_Utils8.default.isStack(context)) {
       return manage.gen(name, context.scope, flags);
     } else {
       return manage.gen(name, null, flags);
@@ -7947,14 +8120,31 @@ var BuildGraph = class {
   #sourcemap = null;
   #module = null;
   #dependencies = null;
+  #fileDependencies = null;
   #imports = null;
   #assets = null;
   #exports = null;
   #children = null;
   #parent = null;
   #outfile = null;
+  #building = false;
+  #done = false;
   constructor(module2) {
     this.#module = module2;
+  }
+  start() {
+    this.#building = true;
+    this.#done = false;
+  }
+  done() {
+    this.#building = false;
+    this.#done = true;
+  }
+  get building() {
+    return this.#building;
+  }
+  get buildDone() {
+    return this.#done;
   }
   get module() {
     return this.#module;
@@ -8025,6 +8215,30 @@ var BuildGraph = class {
       this.#dependencies = deps = /* @__PURE__ */ new Set();
     }
     deps.add(module2);
+  }
+  addDependOnFile(dependFile) {
+    if (dependFile) {
+      const deps = this.#fileDependencies || (this.#fileDependencies = /* @__PURE__ */ new Set());
+      deps.add(dependFile);
+    }
+  }
+  getDependFiles() {
+    const deps = this.#fileDependencies;
+    const items = deps ? [...deps] : [];
+    const children = this.children;
+    if (children) {
+      items.push(...[...children].map((graph) => graph.getDependFiles()).flat());
+    }
+    return items;
+  }
+  getDependencies() {
+    const deps = this.#dependencies;
+    const items = deps ? [...deps] : [];
+    const children = this.children;
+    if (children) {
+      items.push(...[...children].map((graph) => graph.getDependencies()).flat());
+    }
+    return items;
   }
   addAsset(asset) {
     let assets = this.#assets;
@@ -8105,40 +8319,145 @@ var TableBuilder = class {
   #records = /* @__PURE__ */ new Map();
   constructor(plugin2) {
     this.#plugin = plugin2;
-    this.#plugin.on("compilation:changed", (compilation) => {
+    const rebuild = (compilation) => {
+      if (!compilation)
+        return;
+      let has = false;
       compilation.modules.forEach((module2) => {
         if (module2.isStructTable) {
-          this.removeTable(module2.id);
+          has = true;
+          this.removeTable(module2.getName());
         }
       });
+      if (has) {
+        plugin2.clear(compilation);
+        plugin2.build(compilation);
+      }
+    };
+    plugin2.on("compilation:changed", (compilation) => {
+      if (compilation) {
+        compilation.once("onParseDone", () => {
+          rebuild(compilation);
+        });
+      }
+    });
+    plugin2.on("compilation:refresh", (compilations) => {
+      if (Array.isArray(compilations)) {
+        compilations.forEach(rebuild);
+      }
     });
   }
   createTable(ctx, stack) {
-    if (!stack.body.length)
-      return false;
     const module2 = stack.module;
-    if (this.hasTable(module2.id))
+    const defineAnnotations = getModuleAnnotations(module2, ["define"], false);
+    for (let defineAnnotation of defineAnnotations) {
+      const data = parseDefineAnnotation(defineAnnotation);
+      if (data.sql === false) {
+        return;
+      }
+    }
+    const key = module2.getName();
+    if (this.hasTable(key))
       return false;
     const node = ctx.createNode(stack);
     node.id = ctx.createIdentifier("`" + normalName(stack.id.value()) + "`", stack.id);
     node.properties = [];
     node.body = [];
-    stack.body.forEach((item) => {
-      const token = createIdentNode(ctx, item);
-      if (token) {
-        if (item.isStructTablePropertyDefinition) {
-          node.properties.push(token);
-        } else {
-          node.body.push(token);
+    const cacheColumn = {};
+    const cacheOption = {};
+    const keys2 = [];
+    const make = (stack2) => {
+      const module3 = stack2.module;
+      stack2.body.forEach((item) => {
+        const token = createIdentNode(ctx, item);
+        if (item.isStructTableColumnDefinition) {
+          const key2 = item.key.value();
+          if (cacheColumn[key2] === true) {
+            return;
+          }
+          cacheColumn[key2] = true;
         }
+        if (token) {
+          if (item.isStructTableColumnDefinition) {
+            const methodNode = token.properties[0];
+            if (methodNode && methodNode.type === "StructTableMethodDefinition") {
+              if (methodNode.key && methodNode.params) {
+                const value = String(methodNode.key.value).toLowerCase();
+                if (value === "email" || value === "range") {
+                  methodNode.key.value = "varchar";
+                  if (value === "range") {
+                    const params = methodNode.params;
+                    if (params.length > 1) {
+                      methodNode.params = [params[params.length - 1]];
+                    }
+                  }
+                }
+              }
+            }
+          }
+          if (item.key && item.key.isIdentifier) {
+            const key2 = String(item.raw()).replace(/\s\t\r\n/g, "").toLowerCase();
+            if (cacheOption[key2] === true) {
+              return;
+            }
+            cacheOption[key2] = true;
+          }
+          if (item.isStructTablePropertyDefinition) {
+            node.properties.push(token);
+          } else {
+            if (item.isStructTableKeyDefinition) {
+              keys2.push(token);
+            } else {
+              node.body.push(token);
+            }
+          }
+        }
+      });
+      if (Array.isArray(module3.extends)) {
+        module3.extends.forEach((module4) => {
+          module4 = module4.type();
+          if (module4.isStructTable) {
+            module4.getStacks().forEach((stack3) => {
+              if (stack3.isStructTableDeclaration) {
+                make(stack3);
+              }
+            });
+          }
+        });
       }
-    });
+    };
+    make(stack);
+    const minValue = -9999;
+    const maxValue = 9999;
+    const defaultValue = 999;
+    const getOrder = (value) => {
+      if (value === "first") {
+        return minValue - 1;
+      } else if (value === "last") {
+        return maxValue + 1;
+      }
+      value = parseInt(value);
+      if (isNaN(value))
+        return defaultValue;
+      return Math.max(Math.min(value, maxValue), minValue);
+    };
+    const sroter = (a, b) => {
+      let a1 = getOrder(a.order || defaultValue);
+      let b1 = getOrder(b.order || defaultValue);
+      return a1 - b1;
+    };
+    node.body.sort(sroter);
+    keys2.sort(sroter);
+    node.body.push(...keys2);
     let gen = new Generator_default();
     gen.make(node);
-    this.#records.set(module2.id, gen.toString());
+    this.#records.set(key, gen.toString());
     this.#changed = true;
     this.build(ctx);
     return true;
+  }
+  get plugin() {
+    return this.#plugin;
   }
   get type() {
     return "";
@@ -8364,7 +8683,7 @@ function ArrowFunctionExpression_default(ctx, stack, type) {
 }
 
 // node_modules/@easescript/transform/lib/tokens/AssignmentExpression.js
-var import_Utils7 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils10 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
 function AssignmentExpression_default(ctx, stack) {
   const desc2 = stack.left.description();
@@ -8378,11 +8697,11 @@ function AssignmentExpression_default(ctx, stack) {
       if (!hasDynamic && desc2 && (desc2.isProperty && desc2.computed || desc2.isPropertyDefinition && desc2.dynamic)) {
         hasDynamic = true;
       }
-      if (!hasDynamic && !import_Utils7.default.isLiteralObjectType(stack.left.object.type())) {
+      if (!hasDynamic && !import_Utils10.default.isLiteralObjectType(stack.left.object.type())) {
         isReflect = true;
       }
     } else if (!desc2 || desc2.isAnyType) {
-      isReflect = !import_Utils7.default.isLiteralObjectType(stack.left.object.type());
+      isReflect = !import_Utils10.default.isLiteralObjectType(stack.left.object.type());
     }
   }
   if (isReflect) {
@@ -8443,26 +8762,58 @@ function AwaitExpression_default(ctx, stack) {
 }
 
 // node_modules/@easescript/transform/lib/tokens/BinaryExpression.js
-var import_Utils8 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils11 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
-var globals = ["Array", "Object", "RegExp", "Number", "String", "Function"];
+var import_Namespace3 = __toESM(require("easescript/lib/core/Namespace"));
 function BinaryExpression_default(ctx, stack) {
   let operator2 = stack.operator;
   let node = ctx.createNode(stack);
   let right = ctx.createToken(stack.right);
   if (operator2 === "is" || operator2 === "instanceof") {
     let type = stack.right.type();
-    let origin = !import_Utils8.default.isModule(type) ? import_Utils8.default.getOriginType(type) : type;
-    if (!stack.right.hasLocalDefined()) {
-      ctx.addDepend(origin, stack.module);
-      right = ctx.createIdentifier(
-        ctx.getGlobalRefName(
-          stack,
-          ctx.getModuleReferenceName(origin, stack.module)
-        )
-      );
+    let origin = type;
+    let objectType = null;
+    if (operator2 === "is") {
+      if (type.id === "string" || type.id === "number" || type.id === "object" || type.id === "function" || type.id === "boolean" || type.id === "symbol") {
+        node.left = ctx.createUnaryExpression(ctx.createToken(stack.left), "typeof", true);
+        node.right = ctx.createLiteral(String(type.id).toLowerCase());
+        node.operator = "===";
+        return node;
+      }
+      if (import_Namespace3.default.globals.get("Function") === type) {
+        objectType = ctx.createIdentifier("Function");
+      } else if (type.isClassGenericType && type.isClassType || import_Namespace3.default.globals.get("Class") === type) {
+        return ctx.createCallExpression(
+          createStaticReferenceNode(ctx, stack, "System", "isClass"),
+          [
+            ctx.createToken(stack.left)
+          ],
+          stack
+        );
+      } else if (import_Utils11.default.isModule(type)) {
+        if (type.isDeclaratorModule && !ctx.isVModule(type) && import_Utils11.default.isInterface(type) && !ctx.isDeclaratorModuleDependency(type)) {
+          objectType = ctx.createIdentifier("Object");
+        }
+      } else {
+        origin = import_Utils11.default.getOriginType(type);
+      }
     }
-    if (operator2 === "is" && !(origin && globals.includes(origin.id))) {
+    if (objectType) {
+      right = objectType;
+    } else if (origin && import_Utils11.default.isModule(origin)) {
+      ctx.addDepend(origin, stack.module);
+      if (stack.right.hasLocalDefined()) {
+        right = ctx.createIdentifier(origin.id);
+      } else {
+        right = ctx.createIdentifier(
+          ctx.getModuleReferenceName(origin, stack.module, stack)
+        );
+      }
+    }
+    if (!right) {
+      right = ctx.createIdentifier("Object");
+    }
+    if (operator2 === "is") {
       return ctx.createCallExpression(
         createStaticReferenceNode(ctx, stack, "System", "is"),
         [
@@ -8515,7 +8866,7 @@ function BreakStatement_default(ctx, stack) {
 }
 
 // node_modules/@easescript/transform/lib/tokens/CallExpression.js
-var import_Utils9 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils12 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
 function CallExpression_default(ctx, stack) {
   const isMember = stack.callee.isMemberExpression;
@@ -8523,12 +8874,20 @@ function CallExpression_default(ctx, stack) {
   const module2 = stack.module;
   const isChainExpression = stack.parentStack.isChainExpression;
   if (stack.callee.isSuperExpression) {
+    let useClass = ctx.useClassConstructor(module2);
     const parent = module2 && module2.inherit;
     if (parent) {
-      ctx.addDepend(parent, module2);
-      if (!ctx.isActiveModule(parent, stack.module) || ctx.isES6ClassModule(parent)) {
+      if (!ctx.isActiveModule(parent, stack.module, true) || !useClass && ctx.isES6ClassModule(parent)) {
         return null;
       }
+      ctx.addDepend(parent, module2);
+    }
+    if (ctx.useClassConstructor(module2)) {
+      return ctx.createCallExpression(
+        ctx.createSuperExpression(void 0, stack.callee),
+        stack.arguments.map((item) => ctx.createToken(item)),
+        stack
+      );
     }
   }
   if (isMember && !isChainExpression && (!desc2 || desc2.isType && desc2.isAnyType)) {
@@ -8568,7 +8927,7 @@ function CallExpression_default(ctx, stack) {
   }
   const privateChain = ctx.options.privateChain;
   if (privateChain && desc2 && desc2.isMethodDefinition && !(desc2.static || desc2.module.static)) {
-    const modifier = import_Utils9.default.getModifierValue(desc2);
+    const modifier = import_Utils12.default.getModifierValue(desc2);
     const refModule = desc2.module;
     if (modifier === "private" && refModule.children.length > 0) {
       return ctx.createCallExpression(
@@ -8587,7 +8946,7 @@ function CallExpression_default(ctx, stack) {
     let type = desc2.isCallDefinition ? desc2.module : desc2;
     if (!isMember && !stack.callee.isSuperExpression && desc2.isMethodDefinition)
       type = desc2.module;
-    if (import_Utils9.default.isTypeModule(type)) {
+    if (import_Utils12.default.isTypeModule(type)) {
       ctx.addDepend(desc2, module2);
     }
   }
@@ -8606,8 +8965,9 @@ function ChainExpression_default(ctx, stack) {
 }
 
 // node_modules/@easescript/transform/lib/core/ClassBuilder.js
+var import_Utils13 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
-var import_Namespace3 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Namespace4 = __toESM(require("easescript/lib/core/Namespace"));
 var modifierMaps = {
   "public": MODIFIER_PUBLIC,
   "protected": MODIFIER_PROTECTED,
@@ -8616,6 +8976,7 @@ var modifierMaps = {
 var kindMaps = {
   "accessor": KIND_ACCESSOR,
   "var": KIND_VAR,
+  "column": KIND_STRUCT_COLUMN,
   "const": KIND_CONST,
   "method": KIND_METHOD,
   "enumProperty": KIND_ENUM_PROPERTY
@@ -8639,21 +9000,39 @@ var ClassBuilder = class {
     this.definePrivatePropertyNode = null;
     this.privateName = null;
     this.mainEnter = null;
+    this.constructDecorators = null;
+    this.useClassConstructor = false;
+  }
+  #moduleDeclareIdNode = null;
+  getModuleIdNode() {
+    return this.#moduleDeclareIdNode;
+  }
+  setModuleIdNode(node) {
+    this.#moduleDeclareIdNode = node;
+  }
+  #exportReferenceNode = null;
+  getExportReferenceNode() {
+    return this.#exportReferenceNode || this.getModuleIdNode();
+  }
+  setExportReferenceNode(node) {
+    this.#exportReferenceNode = node;
   }
   create(ctx) {
     ctx.setNode(this.stack, this);
     const module2 = this.module;
     const stack = this.stack;
+    const classComments = createCommentsNode(ctx, stack);
+    this.useClassConstructor = ctx.useClassConstructor(module2);
+    this.setModuleIdNode(ctx.createIdentifier(this.getModuleDeclarationId(module2), stack.id));
     this.createInherit(ctx, module2, stack);
     this.createImplements(ctx, module2, stack);
     this.createBody(ctx, module2, stack);
-    let methods7 = this.createMemberDescriptors(ctx, this.methods);
-    let members = this.createMemberDescriptors(ctx, this.members);
-    let creator = this.createCreator(
+    const methods8 = this.createMemberDescriptors(ctx, this.methods);
+    const members = this.createMemberDescriptors(ctx, this.members);
+    const creator = this.createCreator(
       ctx,
-      module2,
-      this.getModuleDeclarationId(module2),
-      this.createClassDescriptor(ctx, module2, methods7, members)
+      this.getModuleIdNode(),
+      this.createClassDescriptor(ctx, module2, methods8, members, classComments)
     );
     ctx.crateModuleAssets(module2);
     ctx.createModuleImportReferences(module2);
@@ -8666,27 +9045,56 @@ var ClassBuilder = class {
     }
     if (this.construct) {
       let exists = this.construct.comments;
-      let classComments = createCommentsNode(ctx, stack);
       if (!exists) {
         this.construct.comments = classComments;
       } else if (exists && classComments) {
         exists.value = classComments.value + "\n" + exists.value;
       }
     }
-    let expressions = [
-      this.construct,
+    let decorators = this.getClassDecorators(ctx, stack);
+    if (this.constructDecorators && this.constructDecorators.length > 0) {
+      if (decorators) {
+        decorators.push(...this.constructDecorators);
+      } else {
+        decorators = this.constructDecorators;
+      }
+    }
+    const construct = this.createClassConstructor(ctx, this.construct);
+    const expressions = [
+      this.createApplyClassDecorator(ctx, decorators, construct),
       ...this.beforeBody,
       ...this.body,
       ...this.afterBody,
       ctx.createExpressionStatement(creator)
     ];
-    let symbolNode = this.privateSymbolNode;
+    const symbolNode = this.privateSymbolNode;
     if (symbolNode) {
       expressions.unshift(symbolNode);
     }
     this.createExport(ctx, module2);
     ctx.removeNode(this.stack);
     return ctx.createMultipleStatement(expressions);
+  }
+  createClassConstructor(ctx, construct) {
+    if (this.useClassConstructor) {
+      let comments = construct.comments;
+      delete construct.comments;
+      construct.key = ctx.createIdentifier("constructor");
+      construct.type = "MethodDefinition";
+      construct.kind = "method";
+      let body = [];
+      if (construct.body && construct.body.body.length > 0) {
+        body.push(construct);
+      }
+      construct = ctx.createClassDeclaration(
+        this.getModuleIdNode(),
+        this.inherit,
+        body,
+        this.stack
+      );
+      construct.comments = comments;
+    }
+    return construct;
   }
   getModuleDeclarationId(module2) {
     return module2.id;
@@ -8695,9 +9103,12 @@ var ClassBuilder = class {
     if (this.stack.compilation.mainModule === module2) {
       ctx.addExport(
         "default",
-        ctx.createIdentifier(
-          this.getModuleDeclarationId(module2)
-        )
+        this.getExportReferenceNode()
+      );
+    } else {
+      ctx.addExport(
+        module2.id,
+        this.getExportReferenceNode()
       );
     }
   }
@@ -8705,35 +9116,60 @@ var ClassBuilder = class {
     this.createMemebers(ctx, stack);
     this.createIteratorMethodNode(ctx, module2);
     if (!this.construct) {
-      this.construct = this.createDefaultConstructor(ctx, this.getModuleDeclarationId(module2), module2.inherit);
+      this.construct = this.createDefaultConstructor(ctx, this.getModuleIdNode(), module2.inherit);
     }
     this.checkConstructor(ctx, this.construct, module2);
-    this.checkSuperES6Class(ctx, this.construct, module2);
+    if (!this.useClassConstructor) {
+      this.checkSuperES6Class(ctx, this.construct, module2);
+    }
   }
   createInherit(ctx, module2, stack = null) {
     let inherit = module2.inherit;
     if (inherit) {
-      ctx.addDepend(inherit, module2);
-      if (ctx.isActiveModule(inherit, module2)) {
-        this.inherit = ctx.createIdentifier(
-          ctx.getModuleReferenceName(inherit, module2)
-        );
+      if (ctx.isActiveModule(inherit, module2, true)) {
+        ctx.addDepend(inherit, module2);
+        let refs = null;
+        if (inherit.isDeclaratorModule && stack && import_Utils13.default.isStack(stack.inherit) && stack.inherit.isIdentifier) {
+          let desc2 = stack.inherit.description();
+          if (import_Utils13.default.isStack(desc2) && desc2.isDeclarator) {
+            refs = stack.inherit.value();
+          }
+        }
+        if (!refs) {
+          refs = ctx.getModuleReferenceName(inherit, module2);
+        }
+        this.inherit = ctx.createIdentifier(refs);
       }
     }
   }
   createImplements(ctx, module2, stack = null) {
+    let iteratorModule = null;
     this.implements = module2.implements.map((impModule) => {
-      ctx.addDepend(impModule, module2);
-      if (impModule.isInterface && ctx.isActiveModule(impModule, module2) && import_Namespace3.default.globals.get("Iterator") !== impModule) {
-        return ctx.createIdentifier(
-          ctx.getModuleReferenceName(impModule, module2)
-        );
+      if (impModule.isInterface && !impModule.isStructTable && ctx.isActiveModule(impModule, module2, true)) {
+        iteratorModule = iteratorModule || import_Namespace4.default.globals.get("Iterator");
+        if (iteratorModule !== impModule) {
+          ctx.addDepend(impModule, module2);
+          let refs = null;
+          if (impModule.isDeclaratorModule) {
+            let impStack = stack.implements.find((imp) => imp.type() === impModule);
+            if (impStack && impStack.isIdentifier) {
+              let desc2 = impStack.description();
+              if (import_Utils13.default.isStack(desc2) && desc2.isDeclarator) {
+                refs = impStack.value();
+              }
+            }
+          }
+          if (!refs) {
+            refs = ctx.getModuleReferenceName(impModule, module2);
+          }
+          return ctx.createIdentifier(refs);
+        }
       }
       return null;
     }).filter(Boolean);
   }
   createIteratorMethodNode(ctx, module2) {
-    const iteratorType = import_Namespace3.default.globals.get("Iterator");
+    const iteratorType = import_Namespace4.default.globals.get("Iterator");
     if (module2.implements.includes(iteratorType)) {
       const block = ctx.createBlockStatement();
       block.body.push(
@@ -8796,7 +9232,18 @@ var ClassBuilder = class {
   }
   checkSuperES6Class(ctx, construct, module2) {
     const inherit = module2.inherit;
-    if (inherit && ctx.isES6ClassModule(inherit)) {
+    if (inherit && inherit.isDeclaratorModule && ctx.isES6ClassModule(inherit)) {
+      let refs = null;
+      let identifier = this.stack.inherit;
+      if (identifier && identifier.isIdentifier) {
+        let desc2 = identifier.description();
+        if (import_Utils13.default.isStack(desc2) && desc2.isDeclarator) {
+          refs = identifier.value();
+        }
+      }
+      if (!refs) {
+        refs = ctx.getModuleReferenceName(inherit, module2);
+      }
       const wrap = ctx.createFunctionExpression(construct.body);
       construct.body.body.push(ctx.createReturnStatement(ctx.createThisExpression()));
       const block = ctx.createBlockStatement();
@@ -8809,9 +9256,9 @@ var ClassBuilder = class {
               ctx.createCallExpression(
                 createStaticReferenceNode(ctx, this.stack, "Reflect", "construct"),
                 [
-                  ctx.createIdentifier(ctx.getModuleReferenceName(inherit, module2)),
+                  ctx.createIdentifier(refs),
                   ctx.createIdentifier("arguments"),
-                  ctx.createIdentifier(this.getModuleDeclarationId(module2))
+                  this.getModuleIdNode()
                 ]
               )
             ]
@@ -8846,11 +9293,12 @@ var ClassBuilder = class {
     );
   }
   appendDefinePrivatePropertyNode(ctx, ...propertyNodes) {
-    const node = this.createDefinePrivatePropertyNode(ctx);
     if (propertyNodes.length > 0) {
+      const node = this.createDefinePrivatePropertyNode(ctx);
       node.expression.arguments[2].properties[0].init.properties.push(...propertyNodes);
+      return node;
     }
-    return node;
+    return null;
   }
   checkNeedInitPrivateNode() {
     return this.privateProperties.length > 0 || this.initProperties.length > 0;
@@ -8858,14 +9306,26 @@ var ClassBuilder = class {
   checkConstructor(ctx, construct, module2) {
     construct.type = "FunctionDeclaration";
     construct.kind = "";
-    construct.key.value = this.getModuleDeclarationId(module2);
+    construct.key = this.getModuleIdNode();
     if (this.checkNeedInitPrivateNode()) {
       let body = construct.body.body;
-      let appendAt = module2.inherit ? 1 : 0;
-      let els = [
-        ...this.initProperties,
-        this.appendDefinePrivatePropertyNode(ctx, ...this.privateProperties)
-      ];
+      let hasInherit = module2.inherit && this.inherit;
+      let appendAt = hasInherit ? 1 : 0;
+      let els = [];
+      if (hasInherit && construct.isDefaultConstructMethod && !construct.hasCallSupper) {
+        appendAt = 0;
+        els.push(this.createCallSuperNode(ctx));
+        construct.hasCallSupper = true;
+      }
+      const privateChainNode = this.appendDefinePrivatePropertyNode(ctx, ...this.privateProperties);
+      if (privateChainNode) {
+        if (this.useClassConstructor) {
+          els.push(privateChainNode);
+        } else {
+          body.unshift(privateChainNode);
+        }
+      }
+      els.push(...this.initProperties);
       body.splice(appendAt, 0, ...els);
     }
   }
@@ -8903,27 +9363,34 @@ var ClassBuilder = class {
         return;
       const staticFlag = !!(stack.static || child.static);
       const refs = staticFlag ? this.methods : this.members;
-      if (child.type === "PropertyDefinition") {
+      if (child.type === "PropertyDefinition" && !item.computed) {
         this.createInitMemberProperty(ctx, child, item, staticFlag);
       }
       if (item.isMethodSetterDefinition || item.isMethodGetterDefinition) {
         const name = child.key.value;
-        const dataset = staticFlag ? cache1 : cache2;
-        let target = dataset.get(name);
+        const dataset2 = staticFlag ? cache1 : cache2;
+        let target = dataset2.get(name);
         if (!target) {
           target = {
             isAccessor: true,
             kind: "accessor",
             key: child.key,
-            modifier: child.modifier
+            modifier: child.modifier,
+            question: child.question
           };
-          dataset.set(name, target);
+          dataset2.set(name, target);
           refs.push(target);
         }
         if (item.isMethodGetterDefinition) {
           target.get = child;
+          if (!target.question) {
+            target.question = child.question;
+          }
         } else if (item.isMethodSetterDefinition) {
           target.set = child;
+          if (!target.question) {
+            target.question = child.question;
+          }
         }
       } else if (item.isConstructor && item.isMethodDefinition) {
         this.construct = child;
@@ -8936,6 +9403,36 @@ var ClassBuilder = class {
     if (staticFlag && stack.isMethodDefinition && stack.isEnterMethod && node.modifier === "public" && !this.mainEnter) {
       this.mainEnter = createMainAnnotationNode(ctx, stack);
     }
+    let annotations = stack.annotations;
+    if (annotations && annotations.length > 0) {
+      let decorators = [];
+      node.decorators = decorators;
+      annotations.forEach((annot) => {
+        const node2 = this.createDecoratorByAnnotation(ctx, annot);
+        if (node2) {
+          decorators.push(node2);
+        }
+      });
+    }
+    if (stack.isMethodDefinition) {
+      stack.params.forEach((param, index) => {
+        let annotations2 = param.annotations;
+        if (annotations2 && annotations2.length > 0) {
+          let decorators = null;
+          if (stack.isConstructor) {
+            decorators = this.constructDecorators || (this.constructDecorators = []);
+          } else {
+            decorators = node.decorators || (node.decorators = []);
+          }
+          annotations2.forEach((annot) => {
+            const node2 = this.createDecoratorByAnnotation(ctx, annot, index);
+            if (node2) {
+              decorators.push(node2);
+            }
+          });
+        }
+      });
+    }
     return node;
   }
   createMemeber(ctx, stack, staticFlag = false) {
@@ -8945,35 +9442,70 @@ var ClassBuilder = class {
     }
     return node;
   }
-  createDefaultConstructor(ctx, name, inherit = null, params = []) {
-    const block = ctx.createBlockStatement();
-    if (inherit && !ctx.isES6ClassModule(inherit)) {
-      const se = ctx.createSuperExpression(
-        ctx.getModuleReferenceName(inherit, this.module)
+  createCallSuperNode(ctx, params = []) {
+    let refs = null;
+    let inheritStack = this.stack.inherit;
+    let inherit = this.module.inherit;
+    if (inherit.isDeclaratorModule && import_Utils13.default.isStack(inheritStack) && inheritStack.isIdentifier) {
+      let desc2 = inheritStack.description();
+      if (import_Utils13.default.isStack(desc2) && desc2.isDeclarator) {
+        refs = inheritStack.value();
+      }
+    }
+    if (!refs) {
+      refs = ctx.getModuleReferenceName(inherit, this.module);
+    }
+    let args = null;
+    if (this.inherit && this.stack.isModuleForWebComponent(this.module.inherit)) {
+      const propsNode = ctx.createMemberExpression([
+        ctx.createIdentifier("arguments"),
+        ctx.createLiteral(0)
+      ]);
+      propsNode.computed = true;
+      args = propsNode;
+    } else {
+      args = params.length > 0 ? params : ctx.createIdentifier("arguments");
+    }
+    if (this.useClassConstructor) {
+      let _args2 = Array.isArray(args) ? args : args.value === "arguments" ? [ctx.createSpreadElement(args)] : [args];
+      return ctx.createCallExpression(
+        ctx.createSuperExpression(),
+        _args2
       );
-      const args = params.length > 0 ? ctx.createArrayExpression(params) : ctx.createIdentifier("arguments");
+    }
+    let _args = Array.isArray(args) ? ctx.createArrayExpression(args) : args.value === "arguments" ? args : ctx.createArrayExpression([args]);
+    return ctx.createCallExpression(
+      ctx.createMemberExpression(
+        [
+          ctx.createIdentifier(refs),
+          ctx.createIdentifier("apply")
+        ]
+      ),
+      [
+        ctx.createThisExpression(),
+        _args
+      ]
+    );
+  }
+  createDefaultConstructor(ctx, id, inherit = null, params = []) {
+    const block = ctx.createBlockStatement();
+    let hasCallSupper = false;
+    if (inherit && this.inherit && !(this.useClassConstructor || ctx.isES6ClassModule(inherit))) {
+      hasCallSupper = true;
       block.body.push(
         ctx.createExpressionStatement(
-          ctx.createCallExpression(
-            ctx.createMemberExpression(
-              [
-                se,
-                ctx.createIdentifier("apply")
-              ]
-            ),
-            [
-              ctx.createThisExpression(),
-              args
-            ]
-          )
+          this.createCallSuperNode(ctx, params)
         )
       );
     }
-    return ctx.createMethodDefinition(
-      name,
+    const node = ctx.createMethodDefinition(
+      id,
       block,
       params
     );
+    node.hasCallSupper = hasCallSupper;
+    node.isDefaultConstructMethod = true;
+    return node;
   }
   createMemberDescriptor(ctx, node) {
     if (node.dynamic && node.type === "PropertyDefinition") {
@@ -8993,6 +9525,9 @@ var ClassBuilder = class {
     }
     if (node.isFinal) {
       mode |= MODIFIER_FINAL;
+    }
+    if (node.question) {
+      mode |= MODIFIER_OPTIONAL;
     }
     delete node.static;
     if (node.type === "MethodDefinition" || node.kind === "method") {
@@ -9037,25 +9572,70 @@ var ClassBuilder = class {
       }
       return node2;
     };
+    let decorators = node.decorators;
     if (node.isAccessor) {
+      decorators = [];
+      let getComments = null;
+      let setComments = null;
       if (node.get) {
+        getComments = node.get.comments;
         if (node.get.isConfigurable)
           isConfigurable = true;
         node.get.disabledNewLine = true;
         delete node.get.static;
         properties2.push(createProperty("get", node.get));
+        if (node.get.decorators) {
+          decorators.push(...node.get.decorators);
+        }
       }
       if (node.set) {
+        setComments = node.set.comments;
         if (node.set.isConfigurable)
           isConfigurable = true;
         node.set.disabledNewLine = true;
         delete node.set.static;
         properties2.push(createProperty("set", node.set));
+        if (node.set.decorators) {
+          decorators.push(...node.set.decorators);
+        }
+      }
+      if (getComments || setComments) {
+        const commentsProperties = [];
+        if (getComments) {
+          commentsProperties.push(
+            ctx.createProperty(
+              ctx.createIdentifier("get"),
+              ctx.createChunkExpression(JSON.stringify(getComments.value), false)
+            )
+          );
+        }
+        if (setComments) {
+          commentsProperties.push(
+            ctx.createProperty(
+              ctx.createIdentifier("set"),
+              ctx.createChunkExpression(JSON.stringify(setComments.value), false)
+            )
+          );
+        }
+        properties2.push(
+          ctx.createProperty(
+            ctx.createIdentifier("comments"),
+            ctx.createObjectExpression(commentsProperties)
+          )
+        );
       }
     } else {
+      if (node.comments) {
+        properties2.push(
+          ctx.createProperty(
+            ctx.createIdentifier("comments"),
+            ctx.createChunkExpression(JSON.stringify(node.comments.value), false)
+          )
+        );
+      }
       if (node.type === "PropertyDefinition") {
         if (node.init) {
-          properties2.push(createProperty("value", node.init, node));
+          properties2.push(createProperty("value", node.init));
         }
       } else {
         properties2.push(createProperty("value", node));
@@ -9069,14 +9649,22 @@ var ClassBuilder = class {
         )
       );
     }
-    return ctx.createProperty(
+    const confitNode = ctx.createObjectExpression(properties2);
+    const propertyNode = ctx.createProperty(
       key,
-      ctx.createObjectExpression(properties2)
+      decorators && decorators.length > 0 ? this.createMemberDecorator(
+        ctx,
+        decorators,
+        ctx.createLiteral(key.value),
+        confitNode
+      ) : confitNode
     );
+    propertyNode.comments = node.comments;
+    return propertyNode;
   }
-  createClassDescriptor(ctx, module2, methods7, members) {
+  createClassDescriptor(ctx, module2, methods8, members, classComments) {
     const properties2 = [];
-    let kind = module2.isEnum ? KIND_CLASS : module2.isInterface ? KIND_INTERFACE : KIND_CLASS;
+    let kind = module2.isEnum ? KIND_CLASS : module2.isStructTable ? KIND_STRUCT : module2.isInterface ? KIND_INTERFACE : KIND_CLASS;
     kind |= MODIFIER_PUBLIC;
     if (module2.static) {
       kind |= MODIFIER_STATIC;
@@ -9093,6 +9681,14 @@ var ClassBuilder = class {
         ctx.createLiteral(kind)
       )
     );
+    if (classComments && classComments.value) {
+      properties2.push(
+        ctx.createProperty(
+          ctx.createIdentifier("comments"),
+          ctx.createChunkExpression(JSON.stringify(classComments.value), false)
+        )
+      );
+    }
     const ns = module2.namespace && module2.namespace.toString();
     if (ns) {
       properties2.push(
@@ -9140,11 +9736,19 @@ var ClassBuilder = class {
         )
       );
     }
-    if (methods7) {
+    if (this.useClassConstructor) {
+      properties2.push(
+        ctx.createProperty(
+          ctx.createIdentifier("useClass"),
+          ctx.createLiteral(true)
+        )
+      );
+    }
+    if (methods8) {
       properties2.push(
         ctx.createProperty(
           ctx.createIdentifier("methods"),
-          methods7
+          methods8
         )
       );
     }
@@ -9158,14 +9762,113 @@ var ClassBuilder = class {
     }
     return ctx.createObjectExpression(properties2);
   }
-  createCreator(ctx, module2, className, description) {
-    const args = [
-      ctx.createIdentifier(className || module2.id),
-      description
-    ];
+  createDecoratorByAnnotation(ctx, annot, index = null) {
+    if (!annot || !annot.isAnnotationDeclaration)
+      return null;
+    let desc2 = annot.description();
+    if (!desc2)
+      return null;
+    let type = desc2.type();
+    let isCallee = annot.isCallee();
+    let callee = null;
+    if (import_Utils13.default.isModule(type)) {
+      type.getDescriptor("constructor", (desc3) => {
+        let type2 = desc3.getFunType().getReturnedType();
+        if (type2 && type2.isFunctionType)
+          return isCallee = true;
+        return desc3;
+      });
+      callee = ctx.createIdentifier(ctx.getModuleReferenceName(type));
+      ctx.addDepend(type);
+    } else {
+      callee = ctx.createIdentifier(annot.id.value());
+    }
+    let args = (annot.body || []).map((item) => {
+      if (item.isAssignmentPattern)
+        item = item.right;
+      return ctx.createToken(item);
+    });
+    if (isCallee) {
+      callee = ctx.createCallExpression(callee, args);
+    } else if (args.length > 0) {
+      annot.error(10114);
+    }
+    if (index !== null && index >= 0) {
+      return ctx.createCallExpression(
+        createStaticReferenceNode(ctx, this.stack, "Reflect", "decorateParam"),
+        [
+          ctx.createLiteral(index),
+          callee
+        ]
+      );
+    }
+    return callee;
+  }
+  createMemberDecorator(ctx, decorators, key, descriptor) {
+    if (!decorators || !decorators.length)
+      return descriptor;
+    decorators = decorators.filter(Boolean);
+    if (!decorators.length)
+      return descriptor;
+    let target = this.getModuleIdNode();
+    let arr = ctx.createArrayExpression(decorators);
+    arr.newLine = true;
+    arr.disableCommaNewLine = true;
+    return ctx.createCallExpression(
+      createStaticReferenceNode(ctx, this.stack, "Reflect", "decorate"),
+      [
+        arr,
+        target,
+        key,
+        descriptor
+      ]
+    );
+  }
+  getClassDecorators(ctx, stack) {
+    let annotations = stack.annotations;
+    if (annotations && annotations.length > 0) {
+      let decorators = [];
+      annotations.forEach((annot) => {
+        const node = this.createDecoratorByAnnotation(ctx, annot);
+        if (node) {
+          decorators.push(node);
+        }
+      });
+      return decorators;
+    }
+    return null;
+  }
+  createApplyClassDecorator(ctx, decorators, classConstructNode) {
+    if (decorators && decorators.length > 0) {
+      decorators = ctx.createArrayExpression(decorators);
+      decorators.newLine = true;
+      decorators.disableCommaNewLine = true;
+      classConstructNode.disabledNewLine = true;
+      if (classConstructNode.type === "ClassDeclaration") {
+        classConstructNode.type = "ClassExpression";
+      }
+      return ctx.createExpressionStatement(
+        ctx.createVariableDeclaration("const", [ctx.createVariableDeclarator(
+          this.getModuleIdNode(),
+          ctx.createCallExpression(
+            createStaticReferenceNode(ctx, this.stack, "Reflect", "decorate"),
+            [
+              decorators,
+              classConstructNode
+            ]
+          )
+        )])
+      );
+    }
+    return classConstructNode;
+  }
+  createCreator(ctx, id, description) {
     return ctx.createCallExpression(
       createStaticReferenceNode(ctx, this.stack, "Class", "creator"),
-      args
+      [
+        id,
+        description
+      ]
     );
   }
   createMemberDescriptors(ctx, members) {
@@ -9224,29 +9927,25 @@ function EmptyStatement_default() {
 }
 
 // node_modules/@easescript/transform/lib/core/EnumBuilder.js
-var import_Namespace4 = __toESM(require("easescript/lib/core/Namespace.js"));
+var import_Namespace5 = __toESM(require("easescript/lib/core/Namespace.js"));
 var EnumBuilder = class extends ClassBuilder_default {
   create(ctx) {
     ctx.setNode(this.stack, this);
     const module2 = this.module;
     const stack = this.stack;
+    this.setModuleIdNode(ctx.createIdentifier(this.getModuleDeclarationId(module2)));
     this.createInherit(ctx, module2, stack);
     this.createImplements(ctx, module2, stack);
     this.createBody(ctx, module2, stack);
-    let methods7 = this.createMemberDescriptors(ctx, this.methods);
+    let methods8 = this.createMemberDescriptors(ctx, this.methods);
     let members = this.createMemberDescriptors(ctx, this.members);
     let creator = this.createCreator(
       ctx,
-      module2,
-      module2.id,
-      this.createClassDescriptor(ctx, module2, methods7, members)
+      this.getModuleIdNode(),
+      this.createClassDescriptor(ctx, module2, methods8, members)
     );
     ctx.crateModuleAssets(module2);
     ctx.createModuleImportReferences(module2);
-    if (stack.compilation.mainModule === module2) {
-      ctx.addExport("default", ctx.createIdentifier(module2.id));
-    }
-    ctx.removeNode(this.stack);
     let expressions = [
       this.construct,
       ...this.beforeBody,
@@ -9258,6 +9957,8 @@ var EnumBuilder = class extends ClassBuilder_default {
     if (symbolNode) {
       expressions.unshift(symbolNode);
     }
+    this.createExport(ctx, module2);
+    ctx.removeNode(this.stack);
     return ctx.createMultipleStatement(expressions);
   }
   createEnumExpression(ctx) {
@@ -9328,7 +10029,7 @@ var EnumBuilder = class extends ClassBuilder_default {
       }
     }
     if (!this.inherit) {
-      const inherit2 = import_Namespace4.default.globals.get("Enumeration");
+      const inherit2 = import_Namespace5.default.globals.get("Enumeration");
       ctx.addDepend(inherit2, stack.module);
       this.inherit = ctx.createIdentifier(
         ctx.getModuleReferenceName(inherit2, module2)
@@ -9336,11 +10037,11 @@ var EnumBuilder = class extends ClassBuilder_default {
     }
   }
   createMemebers(ctx, stack) {
-    let methods7 = this.methods;
+    let methods8 = this.methods;
     stack.properties.forEach((item) => {
       const child = this.createMemeber(ctx, item);
       if (child) {
-        methods7.push(child);
+        methods8.push(child);
       }
     });
     super.createMemebers(ctx, stack);
@@ -9470,11 +10171,11 @@ function ForInStatement_default(ctx, stack) {
 }
 
 // node_modules/@easescript/transform/lib/tokens/ForOfStatement.js
-var import_Utils10 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils14 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
 function ForOfStatement_default(ctx, stack) {
-  const type = import_Utils10.default.getOriginType(stack.right.type());
-  if (import_Utils10.default.isLocalModule(type) || stack.right.type().isAnyType) {
+  const type = import_Utils14.default.getOriginType(stack.right.type());
+  if (import_Utils14.default.isLocalModule(type) || stack.right.type().isAnyType) {
     const node2 = ctx.createNode(stack, "ForStatement");
     const obj = ctx.getLocalRefName(stack, "_i");
     const res = ctx.getLocalRefName(stack, "_v");
@@ -9489,6 +10190,7 @@ function ForOfStatement_default(ctx, stack) {
         stack.right
       )
     );
+    init.kind = "let";
     init.declarations.push(ctx.createIdentifier(res));
     init.declarations.push(object);
     const condition = ctx.createChunkExpression(`${obj} && (${res}=${obj}.next()) && !${res}.done`, false);
@@ -9541,12 +10243,12 @@ function FunctionDeclaration_default(ctx, stack, type) {
 }
 
 // node_modules/@easescript/transform/lib/tokens/Identifier.js
-var import_Utils11 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils15 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
 function Identifier_default(ctx, stack) {
   const desc2 = stack.parentStack && stack.parentStack.isImportSpecifier ? null : stack.descriptor();
   const module2 = stack.module;
-  if (import_Utils11.default.isStack(desc2) && (desc2.isDeclaratorVariable || desc2.isDeclaratorFunction)) {
+  if (import_Utils15.default.isStack(desc2) && (desc2.isDeclaratorVariable || desc2.isDeclaratorFunction)) {
     let imports = desc2.imports;
     if (Array.isArray(imports)) {
       imports.forEach((item) => {
@@ -9561,7 +10263,7 @@ function Identifier_default(ctx, stack) {
     const ownerModule = desc2.module;
     const isStatic = !!(desc2.static || ownerModule.static || desc2.isEnumProperty);
     const property = ctx.createIdentifier(stack.value(), stack);
-    const modifier = import_Utils11.default.getModifierValue(desc2);
+    const modifier = import_Utils15.default.getModifierValue(desc2);
     let object = isStatic ? ctx.createIdentifier(ownerModule.id) : ctx.createThisExpression();
     if (privateChain && desc2.isPropertyDefinition && modifier === "private" && !isStatic) {
       object = ctx.createMemberExpression([
@@ -9577,14 +10279,11 @@ function Identifier_default(ctx, stack) {
       return ctx.createMemberExpression([object, property], stack);
     }
   }
-  if (desc2 !== stack.module && import_Utils11.default.isClassType(desc2)) {
+  if (desc2 !== stack.module && (import_Utils15.default.isClassType(desc2) || import_Utils15.default.isInterface(desc2) && !desc2.isStructTable)) {
     ctx.addDepend(desc2, stack.module);
     if (!stack.hasLocalDefined()) {
       return ctx.createIdentifier(
-        ctx.getGlobalRefName(
-          stack,
-          ctx.getModuleReferenceName(desc2, module2)
-        ),
+        ctx.getModuleReferenceName(desc2, module2, stack),
         stack
       );
     }
@@ -9645,6 +10344,8 @@ function ImportSpecifier_default(ctx, stack) {
 }
 
 // node_modules/@easescript/transform/lib/core/InterfaceBuilder.js
+init_Common();
+var import_Utils16 = __toESM(require("easescript/lib/core/Utils.js"));
 var modifierMaps2 = {
   "public": MODIFIER_PUBLIC,
   "protected": MODIFIER_PROTECTED,
@@ -9653,6 +10354,7 @@ var modifierMaps2 = {
 var kindMaps2 = {
   "accessor": KIND_ACCESSOR,
   "var": KIND_VAR,
+  "column": KIND_STRUCT_COLUMN,
   "const": KIND_CONST,
   "method": KIND_METHOD,
   "enumProperty": KIND_ENUM_PROPERTY
@@ -9662,23 +10364,19 @@ var InterfaceBuilder = class extends ClassBuilder_default {
     ctx.setNode(this.stack, this);
     const module2 = this.module;
     const stack = this.stack;
+    this.isStructTable = stack.isStructTableDeclaration;
+    this.setModuleIdNode(ctx.createIdentifier(this.getModuleDeclarationId(module2)));
     this.createInherit(ctx, module2, stack);
     this.createImplements(ctx, module2, stack);
     this.createBody(ctx, module2, stack);
-    let methods7 = this.createMemberDescriptors(ctx, this.methods);
     let members = this.createMemberDescriptors(ctx, this.members);
     let creator = this.createCreator(
       ctx,
-      module2,
-      module2.id,
-      this.createClassDescriptor(ctx, module2, methods7, members)
+      this.getModuleIdNode(),
+      this.createClassDescriptor(ctx, module2, null, members)
     );
     ctx.crateModuleAssets(module2);
     ctx.createModuleImportReferences(module2);
-    if (stack.compilation.mainModule === module2) {
-      ctx.addExport("default", ctx.createIdentifier(module2.id));
-    }
-    ctx.removeNode(this.stack);
     let expressions = [
       this.construct,
       ...this.beforeBody,
@@ -9690,14 +10388,56 @@ var InterfaceBuilder = class extends ClassBuilder_default {
     if (symbolNode) {
       expressions.unshift(symbolNode);
     }
+    this.createExport(ctx, module2);
+    ctx.removeNode(this.stack);
     return ctx.createMultipleStatement(expressions);
   }
   createBody(ctx, module2, stack) {
     this.createMemebers(ctx, stack);
-    if (!this.construct) {
-      this.construct = this.createDefaultConstructor(ctx, module2.id, module2.inherit);
+    this.construct = this.createDefaultConstructor(ctx, module2.id, module2.inherit);
+  }
+  createInitMemberProperty() {
+  }
+  createMemeber(ctx, stack, staticFlag = false) {
+    if (this.isStructTable) {
+      if (stack.isStructTableColumnDefinition) {
+        const node = ctx.createNode(stack, "PropertyDefinition");
+        const typeName = import_Utils16.default.getStructTableMethodTypeName(stack.typename?.value() || "varchar");
+        node.modifier = "public";
+        node.kind = "column";
+        node.key = ctx.createIdentifier(stack.key.value(), stack.key);
+        node.comments = createCommentsNode(ctx, stack);
+        node.question = !!stack.question;
+        node.init = ctx.createLiteral(typeName === "string" ? "" : null);
+        let format = "* @Formal(varchar,255)";
+        if (stack.typename) {
+          const formatNode = ctx.createToken(stack.typename);
+          const generator = new Generator_default();
+          if (formatNode.type === "StructTableMethodDefinition") {
+            generator.withSequence([formatNode.key, ...formatNode.params]);
+          } else {
+            generator.make(formatNode);
+          }
+          format = `* @Formal(${generator.toString()})`;
+        }
+        let comments = [stack.question ? "* @Optional" : "* @Requred", format];
+        if (node.comments) {
+          const lines = String(node.comments.value).split(/[\r\n]+/);
+          lines.splice(lines.length - 2, 0, ...comments);
+          node.comments.value = lines.join("\n");
+        } else {
+          node.comments = ctx.createChunkExpression(["/**", ...comments, "**/"].join("\n"));
+        }
+        return node;
+      }
+      return null;
+    } else {
+      const node = ctx.createToken(stack);
+      if (node) {
+        this.createAnnotations(ctx, stack, node, !!(staticFlag || node.static));
+      }
+      return node;
     }
-    this.checkConstructor(ctx, this.construct, module2);
   }
   createMemberDescriptor(ctx, node) {
     if (node.dynamic && node.type === "PropertyDefinition") {
@@ -9716,6 +10456,9 @@ var InterfaceBuilder = class extends ClassBuilder_default {
     if (node.isFinal) {
       mode |= MODIFIER_FINAL;
     }
+    if (node.question) {
+      mode |= MODIFIER_OPTIONAL;
+    }
     properties2.push(
       ctx.createProperty(
         ctx.createIdentifier("m"),
@@ -9723,27 +10466,85 @@ var InterfaceBuilder = class extends ClassBuilder_default {
       )
     );
     if (node.isAccessor) {
+      let getComments = null;
+      let setComments = null;
       if (node.get) {
-        properties2.push(
-          ctx.createProperty(
-            ctx.createIdentifier("get"),
-            ctx.createLiteral(true)
-          )
-        );
+        getComments = node.get.comments;
+        properties2.push(ctx.createProperty(
+          ctx.createIdentifier("get"),
+          ctx.createLiteral(true)
+        ));
       }
       if (node.set) {
+        setComments = node.get.comments;
+        properties2.push(ctx.createProperty(
+          ctx.createIdentifier("set"),
+          ctx.createLiteral(true)
+        ));
+      }
+      if (getComments || setComments) {
+        const commentsProperties = [];
+        if (getComments) {
+          commentsProperties.push(
+            ctx.createProperty(
+              ctx.createIdentifier("get"),
+              ctx.createChunkExpression(JSON.stringify(getComments.value), false)
+            )
+          );
+        }
+        if (setComments) {
+          commentsProperties.push(
+            ctx.createProperty(
+              ctx.createIdentifier("set"),
+              ctx.createChunkExpression(JSON.stringify(setComments.value), false)
+            )
+          );
+        }
         properties2.push(
           ctx.createProperty(
-            ctx.createIdentifier("set"),
-            ctx.createLiteral(true)
+            ctx.createIdentifier("comments"),
+            ctx.createObjectExpression(commentsProperties)
           )
         );
       }
+    } else {
+      if (node.comments) {
+        properties2.push(
+          ctx.createProperty(
+            ctx.createIdentifier("comments"),
+            ctx.createChunkExpression(JSON.stringify(node.comments.value), false)
+          )
+        );
+      }
+      if (this.isStructTable) {
+        if (node.type === "PropertyDefinition") {
+          properties2.push(
+            ctx.createProperty(
+              ctx.createIdentifier("writable"),
+              ctx.createLiteral(true)
+            )
+          );
+          properties2.push(
+            ctx.createProperty(
+              ctx.createIdentifier("enumerable"),
+              ctx.createLiteral(true)
+            )
+          );
+          if (node.init) {
+            properties2.push(ctx.createProperty(
+              ctx.createIdentifier("value"),
+              node.init
+            ));
+          }
+        }
+      }
     }
-    return ctx.createProperty(
+    const propertyNode = ctx.createProperty(
       key,
       ctx.createObjectExpression(properties2)
     );
+    propertyNode.comments = node.comments;
+    return propertyNode;
   }
 };
 var InterfaceBuilder_default = InterfaceBuilder;
@@ -9755,7 +10556,7 @@ function InterfaceDeclaration_default(ctx, stack) {
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXAttribute.js
-var import_Namespace5 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Namespace6 = __toESM(require("easescript/lib/core/Namespace"));
 init_Common();
 function JSXAttribute_default(ctx, stack) {
   let ns = null;
@@ -9800,7 +10601,7 @@ function JSXAttribute_default(ctx, stack) {
           expression = expression.left;
         }
         if (expression.isMemberExpression) {
-          const objectType = import_Namespace5.default.globals.get("Object");
+          const objectType = import_Namespace6.default.globals.get("Object");
           has = objectType && objectType.is(expression.object.type());
         }
       }
@@ -9839,8 +10640,8 @@ function JSXClosingFragment_default(ctx, stack) {
 }
 
 // node_modules/@easescript/transform/lib/core/ESX.js
-var import_Namespace6 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils12 = __toESM(require("easescript/lib/core/Utils"));
+var import_Namespace7 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Utils17 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
 init_Node();
 function createFragmentVNode(ctx, children, props = null) {
@@ -9963,7 +10764,7 @@ function createForEachNode(ctx, refs, element, item, key, stack) {
   return node;
 }
 function getComponentDirectiveAnnotation(module2) {
-  if (!import_Utils12.default.isModule(module2))
+  if (!import_Utils17.default.isModule(module2))
     return null;
   const annots = getModuleAnnotations(module2, ["define"]);
   for (let annot of annots) {
@@ -9980,18 +10781,18 @@ function getComponentDirectiveAnnotation(module2) {
 }
 var directiveInterface = null;
 function isDirectiveInterface(module2) {
-  if (!import_Utils12.default.isModule(module2))
+  if (!import_Utils17.default.isModule(module2))
     return false;
-  directiveInterface = directiveInterface || import_Namespace6.default.globals.get("web.components.Directive");
+  directiveInterface = directiveInterface || import_Namespace7.default.globals.get("web.components.Directive");
   if (directiveInterface && directiveInterface.isInterface) {
     return directiveInterface.type().isof(module2);
   }
   return false;
 }
 function getComponentEmitAnnotation(module2) {
-  if (!import_Utils12.default.isModule(module2))
+  if (!import_Utils17.default.isModule(module2))
     return null;
-  const dataset = /* @__PURE__ */ Object.create(null);
+  const dataset2 = /* @__PURE__ */ Object.create(null);
   const annots = getModuleAnnotations(module2, ["define"]);
   annots.forEach((annot) => {
     const args = annot.getArguments();
@@ -10022,15 +10823,15 @@ function getComponentEmitAnnotation(module2) {
           if (arg === skip || !arg)
             return;
           if (arg.assigned) {
-            dataset[arg.key] = arg.value;
+            dataset2[arg.key] = arg.value;
           } else {
-            dataset[arg.value] = arg.value;
+            dataset2[arg.value] = arg.value;
           }
         });
       }
     }
   });
-  return dataset;
+  return dataset2;
 }
 function createChildNode(ctx, stack, childNode, prev = null) {
   if (!childNode)
@@ -10312,18 +11113,6 @@ function createAttributeBindingEventNode(ctx, attribute, valueTokenNode) {
           valueTokenNode.disableCacheForVNode = disableCacheForVNode;
           return valueTokenNode;
         }
-      } else if (expr.isMemberExpression || expr.isIdentifier) {
-        const desc2 = expr.description();
-        const isMethod = desc2 && (desc2.isMethodDefinition && !desc2.isAccessor);
-        if (isMethod) {
-          return ctx.createCallExpression(
-            ctx.createMemberExpression([
-              valueTokenNode,
-              ctx.createIdentifier("bind")
-            ]),
-            [ctx.createThisExpression()]
-          );
-        }
       }
     }
   }
@@ -10333,8 +11122,8 @@ function getBinddingEventName(stack) {
   const bindding = getMethodAnnotations(stack, ["bindding"]);
   if (bindding.length > 0) {
     const [annot] = bindding;
-    const args = annot.getArguments();
-    return getAnnotationArgumentValue(args[0]);
+    const [args, result] = parseAnnotationArguments(annot.getArguments(), annotationIndexers.bindding);
+    return result;
   }
   return null;
 }
@@ -10366,8 +11155,8 @@ function createElementPropsNode(ctx, data, stack, excludes = null) {
   });
   const props = items.length > 0 ? ctx.createObjectExpression(items) : null;
   if (props && stack && stack.isComponent) {
-    const desc2 = stack.description();
-    if (desc2 && import_Utils12.default.isModule(desc2)) {
+    const desc2 = stack.descriptor();
+    if (desc2 && import_Utils17.default.isModule(desc2)) {
       let has = getModuleAnnotations(desc2, ["hook"]).some((annot) => {
         let result = parseHookAnnotation(annot, ctx.plugin.version, ctx.options.metadata.versions);
         return result && result.type === "polyfills:props";
@@ -10450,7 +11239,7 @@ function createAttributes(ctx, stack, data) {
     return stack2.scope.isForContext || !(stack2.isJSXElement || stack2.isJSXExpressionContainer);
   }, true);
   const inFor = forStack && forStack.scope && forStack.scope.isForContext ? true : false;
-  const descModule2 = stack.isWebComponent ? stack.description() : null;
+  const descModule2 = stack.isWebComponent ? stack.descriptor() : null;
   const definedEmits = getComponentEmitAnnotation(descModule2);
   const getDefinedEmitName = (name) => {
     if (definedEmits && Object.prototype.hasOwnProperty.call(definedEmits, name)) {
@@ -10545,15 +11334,25 @@ function createAttributes(ctx, stack, data) {
         }
       }
     }
+    let binddingEventName = null;
     if (item.isMemberProperty) {
-      if (ns === "@binding" && attrLowerName === "value") {
-        data.props.push(
-          createPropertyNode(
-            propName,
-            propValue
-          )
-        );
-        propName = "modelValue";
+      if (ns === "@binding") {
+        const bindding = getBinddingEventName(item.description());
+        if (bindding) {
+          if (bindding.alias) {
+            propName = bindding.alias;
+          }
+          binddingEventName = toCamelCase(bindding.event);
+        } else if (attrLowerName === "value") {
+          bindValuePropName = propName;
+          data.props.push(
+            createPropertyNode(
+              propName,
+              propValue
+            )
+          );
+          propName = "modelValue";
+        }
       }
       if (!isDOMAttribute) {
         data.props.push(
@@ -10591,14 +11390,11 @@ function createAttributes(ctx, stack, data) {
           ...createBinddingParams(!stack.isWebComponent)
         ), "on");
       } else if ((stack.isWebComponent || afterDirective) && binddingModelValue) {
-        let eventName = propName;
-        if (propName === "modelValue") {
-          eventName = "update:modelValue";
-        }
-        if (item.isMemberProperty) {
-          let _name = getBinddingEventName(item.description());
-          if (_name) {
-            eventName = toCamelCase(_name);
+        let eventName = binddingEventName;
+        if (!eventName) {
+          eventName = propName;
+          if (propName === "modelValue") {
+            eventName = "update:modelValue";
           }
         }
         pushEvent(
@@ -10752,7 +11548,7 @@ function createElementKeyPropertyNode(ctx, stack) {
 }
 function createComponentDirectiveProperties(ctx, stack, data, callback = null) {
   if (stack) {
-    let desc2 = stack.description();
+    let desc2 = stack.descriptor();
     let parentIsComponentDirective = getComponentDirectiveAnnotation(desc2);
     if (!parentIsComponentDirective) {
       parentIsComponentDirective = isDirectiveInterface(desc2);
@@ -10944,6 +11740,9 @@ function createSlotElementNode(ctx, stack, children) {
 function createDirectiveElementNode(ctx, stack, children) {
   const openingElement = stack.openingElement;
   const name = openingElement.name.value().toLowerCase();
+  if (!children) {
+    children = createCommentVNode(ctx, "child is null");
+  }
   switch (name) {
     case "custom":
     case "show":
@@ -10984,8 +11783,11 @@ function createElementNode(ctx, stack, data, children) {
     if (stack.jsxRootElement === stack && stack.parentStack.isProgram) {
       name = ctx.createLiteral("div");
     } else {
-      const desc2 = stack.description();
-      if (import_Utils12.default.isModule(desc2)) {
+      let desc2 = stack.description();
+      let isVar = stack.is(desc2) && desc2.isDeclarator;
+      if (!isVar)
+        desc2 = desc2.type();
+      if (!isVar && import_Utils17.default.isModule(desc2)) {
         ctx.addDepend(desc2, stack.module);
         name = ctx.createIdentifier(
           ctx.getModuleReferenceName(desc2, stack.module)
@@ -11040,7 +11842,7 @@ function createElement(ctx, stack) {
   let isRoot = stack.jsxRootElement === stack;
   let children = getChildren(stack);
   let childNodes = makeNormalChildren(ctx, createChildren(ctx, children, data, stack));
-  let desc2 = stack.description();
+  let desc2 = stack.descriptor();
   let componentDirective = getComponentDirectiveAnnotation(desc2);
   let nodeElement = null;
   if (stack.isDirective && stack.openingElement.name.value().toLowerCase() === "custom") {
@@ -11111,10 +11913,10 @@ function createElement(ctx, stack) {
     nodeElement = createSlotElementNode(ctx, stack, childNodes);
   } else if (stack.isDirective) {
     if (childNodes && childNodes.type == "ArrayExpression") {
-      if (childNodes.elements.length === 1) {
-        childNodes = childNodes.elements[0];
-      } else {
+      if (childNodes.elements.length > 1) {
         childNodes = createFragmentVNode(ctx, childNodes);
+      } else {
+        childNodes = childNodes.elements[0];
       }
     }
     nodeElement = createDirectiveElementNode(ctx, stack, childNodes);
@@ -11150,17 +11952,17 @@ function JSXEmptyExpression_default(ctx, stack) {
 }
 
 // node_modules/@easescript/transform/lib/tokens/JSXExpressionContainer.js
-var import_Namespace7 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils13 = __toESM(require("easescript/lib/core/Utils"));
+var import_Namespace8 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Utils18 = __toESM(require("easescript/lib/core/Utils"));
 function checkVNodeType(type) {
   if (!type || type.isAnyType)
     return false;
   if (type.isUnionType) {
     return type.elements.every((el) => checkVNodeType(el.type()));
   }
-  let origin = import_Utils13.default.getOriginType(type);
-  if (origin && import_Utils13.default.isModule(origin)) {
-    if (origin.isWebComponent() || import_Namespace7.default.globals.get("VNode").is(origin)) {
+  let origin = import_Utils18.default.getOriginType(type);
+  if (origin && import_Utils18.default.isModule(origin)) {
+    if (origin.isWebComponent() || import_Namespace8.default.globals.get("VNode").is(origin)) {
       return true;
     }
   }
@@ -11171,21 +11973,25 @@ function JSXExpressionContainer_default(ctx, stack) {
     const desc2 = stack.expression.descriptor();
     if (desc2 && (!desc2.isAccessor && desc2.isMethodDefinition)) {
       let object = ctx.createToken(stack.expression);
-      return ctx.createCallExpression(
+      const node2 = ctx.createCallExpression(
         ctx.createMemberExpression([
           object,
           ctx.createIdentifier("bind")
         ]),
-        [ctx.createThisExpression()],
+        [object.type === "MemberExpression" ? object.object : ctx.createThisExpression()],
         stack
       );
+      node2.isExplicitVNode = false;
+      node2.isScalarType = false;
+      node2.isExpressionContainer = true;
+      return node2;
     }
   }
   let node = ctx.createToken(stack.expression);
   if (node) {
     let isExplicitVNode = false;
     let type = stack.expression.type();
-    let isScalar = stack.expression.isLiteral || import_Utils13.default.isScalar(type);
+    let isScalar = stack.expression.isLiteral || import_Utils18.default.isScalar(type);
     if (type && !isScalar) {
       isExplicitVNode = checkVNodeType(type);
     }
@@ -11328,10 +12134,11 @@ function LogicalExpression_default(ctx, stack) {
 }
 
 // node_modules/@easescript/transform/lib/tokens/MemberExpression.js
-var import_Utils14 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils19 = __toESM(require("easescript/lib/core/Utils"));
+var import_Namespace9 = __toESM(require("easescript/lib/core/Namespace"));
 init_Common();
 function addImportReference(ctx, desc2, module2) {
-  if (import_Utils14.default.isStack(desc2) && (desc2.isDeclaratorVariable || desc2.isDeclaratorFunction)) {
+  if (import_Utils19.default.isStack(desc2) && (desc2.isDeclaratorVariable || desc2.isDeclaratorFunction)) {
     let imports = desc2.imports;
     if (Array.isArray(imports)) {
       imports.forEach((item) => {
@@ -11350,23 +12157,23 @@ function MemberExpression(ctx, stack) {
   const module2 = stack.module;
   const description = stack.descriptor();
   const objectType = stack.object.type();
-  if (description && description.isModule && objectType && !objectType.isLiteralObjectType && import_Utils14.default.isTypeModule(description)) {
+  if (stack.object.isIdentifier && import_Utils19.default.isTypeModule(description) && description.id === stack.object.value()) {
     ctx.addDepend(description, stack.module);
   } else {
     const objectDescriptor = stack.object.descriptor();
-    if (import_Utils14.default.isTypeModule(objectDescriptor)) {
+    if (import_Utils19.default.isTypeModule(objectDescriptor)) {
       ctx.addDepend(objectDescriptor, stack.module);
     } else {
       addImportReference(ctx, objectDescriptor, module2 || stack.compilation);
       addImportReference(ctx, description, module2 || stack.compilation);
     }
   }
-  if (!description || import_Utils14.default.isType(description) && description.isAnyType && !stack.optional) {
+  if (!description || import_Utils19.default.isType(description) && description.isAnyType && !stack.optional) {
     let isReflect = true;
     if (description) {
       isReflect = false;
       let hasDynamic = description.isComputeType && description.isPropertyExists();
-      if (!hasDynamic && !import_Utils14.default.isLiteralObjectType(objectType)) {
+      if (!hasDynamic && !import_Utils19.default.isLiteralObjectType(objectType)) {
         isReflect = true;
       }
     }
@@ -11385,7 +12192,7 @@ function MemberExpression(ctx, stack) {
   const resolveName = getMethodOrPropertyAlias(ctx, description);
   const privateChain = ctx.options.privateChain;
   if (privateChain && description && description.isMethodDefinition && !(description.static || description.module.static)) {
-    const modifier = import_Utils14.default.getModifierValue(description);
+    const modifier = import_Utils19.default.getModifierValue(description);
     const refModule = description.module;
     if (modifier === "private" && refModule.children.length > 0) {
       let property = resolveName ? ctx.createIdentifier(resolveName, stack.property) : ctx.createToken(stack.property);
@@ -11399,7 +12206,7 @@ function MemberExpression(ctx, stack) {
       );
     }
   }
-  if (objectType && !objectType.isLiteralObjectType && import_Utils14.default.isClassType(description)) {
+  if (objectType && import_Namespace9.default.is(objectType) && (import_Utils19.default.isClassType(description) || import_Utils19.default.isInterface(description) && !description.isStructTable)) {
     ctx.addDepend(description, stack.module);
     if (!stack.hasMatchAutoImporter) {
       return ctx.createIdentifier(
@@ -11454,7 +12261,7 @@ function MemberExpression(ctx, stack) {
   }
   let propertyNode = resolveName ? ctx.createIdentifier(resolveName, stack.property) : ctx.createToken(stack.property);
   if (privateChain && description && description.isPropertyDefinition && !(description.static || description.module.static)) {
-    const modifier = import_Utils14.default.getModifierValue(description);
+    const modifier = import_Utils19.default.getModifierValue(description);
     if ("private" === modifier) {
       const object = ctx.createMemberExpression([
         ctx.createToken(stack.object),
@@ -11479,17 +12286,18 @@ function MemberExpression(ctx, stack) {
 var MemberExpression_default = MemberExpression;
 
 // node_modules/@easescript/transform/lib/tokens/MethodDefinition.js
-var import_Utils15 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils20 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
 function MethodDefinition_default(ctx, stack, type) {
   const node = FunctionDeclaration_default(ctx, stack, type);
   node.async = stack.expression.async ? true : false;
   node.static = !!stack.static;
-  node.modifier = import_Utils15.default.getModifierValue(stack);
+  node.modifier = import_Utils20.default.getModifierValue(stack);
   node.kind = "method";
   node.isAbstract = !!stack.isAbstract;
   node.isFinal = !!stack.isFinal;
   node.comments = createCommentsNode(ctx, stack, node);
+  node.question = !!stack.question;
   return node;
 }
 
@@ -11508,11 +12316,11 @@ function MethodSetterDefinition_default(ctx, stack, type) {
 }
 
 // node_modules/@easescript/transform/lib/tokens/NewExpression.js
-var import_Utils16 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils21 = __toESM(require("easescript/lib/core/Utils"));
 function NewExpression_default(ctx, stack) {
   let desc2 = stack.callee.type();
-  desc2 = import_Utils16.default.getOriginType(desc2);
-  if (desc2 !== stack.module && import_Utils16.default.isTypeModule(desc2)) {
+  desc2 = import_Utils21.default.getOriginType(desc2);
+  if (desc2 !== stack.module && import_Utils21.default.isTypeModule(desc2)) {
     ctx.addDepend(desc2, stack.module);
   }
   const node = ctx.createNode(stack);
@@ -11572,7 +12380,7 @@ function Property_default(ctx, stack) {
 }
 
 // node_modules/@easescript/transform/lib/tokens/PropertyDefinition.js
-var import_Utils17 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils22 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
 function PropertyDefinition_default(ctx, stack) {
   let init = null;
@@ -11604,7 +12412,7 @@ function PropertyDefinition_default(ctx, stack) {
   }
   const node = ctx.createNode(stack);
   const decl = ctx.createToken(stack.declarations[0]);
-  node.modifier = import_Utils17.default.getModifierValue(stack);
+  node.modifier = import_Utils22.default.getModifierValue(stack);
   node.static = !!stack.static;
   node.kind = stack.kind;
   node.key = decl.id;
@@ -11613,6 +12421,7 @@ function PropertyDefinition_default(ctx, stack) {
   node.isAbstract = !!stack.isAbstract;
   node.isFinal = !!stack.isFinal;
   node.comments = createCommentsNode(ctx, stack, node);
+  node.question = !!stack.question;
   return node;
 }
 
@@ -11666,6 +12475,17 @@ function StructTableColumnDefinition_default(ctx, stack) {
       node.properties.push(createIdentNode(ctx, item));
     });
   }
+  const defineAnnotations = getMethodAnnotations(stack, ["define"]);
+  node.order = 99;
+  if (defineAnnotations && defineAnnotations.length > 0) {
+    for (let defineAnnotation of defineAnnotations) {
+      const data = parseDefineAnnotation(defineAnnotation);
+      if (data && data.order != null) {
+        node.order = data.order;
+        break;
+      }
+    }
+  }
   return node;
 }
 
@@ -11674,6 +12494,8 @@ function StructTableDeclaration_default(ctx, stack) {
   ctx.table.getAllBuilder().forEach(
     (build) => build.createTable(ctx, stack)
   );
+  const builder = new InterfaceBuilder_default(stack);
+  return builder.create(ctx);
 }
 
 // node_modules/@easescript/transform/lib/tokens/StructTableKeyDefinition.js
@@ -11685,27 +12507,42 @@ function StructTableKeyDefinition_default(ctx, stack) {
   node.prefix = key === "primary" || key === "key" ? null : ctx.createIdentifier("key");
   node.local = ctx.createToken(stack.local);
   node.properties = (stack.properties || []).map((item) => createIdentNode(ctx, item));
+  node.order = 999;
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/StructTableMethodDefinition.js
-var import_Namespace8 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Utils23 = __toESM(require("easescript/lib/core/Utils"));
 function createNode(ctx, item, isKey = false, toLower = false, type = null) {
   if (!item)
     return null;
   if (type === "enum") {
     if (item.isIdentifier || item.isMemberExpression) {
-      const type2 = import_Namespace8.default.globals.get(item.value());
+      const type2 = item.type();
       const list = [];
-      if (type2 && type2.isModule && type2.isEnum) {
-        Array.from(type2.descriptors.keys()).forEach((key) => {
-          const items = type2.descriptors.get(key);
-          const item2 = items.find((item3) => item3.isEnumProperty);
-          if (item2) {
-            list.push(ctx.createLiteral(item2.init.value()));
-          }
-        });
-      }
+      const make = (type3) => {
+        if (!type3)
+          return;
+        if (type3.isIntersectionType) {
+          make(type3.left.type());
+          make(type3.right.type());
+        } else if (type3.isUnionType) {
+          type3.elements.forEach((item2) => make(item2.type()));
+        } else if (type3.isLiteralType && type3.value != null) {
+          list.push(ctx.createLiteral(String(type3.value)));
+        } else if (import_Utils23.default.isModule(type3) && type3.isEnum) {
+          Array.from(type3.descriptors.keys()).forEach((key) => {
+            const items = type3.descriptors.get(key);
+            const item2 = items.find((item3) => item3.isEnumProperty);
+            if (item2) {
+              list.push(ctx.createLiteral(String(item2.init.value())));
+            }
+          });
+        } else {
+          item.error(10115, item.value());
+        }
+      };
+      make(type2);
       return list;
     }
   }
@@ -11736,15 +12573,39 @@ function StructTablePropertyDefinition_default(ctx, stack) {
   const node = ctx.createNode(stack);
   node.assignment = !!stack.assignment;
   node.key = createIdentNode(ctx, stack.key);
-  node.init = createIdentNode(ctx, stack.init);
+  let init = null;
+  if (stack.init && stack.init.isMemberExpression) {
+    const desc2 = stack.init.description();
+    if (desc2 && desc2.isEnumProperty) {
+      init = ctx.createLiteral(String(desc2.init.value()));
+    }
+  }
+  node.init = init || createIdentNode(ctx, stack.init);
   return node;
 }
 
 // node_modules/@easescript/transform/lib/tokens/SuperExpression.js
+var import_Utils24 = __toESM(require("easescript/lib/core/Utils"));
 function SuperExpression_default(ctx, stack) {
   const node = ctx.createNode(stack);
+  if (stack.parentStack.isCallExpression && ctx.useClassConstructor(stack.module)) {
+    return node;
+  }
   const parent = stack.module.inherit;
-  node.value = ctx.getModuleReferenceName(parent, stack.module);
+  let refs = null;
+  if (parent && parent.isDeclaratorModule) {
+    stack = stack.getParentStack((stack2) => stack2.isClassDeclaration || stack2.isDeclaratorDeclaration);
+    if (stack && (stack.isClassDeclaration || stack.isDeclaratorDeclaration)) {
+      let identifier = stack.inherit;
+      if (stack.inherit && stack.inherit.isIdentifier) {
+        let desc2 = identifier.description();
+        if (import_Utils24.default.isStack(desc2) && desc2.isDeclarator) {
+          refs = stack.inherit.value();
+        }
+      }
+    }
+  }
+  node.value = refs || ctx.getModuleReferenceName(parent, stack.module);
   node.raw = node.value;
   return node;
 }
@@ -11816,7 +12677,7 @@ function TypeTransformExpression_default(ctx, stack) {
 }
 
 // node_modules/@easescript/transform/lib/tokens/UnaryExpression.js
-var import_Utils18 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils25 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
 function UnaryExpression_default(ctx, stack) {
   const operator2 = stack.operator;
@@ -11825,7 +12686,7 @@ function UnaryExpression_default(ctx, stack) {
     const desc2 = stack.argument.description();
     if (desc2 && desc2.isAnyType) {
       const hasDynamic = desc2 && desc2.isComputeType && desc2.isPropertyExists();
-      if (!hasDynamic && !import_Utils18.default.isLiteralObjectType(stack.argument.object.type())) {
+      if (!hasDynamic && !import_Utils25.default.isLiteralObjectType(stack.argument.object.type())) {
         const property = stack.argument.computed ? ctx.createToken(stack.argument.property) : ctx.createLiteral(
           stack.argument.property.value(),
           void 0,
@@ -11849,7 +12710,7 @@ function UnaryExpression_default(ctx, stack) {
 }
 
 // node_modules/@easescript/transform/lib/tokens/UpdateExpression.js
-var import_Utils19 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils26 = __toESM(require("easescript/lib/core/Utils"));
 init_Common();
 function UpdateExpression_default(ctx, stack) {
   const node = ctx.createNode(stack);
@@ -11863,11 +12724,11 @@ function UpdateExpression_default(ctx, stack) {
     let isReflect = false;
     if (stack.argument.computed) {
       const hasDynamic = desc2 && desc2.isComputeType && desc2.isPropertyExists();
-      if (!hasDynamic && !import_Utils19.default.isLiteralObjectType(stack.argument.object.type())) {
+      if (!hasDynamic && !import_Utils26.default.isLiteralObjectType(stack.argument.object.type())) {
         isReflect = true;
       }
     } else if (desc2 && desc2.isAnyType) {
-      isReflect = !import_Utils19.default.isLiteralObjectType(stack.argument.object.type());
+      isReflect = !import_Utils26.default.isLiteralObjectType(stack.argument.object.type());
     }
     if (isReflect) {
       const method = operator2 === "++" ? "incre" : "decre";
@@ -11996,7 +12857,7 @@ var import_glob_path = __toESM(require("glob-path"));
 async function buildProgram(ctx, compilation, graph, generatorClass = Generator_default) {
   let root = compilation.stack;
   if (!root) {
-    throw new Error("Build program failed");
+    return graph;
   }
   let body = [];
   let externals = [];
@@ -12043,15 +12904,24 @@ async function buildProgram(ctx, compilation, graph, generatorClass = Generator_
   ctx.createAllDependencies();
   let exportNodes = null;
   let importNodes = null;
+  let cache2 = null;
   if (ctx.options.module === "cjs") {
-    importNodes = createCJSImports(ctx, ctx.imports);
+    cache2 = /* @__PURE__ */ new WeakSet();
+    importNodes = createCJSImports(ctx, ctx.imports, cache2);
     exportNodes = createCJSExports(ctx, ctx.exports, graph);
   } else {
     importNodes = createESMImports(ctx, ctx.imports);
     exportNodes = createESMExports(ctx, ctx.exports, graph);
   }
+  if (cache2) {
+    ctx.createAllDependencies(cache2);
+    let newImports = createCJSImports(ctx, ctx.imports, cache2);
+    if (newImports.length > 0) {
+      imports.push(...newImports);
+    }
+  }
   imports.push(...importNodes, ...exportNodes.imports);
-  body.push(...exportNodes.declares);
+  externals.push(...exportNodes.declares);
   exports.push(...exportNodes.exports);
   let layouts = ctx.getLayouts(imports, body, externals, exports);
   if (layouts.length > 0) {
@@ -12134,11 +13004,14 @@ function createBuildContext(plugin2, records2 = /* @__PURE__ */ new Map()) {
   }
   async function build(compiOrVModule) {
     if (records2.has(compiOrVModule)) {
+      plugin2.complier.printLogInfo(`[build-cached] file:${compiOrVModule.file || compiOrVModule.getName()}`, "es-transform");
       return records2.get(compiOrVModule);
     }
+    plugin2.complier.printLogInfo(`[build] file:${compiOrVModule.file || compiOrVModule.getName()}`, "es-transform");
     let ctx = makeContext(compiOrVModule);
     let buildGraph = ctx.getBuildGraph(compiOrVModule);
     records2.set(compiOrVModule, buildGraph);
+    buildGraph.start();
     if (isVModule(compiOrVModule)) {
       await compiOrVModule.build(ctx, buildGraph);
     } else {
@@ -12152,15 +13025,19 @@ function createBuildContext(plugin2, records2 = /* @__PURE__ */ new Map()) {
       await ctx.emit(buildGraph);
     }
     invokeAfterTask();
+    buildGraph.done();
     return buildGraph;
   }
   async function buildDeps(compiOrVModule) {
     if (records2.has(compiOrVModule)) {
+      plugin2.complier.printLogInfo(`[build-deps-cached] file:${compiOrVModule.file || compiOrVModule.getName()}`, "es-transform");
       return records2.get(compiOrVModule);
     }
+    plugin2.complier.printLogInfo(`[build-deps] file:${compiOrVModule.file || compiOrVModule.getName()}`, "es-transform");
     let ctx = makeContext(compiOrVModule);
     let buildGraph = ctx.getBuildGraph(compiOrVModule);
     records2.set(compiOrVModule, buildGraph);
+    buildGraph.start();
     if (isVModule(compiOrVModule)) {
       await compiOrVModule.build(ctx, buildGraph);
     } else {
@@ -12181,6 +13058,7 @@ function createBuildContext(plugin2, records2 = /* @__PURE__ */ new Map()) {
       }
     });
     invokeAfterTask();
+    buildGraph.done();
     return buildGraph;
   }
   async function buildAssets(ctx, buildGraph) {
@@ -12199,9 +13077,9 @@ function createBuildContext(plugin2, records2 = /* @__PURE__ */ new Map()) {
   }
   function getBuildDeps(ctx) {
     const deps = /* @__PURE__ */ new Set();
-    ctx.dependencies.forEach((dataset) => {
-      dataset.forEach((dep) => {
-        if (import_Utils20.default.isModule(dep)) {
+    ctx.dependencies.forEach((dataset2) => {
+      dataset2.forEach((dep) => {
+        if (import_Utils27.default.isModule(dep)) {
           if (!dep.isStructTable && dep.isDeclaratorModule) {
             dep = ctx.getVModule(dep.getName());
             if (dep) {
@@ -12212,7 +13090,7 @@ function createBuildContext(plugin2, records2 = /* @__PURE__ */ new Map()) {
           }
         } else if (isVModule(dep)) {
           deps.add(dep);
-        } else if (import_Utils20.default.isCompilation(dep)) {
+        } else if (import_Utils27.default.isCompilation(dep)) {
           deps.add(dep);
         }
       });
@@ -12265,7 +13143,7 @@ function createBuildContext(plugin2, records2 = /* @__PURE__ */ new Map()) {
 }
 
 // node_modules/@easescript/transform/lib/core/Polyfill.js
-var import_Utils21 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils28 = __toESM(require("easescript/lib/core/Utils"));
 var import_fs5 = __toESM(require("fs"));
 var import_path5 = __toESM(require("path"));
 var TAGS_REGEXP = /(?:[\r\n]+|^)\/\/\/(?:\s+)?<(references|namespaces|export|import|createClass)\s+(.*?)\/>/g;
@@ -12343,7 +13221,7 @@ function parsePolyfillModule(file, createVModule) {
   } else {
     vm.addExport("default", vm.id);
   }
-  vm.file = import_Utils21.default.normalizePath(file);
+  vm.file = import_Utils28.default.normalizePath(file);
   vm.setContent(content);
 }
 function createPolyfillModule(dirname, createVModule) {
@@ -12354,11 +13232,11 @@ function createPolyfillModule(dirname, createVModule) {
     throw new Error(`Polyfills directory does not exists. on '${dirname}'`);
   }
   import_fs5.default.readdirSync(dirname).forEach((filename) => {
-    const filepath2 = import_path5.default.join(dirname, filename);
-    if (import_fs5.default.statSync(filepath2).isFile()) {
-      parsePolyfillModule(filepath2, createVModule);
-    } else if (import_fs5.default.statSync(filepath2).isDirectory()) {
-      createPolyfillModule(filepath2, createVModule);
+    const filepath = import_path5.default.join(dirname, filename);
+    if (import_fs5.default.statSync(filepath).isFile()) {
+      parsePolyfillModule(filepath, createVModule);
+    } else if (import_fs5.default.statSync(filepath).isDirectory()) {
+      createPolyfillModule(filepath, createVModule);
     }
   });
 }
@@ -12433,8 +13311,18 @@ import_Diagnostic.default.register("transform", (definer) => {
   );
   definer(
     10113,
-    `[es-transform] "\u89E3\u6790\u5230\u7684\u8DEF\u7531\u6CA1\u6709\u5B9A\u4E49\u53C2\u6570\uFF0C\u6240\u4EE5\u5728"@Router"\u8868\u8FBE\u5F0F\u4E2D\u4E0D\u9700\u8981\u6307\u5B9A\u53C2\u6570`,
+    `[es-transform] \u89E3\u6790\u5230\u7684\u8DEF\u7531\u6CA1\u6709\u5B9A\u4E49\u53C2\u6570\uFF0C\u6240\u4EE5\u5728"@Router"\u8868\u8FBE\u5F0F\u4E2D\u4E0D\u9700\u8981\u6307\u5B9A\u53C2\u6570`,
     `[es-transform] Resolved route "%s" does not have defined parameters, so not need to specify the 'param' parameters in the "@Router"`
+  );
+  definer(
+    10114,
+    `[es-transform] \u5728\u7ED1\u5B9A\u7684\u88C5\u9970\u5668\u4E2D\u4F20\u5165\u53C2\u6570\uFF0C\u9700\u8981\u5728\u88C5\u9970\u5668\u4E2D\u8FD4\u56DE\u4E00\u4E2A\u88C5\u9970\u5668\u51FD\u6570`,
+    `[es-transform] To pass arguments in the bound decorator, need to return a decorator function in the decorator`
+  );
+  definer(
+    10115,
+    `[es-transform] \u5F15\u7528'%s'\u5FC5\u987B\u662F\u4E00\u4E2A\u679A\u4E3E\u7C7B`,
+    `[es-transform] References the '%s' must is a emun class`
   );
 });
 var plugins = /* @__PURE__ */ new Set();
@@ -12508,6 +13396,24 @@ var Plugin = class extends import_events.default {
   get context() {
     return this.#context;
   }
+  getBuildGraph(compilation) {
+    if (this.#initialized) {
+      return this.records.get(compilation);
+    }
+    return null;
+  }
+  clear(compilation) {
+    if (this.#initialized) {
+      this.complier.printLogInfo(`[clear-build-cache] file:${compilation.file}`, "es-transform");
+      this.records.delete(compilation);
+      const cache2 = this.context.cache;
+      if (cache2) {
+        const total = cache2.records.size;
+        cache2.clear(compilation);
+        this.complier.printLogInfo(`[clear-records-cache] total:${total}, current:${cache2.records.size} file:${compilation.file}`, "es-transform");
+      }
+    }
+  }
   //开发模式下调用，用来监听文件变化时删除缓存
   watch() {
     if (this.#watched)
@@ -12515,14 +13421,12 @@ var Plugin = class extends import_events.default {
     this.#watched = true;
     this.complier.on("onChanged", (compilation) => {
       if (compilation) {
-        this.records.delete(compilation);
-        let cache2 = this.context.cache;
-        if (cache2) {
-          compilation.modules.forEach((module2) => cache2.clear(module2));
-          cache2.clear(compilation);
-        }
+        this.clear(compilation);
         this.emit("compilation:changed", compilation);
       }
+    });
+    this.complier.on("onRefreshDone", (compilations) => {
+      this.emit("compilation:refresh", compilations);
     });
   }
   async init() {
@@ -12549,9 +13453,7 @@ var Plugin = class extends import_events.default {
       return;
     this.#complier = complier;
     await this.init();
-    if (this.options.mode === "development") {
-      this.watch();
-    }
+    this.watch();
     this.#initialized = true;
   }
   //当任务处理完成后调用。在加载插件或者打包插件时会调用这个方法，用来释放一些资源
@@ -12594,7 +13496,7 @@ var Plugin = class extends import_events.default {
       let vm = this.context.virtuals.getVModule(vmId);
       if (vm) {
         compilation = vm;
-      } else {
+      } else if (!compilation.modules.has(vmId)) {
         throw new Error(`The '${vmId}' virtual module does not exists.`);
       }
     }
@@ -12603,19 +13505,19 @@ var Plugin = class extends import_events.default {
 };
 
 // lib/core/Builder.js
-var import_Utils40 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils48 = __toESM(require("easescript/lib/core/Utils"));
 
 // lib/core/Context.js
 var import_path9 = __toESM(require("path"));
 init_Cache();
 init_AddressVariable();
-var import_Namespace10 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils25 = __toESM(require("easescript/lib/core/Utils"));
+var import_Namespace11 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Utils32 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
 
 // lib/core/VirtualModule.js
 init_Common2();
-var import_Generator4 = __toESM(require_Generator());
+var import_Generator5 = __toESM(require_Generator());
 var VirtualModule2 = class extends VirtualModule {
   #disableUse = false;
   constructor(id, ns, file) {
@@ -12637,7 +13539,7 @@ var VirtualModule2 = class extends VirtualModule {
     imports.push(...importNodes, ...exportNodes.imports);
     body.push(...exportNodes.declares);
     exports.push(...exportNodes.exports);
-    const generator = new import_Generator4.default(ctx, false);
+    const generator = new import_Generator5.default(ctx, false);
     const layout = [
       ...imports,
       ...Array.from(ctx.usings.values()),
@@ -12741,7 +13643,7 @@ var Context2 = class extends Context_default {
       let source = this.getModuleNamespace(depModule);
       if (source) {
         source += "\\" + depModule.id;
-      } else if (import_Utils25.default.isModule(context) || import_Utils25.default.isCompilation(context)) {
+      } else if (import_Utils32.default.isModule(context) || import_Utils32.default.isCompilation(context)) {
         let ns = context.namespace;
         if (ns && ns.parent) {
           source = "\\" + depModule.id;
@@ -12762,12 +13664,12 @@ var Context2 = class extends Context_default {
   createAllDependencies() {
     const dependencies = this.dependencies;
     const target = this.target;
-    const compilation = import_Utils25.default.isCompilation(target) ? target : null;
+    const compilation = import_Utils32.default.isCompilation(target) ? target : null;
     const importFlag = this.options.import;
     dependencies.forEach((deps, moduleOrCompi) => {
       const graph = this.getBuildGraph(moduleOrCompi);
       deps.forEach((depModule) => {
-        if (!(import_Utils25.default.isModule(depModule) || isVModule(depModule)))
+        if (!(import_Utils32.default.isModule(depModule) || isVModule(depModule)))
           return;
         if (depModule === target || compilation && compilation.modules.has(depModule.getName())) {
           return;
@@ -12777,7 +13679,7 @@ var Context2 = class extends Context_default {
     });
   }
   createModuleDependencies(module2) {
-    if (!import_Utils25.default.isModule(module2))
+    if (!import_Utils32.default.isModule(module2))
       return;
     let deps = this.getDependencies(module2);
     if (!deps)
@@ -12786,7 +13688,7 @@ var Context2 = class extends Context_default {
     const compilation = module2.compilation;
     const importFlag = this.options.import;
     deps.forEach((depModule) => {
-      if (!(import_Utils25.default.isModule(depModule) || isVModule(depModule)))
+      if (!(import_Utils32.default.isModule(depModule) || isVModule(depModule)))
         return;
       if (compilation && compilation.modules && compilation.modules.has(depModule.getName())) {
         return;
@@ -12797,7 +13699,7 @@ var Context2 = class extends Context_default {
   createModuleImportAndUsing(graph, context, depModule, importFlag = true) {
     if (context === depModule || !this.isNeedBuild(depModule))
       return;
-    let isRM = import_Utils25.default.isModule(depModule);
+    let isRM = import_Utils32.default.isModule(depModule);
     let isVM = this.isVModule(depModule);
     if (!(isVM || isRM))
       return;
@@ -12810,7 +13712,7 @@ var Context2 = class extends Context_default {
       this.createDeclaratorModuleImportReferences(depModule, context, graph);
     } else {
       if (importFlag) {
-        if (!this.checkModuleImportExclude(depModule)) {
+        if (this.isModuleNeedImport(depModule)) {
           const source = this.getModuleImportSource(depModule, context);
           const importSource = this.addImport(source);
           importSource.setSourceTarget(depModule);
@@ -12827,14 +13729,37 @@ var Context2 = class extends Context_default {
     return this.glob.dest(id, { group, failValue: null });
   }
   isModuleNeedUsing(depModule) {
-    if (depModule.isStructTable) {
-      return false;
-    }
     let result = this.resolveUsingSource(depModule.getName("/"), "usings");
     if (result === false) {
       return false;
     }
     return true;
+  }
+  isModuleNeedImport(module2) {
+    if (this.checkModuleImportExclude(module2)) {
+      return false;
+    }
+    let isVM = this.isVModule(module2);
+    if (isVM) {
+      return true;
+    }
+    let isRM = import_Utils32.default.isModule(module2);
+    if (!isRM) {
+      return false;
+    }
+    if (module2.isDeclaratorModule) {
+      return !this.isPhpDepModule(module2);
+    }
+    return true;
+  }
+  isPhpDepModule(module2) {
+    if (import_Utils32.default.isModule(module2)) {
+      return module2.getStacks().some((stack) => {
+        const compilation = stack.compilation;
+        return compilation && compilation.pluginScopes.scope === "es-php";
+      });
+    }
+    return false;
   }
   checkModuleImportExclude(module2) {
     return isExcludeDependency(this.options.dependency.excludes, module2.file || module2.getName("/"), module2);
@@ -12887,7 +13812,7 @@ var Context2 = class extends Context_default {
   }
   getAvailableOriginType(type) {
     if (type) {
-      const origin = import_Utils25.default.getOriginType(type);
+      const origin = import_Utils32.default.getOriginType(type);
       switch (origin.id) {
         case "String":
         case "Number":
@@ -12908,7 +13833,7 @@ var Context2 = class extends Context_default {
     return null;
   }
   addVariableRefs(stack, desc2, refsName) {
-    if (!import_Utils25.default.isStack(desc2))
+    if (!import_Utils32.default.isStack(desc2))
       return;
     const name = refsName || desc2.value();
     let funScope = stack.scope;
@@ -12934,16 +13859,16 @@ var Context2 = class extends Context_default {
       if (isForContext && !funScope.type("block"))
         return;
       if (!check2(funScope)) {
-        let dataset = cache.get(funScope, "addVariableRefs");
-        if (!dataset) {
-          dataset = /* @__PURE__ */ new Set();
-          cache.set(funScope, "addVariableRefs", dataset);
+        let dataset2 = cache.get(funScope, "addVariableRefs");
+        if (!dataset2) {
+          dataset2 = /* @__PURE__ */ new Set();
+          cache.set(funScope, "addVariableRefs", dataset2);
         }
-        dataset.add(refsName || desc2);
+        dataset2.add(refsName || desc2);
         if (!refsName && (desc2.isVariableDeclarator || desc2.isParamDeclarator)) {
           let addressRefObject = this.getAssignAddressRef(desc2);
           if (addressRefObject) {
-            dataset.add(addressRefObject.createIndexName(stack, desc2));
+            dataset2.add(addressRefObject.createIndexName(stack, desc2));
           }
         }
       }
@@ -12985,7 +13910,7 @@ var Context2 = class extends Context_default {
         return this.isArrayAddressRefsType(type.inherit.type());
       }
     }
-    return type && (type.isLiteralArrayType || type.isTupleType || import_Namespace10.default.globals.get("array") === type || import_Namespace10.default.globals.get("Array") === type);
+    return type && (type.isLiteralArrayType || type.isTupleType || import_Namespace11.default.globals.get("array") === type || import_Namespace11.default.globals.get("Array") === type);
   }
   isArrayMappingType(type) {
     if (!type)
@@ -12995,8 +13920,8 @@ var Context2 = class extends Context_default {
     }
     if (!type.isModule)
       return false;
-    if (type.dynamicProperties && type.dynamicProperties.size > 0 && import_Namespace10.default.globals.get("Array").is(type)) {
-      return type.dynamicProperties.has(import_Namespace10.default.globals.get("string")) || type.dynamicProperties.has(import_Namespace10.default.globals.get("number"));
+    if (type.dynamicProperties && type.dynamicProperties.size > 0 && import_Namespace11.default.globals.get("Array").is(type)) {
+      return type.dynamicProperties.has(import_Namespace11.default.globals.get("string")) || type.dynamicProperties.has(import_Namespace11.default.globals.get("number"));
     }
     return false;
   }
@@ -13031,13 +13956,13 @@ var Context2 = class extends Context_default {
         if (this.isArrayAccessor(inherit)) {
           return true;
         }
-        if (import_Namespace10.default.globals.get("ObjectProtector") === inherit) {
+        if (import_Namespace11.default.globals.get("ObjectProtector") === inherit) {
           return false;
         }
-        if (import_Namespace10.default.globals.get("ArrayProtector") === inherit) {
+        if (import_Namespace11.default.globals.get("ArrayProtector") === inherit) {
           return true;
         } else if (type.types.length > 0) {
-          if (import_Namespace10.default.globals.get("RMD") === inherit) {
+          if (import_Namespace11.default.globals.get("RMD") === inherit) {
             return this.isArrayAccessor(type.types[0].type());
           }
         }
@@ -13046,8 +13971,8 @@ var Context2 = class extends Context_default {
           return true;
         }
       }
-      const raw = import_Utils25.default.getOriginType(type);
-      if (raw === import_Namespace10.default.globals.get("Array") || this.isArrayMappingType(raw)) {
+      const raw = import_Utils32.default.getOriginType(type);
+      if (raw === import_Namespace11.default.globals.get("Array") || this.isArrayMappingType(raw)) {
         return true;
       }
     }
@@ -13079,15 +14004,15 @@ var Context2 = class extends Context_default {
     const isWrapType = type.isClassGenericType && type.inherit.isAliasType;
     if (isWrapType) {
       const inherit = type.inherit.type();
-      if (import_Namespace10.default.globals.get("ArrayProtector") === inherit) {
+      if (import_Namespace11.default.globals.get("ArrayProtector") === inherit) {
         return false;
       }
       if (type.types.length > 0) {
-        if (import_Namespace10.default.globals.get("RMD") === inherit) {
+        if (import_Namespace11.default.globals.get("RMD") === inherit) {
           return this.isObjectAccessor(type.types[0].type());
         }
       }
-      return import_Namespace10.default.globals.get("ObjectProtector") === inherit;
+      return import_Namespace11.default.globals.get("ObjectProtector") === inherit;
     }
     return false;
   }
@@ -13107,9 +14032,9 @@ var Context2 = class extends Context_default {
     const verify = (type2) => {
       if (type2 && type2.isClassGenericType && type2.inherit.isAliasType) {
         const inheritType = type2.inherit.type();
-        if (inheritType === import_Namespace10.default.globals.get("RMD")) {
+        if (inheritType === import_Namespace11.default.globals.get("RMD")) {
           return true;
-        } else if (type2.types.length > 0 && (inheritType === import_Namespace10.default.globals.get("ArrayProtector") || inheritType === import_Namespace10.default.globals.get("ObjectProtector"))) {
+        } else if (type2.types.length > 0 && (inheritType === import_Namespace11.default.globals.get("ArrayProtector") || inheritType === import_Namespace11.default.globals.get("ObjectProtector"))) {
           return verify(type2.types[0].type());
         }
       }
@@ -13205,7 +14130,7 @@ var Context2 = class extends Context_default {
     });
   }
   getAccessorName(name, desc2, accessor = "get") {
-    if (import_Utils25.default.isStack(desc2) && desc2.module) {
+    if (import_Utils32.default.isStack(desc2) && import_Utils32.default.isModule(desc2.module)) {
       let module2 = desc2.module;
       let key = "accessor:" + accessor + ":" + name;
       let resolveName = cache.get(module2, key);
@@ -13217,11 +14142,18 @@ var Context2 = class extends Context_default {
       let index = 0;
       let _name = accessor + suffix;
       resolveName = _name;
-      while (true) {
-        const has = isStatic ? module2.getMethod(resolveName) : module2.getMember(resolveName);
-        if (!has)
-          break;
-        resolveName = _name + index++;
+      if (!module2.isDeclaratorModule) {
+        const scope = module2.compilation.pluginScopes.scope;
+        while (true) {
+          const records2 = isStatic ? module2.getMethod(resolveName) : module2.getMember(resolveName);
+          if (!records2)
+            break;
+          if (records2.module && records2.module.compilation.pluginScopes.scope === scope) {
+            resolveName = _name + index++;
+          } else {
+            break;
+          }
+        }
       }
       cache.set(module2, key, resolveName);
       return resolveName;
@@ -13242,7 +14174,7 @@ var Context2 = class extends Context_default {
         module2 = m;
         key = m;
       }
-    } else if (!import_Utils25.default.isModule(module2)) {
+    } else if (!import_Utils32.default.isModule(module2)) {
       return null;
     }
     if (module2 === context || module2 === this.target) {
@@ -13255,7 +14187,7 @@ var Context2 = class extends Context_default {
       context = this.target;
     name = module2.id;
     let hasDefined = false;
-    if (import_Utils25.default.isModule(context)) {
+    if (import_Utils32.default.isModule(context)) {
       if (module2.required || context.imports && context.imports.has(module2.id)) {
         hasDefined = !!module2.required;
         if (!hasDefined) {
@@ -13289,9 +14221,9 @@ var Context2 = class extends Context_default {
     return name;
   }
   getModuleAlias(module2, context) {
-    if (!import_Utils25.default.isModule(module2))
+    if (!import_Utils32.default.isModule(module2))
       return null;
-    let alias = import_Utils25.default.isCompilation(context) ? context.importModuleNameds.get(module2) : import_Utils25.default.isModule(context) ? context.getModuleAlias(module2) : null;
+    let alias = import_Utils32.default.isCompilation(context) ? context.importModuleNameds.get(module2) : import_Utils32.default.isModule(context) ? context.getModuleAlias(module2) : null;
     if (!alias) {
       let mapping = this.#moduleAlias;
       if (mapping) {
@@ -13314,26 +14246,38 @@ var Context2 = class extends Context_default {
     return name;
   }
   getModuleMappingFolder(module2) {
-    let isRM = import_Utils25.default.isModule(module2);
+    let isRM = import_Utils32.default.isModule(module2);
     let isVM = isRM ? false : isVModule(module2);
-    if (!(isRM || isVM))
+    let isCom = !(isRM || isVM) ? import_Utils32.default.isCompilation(module2) : false;
+    if (!(isRM || isVM || isCom))
       return null;
     if (isVM) {
       let bindM = module2.bindModule;
-      if (bindM && import_Utils25.default.isModule(bindM)) {
+      if (bindM && import_Utils32.default.isModule(bindM)) {
         module2 = bindM;
         isRM = true;
         isVM = false;
       }
     }
-    let file = module2.file || module2.getName("/") + ".source";
-    if (isRM && module2.isDeclaratorModule) {
-      let compilation = module2.compilation;
-      if (compilation) {
-        if (compilation.isGlobalFlag && compilation.pluginScopes.scope === "global") {
+    let file = module2.file;
+    let nonGlobal = false;
+    if (isRM && !isVM) {
+      nonGlobal = module2.getStacks().some((stack) => {
+        const compilation = stack.compilation;
+        return compilation && compilation.pluginScopes.scope === "es-php";
+      });
+    }
+    if (!nonGlobal) {
+      if (isRM && module2.isDeclaratorModule) {
+        let compilation = module2.compilation;
+        if (compilation) {
+          if (compilation.isGlobalFlag && compilation.pluginScopes.scope === "global") {
+            file += ".global";
+          }
+        }
+      } else if (isCom && module2.isGlobalFlag) {
+        if (module2.pluginScopes?.scope === "global") {
           file += ".global";
-        } else {
-          file += ".declare";
         }
       }
     }
@@ -13343,8 +14287,8 @@ var Context2 = class extends Context_default {
     const config = this.options;
     const isString = typeof source === "string";
     if (isString && source.includes("${__filename}")) {
-      const owner = import_Utils25.default.isModule(context) ? context.compilation : context;
-      source = source.replace("${__filename}", import_Utils25.default.isCompilation(owner) ? owner.file : this.target.file);
+      const owner = import_Utils32.default.isModule(context) ? context.compilation : context;
+      source = source.replace("${__filename}", import_Utils32.default.isCompilation(owner) ? owner.file : this.target.file);
     }
     if (isString && source.includes("/node_modules/")) {
       if (import_path9.default.isAbsolute(source))
@@ -13409,7 +14353,7 @@ var Context2 = class extends Context_default {
   inferType(stack, context = null) {
     if (!stack)
       return stack;
-    if (!context && import_Utils25.default.isStack(stack)) {
+    if (!context && import_Utils32.default.isStack(stack)) {
       context = stack.getContext();
     }
     if (context) {
@@ -13484,14 +14428,14 @@ var Context2 = class extends Context_default {
     if (specifiers && specifiers.length > 0) {
       let setScopeVariable = null;
       let multi = specifiers.length > 1;
-      if (origin && import_Utils25.default.isCompilation(origin) && import_Utils25.default.isCompilation(this.target) && this.target.mainModule) {
+      if (origin && import_Utils32.default.isCompilation(origin) && import_Utils32.default.isCompilation(this.target) && this.target.mainModule) {
         let hashId = createUniqueHashId(this.target.file);
         let added = false;
         setScopeVariable = (local, value) => {
           if (!added) {
             added = true;
             let deps = this.dependencies.get(this.target);
-            let System = import_Namespace10.default.globals.get("System");
+            let System = import_Namespace11.default.globals.get("System");
             let has = deps ? deps.has(System) : false;
             if (!has && imports) {
               this.addDepend(System, this.target);
@@ -13591,7 +14535,7 @@ var Context2 = class extends Context_default {
 var Context_default2 = Context2;
 
 // lib/core/Builder.js
-var import_Generator5 = __toESM(require_Generator());
+var import_Generator7 = __toESM(require_Generator());
 init_Common2();
 init_Asset2();
 init_Cache();
@@ -13675,11 +14619,7 @@ __export(tokens_exports2, {
   ReturnStatement: () => ReturnStatement_default2,
   SequenceExpression: () => SequenceExpression_default2,
   SpreadElement: () => SpreadElement_default2,
-  StructTableColumnDefinition: () => StructTableColumnDefinition_default2,
   StructTableDeclaration: () => StructTableDeclaration_default2,
-  StructTableKeyDefinition: () => StructTableKeyDefinition_default2,
-  StructTableMethodDefinition: () => StructTableMethodDefinition_default2,
-  StructTablePropertyDefinition: () => StructTablePropertyDefinition_default2,
   SuperExpression: () => SuperExpression_default2,
   SwitchCase: () => SwitchCase_default2,
   SwitchStatement: () => SwitchStatement_default2,
@@ -13734,7 +14674,7 @@ init_Common2();
 // lib/transforms/Array.js
 init_Object();
 init_Common2();
-var import_Namespace12 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Namespace13 = __toESM(require("easescript/lib/core/Namespace"));
 init_AddressVariable();
 function createMethodFunctionNode2(ctx, name) {
   return ctx.createLiteral(name);
@@ -13773,7 +14713,7 @@ var methods = {
     );
   },
   of(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     return ctx.createCallExpression(
       ctx.createIdentifier(ctx.getModuleNamespace(module2, "es_array_new")),
@@ -13802,103 +14742,103 @@ var methods = {
     return createCommonCalledNode2("array_slice", stack, ctx, object, args, called);
   },
   map(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_map");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   find(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_find");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   findIndex(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_find_index");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   filter(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_filter");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   indexOf(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_find_index");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   lastIndexOf(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_search_last_index");
     return createCommonCalledNode2(name, ctx, object, args, called);
   },
   copyWithin(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_copy_within");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   concat(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_concat");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   every(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_every");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   some(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_some");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   forEach(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_foreach");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   flat(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_flat");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   flatMap(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_flat_map");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   reduce(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_reduce");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   reduceRight(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_reduce_right");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   fill(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_fill");
     return createCommonCalledNode2(name, stack, ctx, object, args, called);
   },
   sort(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace12.default.globals.get("Array");
+    const module2 = import_Namespace13.default.globals.get("Array");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_array_sort");
     return createCommonCalledNode2(name, stack, ctx, object, args, called, true);
@@ -14004,8 +14944,8 @@ function ArrayPattern_default2(ctx, stack) {
 }
 
 // lib/tokens/FunctionExpression.js
-var import_Namespace13 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils26 = __toESM(require("easescript/lib/core/Utils"));
+var import_Namespace14 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Utils33 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
 init_Node();
 init_AddressVariable();
@@ -14116,7 +15056,7 @@ function createParamNodes(ctx, stack, params) {
         _alias = _alias.inherit.type();
       }
       if (!_alias || !_alias.isLiteralObjectType) {
-        acceptType = import_Utils26.default.getOriginType(oType);
+        acceptType = import_Utils33.default.getOriginType(oType);
       }
     }
     let typeName = "";
@@ -14131,7 +15071,7 @@ function createParamNodes(ctx, stack, params) {
     } else {
       nameNode = ctx.createToken(item);
     }
-    if (acceptType && import_Utils26.default.isModule(acceptType) && !acceptType.isEnum) {
+    if (acceptType && import_Utils33.default.isModule(acceptType) && !acceptType.isEnum) {
       const originType = ctx.getAvailableOriginType(acceptType);
       if (originType === "String" || originType === "Array" || originType === "Object") {
         typeName = originType.toLowerCase();
@@ -14165,7 +15105,7 @@ function FunctionExpression_default2(ctx, stack, type) {
   const [params, before] = createParamNodes(ctx, stack, stack.params);
   let block = ctx.createToken(stack.body);
   if (stack.expression && stack.expression.async || stack.async) {
-    const promiseModule = import_Namespace13.default.globals.get("Promise");
+    const promiseModule = import_Namespace14.default.globals.get("Promise");
     const promiseRefs = ctx.getModuleReferenceName(promiseModule, stack.module || stack.compilation);
     ctx.addDepend(promiseModule, stack.module || stack.compilation);
     if (block.type !== "BlockStatement") {
@@ -14245,7 +15185,7 @@ function ArrowFunctionExpression_default2(ctx, stack, type) {
 }
 
 // lib/tokens/AssignmentExpression.js
-var import_Utils28 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils35 = __toESM(require("easescript/lib/core/Utils"));
 
 // lib/transforms/Base64.js
 var Base64_default = {
@@ -14270,11 +15210,11 @@ var Base64_default = {
 };
 
 // lib/transforms/ConsoleInterface.js
-var import_Namespace14 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Namespace15 = __toESM(require("easescript/lib/core/Namespace"));
 init_Common2();
 var ConsoleInterface_default = {
   log(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace14.default.globals.get("System");
+    const module2 = import_Namespace15.default.globals.get("System");
     ctx.addDepend(module2);
     if (!called) {
       return ctx.createChunkExpression(`function(...$args){System::print(...$args);}`);
@@ -14337,8 +15277,8 @@ var Error_default = {
 };
 
 // lib/transforms/Function.js
-var import_Namespace15 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils27 = __toESM(require("easescript/lib/core/Utils"));
+var import_Namespace16 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Utils34 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
 init_Object();
 function createCallNode(stack, ctx, target, args) {
@@ -14372,7 +15312,7 @@ var methods2 = {
   },
   bind(stack, ctx, object, args, called = false, isStatic = false) {
     args = args.slice();
-    let System = import_Namespace15.default.globals.get("System");
+    let System = import_Namespace16.default.globals.get("System");
     ctx.addDepend(System);
     if (!called) {
       return ctx.createArrayExpression([
@@ -14384,7 +15324,7 @@ var methods2 = {
     let flagNode = ctx.createLiteral(null);
     if (_arguments[0]) {
       const type = ctx.inferType(_arguments[0]);
-      if (type.isLiteralArrayType || import_Namespace15.default.globals.get("Array") === import_Utils27.default.getOriginType(type)) {
+      if (type.isLiteralArrayType || import_Namespace16.default.globals.get("Array") === import_Utils34.default.getOriginType(type)) {
         flagNode = ctx.createLiteral(true);
       } else if (!type.isAnyType) {
         flagNode = ctx.createLiteral(false);
@@ -14415,7 +15355,7 @@ var allow_format_chars = "mdewgahksxolMQDEWYGAHSZXLT".split("").map((char) => ch
 
 // lib/transforms/global.js
 init_Common2();
-var import_Namespace16 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Namespace17 = __toESM(require("easescript/lib/core/Namespace"));
 var global_default = {
   // date(ctx, object, args, called=false, isStatic=false){
   //     if( args[0] && args[0].type === 'Literal' && !/(?![\\])(DDDo|Mo|do|dd|wo|Wo)/.test( args[0].value ) ){
@@ -14468,7 +15408,7 @@ var global_default = {
     }
   },
   isNaN(stack, ctx, object, args, called = false, isStatic = false) {
-    ctx.addDepend(import_Namespace16.default.globals.get("System"));
+    ctx.addDepend(import_Namespace17.default.globals.get("System"));
     if (!called) {
       ctx.createChunkExpression(`function($target){return System::isNaN($target);}`);
     }
@@ -14664,7 +15604,7 @@ init_Number();
 init_Object();
 
 // lib/transforms/String.js
-var import_Namespace18 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Namespace19 = __toESM(require("easescript/lib/core/Namespace"));
 init_Object();
 function createMethodFunctionNode3(ctx, name) {
   return ctx.createLiteral(name);
@@ -14679,105 +15619,105 @@ function createCommonCalledNode5(name, ctx, object, args, called) {
 }
 var methods5 = {
   fromCodePoint(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_from_code_point");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   raw(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_raw");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   fromCharCode(stack, ctx, object, args, called = false, isStatic = false) {
     if (!called) {
-      const module3 = import_Namespace18.default.globals.get("String");
+      const module3 = import_Namespace19.default.globals.get("String");
       ctx.addDepend(module3);
       return ctx.createChunkExpression(`function(...$code){return es_string_from_char_code(...$code);}`);
     }
     if (args.length === 1) {
       return createCommonCalledNode5("chr", ctx, null, args, true);
     }
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     const name = ctx.getModuleNamespace(module2, "es_string_from_char_code");
     ctx.addDepend(module2);
     return createCommonCalledNode5(name, ctx, null, args, true);
   },
   charAt(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_char_at");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   charCodeAt(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_char_code_at");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   concat(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_concat");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   includes(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_includes");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   indexOf(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_index_of");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   lastIndexOf(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_last_index_of");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   localeCompare(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_locale_compare");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   match(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_match");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   matchAll(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_match_all");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   search(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_search");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   replace(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_replace");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   replaceAll(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_replace_all");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   slice(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_slice");
     return createCommonCalledNode5(name, ctx, object, args, called);
@@ -14792,7 +15732,7 @@ var methods5 = {
     return createCommonCalledNode5("mb_substr", ctx, object, args, called);
   },
   substring(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_substring");
     return createCommonCalledNode5(name, ctx, object, args, called);
@@ -14834,25 +15774,28 @@ var methods5 = {
     return createCommonCalledNode5("str_pad", ctx, object, [args[0], ctx.createIdentifier("STR_PAD_RIGHT")], called);
   },
   normalize(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_normalize");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   valueOf(stack, ctx, object, args, called = false, isStatic = false) {
-    if (!called) {
-      return ctx.createChunkExpression(`function($target){return $target;}`);
+    if (called && stack.callee.isIdentifier && stack.isCallExpression && stack.callee.value() === "String") {
+      const module2 = import_Namespace19.default.globals.get("System");
+      ctx.addDepend(module2);
+      const name = ctx.getModuleReferenceName(module2);
+      return createCommonCalledNode5(name + "::toString", ctx, object, [], called);
     }
     return createCommonCalledNode5("strval", ctx, object, [], called);
   },
   startsWith(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_starts_with");
     return createCommonCalledNode5(name, ctx, object, args, called);
   },
   endsWith(stack, ctx, object, args, called = false, isStatic = false) {
-    const module2 = import_Namespace18.default.globals.get("String");
+    const module2 = import_Namespace19.default.globals.get("String");
     ctx.addDepend(module2);
     const name = ctx.getModuleNamespace(module2, "es_string_ends_with");
     return createCommonCalledNode5(name, ctx, object, args, called);
@@ -14898,6 +15841,31 @@ var methods6 = {
   }
 };
 var System_default = methods6;
+
+// lib/transforms/Boolean.js
+init_Object();
+init_Common2();
+var import_Namespace20 = __toESM(require("easescript/lib/core/Namespace"));
+function createCommonCalledNode6(name, stack, ctx, object, args, called = true) {
+  if (!called) {
+    return ctx.createLiteral(name.replace(/\\/g, "\\\\"));
+  }
+  return ctx.createCallExpression(
+    ctx.createIdentifier(name),
+    [object].concat(args)
+  );
+}
+var methods7 = {
+  valueOf(stack, ctx, object, args, called = false, isStatic = false) {
+    return createCommonCalledNode6("boolval", stack, ctx, object, args, called);
+  }
+};
+["propertyIsEnumerable", "hasOwnProperty", "toLocaleString", "toString"].forEach((name) => {
+  if (!Object.prototype.hasOwnProperty.call(methods7, name)) {
+    methods7[name] = Object_default[name];
+  }
+});
+var Boolean_default = methods7;
 
 // lib/transforms/Uint.js
 var Uint_exports = {};
@@ -14946,6 +15914,7 @@ modules.set("Float", Float_exports);
 modules.set("Object", Object_default);
 modules.set("String", String_default);
 modules.set("System", System_default);
+modules.set("Boolean", Boolean_default);
 var transforms_default = modules;
 
 // lib/tokens/AssignmentExpression.js
@@ -14967,7 +15936,7 @@ function createNode2(ctx, stack) {
     if (desc2 && desc2.isStack && (desc2.isMethodSetterDefinition || desc2.isPropertyDefinition)) {
       const property = stack.left.property.value();
       let typename = ctx.getAvailableOriginType(objectType) || objectType.toString();
-      if ((objectType.isUnionType || objectType.isIntersectionType) && import_Utils28.default.isModule(desc2.module)) {
+      if ((objectType.isUnionType || objectType.isIntersectionType) && import_Utils35.default.isModule(desc2.module)) {
         typename = desc2.module.id;
       }
       const map = {
@@ -15001,11 +15970,11 @@ function createNode2(ctx, stack) {
       if (!hasDynamic && desc2 && (desc2.isProperty && desc2.computed || desc2.isPropertyDefinition && desc2.dynamic)) {
         hasDynamic = true;
       }
-      if (!hasDynamic && !import_Utils28.default.isLiteralObjectType(objectType)) {
+      if (!hasDynamic && !import_Utils35.default.isLiteralObjectType(objectType)) {
         isReflect = true;
       }
     } else if (desc2 && desc2.isAnyType) {
-      isReflect = !import_Utils28.default.isLiteralObjectType(objectType);
+      isReflect = !import_Utils35.default.isLiteralObjectType(objectType);
     }
   }
   if (desc2 && !isReflect && stack.right) {
@@ -15141,7 +16110,7 @@ function AwaitExpression_default2(ctx, stack) {
 }
 
 // lib/tokens/BinaryExpression.js
-var import_Utils29 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils36 = __toESM(require("easescript/lib/core/Utils"));
 init_AddressVariable();
 init_Common2();
 var mapset = {
@@ -15157,7 +16126,7 @@ function createNode3(ctx, stack) {
   if (maybeArrayRef) {
     if (stack.isIdentifier || stack.isMemberExpression) {
       let desc2 = stack.description();
-      if (import_Utils29.default.isTypeModule(desc2)) {
+      if (import_Utils36.default.isTypeModule(desc2)) {
         return ctx.createToken(stack);
       }
     }
@@ -15191,12 +16160,20 @@ function BinaryExpression_default2(ctx, stack) {
         stack
       );
     } else if (operator2 === "is") {
+      if (import_Utils36.default.isModule(type)) {
+        if (type.isDeclaratorModule && !ctx.isVModule(type) && !ctx.isDeclaratorModuleDependency(type)) {
+          return ctx.createLiteral(true);
+        }
+      } else {
+        return ctx.createLiteral(true);
+      }
+      let right = createClassRefsNode(ctx, type, stack);
       ctx.addDepend(type);
       return ctx.createCallExpression(
         ctx.createIdentifier("is_a"),
         [
           ctx.createToken(stack.left),
-          ctx.createToken(stack.right)
+          right
         ],
         stack
       );
@@ -15295,8 +16272,8 @@ function BreakStatement_default2(ctx, stack) {
 // lib/tokens/CallExpression.js
 init_Common2();
 init_AddressVariable();
-var import_Utils30 = __toESM(require("easescript/lib/core/Utils"));
-var import_Namespace19 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Utils37 = __toESM(require("easescript/lib/core/Utils"));
+var import_Namespace21 = __toESM(require("easescript/lib/core/Namespace"));
 function createArgumentNodes(ctx, stack, args, declareParams) {
   return args.map((item, index) => {
     const node = ctx.createToken(item);
@@ -15354,7 +16331,7 @@ function CallExpression(ctx, stack) {
           _args,
           stack
         );
-      } else if (import_Utils30.default.isStack(desc2)) {
+      } else if (import_Utils37.default.isStack(desc2)) {
         let name = ctx.getAvailableOriginType(objectType) || objectType.toString();
         if ((objectType.isUnionType || objectType.isIntersectionType) && (desc2.isMethodDefinition || desc2.isCallDefinition) && desc2.module && desc2.module.isModule) {
           name = desc2.module.id;
@@ -15364,8 +16341,8 @@ function CallExpression(ctx, stack) {
         let isStringNewWrapObject = null;
         if (objectType.isInstanceofType && !objectType.isThisType) {
           const origin = objectType.inherit.type();
-          isStringNewWrapObject = origin === import_Namespace19.default.globals.get("String");
-          if (isStringNewWrapObject || origin === import_Namespace19.default.globals.get("Number") || origin === import_Namespace19.default.globals.get("Boolean")) {
+          isStringNewWrapObject = origin === import_Namespace21.default.globals.get("String");
+          if (isStringNewWrapObject || origin === import_Namespace21.default.globals.get("Number") || origin === import_Namespace21.default.globals.get("Boolean")) {
             newWrapObject = true;
           }
         }
@@ -15384,7 +16361,7 @@ function CallExpression(ctx, stack) {
               );
             } else {
               let callee = ctx.createToken(stack.callee.object);
-              if (newWrapObject && isStringNewWrapObject) {
+              if (newWrapObject && isStringNewWrapObject && stack.callee.property.value() !== "toString") {
                 callee = ctx.createCallExpression(
                   ctx.createMemberExpression([
                     callee,
@@ -15432,7 +16409,7 @@ function CallExpression(ctx, stack) {
             false
           );
         }
-      } else if ((desc2.isCallDefinition || import_Utils30.default.isModule(desc2)) && args.length === 1) {
+      } else if ((desc2.isCallDefinition || import_Utils37.default.isModule(desc2)) && args.length === 1) {
         const name = desc2.isCallDefinition && desc2.module ? desc2.module.id : ctx.getAvailableOriginType(desc2) || desc2.toString();
         if (name && transforms_default.has(name)) {
           const object = transforms_default.get(name);
@@ -15652,13 +16629,11 @@ var ClassBuilder2 = class {
   }
   createImplements(ctx, module2, stack = null) {
     this.implements = module2.implements.map((impModule) => {
-      if (impModule.isInterface) {
+      if (impModule.isInterface && !impModule.isStructTable) {
         ctx.addDepend(impModule, module2);
-        if (!impModule.isStructTable) {
-          return ctx.createIdentifier(
-            ctx.getModuleReferenceName(impModule, module2)
-          );
-        }
+        return ctx.createIdentifier(
+          ctx.getModuleReferenceName(impModule, module2)
+        );
       }
       return null;
     }).filter(Boolean);
@@ -15862,7 +16837,7 @@ function EmptyStatement_default2() {
 }
 
 // lib/core/EnumBuilder.js
-var import_Namespace20 = __toESM(require("easescript/lib/core/Namespace.js"));
+var import_Namespace22 = __toESM(require("easescript/lib/core/Namespace.js"));
 init_Common2();
 var EnumBuilder2 = class extends ClassBuilder_default2 {
   create(ctx) {
@@ -15931,7 +16906,7 @@ var EnumBuilder2 = class extends ClassBuilder_default2 {
       }
     }
     if (!this.inherit) {
-      const inherit2 = import_Namespace20.default.globals.get("Enumeration");
+      const inherit2 = import_Namespace22.default.globals.get("Enumeration");
       ctx.addDepend(inherit2, stack.module);
       this.inherit = ctx.createIdentifier(
         ctx.getModuleReferenceName(inherit2, module2)
@@ -15939,11 +16914,11 @@ var EnumBuilder2 = class extends ClassBuilder_default2 {
     }
   }
   createMemebers(ctx, stack) {
-    let methods7 = this.methods;
+    let methods8 = this.methods;
     stack.properties.forEach((item) => {
       const child = this.createMemeber(ctx, item);
       if (child) {
-        methods7.push(child);
+        methods8.push(child);
       }
     });
     super.createMemebers(ctx, stack);
@@ -15962,14 +16937,14 @@ function EnumDeclaration_default2(ctx, stack) {
 }
 
 // lib/tokens/EnumProperty.js
-var import_Utils31 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils38 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
 function EnumProperty_default2(ctx, stack) {
   const node = ctx.createNode(stack);
   node.key = ctx.createToken(stack.key);
   node.init = ctx.createToken(stack.init);
   node.comments = createCommentsNode2(ctx, stack, node);
-  node.modifier = ctx.createIdentifier(import_Utils31.default.getModifierValue(stack) || "public");
+  node.modifier = ctx.createIdentifier(import_Utils38.default.getModifierValue(stack) || "public");
   return node;
 }
 
@@ -16104,8 +17079,8 @@ function ForInStatement_default2(ctx, stack) {
 }
 
 // lib/tokens/ForOfStatement.js
-var import_Namespace21 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils32 = __toESM(require("easescript/lib/core/Utils"));
+var import_Namespace23 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Utils39 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
 init_AddressVariable();
 function createConditionNode(ctx, obj, refs) {
@@ -16150,9 +17125,9 @@ function createAddressRefsNode2(addressRefObject, ctx, desc2, value, stack) {
 }
 function ForOfStatement_default2(ctx, stack) {
   let type = stack.right.type();
-  if (!(type.isLiteralArrayType || type.isTupleType || type === import_Namespace21.default.globals.get("array") || ctx.isArrayMappingType(import_Utils32.default.getOriginType(type)))) {
+  if (!(type.isLiteralArrayType || type.isTupleType || type === import_Namespace23.default.globals.get("array") || ctx.isArrayMappingType(import_Utils39.default.getOriginType(type)))) {
     let node2 = ctx.createNode(stack, "ForStatement");
-    let isIterableIteratorType = import_Utils32.default.isIterableIteratorType(type, import_Namespace21.default.globals.get("Iterator"));
+    let isIterableIteratorType = import_Utils39.default.isIterableIteratorType(type, import_Namespace23.default.globals.get("Iterator"));
     let declDesc = stack.left.isVariableDeclaration ? stack.left.declarations[0] : null;
     let init = ctx.createToken(stack.left);
     let obj = ctx.genLocalRefName(stack, AddressVariable_default.REFS_VALUE);
@@ -16259,9 +17234,9 @@ function FunctionDeclaration_default2(ctx, stack, type) {
 }
 
 // lib/tokens/Identifier.js
-var import_Utils33 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils40 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
-var globals2 = ["String", "Number", "Boolean", "Object", "Array"];
+var globals = ["String", "Number", "Boolean", "Object", "Array"];
 function Identifier_default2(ctx, stack) {
   if (!stack.parentStack.isMemberExpression) {
     let isRefs = true;
@@ -16312,11 +17287,11 @@ function Identifier_default2(ctx, stack) {
     }
     return propertyNode;
   }
-  if (import_Utils33.default.isTypeModule(desc2)) {
+  if (import_Utils40.default.isTypeModule(desc2)) {
     if (desc2 !== stack.module && stack.value() !== "arguments") {
       ctx.addDepend(desc2);
     }
-    if (stack.parentStack.isMemberExpression && stack.parentStack.object === stack || stack.parentStack.isNewExpression && !globals2.includes(desc2.getName()) || stack.parentStack.isBinaryExpression && stack.parentStack.right === stack && stack.parentStack.operator === "instanceof") {
+    if (stack.parentStack.isMemberExpression && stack.parentStack.object === stack || stack.parentStack.isNewExpression && !globals.includes(desc2.getName()) || stack.parentStack.isBinaryExpression && stack.parentStack.right === stack && stack.parentStack.operator === "instanceof") {
       if (!stack.hasLocalDefined()) {
         return ctx.createIdentifier(ctx.getModuleReferenceName(desc2, stack.module), stack);
       } else {
@@ -16566,7 +17541,7 @@ function InterfaceDeclaration_default2(ctx, stack) {
 }
 
 // lib/tokens/JSXAttribute.js
-var import_Namespace22 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Namespace24 = __toESM(require("easescript/lib/core/Namespace"));
 init_Common2();
 function JSXAttribute_default2(ctx, stack) {
   let ns = null;
@@ -16611,7 +17586,7 @@ function JSXAttribute_default2(ctx, stack) {
           expression = expression.left;
         }
         if (expression.isMemberExpression) {
-          const objectType = import_Namespace22.default.globals.get("Object");
+          const objectType = import_Namespace24.default.globals.get("Object");
           has = objectType && objectType.is(expression.object.type());
         }
       }
@@ -16650,8 +17625,8 @@ function JSXClosingFragment_default2(ctx, stack) {
 }
 
 // lib/core/ESX.js
-var import_Namespace23 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils34 = __toESM(require("easescript/lib/core/Utils"));
+var import_Namespace25 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Utils41 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
 function createCommentVNode2(ctx, text) {
   return ctx.createCallExpression(
@@ -16716,7 +17691,7 @@ function createForEachNode2(ctx, refs, element, item, key) {
   return Array_default.map(null, ctx, refs, [ctx.createArrowFunctionExpression(element, args)], true);
 }
 function getComponentDirectiveAnnotation2(module2) {
-  if (!import_Utils34.default.isModule(module2))
+  if (!import_Utils41.default.isModule(module2))
     return null;
   const annots = getModuleAnnotations(module2, ["define"]);
   for (let annot of annots) {
@@ -16733,9 +17708,9 @@ function getComponentDirectiveAnnotation2(module2) {
 }
 var directiveInterface2 = null;
 function isDirectiveInterface2(module2) {
-  if (!import_Utils34.default.isModule(module2))
+  if (!import_Utils41.default.isModule(module2))
     return false;
-  directiveInterface2 = directiveInterface2 || import_Namespace23.default.globals.get("web.components.Directive");
+  directiveInterface2 = directiveInterface2 || import_Namespace25.default.globals.get("web.components.Directive");
   if (directiveInterface2 && directiveInterface2.isInterface) {
     return directiveInterface2.type().isof(module2);
   }
@@ -17213,8 +18188,11 @@ function createElementNode2(ctx, stack, data, children) {
     if (stack.jsxRootElement === stack && stack.parentStack.isProgram) {
       name = ctx.createLiteral("div");
     } else {
-      const desc2 = stack.description();
-      if (import_Utils34.default.isModule(desc2)) {
+      let desc2 = stack.description();
+      let isVar = stack.is(desc2) && desc2.isDeclarator;
+      if (!isVar)
+        desc2 = desc2.type();
+      if (!isVar && import_Utils41.default.isModule(desc2)) {
         ctx.addDepend(desc2, stack.module);
         name = createClassRefsNode(ctx, desc2, stack);
       } else {
@@ -17628,7 +18606,7 @@ function LogicalExpression_default2(ctx, stack) {
 }
 
 // lib/tokens/MemberExpression.js
-var import_Utils35 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils42 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
 init_AddressVariable();
 function trans(ctx, stack, description, aliasAnnotation, objectType) {
@@ -17692,7 +18670,7 @@ function MemberExpression2(ctx, stack) {
   let module2 = stack.module;
   let description = stack.descriptor();
   let computed = false;
-  if (description && import_Utils35.default.isTypeModule(description)) {
+  if (description && import_Utils42.default.isTypeModule(description)) {
     ctx.addDepend(description);
     let pp = stack.parentStack;
     if (pp.isMemberExpression && pp.object === stack || (pp.isNewExpression || pp.isCallExpression) && pp.callee === stack) {
@@ -17732,7 +18710,7 @@ function MemberExpression2(ctx, stack) {
     }
     let isReflect = !!objectType.isAnyType;
     let hasDynamic = description && description.isComputeType && description.isPropertyExists();
-    if (!hasDynamic && !import_Utils35.default.isLiteralObjectType(objectType)) {
+    if (!hasDynamic && !import_Utils42.default.isLiteralObjectType(objectType)) {
       isReflect = true;
     }
     if (isReflect) {
@@ -17853,7 +18831,7 @@ function MemberExpression2(ctx, stack) {
 var MemberExpression_default2 = MemberExpression2;
 
 // lib/tokens/MethodDefinition.js
-var import_Utils36 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils43 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
 function MethodDefinition_default2(ctx, stack, type) {
   const alias = getMethodOrPropertyAlias(ctx, stack);
@@ -17861,7 +18839,7 @@ function MethodDefinition_default2(ctx, stack, type) {
   node.async = stack.expression.async ? true : false;
   node.static = stack.static ? ctx.createIdentifier("static") : null;
   node.final = stack.final ? ctx.createIdentifier("final") : null;
-  node.modifier = ctx.createIdentifier(import_Utils36.default.getModifierValue(stack));
+  node.modifier = ctx.createIdentifier(import_Utils43.default.getModifierValue(stack));
   node.kind = "method";
   if (alias && node.key) {
     node.key.value = alias;
@@ -17895,8 +18873,8 @@ function MethodSetterDefinition_default2(ctx, stack, type) {
 }
 
 // lib/tokens/NewExpression.js
-var import_Namespace24 = __toESM(require("easescript/lib/core/Namespace"));
-var import_Utils37 = __toESM(require("easescript/lib/core/Utils"));
+var import_Namespace26 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Utils44 = __toESM(require("easescript/lib/core/Utils"));
 init_AddressVariable();
 init_Common2();
 function createArgumentNodes2(ctx, stack, args, declareParams) {
@@ -17925,11 +18903,11 @@ function NewExpression_default2(ctx, stack) {
     type = desc2.module;
   }
   if (type) {
-    type = import_Utils37.default.getOriginType(type);
-    if (import_Utils37.default.isTypeModule(type)) {
+    type = import_Utils44.default.getOriginType(type);
+    if (import_Utils44.default.isTypeModule(type)) {
       ctx.addDepend(type);
     }
-    if (type === import_Namespace24.default.globals.get("Array")) {
+    if (type === import_Namespace26.default.globals.get("Array")) {
       return transforms_default.get("Array").of(
         stack,
         ctx,
@@ -17939,13 +18917,13 @@ function NewExpression_default2(ctx, stack) {
         false
       );
     }
-    if (type === import_Namespace24.default.globals.get("String")) {
+    if (type === import_Namespace26.default.globals.get("String")) {
       wrapType = "String";
-    } else if (type === import_Namespace24.default.globals.get("Number")) {
+    } else if (type === import_Namespace26.default.globals.get("Number")) {
       wrapType = "Number";
-    } else if (type === import_Namespace24.default.globals.get("Boolean")) {
+    } else if (type === import_Namespace26.default.globals.get("Boolean")) {
       wrapType = "Boolean";
-    } else if (type === import_Namespace24.default.globals.get("Object")) {
+    } else if (type === import_Namespace26.default.globals.get("Object")) {
       wrapType = "Object";
     }
   }
@@ -17987,7 +18965,7 @@ function ObjectExpression_default2(ctx, stack) {
     let start = 0;
     while (spreadIndex.length > 0) {
       let index = spreadIndex.shift();
-      if (start > 0 && start < index) {
+      if (start >= 0 && start < index) {
         segs.push(ctx.createObjectExpression(node.properties.slice(start, index)));
       }
       start = index + 1;
@@ -18142,14 +19120,14 @@ function Property_default2(ctx, stack) {
 }
 
 // lib/tokens/PropertyDefinition.js
-var import_Utils38 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils45 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
 function PropertyDefinition_default2(ctx, stack) {
   let alias = getMethodOrPropertyAlias(ctx, stack);
   let isStatic = !!(stack.module.static || stack.static);
   const node = ctx.createNode(stack);
   node.declarations = (stack.declarations || []).map((item) => ctx.createToken(item));
-  node.modifier = ctx.createIdentifier(import_Utils38.default.getModifierValue(stack));
+  node.modifier = ctx.createIdentifier(import_Utils45.default.getModifierValue(stack));
   let hasEmbed = false;
   if (stack.annotations && stack.annotations.length > 0) {
     stack.annotations.forEach((annot) => {
@@ -18251,13 +19229,13 @@ function SequenceExpression_default2(ctx, stack) {
 }
 
 // lib/tokens/SpreadElement.js
-var import_Namespace25 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Namespace27 = __toESM(require("easescript/lib/core/Namespace"));
 init_Common2();
 function SpreadElement_default2(ctx, stack) {
   if (stack.parentStack.isArrayExpression) {
     const type = stack.argument.type();
-    const _Array = import_Namespace25.default.globals.get("Array");
-    const _array = import_Namespace25.default.globals.get("array");
+    const _Array = import_Namespace27.default.globals.get("Array");
+    const _array = import_Namespace27.default.globals.get("array");
     if (type && (type.isLiteralArrayType || type === _Array || type === _array)) {
       return ctx.createToken(stack.argument);
     }
@@ -18279,99 +19257,140 @@ function SpreadElement_default2(ctx, stack) {
   return node;
 }
 
-// lib/tokens/StructTableColumnDefinition.js
+// lib/core/StructTableBuilder.js
+var import_crypto4 = require("crypto");
 init_Common2();
-function StructTableColumnDefinition_default2(ctx, stack) {
-  const node = ctx.createNode(stack);
-  node.key = ctx.createIdentifier("`" + stack.key.value() + "`", stack.key);
-  node.properties = [];
-  const type = stack.typename ? ctx.createToken(stack.typename) : ctx.createIdentifier("varchar(255)");
-  const unsigned = stack.unsigned ? ctx.createIdentifier("unsigned") : null;
-  const notnull = !stack.question ? ctx.createIdentifier("not null") : null;
-  node.properties.push(type);
-  if (unsigned) {
-    node.properties.push(unsigned);
+var import_Generator6 = __toESM(require_Generator());
+var import_Utils46 = __toESM(require("easescript/lib/core/Utils"));
+var StructTableBuilder = class {
+  constructor(stack) {
+    this.stack = stack;
+    this.compilation = stack.compilation;
+    this.module = stack.module;
+    this.body = [];
+    this.methods = [];
+    this.members = [];
+    this.implements = [];
+    this.inherit = null;
   }
-  if (notnull) {
-    node.properties.push(notnull);
+  create(ctx) {
+    let node = ctx.createNode("ClassDeclaration");
+    ctx.setNode(this.stack, this);
+    const module2 = this.module;
+    const stack = this.stack;
+    node.comments = createCommentsNode2(ctx, stack);
+    const comments = ["/**", "* @StructTable", "**/"].join("\n");
+    if (node.comments) {
+      node.comments.value += "\n" + comments;
+    } else {
+      node.comments = ctx.createChunkExpression(comments, true);
+    }
+    addAnnotationManifest(ctx, stack);
+    this.createInherit(ctx, module2, stack);
+    this.createImplements(ctx, module2, stack);
+    this.createBody(ctx, module2, stack);
+    node.id = ctx.createIdentifier(module2.id);
+    node.inherit = this.inherit;
+    node.implements = this.implements;
+    node.body = ctx.createBlockStatement([
+      ...this.methods,
+      ...this.members
+    ]);
+    ctx.removeNode(this.stack);
+    return node;
   }
-  {
-    (stack.properties || []).forEach((item) => {
-      node.properties.push(createIdentNode(ctx, item));
+  createBody(ctx, module2, stack) {
+    this.createMemebers(ctx, stack);
+  }
+  createInherit(ctx, module2, stack = null) {
+    let inherit = module2.inherit;
+    if (inherit) {
+      ctx.addDepend(inherit, module2);
+      if (ctx.isActiveModule(inherit, module2)) {
+        this.inherit = ctx.createIdentifier(
+          ctx.getModuleReferenceName(inherit, module2)
+        );
+      }
+    }
+  }
+  createImplements(ctx, module2, stack = null) {
+    this.implements = module2.implements.map((impModule) => {
+      ctx.addDepend(impModule, module2);
+      if (impModule.isInterface && ctx.isActiveModule(impModule, module2)) {
+        return ctx.createIdentifier(
+          ctx.getModuleReferenceName(impModule, module2)
+        );
+      }
+      return null;
+    }).filter(Boolean);
+  }
+  getHashId(len = 8) {
+    let moduleHashId = this._moduleHashId;
+    if (!moduleHashId) {
+      const name = this.module.getName();
+      const file = this.compilation.file;
+      this._moduleHashId = moduleHashId = (0, import_crypto4.createHash)("sha256").update(`${file}:${name}`).digest("hex").substring(0, len);
+    }
+    return moduleHashId;
+  }
+  checkConstructor(ctx, construct, module2) {
+  }
+  createMemebers(ctx, stack) {
+    stack.body.forEach((item) => {
+      const child = this.createMemeber(ctx, item, !!stack.static);
+      if (!child)
+        return;
+      const staticFlag = !!(stack.static || child.static);
+      const refs = staticFlag ? this.methods : this.members;
+      if (item.isConstructor && item.isMethodDefinition) {
+        this.construct = child;
+      } else {
+        refs.push(child);
+      }
     });
   }
-  return node;
-}
+  createMemeber(ctx, stack, staticFlag = false) {
+    if (stack.isStructTableColumnDefinition) {
+      const node = ctx.createNode(stack, "PropertyDefinition");
+      const typeName = import_Utils46.default.getStructTableMethodTypeName(stack.typename?.value() || "varchar");
+      node.modifier = ctx.createIdentifier("public");
+      node.kind = "var";
+      node.key = ctx.createIdentifier(stack.key.value(), stack.key);
+      node.init = ctx.createLiteral(typeName === "string" ? "" : null);
+      node.comments = createCommentsNode2(ctx, stack);
+      let format = "* @Formal(varchar,255)";
+      if (stack.typename) {
+        const formatNode = ctx.createToken(stack.typename);
+        const generator = new import_Generator6.default();
+        if (formatNode.type === "StructTableMethodDefinition") {
+          generator.withSequence([formatNode.key, ...formatNode.params]);
+        } else {
+          generator.make(formatNode);
+        }
+        format = `* @Formal(${generator.toString()})`;
+      }
+      let comments = ["* @StructColumn", stack.question ? "* @Optional" : "* @Requred", format];
+      if (node.comments) {
+        const lines = String(node.comments.value).split(/[\r\n]+/);
+        lines.splice(lines.length - 2, 0, ...comments);
+        node.comments.value = lines.join("\n");
+      } else {
+        node.comments = ctx.createChunkExpression(["/**", ...comments, "**/"].join("\n"));
+      }
+      return node;
+    }
+    return null;
+  }
+};
+var StructTableBuilder_default = StructTableBuilder;
 
 // lib/tokens/StructTableDeclaration.js
 function StructTableDeclaration_default2(ctx, stack) {
   ctx.table.getAllBuilder().forEach(
     (build) => build.createTable(ctx, stack)
   );
-}
-
-// lib/tokens/StructTableKeyDefinition.js
-init_Common2();
-function StructTableKeyDefinition_default2(ctx, stack) {
-  const node = ctx.createNode(stack);
-  node.key = createIdentNode(ctx, stack.key);
-  const key = stack.key.value().toLowerCase();
-  node.prefix = key === "primary" || key === "key" ? null : ctx.createIdentifier("key");
-  node.local = ctx.createToken(stack.local);
-  node.properties = (stack.properties || []).map((item) => createIdentNode(ctx, item));
-  return node;
-}
-
-// lib/tokens/StructTableMethodDefinition.js
-var import_Namespace26 = __toESM(require("easescript/lib/core/Namespace"));
-function createNode4(ctx, item, isKey = false, toLower = false, type = null) {
-  if (!item)
-    return null;
-  if (type === "enum") {
-    if (item.isIdentifier || item.isMemberExpression) {
-      const type2 = import_Namespace26.default.globals.get(item.value());
-      const list = [];
-      if (type2 && type2.isModule && type2.isEnum) {
-        Array.from(type2.descriptors.keys()).forEach((key) => {
-          const items = type2.descriptors.get(key);
-          const item2 = items.find((item3) => item3.isEnumProperty);
-          if (item2) {
-            list.push(ctx.createLiteral(item2.init.value()));
-          }
-        });
-      }
-      return list;
-    }
-  }
-  if (item.isIdentifier) {
-    let value = item.value();
-    if (toLower)
-      value = value.toLowerCase();
-    return ctx.createIdentifier(isKey ? "`" + value + "`" : value, item);
-  }
-  return item.isLiteral ? ctx.createLiteral(item.value()) : ctx.createToken(item);
-}
-function StructTableMethodDefinition_default2(ctx, stack) {
-  const node = ctx.createNode(stack);
-  const name = stack.key.value().toLowerCase();
-  if (name === "text" || name === "longtext" || name === "tinytext" || name === "mediumtext") {
-    return ctx.createIdentifier(stack.key.value(), stack.key);
-  }
-  const key = stack.key.isMemberExpression ? stack.key.property : stack.key;
-  node.key = createNode4(ctx, key, false);
-  const isKey = stack.parentStack.isStructTableKeyDefinition;
-  node.params = (stack.params || []).map((item) => createNode4(ctx, item, isKey, false, name)).flat().filter(Boolean);
-  return node;
-}
-
-// lib/tokens/StructTablePropertyDefinition.js
-init_Common2();
-function StructTablePropertyDefinition_default2(ctx, stack) {
-  const node = ctx.createNode(stack);
-  node.assignment = !!stack.assignment;
-  node.key = createIdentNode(ctx, stack.key);
-  node.init = createIdentNode(ctx, stack.init);
-  return node;
+  const builder = new StructTableBuilder_default(stack);
+  return builder.create(ctx);
 }
 
 // lib/tokens/SuperExpression.js
@@ -18432,7 +19451,7 @@ function ThrowStatement_default2(ctx, stack) {
 }
 
 // lib/tokens/TryStatement.js
-var import_Namespace27 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Namespace28 = __toESM(require("easescript/lib/core/Namespace"));
 function TryStatement_default2(ctx, stack) {
   const node = ctx.createNode(stack);
   node.block = ctx.createToken(stack.block);
@@ -18443,7 +19462,7 @@ function TryStatement_default2(ctx, stack) {
   node.param.prefix = "\\Exception";
   const acceptType = stack.param.acceptType ? stack.param.acceptType.type() : null;
   if (acceptType && acceptType.isModule) {
-    const Throwable = import_Namespace27.default.globals.get("Throwable");
+    const Throwable = import_Namespace28.default.globals.get("Throwable");
     if (Throwable && Throwable.type().is(acceptType)) {
       node.param.prefix = ctx.getModuleReferenceName(acceptType);
     }
@@ -18462,7 +19481,7 @@ function TypeAssertExpression_default2(ctx, stack) {
 }
 
 // lib/tokens/TypeTransformExpression.js
-var import_Namespace28 = __toESM(require("easescript/lib/core/Namespace"));
+var import_Namespace29 = __toESM(require("easescript/lib/core/Namespace"));
 function createTransformNode(ctx, method, expression) {
   return ctx.createCallExpression(
     ctx.createIdentifier(method),
@@ -18485,7 +19504,7 @@ function TypeTransformExpression_default2(ctx, stack) {
     } else if (value === "Boolean") {
       return createTransformNode(ctx, "boolval", stack.expression);
     } else if (value === "RegExp") {
-      const regexp = import_Namespace28.default.globals.get("RegExp");
+      const regexp = import_Namespace29.default.globals.get("RegExp");
       const refs = ctx.getModuleReferenceName(regexp);
       ctx.addDepend(regexp);
       const test = ctx.createBinaryExression(
@@ -18565,7 +19584,7 @@ function UnaryExpression_default2(ctx, stack) {
 }
 
 // lib/tokens/UpdateExpression.js
-var import_Utils39 = __toESM(require("easescript/lib/core/Utils"));
+var import_Utils47 = __toESM(require("easescript/lib/core/Utils"));
 init_Common2();
 init_AddressVariable();
 function trans2(ctx, stack, description, alias, objectType) {
@@ -18622,11 +19641,11 @@ function UpdateExpression_default2(ctx, stack) {
     let isReflect = false;
     if (stack.argument.computed) {
       const hasDynamic = desc2 && desc2.isComputeType && desc2.isPropertyExists();
-      if (!hasDynamic && !import_Utils39.default.isLiteralObjectType(stack.argument.object.type())) {
+      if (!hasDynamic && !import_Utils47.default.isLiteralObjectType(stack.argument.object.type())) {
         isReflect = true;
       }
     } else if (desc2 && desc2.isAnyType) {
-      isReflect = !import_Utils39.default.isLiteralObjectType(stack.argument.object.type());
+      isReflect = !import_Utils47.default.isLiteralObjectType(stack.argument.object.type());
     }
     if (isReflect) {
       let method = operator2 === "++" ? "incre" : "decre";
@@ -18646,7 +19665,7 @@ function UpdateExpression_default2(ctx, stack) {
       let objectDescription = stack.object.description();
       let objectType = ctx.inferType(stack.object);
       let isNewObject = !!stack.object.isNewExpression;
-      let isStatic = stack.object.isSuperExpression || objectType.isClassType || !isNewObject && import_Utils39.default.isClassType(objectDescription);
+      let isStatic = stack.object.isSuperExpression || objectType.isClassType || !isNewObject && import_Utils47.default.isClassType(objectDescription);
       let alias = getMethodOrPropertyAlias(ctx, stack);
       let result = trans2(ctx, stack, desc2, alias, objectType);
       if (result)
@@ -18854,7 +19873,7 @@ function WhileStatement_default2(ctx, stack) {
 
 // lib/core/Builder.js
 var import_glob_path2 = __toESM(require("glob-path"));
-async function buildProgram2(ctx, compilation, graph, generatorClass = import_Generator5.default) {
+async function buildProgram2(ctx, compilation, graph, generatorClass = import_Generator7.default) {
   let root = compilation.stack;
   if (!root) {
     throw new Error("Build program failed");
@@ -18967,7 +19986,7 @@ function addResolveRule(glob2, resolve) {
 
 // lib/core/Plugin.js
 init_Asset2();
-var import_Generator6 = __toESM(require_Generator());
+var import_Generator8 = __toESM(require_Generator());
 
 // lib/core/vms/Annotations.js
 init_Common2();
@@ -19127,7 +20146,7 @@ var Assets = class extends VirtualModule2 {
     let mapping = [];
     this.#dataset.forEach((path11, hashId) => {
       let relativePath = ctx.getRelativePath(path11, outfile);
-      let filepath2 = ctx.createBinaryExpression(
+      let filepath = ctx.createBinaryExpression(
         ctx.createIdentifier("__DIR__"),
         ctx.createLiteral(relativePath),
         "."
@@ -19135,7 +20154,7 @@ var Assets = class extends VirtualModule2 {
       mapping.push(
         ctx.createProperty(
           ctx.createLiteral(hashId),
-          filepath2
+          filepath
         )
       );
     });
@@ -19383,8 +20402,8 @@ var import_path10 = __toESM(require("path"));
 import_Diagnostic2.default.register("php", (definer) => {
   definer(
     2e4,
-    "\u7C7B(%s)\u547D\u540D\u7A7A\u95F4\u5FC5\u987B\u4E0E\u6587\u4EF6\u8DEF\u5F84\u4E00\u81F4",
-    "The '%s' class namespace must be consistent with the file path"
+    "[es-php] \u7C7B(%s)\u547D\u540D\u7A7A\u95F4\u5FC5\u987B\u4E0E\u6587\u4EF6\u8DEF\u5F84\u4E00\u81F4",
+    "[es-php] The '%s' class namespace must be consistent with the file path"
   );
 });
 var Plugin2 = class extends Plugin {
@@ -19399,10 +20418,17 @@ var Plugin2 = class extends Plugin {
       return getAssetsManager(Asset2);
     if (name === "virtual")
       return getVirtualModuleManager(VirtualModule2);
-    if (name === "token")
-      return getTokenManager(this.options, tokens_exports2);
+    if (name === "token") {
+      const _tokens = Object.assign({}, tokens_exports2);
+      Object.keys(tokens_exports).forEach((key) => {
+        if (!_tokens[key]) {
+          _tokens[key] = tokens_exports[key];
+        }
+      });
+      return getTokenManager(this.options, _tokens);
+    }
     if (name === "generator")
-      return import_Generator6.default;
+      return import_Generator8.default;
     if (name === "program")
       return buildProgram2;
   }

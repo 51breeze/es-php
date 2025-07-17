@@ -104,6 +104,8 @@ class ObjectWraper implements \JsonSerializable{
         }else if($type==='boolean'){
             if(is_array($value))$value = true;
             else $value = boolval($value);
+        }else if($type==='string'){
+            $value =  System::toString($value);
         }
         $this->source = $value;
         $this->type = $type;
@@ -167,7 +169,7 @@ final class System{
         }else if( is_array($obj) ){
             return 'object';
         }else if(is_a($obj, ObjectWraper::class)){
-            return$obj->__typeof();
+            return $obj->__typeof();
         }
         return gettype($obj);
     }
@@ -437,6 +439,19 @@ final class System{
         if( $value )return true;
         if( is_array($value) )return true;
         return false;
+    }
+
+    public static function toString($value){
+        $type = gettype($value);
+        if($type==='boolean'){
+            return $value ? 'true' : 'false';
+        }
+        if(is_object($value)){
+            if(method_exists($value,'toString'))return $value->toString();
+            if(method_exists($value,'__toString'))return $value->__toString();
+            return '[object '.$type.']';
+        }
+        return strval($value);
     }
 
     public static function isArray( $target ){

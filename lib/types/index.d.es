@@ -59,6 +59,10 @@ package manifest{
 
 }
 
+package web{
+    declare class VNode implements global.VNode{}
+}
+
 package web.components{
 
     @WebComponent
@@ -72,7 +76,7 @@ package web.components{
         render():VNode | Component;
         get parent():Component
         get children():Component[];
-        getRef(name:string);
+        getRefs(name:string);
         hasSlot(name?:string):boolean;
         renderSlot(name?:string,props?:Record,fallback?:(...args)=>(VNode | Component)[]):VNode;
         forceUpdate();
@@ -83,5 +87,5 @@ package web.components{
     }
 }
 
-declare function renderToString(vnode:VNode | web.components.Component):string;
+declare function renderToString(vnode:web.VNode | web.components.Component):string;
 declare function createVNode(component:string | web.components.Component, attrs?:Record<any>, children?:string | web.components.Component[]):VNode;

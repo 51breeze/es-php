@@ -5,6 +5,8 @@ package com
     {
         constructor(){
             let err = new Exception('error')
+            new Error('error')
+            new ReferenceError('reference error')
         }
 
         get name(){

@@ -159,6 +159,18 @@ public class IndexTest<U,B=string> extends Person<string> implements Iterator<an
 
         var param = new Param();
         param.start();
+
+        const err = new ReferenceError('reference error')
+         this.assertEquals( err.message, 'reference error' );
+         this.assertEquals( err.message, 'reference error' );
+
+        this.assertEquals( Boolean(1), true)
+        this.assertEquals( Boolean(0), false)
+        this.assertEquals( new Boolean('1').valueOf(), true)
+        this.assertEquals( Number('1'), 1)
+        this.assertEquals( new Number('1').valueOf(), 1)
+        this.assertEquals('true', String(true) )
+        this.assertEquals( 'true' , new String(true).toString() )
        
     }
 

@@ -265,6 +265,40 @@ public class StartTest extends Base implements Address
          this.assertEquals([0,1,2,3,4],group['4']);
         this.assertTrue( isset(group['1']) )
 
+        const data966 = {name:'666'};
+        const id66 = 1
+        const id77 = 2;
+        const spread = {id66, ...data966, id77}
+        this.assertEquals({id66, name:'666', id77},spread);
+
+        const spread2 = {id66, id77, ...data966, name:"999"}
+        this.assertEquals({id66, id77, name:'999'},spread2);
+
+        const address = new Address();
+        address.load({
+            uid:'1',
+            area:999,
+            content:'string',
+            email:"ssf@co.com",
+            range:"ssss6666",
+            phone:'ing',
+            postcode:'string',
+            status:Types.ADDRESS,
+        })
+        this.assertEquals('1', address.uid);
+        this.assertEquals(999, address.area);
+        this.assertEquals({
+            uid:1,
+            area:'999',
+            email:"ssf@co.com",
+            range:"ssss6666",
+            data:'',
+            phone:'ing',
+            postcode:'string',
+            status:String(Types.ADDRESS),
+        }, address.toEntity(['id', 'createAt', 'updateAt']));
+
+        new Error('sss')
     }
 
     testAssignment(){

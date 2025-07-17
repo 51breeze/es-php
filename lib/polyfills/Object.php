@@ -115,5 +115,5 @@ function es_object_to_string($target){
     }else if( is_array($target) ){
         return implode(', ', $target);
     }
-    return json_encode($target,JSON_UNESCAPED_UNICODE);
+    return strval($target);
 }
